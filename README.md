@@ -9,6 +9,12 @@ It must be combined with lib.a and the repositories that use the same
 naming convention to build the provided samples and to use the additional
 subsystems and libraries.
 
+Getting Started
+------------
+
+Welcome to JL open source! See the `Introduction to SDK`_ for a high-level overview,
+and the documentation's `Getting Started Guide`_ to start developing.
+
 Toolchain
 ------------
 
