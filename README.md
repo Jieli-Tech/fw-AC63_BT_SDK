@@ -1,7 +1,7 @@
 # fw-AC630N_BT_SDK
-
-firmware for Generic bluetooth SDK（AC630/1N series）
 ##################################
+firmware for Generic bluetooth SDK（AC630/1N series）
+
 
 This repository contains the Jieli source code additions to open
 source projects (Zephyr RTOS).
