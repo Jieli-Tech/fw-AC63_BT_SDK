@@ -32,6 +32,9 @@ Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.1 s
 * [QDID 136145](https://launchstudio.bluetooth.com/ListingDetails/91371)
 
 
+EV Board
+-------------
+
 Disclaimer
 ------------
 
