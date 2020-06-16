@@ -27,9 +27,9 @@ Documentation
 Certification
 -------------
 
-Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.1 specification
+Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.0 specification
 
-* [QDID 136145](https://launchstudio.bluetooth.com/ListingDetails/91371)
+* [QDID 134104](https://launchstudio.bluetooth.com/ListingDetails/88799)
 
 
 EV Board
