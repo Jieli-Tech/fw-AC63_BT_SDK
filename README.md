@@ -35,6 +35,8 @@ Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.0 s
 EV Board
 -------------
 
+* 开发板申请入口：
+
 Disclaimer
 ------------
 
