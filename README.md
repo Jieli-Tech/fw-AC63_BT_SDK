@@ -14,7 +14,7 @@ Toolchain
 
 获取JL Toolchain 包管理工具，搭建编译环境
 
-* Lastest：
+* Lastest：(https://pan.baidu.com/s/1f5pK7ZaBNnvbflD-7R22zA) 提取码: ukgx
 
 Documentation
 ------------
