@@ -27,7 +27,7 @@ Documentation
 Certification
 -------------
 
-Bluetooth LE Mesh solution implementing of the Bluetooth Mesh Profile 1.0 and the Bluetooth Mesh Model 1.0 wireless technical specifications
+Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.1 specification
 
 * [QDID 136145](https://launchstudio.bluetooth.com/ListingDetails/91371)
 
