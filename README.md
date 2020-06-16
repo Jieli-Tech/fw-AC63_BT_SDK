@@ -12,8 +12,8 @@ subsystems and libraries.
 Getting Started
 ------------
 
-Welcome to JL open source! See the `Introduction to SDK`_ for a high-level overview,
-and the documentation's `Getting Started Guide`_ to start developing.
+Welcome to JL open source! See the `Introduction to SDK` for a high-level overview,
+and the documentation's `Getting Started Guide` to start developing.
 
 Toolchain
 ------------
