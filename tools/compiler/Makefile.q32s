@@ -1,0 +1,112 @@
+#*************************************************************************
+#						Linux
+#
+#*************************************************************************
+ifeq ($(HOST_OS), linux)
+# --------------tools path-----------------------
+export JL_TOOLS=/opt/q32s
+
+export CC = $(JL_TOOLS)/bin/clang
+export LD = $(JL_TOOLS)/bin/lto-wrapper
+export AR = $(JL_TOOLS)/bin/lto-ar
+# export DUMPTY = $(JL_TOOLS)/bin/dump-funty
+
+export OVERRIDE_SEG    = /opt/utils/llvm/bin/override-seg
+export MERGER_ARCHIVES = /opt/utils/llvm/bin/merge-archives
+
+export OBJCOPY=$(JL_TOOLS)/bin/q32s-objcopy
+export OBJDUMP=$(JL_TOOLS)/bin/q32s-objdump
+export OBJSIZEDUMP=/opt/utils/objsizedump
+export BANKZIP=/opt/utils/bankzip
+
+export VER=$(JL_TOOLS)/bin/replacetime
+
+endif #($(HOST_OS), linux)
+
+#*************************************************************************
+#
+#						Windows
+#
+#*************************************************************************
+ifeq ($(HOST_OS), windows)
+# --------------tools path-----------------------
+export JL_TOOLS=C:/JL/q32s
+
+export CC = $(JL_TOOLS)/bin/clang.exe
+export LD = $(JL_TOOLS)/bin/lto-wrapper.exe
+export AR = $(JL_TOOLS)/bin/lto-ar.exe
+
+export OBJCOPY=$(JL_TOOLS)/bin/llvm-objcopy.exe
+export OBJDUMP=$(JL_TOOLS)/bin/llvm-objdump.exe
+
+
+export VER=$(JL_TOOLS)/bin/replacetime.exe
+
+endif #($(HOST_OS), linux)
+#*************************************************************************
+#
+#						Common
+#
+#*************************************************************************
+# --------------include path-----------------------
+export SYS_INCLUDES = \
+-I$(JL_TOOLS)/include  \
+-I$(JL_TOOLS)/include/libc  \
+
+# --------------complier args-----------------------
+export AR_ARGS = \
+-r -s
+
+export LD_ARGS = \
+-L$(JL_TOOLS)/include/libc \
+--plugin-opt=-inline-threshold=5 \
+--plugin-opt=save-temps \
+--plugin-opt=-inline-normal-into-special-section=true \
+--plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar \
+--sort-common \
+--dont-complain-call-overflow \
+
+
+# --gc-sections \
+# --plugin-opt=-pi32-const-spill \
+
+export CC_ARGS = \
+-target q32s \
+-integrated-as \
+-fno-builtin \
+-c \
+-g \
+-O0 \
+-flto \
+-Os  \
+-Wcast-align \
+-ffreestanding \
+-w \
+-fallow-pointer-null \
+-Xclang -target-feature -Xclang +no-constpool \
+-Wincompatible-pointer-types \
+-fprefer-gnu-section \
+
+# -Wall  \
+--gc-sections \
+-Wno-unused-function \
+-Wno-unused-const-variable \
+-Wno-unused-variable \
+
+#
+#-g \
+
+#debug for code size count;	SUPPORT_MS_EXTENSIONS = y or n
+export SUPPORT_MS_EXTENSIONS = n
+ifeq ($(SUPPORT_MS_EXTENSIONS), y)
+export CC_ARGS += \
+-fms-extensions \
+-DSUPPORT_MS_EXTENSIONS
+endif
+
+
+export SYS_LIBS = \
+$(JL_TOOLS)/lib/libc.a \
+$(JL_TOOLS)/lib/libcompiler_rt.a \
+
+
