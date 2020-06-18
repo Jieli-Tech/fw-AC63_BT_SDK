@@ -30,6 +30,18 @@ Documentation
 * Latest: 
 * All versions: 
 
+
+Build
+-------------
+Select a project to build. The following folders contains buildable projects:
+
+* APP_Bluetooth : [SPP_LE](https://github.com/JieLiTech/fw-AC630N_BT_SDK/tree/master/apps/spp_and_le)
+
+* APP_Bluetooth : [HID](https://github.com/JieLiTech/fw-AC630N_BT_SDK/tree/master/apps/hid)
+
+* APP_Bluetooth : [Mesh](https://github.com/JieLiTech/fw-AC630N_BT_SDK/tree/master/apps/mesh)
+
+
 Certification
 -------------
 
