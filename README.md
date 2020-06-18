@@ -42,7 +42,7 @@ SDK support Codeblock & Make to build to project,make sure you already setup the
 
 * Codeblock build : enter the project directory and find the `.cbp`,double click and build.
 
-* Makefile build : double click the `make_prompt` and excute `make`
+* Makefile build : `apps/app_cfg` select the target you want to build,double click the `make_prompt` and excute `make`
     
 
 Certification
