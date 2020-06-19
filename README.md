@@ -25,7 +25,7 @@ how to get the `JL Toolchain` and setup the build enviroment,see below
 Documentation
 ------------
 
-* Latest: 
+* Latest: [相关文档](https://github.com/JieLiTech/fw-AC630N_BT_SDK/tree/master/doc)
 
 
 Build
