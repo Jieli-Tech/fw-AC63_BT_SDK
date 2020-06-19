@@ -91,7 +91,7 @@ enum clk_mode {
 //clk : SYS_48M / SYS_24M
 void sys_clk_set(u8 clk);
 
-void clk_voltage_init(u8 mode, u8 sys_dvdd);
+void clk_voltage_init(u8 mode, u16 sys_dvdd);
 
 void clk_set_osc_cap(u8 sel_l, u8 sel_r);
 

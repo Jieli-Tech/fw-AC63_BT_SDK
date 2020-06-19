@@ -24,11 +24,13 @@ ifneq (,$(wildcard $(ROOT)/cpu/$(CPU)/tools/download.c))
 endif
 	$(V) $(LD) $(LD_ARGS) -o $(OUTPUT_ELF) $(objs) $(obj_ls) $(obj_bs) $(SYS_LIBS) $(LIBS) $(LINKER) 
 ifneq ($(cibuild),y)
+ifneq ($(HOST_OS),windows)
 	$(V) /opt/utils/check-mix-diff-cpu $(OUTPUT_ELF).0.5.precodegen.bc || (/opt/utils/view-target-cpu $(LD_ARGS) -o $(objs) $(obj_ls) $(obj_bs) $(SYS_LIBS) $(LIBS) $(LINKER) && exit 1)
 ifeq ($(jtag),n)
 	@cd $(DIR_OUTPUT) && bash $(POST_BUILD_SCRIPT) $(ELF)
 else
 	@cd $(DIR_OUTPUT) && bash $(POST_BUILD_SCRIPT) $(ELF) "_jtag"
+endif
 endif
 endif
 ifeq ($(HOST_OS),windows)

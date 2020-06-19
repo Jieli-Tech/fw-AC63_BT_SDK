@@ -130,10 +130,9 @@ cbp:
 		--outdir `realpath ../cbp_out` \
 		--other_files $(DIR_OUTPUT)/uboot.bin \
 			$(DIR_OUTPUT)/download.bat	\
-			make_app.bat \
-			make_clean.bat \
-			make_prompt.bat \
 			$(OTHER_FILES) \
+		--generate_entry make_prompt.bat \
+		--entry_template make_prompt.bat \
 		--other_dirs tools/utils
 
 winmake:
@@ -143,11 +142,11 @@ winmake:
 		--outdir `realpath ../winmake_out` \
 		--other_files $(DIR_OUTPUT)/uboot.bin \
 			$(DIR_OUTPUT) 	\
-			make_app.bat 	\
-			make_clean.bat 	\
 			make_prompt.bat \
 			README.md *.pdf \
 			$(OTHER_FILES) 	\
+		--generate_entry make_prompt.bat \
+		--entry_template make_prompt.bat \
 		--other_dirs tools/utils
 
 winrelease: cbp winmake

@@ -426,8 +426,13 @@ static void record_sysvdd_voltage(void)
     }
     P33_CON_SET(P3_ANA_CON9, 0, 4, old_level);
 }
+
+#define sysvdd_default_level    0b1101
 u8 get_sysvdd_aims_level(u16 aims_mv)
 {
+    if (sysvdd_voltage[0] == 0) {
+        return sysvdd_default_level;
+    }
     return get_aims_level(aims_mv, sysvdd_voltage, 16, closest_max);
 }
 
@@ -442,8 +447,13 @@ static void record_vdc13_voltage(void)
     }
     P33_CON_SET(P3_ANA_CON6, 0, 3, old_level);
 }
+
+#define vdc13_default_level    0b110
 u8 get_vdc13_aims_level(u16 aims_mv)
 {
+    if (vdc13_voltage[0] == 0) {
+        return vdc13_default_level;
+    }
     return get_aims_level(aims_mv, vdc13_voltage, 8, closest_max);
 }
 
@@ -478,8 +488,12 @@ static void record_mvddio_voltage(void)
     P33_CON_SET(P3_VLVD_CON, 0, 1, old_vlvd_level & 0x1);
 }
 
+#define mvddio_default_level    0b110
 u8 get_mvddio_aims_level(u16 aims_mv)
 {
+    if (mvddio_voltage[0] == 0) {
+        return mvddio_default_level;
+    }
     return get_aims_level(aims_mv, mvddio_voltage, 8, closest_max);
 }
 
@@ -491,6 +505,21 @@ void adc_init()
     record_mvddio_voltage();
 
     _adc_init(1);
+}
+
+void adc_dump(void)
+{
+    for (int i = 0; i < ARRAY_SIZE(sysvdd_voltage); i++) {
+        log_i("sysvdd_voltage[%d] %d", i, sysvdd_voltage[i]);
+    }
+
+    for (int i = 0; i < ARRAY_SIZE(vdc13_voltage); i++) {
+        log_i("vdc13_voltage[%d] %d", i, vdc13_voltage[i]);
+    }
+
+    for (int i = 0; i < ARRAY_SIZE(mvddio_voltage); i++) {
+        log_i("mvddio_voltage[%d] %d", i, mvddio_voltage[i]);
+    }
 }
 
 void adc_test()
