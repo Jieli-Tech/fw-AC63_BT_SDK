@@ -18,17 +18,14 @@ and the documentation's `Getting Started Guide` to start developing.
 Toolchain
 ------------
 
-获取JL Toolchain 包管理工具，搭建编译环境
+how to get the `JL Toolchain` and setup the build enviroment,see below
 
 * Lastest：(https://pan.baidu.com/s/1f5pK7ZaBNnvbflD-7R22zA) 提取码: ukgx
 
 Documentation
 ------------
 
-官方开发文档:
-
 * Latest: 
-* All versions: 
 
 
 Build
@@ -41,6 +38,12 @@ Select a project to build. The following folders contains buildable projects:
 
 * APP_Bluetooth : [Mesh](https://github.com/JieLiTech/fw-AC630N_BT_SDK/tree/master/apps/mesh)
 
+SDK support Codeblock & Make to build to project,make sure you already setup the enviroment 
+
+* Codeblock build : enter the project directory and find the `.cbp`,double click and build.
+
+* Makefile build : `apps/app_cfg` select the target you want to build,double click the `make_prompt` and excute `make`
+    
 
 Certification
 -------------
