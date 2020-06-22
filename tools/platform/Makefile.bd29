@@ -31,6 +31,13 @@ export CC_DEFINE += \
 
 #-DCONFIG_RELEASE_ENABLE
 
+export cibuild ?= n
+ifeq ($(cibuild),y)
+CC_DEFINE += -DCONFIG_RELEASE_ENABLE
+else
+CC_DEFINE += -D__SHELL__
+endif
+
 ifeq ($(TYPE),FPGA)
 CC_DEFINE += -DCONFIG_FPGA_ENABLE
 endif
@@ -118,3 +125,4 @@ export CBP_POSITION ?= .
 
 pre_make:
 	@echo "Making... Soc : bd29"
+

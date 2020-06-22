@@ -25,6 +25,7 @@
 <Add option="-Wincompatible-pointer-types" />
 <Add option="-fprefer-gnu-section" />
 <Add option="-DCONFIG_CPU_BD29" />
+<Add option="-DCONFIG_RELEASE_ENABLE" />
 <Add option="-DCONFIG_FREE_RTOS_ENABLE" />
 <Add option="-DTCFG_APP_BT_EN=1" />
 <Add option="-DCONFIG_LINK_INQUIRY_ENABLE=0" />

@@ -723,12 +723,11 @@ void bt_send_pair(u8 en)
     user_send_cmd_prepare(USER_CTRL_PAIR, 1, &en);
 }
 
-#define AUTO_CONNECT_TIMEOUT_MS (10000)
 
+
+u8 connect_last_device_from_vm();
 int bt_connect_phone_back_start(void)
 {
-	static u8 auto_connection_addr[6];
-		
 	log_info("bt_hid_mode= %d",bt_hid_mode);
 	if (bt_hid_mode != HID_MODE_EDR) {
 		return 0;
@@ -739,11 +738,10 @@ int bt_connect_phone_back_start(void)
 		return 1;
 	}
 
-    if (get_current_poweron_memory_search_index(auto_connection_addr)) {
+    if (connect_last_device_from_vm()) {
         log_info("------bt_connect_phone_start------");
         /* clear_current_poweron_memory_search_index(1); */
 		led_on_off(LED_AUTO_CONNECT,1);
-		user_send_cmd_prepare(USER_CTRL_START_CONNEC_VIA_ADDR, 6, auto_connection_addr);
         return 1 ;
     }
 	else{

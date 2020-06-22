@@ -1,4 +1,5 @@
 @echo off
+
 @echo *********************************************************************
 @echo 			                AC630N SDK
 @echo *********************************************************************
@@ -6,57 +7,49 @@
 
 cd /d %~dp0
 
+
 set OBJDUMP=C:\JL\pi32\bin\llvm-objdump.exe
 set OBJCOPY=C:\JL\pi32\bin\llvm-objcopy.exe
-set INELF=%1.elf
+set ELFFILE=sdk.elf
 
-::@echo on
+REM %OBJDUMP% -D -address-mask=0x1ffffff -print-dbg $1.elf > $1.lst
+%OBJCOPY% -O binary -j .text %ELFFILE% text.bin
+%OBJCOPY% -O binary -j .data %ELFFILE% data.bin
 
-if exist sdk.elf (
+%OBJDUMP% -section-headers -address-mask=0x1ffffff %ELFFILE%
+%OBJDUMP% -t %ELFFILE% >  symbol_tbl.txt
 
-%OBJCOPY% -O binary -j .text %INELF% text.bin
-%OBJCOPY% -O binary -j .data %INELF% data.bin
+copy /b text.bin+data.bin app.bin
+del isd_config.ini
+copy isd_config_release.ini isd_config.ini
 
-%OBJDUMP% -section-headers -address-mask=0x1ffffff %INELF%
-%OBJDUMP% -t %INELF% >  symbol_tbl.txt
-
-copy text.bin/b + data.bin/b  app.bin
-
-)
-
- 
-
-
-isd_download.exe -tonorflash -dev bd29 -boot 0x2000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin  
-
-@REM å¸¸ç”¨å‘½ä»¤è¯´æ˜Ž
-@rem -format vm         // æ“¦é™¤VM åŒºåŸŸ
-@rem -format all        // æ“¦é™¤æ‰€æœ‰
+isd_download.exe -tonorflash -dev bd29 -boot 0x2000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin -res tone.cfg
+@REM ³£ÓÃÃüÁîËµÃ÷
+@rem -format vm         // ²Á³ýVM ÇøÓò
+@rem -format all        // ²Á³ýËùÓÐ
 @rem -reboot 500        // reset chip, valid in JTAG debug
 
+del isd_config.ini
 
- 
+@REM É¾³ýÁÙÊ±ÎÄ¼þ
+if exist *.mp3 del *.mp3 
+if exist *.PIX del *.PIX
+if exist *.TAB del *.TAB
+if exist *.res del *.res
+if exist *.sty del *.sty
 
-@REM ç”Ÿæˆå›ºä»¶å‡çº§æ–‡ä»¶
+@REM Éú³É¹Ì¼þÉý¼¶ÎÄ¼þ
 fw_add.exe -noenc -fw jl_isd.fw  -add ota.bin -type 100 -out jl_isd.fw
-@REM æ·»åŠ é…ç½®è„šæœ¬çš„ç‰ˆæœ¬ä¿¡æ¯åˆ° FW æ–‡ä»¶ä¸­
+@REM Ìí¼ÓÅäÖÃ½Å±¾µÄ°æ±¾ÐÅÏ¢µ½ FW ÎÄ¼þÖÐ
 fw_add.exe -noenc -fw jl_isd.fw -add script.ver -out jl_isd.fw
 
 ufw_maker.exe -fw_to_ufw jl_isd.fw
 copy jl_isd.ufw update.ufw
 del jl_isd.ufw
 
- 
+@REM Éú³ÉÅäÖÃÎÄ¼þÉý¼¶ÎÄ¼þ
+rem ufw_maker.exe -chip AC630N %ADD_KEY% -output config.ufw -res bt_cfg.cfg
 
-::ping /n 2 127.1>null
-
-if exist sdk.elf (
-move sdk.elf* elf/
-move sdk.map elf/
-move symbol_tbl.txt elf/
-move data.bin elf/
-move jl_isd.bin elf/
-) else (
-pause
-)
-
+ping /n 2 127.1>null
+IF EXIST null del null
+::pause

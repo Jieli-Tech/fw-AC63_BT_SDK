@@ -33,6 +33,7 @@
 #define COMMON_INFO_ATTR_LIGHT     	   (7)
 #define COMMON_INFO_ATTR_FMTX      	   (8)
 #define COMMON_INFO_ATTR_HIGH_LOW_SET  (11)
+#define COMMON_INFO_ATTR_PRE_FETCH_ALL_EQ_INFO (12)
 
 
 

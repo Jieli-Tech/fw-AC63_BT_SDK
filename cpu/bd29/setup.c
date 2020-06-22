@@ -123,7 +123,7 @@ void setup_arch()
 {
     wdt_init(WDT_4S);
 
-    clk_voltage_init(TCFG_CLOCK_MODE, SYSVDD_VOL_SEL_126V);
+    clk_voltage_init(TCFG_CLOCK_MODE, 1160);
 
     clk_early_init(TCFG_CLOCK_SYS_SRC, TCFG_CLOCK_OSC_HZ, TCFG_CLOCK_SYS_HZ);
 

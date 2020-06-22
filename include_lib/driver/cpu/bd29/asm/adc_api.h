@@ -52,6 +52,7 @@ extern void adc_vbg_init();
 extern void adc_pmu_ch_select(u32 ch);
 extern void adc_pmu_detect_en(u32 ch);
 
+void adc_dump(void);
 //
 u32 adc_get_value(u32 ch);
 

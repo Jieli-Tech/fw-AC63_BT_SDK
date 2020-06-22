@@ -9,15 +9,8 @@
 #================================================================#
 
 #配置App
-# export APP_CASE?=earphone
-#export APP_CASE?=qcy_case
-#export APP_CASE?=soundbox
-#export APP_CASE?=dongle
-#export APP_CASE?=module
 export APP_CASE?=spp_and_le
 #export APP_CASE?=hid
-#export APP_CASE?=gamebox
-#export APP_CASE?=earphone_ai
 #export APP_CASE?=mesh
 
 
@@ -477,63 +470,7 @@ endif #ifeq ($(APP_CASE),hid)
 #================================================================#
 
 ifeq ($(APP_CASE),gamebox)
-
-ifneq ($(CPU),bd29)
-CONFIG_MEDIA_ENABLE = y
-CC_DEFINE += \
--DCONFIG_USB_AUDIO
-else
-CONFIG_MEDIA_ENABLE = n
-endif
-
-CONFIG_USB_ENABLE = y
-CONFIG_SD_ENABLE = n
-USB_HOST_SUPPORT_MSD = n
-USB_HOST_SUPPORT_AOA = y
-USB_HOST_SUPPORT_ADB = y
-USB_HOST_SUPPORT_HID = y
-#------------------------ event config --------------------------#
-SYS_EVENT_CFG_DEFINE += \
--DEVENT_HANDLER_NUM_CONFIG=2 \
--DEVENT_TOUCH_ENABLE_CONFIG=0 \
--DEVENT_POOL_SIZE_CONFIG=256 \
--DCONFIG_EVENT_KEY_MAP_ENABLE=0 \
-
-#------------------------ timer config --------------------------#
-SYS_TIMER_CFG_DEFINE += \
--DTIMER_POOL_NUM_CONFIG=2 \
-
-#----------------------- app_core config ------------------------#
-SYS_APP_CORE_CFG_DEFINE += \
--DAPP_ASYNC_POOL_NUM_CONFIG=0 \
-
-#------------------------- vm config ---------------------------#
-SYS_VM_CFG_DEFINE += \
--DVM_MAX_SIZE_CONFIG=16*1024 \
--DVM_ITEM_MAX_NUM=128 \
-
-#------------------------- vfs config ---------------------------#
-SYS_VFS_CFG_DEFINE += \
--DVFS_ENABLE=0 \
--DUSE_SDFILE_NEW=1 \
--DVFS_FILE_POOL_NUM_CONFIG=0 \
--DSDFILE_VERSION=0x020000 
-
-APP_FEATURE_DEFINE += \
--DCONFIG_TWS_ENABLE
-
-BTCTRLER_CFG_DEFINE += \
--DCONFIG_LMP_NAME_REQ_ENABLE \
--DCONFIG_LMP_PASSKEY_ENABLE \
--DCONFIG_LMP_RESET_ENABLE \
--DCONFIG_LMP_MASTER_ESCO_ENABLE \
--DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE \
--DCONFIG_LINK_INQUIRY_ENABLE=1 \
-
-CC_DEFINE += \
--DCONFIG_GAMEBOX_CASE             
-
-APP_OTA_EN = y
+-include apps$(SLASH)$(APP_CASE)$(SLASH)app_cfg
 endif #ifeq ($(APP_CASE),gamebox)
 
 #================================================================#

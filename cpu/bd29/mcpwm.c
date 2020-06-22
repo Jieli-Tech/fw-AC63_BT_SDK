@@ -263,11 +263,9 @@ void mcpwm_init(struct pwm_platform_data *arg)
         if (arg->h_pin < IO_MAX_NUM) {    //任意引脚
             //TODO: output_channle
             if (arg->pwm_ch_num >= pwm_ch3) {
-                pwm_reg->ch_con0 &= ~BIT(2); //H_DIS
                 printf("error: mcpwm ch %d not support output_channel", arg->pwm_ch_num);
                 goto _CH_L_SET;
             }
-            pwm_reg->ch_con0 |= BIT(2); //H_EN
             gpio_output_channle(arg->h_pin, CHx_CHx_PWM_H[arg->h_pin_output_ch_num][arg->pwm_ch_num]);
             use_output_ch_flag = 1;
         }
@@ -283,12 +281,9 @@ _CH_L_SET:
         if (arg->l_pin < IO_MAX_NUM) {    //任意引脚
             //TODO:
             if (arg->pwm_ch_num >= pwm_ch3) {
-                pwm_reg->ch_con0 &= ~BIT(3); //L_DIS
                 printf("error: mcpwm ch %d not support output_channel", arg->pwm_ch_num);
                 goto _PWM_OPEN;
             }
-
-            pwm_reg->ch_con0 |= BIT(3); //L_EN
             if ((use_output_ch_flag == 1) && (arg->h_pin_output_ch_num == arg->l_pin_output_ch_num)) {
                 arg->l_pin_output_ch_num ++;
                 if (arg->l_pin_output_ch_num > 2) {
