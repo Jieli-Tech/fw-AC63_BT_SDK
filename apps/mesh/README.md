@@ -45,13 +45,13 @@
 - [X] 已入网节点可复位为未配网设备
 
 ## 目录导航
--  ### [Start](./Mesh_README.md#Start-1)
-    - #### [应用实例选择](./Mesh_README.md#应用实例选择-1)
-    - #### [Mesh 配置](./Mesh_README.md#Mesh-配置-1)
-    - #### [Board 配置](./Mesh_README.md#Board-配置-1)
--  ### [应用实例](./Mesh_README.md#应用实例-1)
-    - #### [SIG Generic OnOff Client](./Mesh_README.md#SIG-Generic-OnOff-Client-1)
-    - #### [SIG Generic OnOff Server](./Mesh_README.md#SIG-Generic-OnOff-Server-1)
+-  ### [Start](./README.md#Start-1)
+    - #### [应用实例选择](./README.md#应用实例选择-1)
+    - #### [Mesh 配置](./README.md#Mesh-配置-1)
+    - #### [Board 配置](./README.md#Board-配置-1)
+-  ### [应用实例](./README.md#应用实例-1)
+    - #### [SIG Generic OnOff Client](./README.md#SIG-Generic-OnOff-Client-1)
+    - #### [SIG Generic OnOff Server](./README.md#SIG-Generic-OnOff-Server-1)
 
 ## Start
 > :book: 目录文件结构 :book:
@@ -168,7 +168,7 @@ const u16 config_bt_mesh_proxy_node_adv_interval = ADV_SCAN_UNIT(300); // 
       ```C
       #define CONFIG_MESH_MODEL                   SIG_MESH_GENERIC_ONOFF_CLIENT
       ```
-      设置 [**board/xxxx/board_xxxx_demo_cfg.h**](./board/xxxx/board_xxxx_demo_cfg.h)
+      设置 [**board/xxxx/board_xxxx_demo_cfg.h**](./board/bd29/board_ac630x_demo_cfg.h)
       ```C
       #define TCFG_UART0_TX_PORT                  IO_PORT_DP
       #define TCFG_UART0_BAUDRATE                 1000000
@@ -214,7 +214,7 @@ const u16 config_bt_mesh_proxy_node_adv_interval = ADV_SCAN_UNIT(300); // 
               Configuration Server   #SIG Model ID: 0x0000
               Generic On Off Client  #SIG Model ID: 0x1001
       ```
-    - 此时按下按键，就能将开关信息 **Publish** 到 **Group** 地址 **0xC000** 了，如果结合下一小节 [SIG Generic OnOff Server](./Mesh_README.md#SIG-Generic-OnOff-Server-1)，就能控制这个 **server** 设备 **LED** 灯的亮和灭了
+    - 此时按下按键，就能将开关信息 **Publish** 到 **Group** 地址 **0xC000** 了，如果结合下一小节 [SIG Generic OnOff Server](./README.md#SIG-Generic-OnOff-Server-1)，就能控制这个 **server** 设备 **LED** 灯的亮和灭了
 
 
   - #### 代码解读
@@ -243,7 +243,7 @@ const u16 config_bt_mesh_proxy_node_adv_interval = ADV_SCAN_UNIT(300); // 
       ```C
       #define CONFIG_MESH_MODEL                   SIG_MESH_GENERIC_ONOFF_SERVER
       ```
-      设置 [**board/xxxx/board_xxxx_demo_cfg.h**](./board/xxxx/board_xxxx_demo_cfg.h)
+      设置 [**board/xxxx/board_xxxx_demo_cfg.h**](./board/bd29/board_ac630x_demo_cfg.h)
       ```C
       #define TCFG_UART0_TX_PORT                  IO_PORT_DP
       #define TCFG_UART0_BAUDRATE                 1000000
@@ -292,7 +292,7 @@ const u16 config_bt_mesh_proxy_node_adv_interval = ADV_SCAN_UNIT(300); // 
               Configuration Server   #SIG Model ID: 0x0000
               Generic On Off Server  #SIG Model ID: 0x1000
       ```
-    - 结合上一小节 [SIG Generic OnOff Client](./Mesh_README.md#SIG-Generic-OnOff-Client-1)，此时如果 **Client** 设备按下按键，那么本机的 **LED** 灯就会亮或者灭了
+    - 结合上一小节 [SIG Generic OnOff Client](./README.md#SIG-Generic-OnOff-Client-1)，此时如果 **Client** 设备按下按键，那么本机的 **LED** 灯就会亮或者灭了
 
   - #### 代码解读
       ![server流程图][pic_server_flowsheet]
