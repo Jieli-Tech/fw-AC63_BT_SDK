@@ -1,4 +1,6 @@
-APP - Bluetooth：SPP 透传
+[icon_build]:./../../doc/stuff/build_passing.svg
+
+# APP - Bluetooth：SPP 透传 ![Build result][icon_build]
 ---------------
 
 代码工程：`apps\spp_and_le\board\bd29\AC631X_spp_and_le.cbp` 
