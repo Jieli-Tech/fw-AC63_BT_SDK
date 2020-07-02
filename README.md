@@ -44,6 +44,7 @@ SDK support Codeblock & Make to build to project,make sure you already setup the
 
 * Makefile build : `apps/app_cfg` select the target you want to build,double click the `make_prompt` and excute `make`
     
+  `before build the project make sure the USB updater is connect and enter the update mode correctly`
 
 Certification
 -------------
