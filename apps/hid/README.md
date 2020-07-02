@@ -231,3 +231,4 @@ Report Map 在线解析工具地址： http://eleccelerator.com/usbdescreqparser
  * 整机功耗
 ![enter image description here](/api/file/getImage?fileId=5efc4a1b783a4c2b3a000091)
 
+
