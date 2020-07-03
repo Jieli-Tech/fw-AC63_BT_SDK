@@ -1,4 +1,6 @@
-APP - Bluetooth Dual-Mode HID
+[icon_build]:./../../doc/stuff/build_passing.svg
+
+# APP - Bluetooth: Dual-Mode HID ![Build result][icon_build]
 ---------------
 
 代码工程：`apps\hid\board\bd29\AC631X_hid.cbp`
@@ -116,14 +118,14 @@ is_hid_active = 1;
  * 板级方案配置文件的路径：apps/hid/board/BD29/board_config.h(hid 可替换为相应的 app 名称)。
  * 用户只需在板级方案配置文件 board_config.h 添加相应的宏定义，并包含相应的头文件，即可完成板级方案的配置。
 ```C
-/*                                   
- * 板级配置选择                       
-*/                                   
-// #define CONFIG_BOARD_AC630X_DEMO  
-#define CONFIG_BOARD_AC6302A_MOUSE   
+/*
+ * 板级配置选择
+*/
+// #define CONFIG_BOARD_AC630X_DEMO
+#define CONFIG_BOARD_AC6302A_MOUSE
 // #define CONFIG_BOARD_AC6319A_MOUSE
-// #define CONFIG_BOARD_AC6313_DEMO  
-// #define CONFIG_BOARD_AC6318_DEMO  
+// #define CONFIG_BOARD_AC6313_DEMO
+// #define CONFIG_BOARD_AC6318_DEMO
 ```
 ### 3.2 板级配置文件
  * 板级配置文件的作用是实现相同系列不同封装的配置方案，其存放路径为：apps/hid/board/BD29(hid替换为相应的 app 名称)。板级配置文件对应一个 C 文件和一个 H 文件。
@@ -133,7 +135,7 @@ is_hid_active = 1;
 ### 3.2 板级初始化
 
  - 系统将调用 C 文件中的 board_init()函数对板载设备进行初始化。板级初始化流程如图 1.3 所示。 用户可以根据开发需求在board_devices_init()函数中添加板载设备的初始化函数。
- 
+
  ![hid](./../../doc/stuff/hid_1.3.png)
 
 ## 4.APP 开发框架
@@ -170,7 +172,7 @@ IOKEY 参数在板级配置文件中（c 文件和 h 文件）进行配置，配
  * 配置示例
  ADKEY参数在板级配置文件中（c文件和h文件）进行配置，配置示例如表2-4所示。
  ![hid](./../../doc/stuff/hid_表2-4.png)
- 
+
 ### 5.3 按键扫描参数配置
 在IOKEY或者ADKEY使能后，按键扫描代码就会注册定时器定时扫描按键是否被按下，按键扫描参数可以在文件apps/common/key/iokey.c或adkey.c中配置，可供配置的参数表2-5所示。
  ![hid](./../../doc/stuff/hid_表2-5.png)
@@ -223,19 +225,15 @@ Report Map 在线解析工具地址： http://eleccelerator.com/usbdescreqparser
 
  * 所用光学传感器资料
   ![hid](./../../doc/stuff/hid_9.1.png)
- 
+
  * 测试条件
 （1）ble连接状态下Interval：6*1.25 ms = 7.5ms，lantency：100。
 （2）Radio TX:  7.2 dBm。
 （3）DCDC；VDDIOM 3.0V；VDDIOW 2.4V。
 （4）VDDIO和VBAT短接。
- 
+
  * 芯片功耗
  ![hid](./../../doc/stuff/hid_9.3.png)
 
  * 整机功耗
  ![hid](./../../doc/stuff/hid_9.4.png)
- 
- 
-
-
