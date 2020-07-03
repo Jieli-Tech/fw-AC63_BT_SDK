@@ -9,7 +9,8 @@
 [1]:https://www.bluetooth.com/specifications/mesh-specifications/
 [2]:https://www.bluetooth.com/specifications/bluetooth-core-specification/
 
-# Mesh Case ![Build result][icon_build]
+# APP - Bluetooth: Mesh ![Build result][icon_build]
+---------------
 ## 概述
 :book: 标准 [蓝牙Mesh][1] 协议，基于 [蓝牙5 ble][2] 实现网内节点间通讯，具体功能如下：
 
