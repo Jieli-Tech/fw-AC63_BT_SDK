@@ -2,7 +2,6 @@
 
 firmware for Generic bluetooth SDK（AC63 series）
 
-
 This repository contains the Jieli source code additions to open
 source projects (Zephyr RTOS).
 It must be combined with lib.a and the repositories that use the same
