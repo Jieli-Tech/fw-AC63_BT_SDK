@@ -1,0 +1,52 @@
+
+
+
+
+
+CONFIG_MEDIA_ENABLE = n
+#------------------------ event config --------------------------#
+SYS_EVENT_CFG_DEFINE += \
+-DEVENT_HANDLER_NUM_CONFIG=2 \
+-DEVENT_TOUCH_ENABLE_CONFIG=0 \
+-DEVENT_POOL_SIZE_CONFIG=256 \
+-DCONFIG_EVENT_KEY_MAP_ENABLE=0 \
+
+#------------------------ timer config --------------------------#
+SYS_TIMER_CFG_DEFINE += \
+-DTIMER_POOL_NUM_CONFIG=2 \
+
+#----------------------- app_core config ------------------------#
+SYS_APP_CORE_CFG_DEFINE += \
+-DAPP_ASYNC_POOL_NUM_CONFIG=0 \
+
+#------------------------- vm config ---------------------------#
+SYS_VM_CFG_DEFINE += \
+-DVM_MAX_SIZE_CONFIG=16*1024 \
+-DVM_ITEM_MAX_NUM=128 \
+
+#------------------------- vfs config ---------------------------#
+SYS_VFS_CFG_DEFINE += \
+-DVFS_ENABLE=0 \
+-DUSE_SDFILE_NEW=1 \
+-DVFS_FILE_POOL_NUM_CONFIG=0 \
+-DSDFILE_VERSION=0x020000 
+
+APP_FEATURE_DEFINE += \
+-DCONFIG_TWS_ENABLE \
+-DCONFIG_HID_CASE_ENABLE \
+
+BTCTRLER_CFG_DEFINE += \
+-DCONFIG_LMP_NAME_REQ_ENABLE \
+-DCONFIG_LMP_PASSKEY_ENABLE \
+-DCONFIG_LMP_RESET_ENABLE \
+-DCONFIG_LMP_MASTER_ESCO_ENABLE \
+-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE \
+-DCONFIG_LINK_INQUIRY_ENABLE=0 \
+
+CC_DEFINE += \
+-DTCFG_APP_BT_EN=1
+
+TWS_ENABLE = y
+
+
+

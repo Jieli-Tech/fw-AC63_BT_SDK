@@ -1,0 +1,178 @@
+#*************************************************************************
+#						Linux
+#
+#*************************************************************************
+ifeq ($(HOST_OS), linux)
+# --------------tools path-----------------------
+export JL_TOOLS=/opt/pi32v2
+
+ifeq ($(BANK_ENABLE),y)
+export CC = $(JL_TOOLS)/bin_test/pi32v2-uclinux-clang
+export LD = $(JL_TOOLS)/bin_test/lto-wrapper
+export AR = $(JL_TOOLS)/bin_test/lto-ar
+else
+export CC = $(JL_TOOLS)/bin_test_20190114/pi32v2-uclinux-clang
+export LD = $(JL_TOOLS)/bin_test_20190114/lto-wrapper
+export AR = $(JL_TOOLS)/bin_test_20190114/lto-ar
+#export CC = $(JL_TOOLS)/upstream/pi32v2-uclinux-clang
+#export AR = $(JL_TOOLS)/upstream/lto-ar
+#export LD = $(JL_TOOLS)/upstream/lto-wrapper
+
+endif
+
+export DUMPTY = $(JL_TOOLS)/dump-funty
+
+export OVERRIDE_SEG    = /opt/utils/llvm/bin/override-seg
+export MERGER_ARCHIVES = /opt/utils/llvm/bin/merge-archives
+
+export OBJCOPY=$(JL_TOOLS)/bin/pi32v2-uclinux-objcopy
+export OBJDUMP=$(JL_TOOLS)/bin/pi32v2-uclinux-objdump
+export OBJSIZEDUMP=/opt/utils/objsizedump
+export BANKZIP=/opt/utils/bankzip
+
+export VER=/opt/utils/replacetime
+
+export SYS_INCLUDES = \
+-I$(JL_TOOLS)/newlib/include \
+# -I$(JL_TOOLS)/lib/clang/4.0.0/include  \
+
+
+export SYS_LIBS = \
+$(JL_TOOLS)/newlib/lib/r3/libm.a \
+$(JL_TOOLS)/newlib/lib/r3/libc.a \
+$(JL_TOOLS)/newlib/lib/r3/libcompiler_rt.a \
+
+endif #($(HOST_OS), linux)
+
+#*************************************************************************
+#
+#						Windows
+#
+#*************************************************************************
+ifeq ($(HOST_OS), windows)
+# --------------tools path-----------------------
+export JL_TOOLS=C:/JL/pi32
+
+export CC = $(JL_TOOLS)/bin/clang.exe
+export LD = $(JL_TOOLS)/bin/pi32v2-lto-wrapper.exe
+export AR = $(JL_TOOLS)/bin/pi32v2-lto-ar.exe
+
+export OBJCOPY=$(JL_TOOLS)/bin/llvm-objcopy.exe
+export OBJDUMP=$(JL_TOOLS)/bin/llvm-objdump.exe
+
+export OVERRIDE_SEG    = override-seg.exe
+export MERGER_ARCHIVES = merge-archives.exe
+
+export VER=$(JL_TOOLS)/bin/replacetime.exe
+
+export SYS_INCLUDES = \
+-I$(JL_TOOLS)/pi32v2-include \
+
+
+export SYS_LIBS = \
+$(JL_TOOLS)/pi32v2-lib/r3/libm.a \
+$(JL_TOOLS)/pi32v2-lib/r3/libc.a \
+$(JL_TOOLS)/pi32v2-lib/r3/libcompiler-rt.a \
+
+endif #($(HOST_OS), linux)
+#*************************************************************************
+#
+#						Common
+#
+#*************************************************************************
+# --------------include path-----------------------
+SYS_INCLUDES +=
+
+# --------------complier args-----------------------
+export AR_ARGS = \
+-r -s
+
+export LD_ARGS = \
+-L$(JL_TOOLS)/lib \
+--plugin-opt=-pi32v2-always-use-itblock=false \
+--plugin-opt=-enable-ipra=true \
+--plugin-opt=-pi32v2-merge-max-offset=4096 \
+--plugin-opt=-pi32v2-enable-simd=true \
+--plugin-opt=mcpu=r3 \
+--plugin-opt=-enable-movable-region=true\
+--plugin-opt=-movable-region-section-prefix=movable.slot.\
+--plugin-opt=-global-merge-on-const \
+--plugin-opt=-inline-threshold=10 \
+--plugin-opt=-inline-normal-into-special-section=true \
+--plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar \
+--plugin-opt=save-temps \
+--plugin-opt=-pi32v2-enable-rep-memop \
+--sort-common \
+--dont-complain-call-overflow \
+
+ifeq ($(BANK_ENABLE),y)
+export LD_ARGS += \
+--plugin-opt=-enable-banked-function=true \
+--plugin-opt=-bank-stub-section-prefix=.bank.stub. \
+--plugin-opt=-bank-stub-prefix=__bank_stub_ \
+--plugin-opt=-banknum-section-prefix=.bank.code. \
+--plugin-opt=-banknum-map-file-list=$(ROOT)/apps/$(APP_CASE)/banknum_func.list \
+--plugin-opt=-banknum-section-map-file-list=$(ROOT)/apps/$(APP_CASE)/banknum_sec.list \
+--plugin-opt=-banknum-exclude-func-file-list=$(ROOT)/apps/$(APP_CASE)/banknum_exclude.list \
+#--plugin-opt=-custom-section-map-file-list=$(ROOT)/cpu/$(CPU)/cussec_map.ld \
+
+endif
+
+ifeq ($(NEED_USED_LIST),y)
+export LD_ARGS += \
+--plugin-opt=-used-symbol-file=$(addprefix $(ROOT)/apps/$(APP_CASE)/, sdk_used_list.used)
+
+endif
+
+# --gc-sections \
+
+# --plugin-opt=-pi32-const-spill \
+
+export CC_ARGS = \
+-target pi32v2 -mcpu=r3 \
+-mllvm -pi32v2-merge-max-offset=4096 \
+-mllvm -pi32v2-enable-simd=true \
+-Wuninitialized \
+-Wno-invalid-noreturn \
+-fno-common \
+-integrated-as \
+-Oz \
+-c \
+-g \
+-flto \
+-fallow-pointer-null \
+-fprefer-gnu-section \
+-Wno-shift-negative-value \
+
+ifeq ($(CONFIG_PSRAM_ENABLE),y)
+LD_ARGS +=\
+--plugin-opt=-pi32v2-large-program=true
+
+CC_ARGS +=\
+-mllvm -pi32v2-large-program=true
+
+endif
+
+# -Wall  \
+-ffreestanding \
+-fno-builtin \
+--gc-sections \
+-Wno-unused-function \
+-Wno-unused-const-variable \
+-Wno-unused-variable \
+-mllvm -pi32v2-large-program \
+
+#
+#-g \
+
+#debug for code size count;	SUPPORT_MS_EXTENSIONS = y or n
+export SUPPORT_MS_EXTENSIONS = n
+ifeq ($(SUPPORT_MS_EXTENSIONS), y)
+export CC_ARGS += \
+-fms-extensions \
+-DSUPPORT_MS_EXTENSIONS
+endif
+
+
+SYS_LIBS +=
+
