@@ -11,6 +11,7 @@
 *.ilk
 *.map
 *.exp
+*.ld
 
 # Precompiled Headers
 *.gch
@@ -29,7 +30,7 @@
 *.dylib
 
 # Executables
-*.exe
+# *.exe
 *.out
 *.app
 *.i*86
@@ -57,3 +58,4 @@ cscope.out
 *.bin
 *.fw
 *.txt
+*.ufw
