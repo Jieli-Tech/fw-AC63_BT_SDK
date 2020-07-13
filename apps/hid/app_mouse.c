@@ -24,7 +24,6 @@
 #include "btstack/btstack_task.h"
 #include "bt_common.h"
 #include "hid_user.h"
-#include "ble_api.h"
 /* #include "code_switch.h" */
 /* #include "omsensor/OMSensor_manage.h" */
 #include "le_common.h"
@@ -642,17 +641,15 @@ void bt_send_pair(u8 en)
 }
 
 
-static u8 auto_connection_addr[6];
+u8 connect_last_device_from_vm();
 int bt_connect_phone_back_start(void)
 {
     if (bt_hid_mode != HID_MODE_EDR) {
         return 0;
     }
 
-    if (get_current_poweron_memory_search_index(auto_connection_addr)) {
+    if (connect_last_device_from_vm()) {
         log_info("------bt_connect_phone_start------\n");
-        /* clear_current_poweron_memory_search_index(1); */
-        user_send_cmd_prepare(USER_CTRL_START_CONNEC_VIA_ADDR, 6, auto_connection_addr);
         return 1 ;
     }
     return 0;
@@ -701,11 +698,11 @@ static void bt_hci_event_connection(struct bt_event *bt)
 
 static void bt_hci_event_disconnect(struct bt_event *bt)
 {
-/* #if (RCSP_BTMATE_EN && RCSP_UPDATE_EN) */
-/*     if (get_jl_update_flag()) { */
-/*         JL_rcsp_event_to_user(DEVICE_EVENT_FROM_RCSP, MSG_JL_UPDATE_START, NULL, 0); */
-/*     } */
-/* #endif */
+    /* #if (RCSP_BTMATE_EN && RCSP_UPDATE_EN) */
+    /*     if (get_jl_update_flag()) { */
+    /*         JL_rcsp_event_to_user(DEVICE_EVENT_FROM_RCSP, MSG_JL_UPDATE_START, NULL, 0); */
+    /*     } */
+    /* #endif */
     bt_wait_phone_connect_control(1);
 }
 
@@ -742,10 +739,10 @@ static int bt_hci_event_handler(struct bt_event *bt)
         } else {
 
 #if TCFG_USER_BLE_ENABLE
-			if(1 == bt->value) {
-				extern void bt_ble_adv_enable(u8 enable);
-				bt_ble_adv_enable(0);
-			}
+            if (1 == bt->value) {
+                extern void bt_ble_adv_enable(u8 enable);
+                bt_ble_adv_enable(0);
+            }
 #endif
         }
     }
@@ -938,6 +935,9 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
             sys_auto_sniff_controle(0, bt->args);
         }
         break;
+    case  BT_STATUS_TRIM_OVER:
+        log_info("BT STATUS TRIM OVER\n");
+        break;
     default:
         log_info(" BT STATUS DEFAULT\n");
         break;
@@ -1096,8 +1096,8 @@ static void app_select_btmode(u8 mode)
 #ifndef CONFIG_CPU_BR30
         radio_set_eninv(0);
 #endif
-		bredr_power_put();
-		sys_auto_sniff_controle(0, NULL);
+        bredr_power_put();
+        sys_auto_sniff_controle(0, NULL);
 #endif
     } else {
         //edr

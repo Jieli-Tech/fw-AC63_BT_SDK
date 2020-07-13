@@ -86,52 +86,52 @@ struct bt_mesh_rpl {
 
 #if CONFIG_BT_MESH_FRIEND
 struct bt_mesh_friend {
-	u16_t lpn;
-	u8_t  recv_delay;
-	u8_t  fsn:1,
-	      send_last:1,
-	      pending_req:1,
-	      sec_update:1,
-	      pending_buf:1,
-	      valid:1,
-	      established:1;
-	s32_t poll_to;
+    u16_t lpn;
+    u8_t  recv_delay;
+    u8_t  fsn: 1,
+          send_last: 1,
+          pending_req: 1,
+          sec_update: 1,
+          pending_buf: 1,
+          valid: 1,
+          established: 1;
+    s32_t poll_to;
     u8_t  num_elem;
-	u16_t lpn_counter;
-	u16_t counter;
+    u16_t lpn_counter;
+    u16_t counter;
 
-	u16_t net_idx;
-
-#if NET_BUF_USE_MALLOC
-	u16_t *sub_list;
-#else
-	u16_t sub_list[FRIEND_SUB_LIST_SIZE];
-#endif /* NET_BUF_USE_MALLOC */
-
-	struct k_delayed_work timer;
+    u16_t net_idx;
 
 #if NET_BUF_USE_MALLOC
-	struct bt_mesh_friend_seg {
-		sys_slist_t queue;
-	} *seg;
+    u16_t *sub_list;
 #else
-	struct bt_mesh_friend_seg {
-		sys_slist_t queue;
-	} seg[FRIEND_SEG_RX];
+    u16_t sub_list[FRIEND_SUB_LIST_SIZE];
 #endif /* NET_BUF_USE_MALLOC */
 
-	struct net_buf *last;
+    struct k_delayed_work timer;
 
-	sys_slist_t queue;
-	u32_t queue_size;
+#if NET_BUF_USE_MALLOC
+    struct bt_mesh_friend_seg {
+        sys_slist_t queue;
+    } *seg;
+#else
+    struct bt_mesh_friend_seg {
+        sys_slist_t queue;
+    } seg[FRIEND_SEG_RX];
+#endif /* NET_BUF_USE_MALLOC */
 
-	/* Friend Clear Procedure */
-	struct {
-		u32_t start;                  /* Clear Procedure start */
-		u16_t frnd;                   /* Previous Friend's address */
-		u16_t repeat_sec;             /* Repeat timeout in seconds */
-		struct k_delayed_work timer;  /* Repeat timer */
-	} clear;
+    struct net_buf *last;
+
+    sys_slist_t queue;
+    u32_t queue_size;
+
+    /* Friend Clear Procedure */
+    struct {
+        u32_t start;                  /* Clear Procedure start */
+        u16_t frnd;                   /* Previous Friend's address */
+        u16_t repeat_sec;             /* Repeat timeout in seconds */
+        struct k_delayed_work timer;  /* Repeat timer */
+    } clear;
 };
 #endif /* CONFIG_BT_MESH_FRIEND */
 

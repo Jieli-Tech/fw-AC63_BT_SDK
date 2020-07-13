@@ -233,7 +233,7 @@ typedef enum {
     param_len是数据长度，param发送数据指针
     返回0,表示准备成功，会PENDing发完才返回
     3表示上一包数据没发完，*/
-    USER_CTRL_SPP_SEND_DATA, //len <= 512 
+    USER_CTRL_SPP_SEND_DATA, //len <= 512
     USER_CTRL_SPP_TRY_SEND_DATA,//
     USER_CTRL_SPP_UPDATA_DATA,
     //serial port profile disconnect command
@@ -243,7 +243,7 @@ typedef enum {
 
 ///pbg发送命令
     USER_CTRL_PBG_CMD_BEGIN,
-    USER_CTRL_PBG_SEND_DATA,//len <= 512 
+    USER_CTRL_PBG_SEND_DATA,//len <= 512
     USER_CTRL_PBG_TRY_SEND_DATA,//
     USER_CTRL_PBG_CMD_END,
 
@@ -287,6 +287,7 @@ typedef enum {
     BT_STATUS_POWER_ON   = 1,   /*上电*/
     BT_STATUS_POWER_OFF  = 2,
     BT_STATUS_INIT_OK,          /*初始化完成*/
+    BT_STATUS_EXIT_OK,          /*蓝牙退出完成*/
     BT_STATUS_START_CONNECTED,        /*开始连接*/
     BT_STATUS_FIRST_CONNECTED,        /*连接成功*/
     BT_STATUS_SECOND_CONNECTED,        /*连接成功*/
@@ -341,6 +342,8 @@ typedef enum {
 
 
     BT_STATUS_BROADCAST_STATE,/*braoadcaset中*/
+
+    BT_STATUS_TRIM_OVER,        /*测试盒TRIM完成*/
 } STATUS_FOR_USER;
 
 typedef enum {
@@ -379,6 +382,7 @@ struct sniff_ctrl_config_t {
     u8	sniff_addr[6];
 };
 extern u32 user_send_cmd_prepare(USER_CMD_TYPE cmd, u16 param_len, u8 *param);
+
 
 /*
 u16 get_curr_channel_state();  与  channel  判断区分
@@ -468,6 +472,33 @@ extern u8 bt_api_enter_sniff_status_check(u16 time_cnt, u8 *addr);
 extern void user_cmd_timer_init();
 extern void remove_user_cmd_timer();
 extern u8 get_auto_connect_state(u8 *addr);
+extern u8 get_esco_coder_busy_flag();
+extern u8 hci_standard_connect_check(void);
+extern void set_stack_exiting(u8 exit);
+extern int a2dp_media_packet_codec_type(u8 *data);
+extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
+void a2dp_media_free_packet(void *_packet);
+int a2dp_media_get_packet(u8 **frame);
+extern int a2dp_media_get_packet_num();
+extern u8 connect_last_device_from_vm();
+extern u8 hci_standard_connect_check(void);
+extern void __bt_set_hid_independent_flag(bool flag);
+extern bool get_esco_busy_flag();
+extern int btstack_exit();
+extern int sbc_energy_check(u8 *packet, u16 size);
+extern int a2dp_source_init(void *buf, u16 len, int deal_flag);
+extern int hfp_ag_buf_init(void *buf, int size, int deal_flag);
+extern void __set_emitter_enable_flag(u8 flag);
+extern void hci_cancel_inquiry();
+extern u8 hci_standard_connect_check(void);
+extern void __emitter_send_media_toggle(u8 toggle);
+extern u8 get_total_connect_dev(void);
+extern u8 get_remote_dev_info_index();
+extern u8 check_tws_le_aa(void);
+extern u8 get_esco_coder_busy_flag();
+extern void tws_api_set_connect_aa(int);
+extern void tws_le_acc_generation_init(void);
+extern void tws_api_clear_connect_aa();
 
 #define BD_CLASS_WEARABLE_HEADSET	0x240404/*ios10.2 display headset icon*/
 #define BD_CLASS_HANDS_FREE			0x240408/*ios10.2 display bluetooth icon*/

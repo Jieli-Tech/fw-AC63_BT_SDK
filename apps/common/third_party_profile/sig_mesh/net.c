@@ -276,7 +276,7 @@ void friend_cred_refresh(u16_t net_idx)
     BT_MESH_FEATURES_IS_SUPPORT_OPTIMIZE(BT_MESH_FEAT_LOW_POWER | BT_MESH_FEAT_FRIEND);
 
     int i;
-    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)? 
+    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) ?
                             FRIEND_CRED_COUNT : FRIEND_CRED_COUNT_LPN;
 
     for (i = 0; i < friend_cred_count; i++) {
@@ -300,7 +300,7 @@ int friend_cred_update(struct bt_mesh_subnet *sub)
     BT_MESH_FEATURES_IS_SUPPORT_OPTIMIZE(BT_MESH_FEAT_LOW_POWER | BT_MESH_FEAT_FRIEND) 1;
 
     int err, i;
-    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)? 
+    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) ?
                             FRIEND_CRED_COUNT : FRIEND_CRED_COUNT_LPN;
 
     BT_DBG("net_idx 0x%04x", sub->net_idx);
@@ -332,7 +332,7 @@ struct friend_cred *friend_cred_create(struct bt_mesh_subnet *sub, u16_t addr,
 {
     struct friend_cred *cred;
     int i, err;
-    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)? 
+    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) ?
                             FRIEND_CRED_COUNT : FRIEND_CRED_COUNT_LPN;
 
     BT_DBG("net_idx 0x%04x addr 0x%04x", sub->net_idx, addr);
@@ -394,7 +394,7 @@ void friend_cred_clear(struct friend_cred *cred)
 int friend_cred_del(u16_t net_idx, u16_t addr)
 {
     int i;
-    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)? 
+    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) ?
                             FRIEND_CRED_COUNT : FRIEND_CRED_COUNT_LPN;
 
     for (i = 0; i < friend_cred_count; i++) {
@@ -418,7 +418,7 @@ int friend_cred_get(struct bt_mesh_subnet *sub, u16_t addr, u8_t *nid,
                     const u8_t **enc, const u8_t **priv)
 {
     int i;
-    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)? 
+    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) ?
                             FRIEND_CRED_COUNT : FRIEND_CRED_COUNT_LPN;
 
     BT_DBG("net_idx 0x%04x addr 0x%04x", sub->net_idx, addr);
@@ -538,7 +538,7 @@ int bt_mesh_net_create(u16_t idx, u8_t flags, const u8_t key[16],
     sub->net_idx = idx;
 
     if (IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) {
         sub->node_id = BT_MESH_NODE_IDENTITY_STOPPED;
     } else {
         sub->node_id = BT_MESH_NODE_IDENTITY_NOT_SUPPORTED;
@@ -890,8 +890,8 @@ int bt_mesh_net_encode(struct bt_mesh_net_tx *tx, struct net_buf_simple *buf,
         net_buf_simple_push_u8(buf, tx->ctx->send_ttl);
     }
 
-    if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER) && 
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_LOW_POWER) && tx->friend_cred) {
+    if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER) &&
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_LOW_POWER) && tx->friend_cred) {
         if (friend_cred_get(tx->sub, BT_MESH_ADDR_UNASSIGNED,
                             &nid, &enc, &priv)) {
             BT_WARN("Falling back to master credentials");
@@ -1085,7 +1085,7 @@ static int friend_decrypt(struct bt_mesh_subnet *sub, const u8_t *data,
                           struct net_buf_simple *buf)
 {
     int i;
-    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)? 
+    int friend_cred_count = BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) ?
                             FRIEND_CRED_COUNT : FRIEND_CRED_COUNT_LPN;
 
     BT_DBG("NID 0x%02x net_idx 0x%04x", NID(data), sub->net_idx);
@@ -1462,8 +1462,8 @@ void bt_mesh_net_start(void)
         bt_mesh_adv_update();
     }
 
-    if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER) && 
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_LOW_POWER)) {
+    if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER) &&
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_LOW_POWER)) {
         bt_mesh_lpn_init();
     } else {
         bt_mesh_scan_enable();
@@ -1499,16 +1499,16 @@ void bt_mesh_net_init(void)
 {
     // ivu refresh
     // ... to do
-    
+
 #if NET_BUF_TEST_EN
-extern void net_buf_test(void);
+    extern void net_buf_test(void);
     net_buf_test();
 #endif /* NET_BUF_TEST_EN */
 
 #if NET_BUF_USE_MALLOC
-extern void bt_mesh_friend_buf_alloc(void);
-    if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) && 
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
+    extern void bt_mesh_friend_buf_alloc(void);
+    if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
         bt_mesh_friend_buf_alloc();
     }
 #endif /* NET_BUF_USE_MALLOC */

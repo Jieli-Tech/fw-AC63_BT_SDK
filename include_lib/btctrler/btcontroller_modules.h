@@ -52,9 +52,7 @@ void hci_controller_init(void);
 
 int le_controller_set_mac(void *addr);
 
-void bt_reset_cap(u8 sel_l, u8 sel_r);
 
-void bt_set_tx_power(u8 txpower);
 
 
 #endif

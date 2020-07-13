@@ -34,24 +34,17 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
-#if TRANS_AT_COM 
+#if CONFIG_APP_AT_COM 
 
 #define TEST_AUTO_BT_OPEN          0   //for test 
 
 #define WAIT_DISCONN_TIME_MS     (300)
 
-void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
-
-const ci_transport_t *at_transport_uart_instance(void);
-
-void at_send_event(u8 opcode, const u8 *packet, int size);
-
 extern const u8 *bt_get_mac_addr();
 extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 void sys_auto_sniff_controle(u8 enable, u8 *addr);
-
-static const u8 bt_address_default[] = {0x11, 0x22, 0x33, 0x66, 0x77, 0x88};
+void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 
 static u8 is_app_active = 0;
 
@@ -84,7 +77,6 @@ static void bt_function_select_init()
         printf("\n-----edr + ble 's address-----");
         printf_buf((void *)bt_get_mac_addr(), 6);
         printf_buf((void *)tmp_ble_addr, 6);
-        /* bt_set_tx_power(9);//0~9 */
     }
 #endif
 }
@@ -132,7 +124,7 @@ void at_set_soft_poweroff(void)
 static void app_start()
 {
     log_info("=======================================");
-    log_info("-------------at_com DEMO-----------------");
+    log_info("-------------at_com demo---------------");
     log_info("=======================================");
 
     clk_set("sys", BT_NORMAL_HZ);

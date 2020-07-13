@@ -80,6 +80,8 @@ u8 *syscfg_ptr_read(u16 item_id, u16 *len);
 
 #define     VM_USB_MIC_GAIN             6
 
+#define		VM_PMU_VOLTAGE              7
+
 #define     VM_ALARM_0                 (20)
 #define     VM_ALARM_1                 (VM_ALARM_0+1)
 #define     VM_ALARM_2                 (VM_ALARM_0+2)
@@ -183,6 +185,7 @@ u8 *syscfg_ptr_read(u16 item_id, u16 *len);
 #define     CFG_TWS_CHANNEL             114
 #define 	VM_DMA_RAND					115
 #define 	VM_GMA_MAC					116
+#define 	VM_TME_AUTH_COOKIE			116
 
 #if (VM_ITEM_MAX_NUM > 128)
 #define		CFG_FLASH_BREAKPOINT0		117

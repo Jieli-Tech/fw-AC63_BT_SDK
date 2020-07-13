@@ -473,7 +473,7 @@ static struct net_buf *encode_friend_ctl(struct bt_mesh_friend *frnd,
 
     info.iv_index = BT_MESH_NET_IVI_TX;
 
-#if NET_BUF_FREE_EN 
+#if NET_BUF_FREE_EN
     struct net_buf *buf = create_friend_pdu(frnd, &info, sdu);
 
     buf->flags |= NET_BUF_FRIEND_POLL_CACHE;
@@ -935,10 +935,10 @@ int bt_mesh_friend_req(struct bt_mesh_net_rx *rx, struct net_buf_simple *buf)
         return -EINVAL;
     }
 
-	if (!BT_MESH_ADDR_IS_UNICAST(rx->ctx.addr + msg->num_elem - 1)) {
-		BT_WARN("LPN elements stretch outside of unicast range");
-		return -EINVAL;
-	}
+    if (!BT_MESH_ADDR_IS_UNICAST(rx->ctx.addr + msg->num_elem - 1)) {
+        BT_WARN("LPN elements stretch outside of unicast range");
+        return -EINVAL;
+    }
 
     if (!MIN_QUEUE_SIZE_LOG(msg->criteria)) {
         BT_WARN("Prohibited Minimum Queue Size in Friend Request");
@@ -952,7 +952,7 @@ int bt_mesh_friend_req(struct bt_mesh_net_rx *rx, struct net_buf_simple *buf)
         return 0;
     }
 
-	frnd = bt_mesh_friend_find(rx->sub->net_idx, rx->ctx.addr, true, false);
+    frnd = bt_mesh_friend_find(rx->sub->net_idx, rx->ctx.addr, true, false);
     if (frnd) {
         BT_WARN("Existing LPN re-requesting Friendship");
         friend_clear(frnd);
@@ -974,7 +974,7 @@ int bt_mesh_friend_req(struct bt_mesh_net_rx *rx, struct net_buf_simple *buf)
 
 init_friend:
     frnd->lpn = rx->ctx.addr;
-	frnd->num_elem = msg->num_elem;
+    frnd->num_elem = msg->num_elem;
     frnd->net_idx = rx->sub->net_idx;
     frnd->recv_delay = msg->recv_delay;
     frnd->poll_to = poll_to * 100U;
@@ -991,8 +991,8 @@ init_friend:
 
     FRIEND_REQ_IO_0();
     k_delayed_work_submit(&frnd->timer,
-                          offer_delay(frnd, rx->ctx.recv_rssi, 
-                              msg->criteria));
+                          offer_delay(frnd, rx->ctx.recv_rssi,
+                                      msg->criteria));
 
     friend_cred_create(rx->sub, frnd->lpn, frnd->lpn_counter,
                        frnd->counter);
@@ -1506,15 +1506,15 @@ void bt_mesh_friend_buf_alloc(void)
     frnd_cred_p += net_buf_p;
 
     NET_BUF_MALLOC(friend_buf_pool,
-            net_buf_p, net_buf_data_p, (struct friend_adv *)adv_pool_p,
-            FRIEND_BUF_COUNT);
+                   net_buf_p, net_buf_data_p, (struct friend_adv *)adv_pool_p,
+                   FRIEND_BUF_COUNT);
 
     bt_mesh.frnd = (struct bt_mesh_friend *)frnd_p;
     for (int i = 0; i < CONFIG_BT_MESH_FRIEND_LPN_COUNT; i++) {
         bt_mesh.frnd[i].sub_list = (u16_t *)sub_list_p;
         bt_mesh.frnd[i].seg = (struct bt_mesh_friend_seg *)seg_p;
     }
-    
+
     bt_mesh_friend_cred_malloc((void *)frnd_cred_p);
 
     BT_DBG("total buf_size=0x%x", buf_size);

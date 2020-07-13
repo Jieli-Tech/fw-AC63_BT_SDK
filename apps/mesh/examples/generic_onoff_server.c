@@ -6,10 +6,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "btstack/bluetooth.h"
 #include "system/includes.h"
-#include "btstack/le_user.h"
 #include "bt_common.h"
-#include "btstack/ble_data_types.h"
 #include "api/sig_mesh_api.h"
 #include "model_api.h"
 

@@ -16,10 +16,34 @@
 
 #define CONFIG_DEBUG_ENABLE
 
-// #include "usb_common_def.h"
-// #include "bt_profile_def.h"
+
+
+//app case 选择,只能选1个,要配置对应的board_config.h
+#define CONFIG_APP_SPP_LE                 1
+#define CONFIG_APP_AT_COM                 0
+#define CONFIG_APP_DONGLE                 0
+
+//配置对应的APP的蓝牙功能
+#if CONFIG_APP_SPP_LE
+#define TRANS_DATA_EN                     1 //蓝牙双模透传
+#define TRANS_CLIENT_EN                   0 //蓝牙(ble主机)透传
+
+#if (TRANS_DATA_EN + TRANS_CLIENT_EN > 1)
+#error "they can not enable at the same time!"
+#endif
+#endif
+
+#if CONFIG_APP_AT_COM
+#define TRANS_AT_COM                      1 //串口控制对接蓝牙双模透传
+#endif
+
+#if CONFIG_APP_DONGLE
+#define TRANS_DONGLE_EN                   1 //蓝牙(ble主机)
+#endif
 
 #include "board_config.h"
+
+#include "usb_common_def.h"
 
 #include "btcontroller_mode.h"
 
@@ -72,22 +96,14 @@
 #define TCFG_UART0_ENABLE					DISABLE_THIS_MOUDLE
 #endif
 
-#define TRANS_DATA_EN                     1 //蓝牙双模透传  
-
-#define TRANS_AT_COM                      0 //串口控制对接蓝牙双模透传 
-
-#define TRANS_CLIENT_EN                   0 //蓝牙双模(ble主机)透传 
 
 #define BT_FOR_APP_EN                     0
 
 //需要app(BLE)升级要开一下宏定义
-#define RCSP_BTMATE_EN                    0 
-#define RCSP_UPDATE_EN                    0 
+#define RCSP_BTMATE_EN                    0
+#define RCSP_UPDATE_EN                    0
 #define UPDATE_MD5_ENABLE                 0
 
-#if (TRANS_DATA_EN + TRANS_CLIENT_EN + TRANS_AT_COM > 1)
-#error "they can not enable at the same time!"
-#endif
 
 #ifdef CONFIG_SDFILE_ENABLE
 #define SDFILE_DEV				"sdfile"
@@ -150,8 +166,3 @@
 
 #endif
 
-//*********************************************************************************//
-//                              usb app差异化配置                                  //
-//*********************************************************************************//
-#undef USB_DEVICE_CLASS_CONFIG
-#define USB_DEVICE_CLASS_CONFIG (SPEAKER_CLASS|MIC_CLASS|HID_CLASS)

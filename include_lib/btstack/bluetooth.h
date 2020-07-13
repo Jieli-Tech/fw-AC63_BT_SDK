@@ -3,6 +3,30 @@
 
 #include "typedef.h"
 
+
+//LE
+#include "le/ble_data_types.h"
+#include "le/ble_api.h"
+#include "le/le_user.h"
+#include "le/att.h"
+#include "le/gatt.h"
+#include "le/sm.h"
+
+
+//Classic
+
+
+//Third-party
+#include "third_party/baidu/dma_protobuf.h"
+#include "third_party/baidu/dueros_dma.h"
+#include "third_party/baidu/dueros_dma_pb.h"
+#include "third_party/baidu/dueros_platform.h"
+
+
+//Common
+#include "btstack_event.h"
+
+
 #define HCI_COMMAND_DATA_PACKET				0x01
 #define HCI_ACL_DATA_PACKET	    			0x02
 #define HCI_SCO_DATA_PACKET	    			0x03
@@ -282,6 +306,7 @@
 // last used HCI_EVENT in 4.1 is 0x57
 
 
+#define HCI_EVENT_VENDOR_FRE_OFFSET_TRIM                   0xF6
 #define HCI_EVENT_VENDOR_ENCRY_COMPLETE                    0xF7
 #define HCI_EVENT_VENDOR_NO_RECONN_ADDR                    0xF8
 #define HCI_EVENT_VENDOR_SETUP_COMPLETE                    0xF9
@@ -291,6 +316,8 @@
 #define HCI_EVENT_VENDOR_REMOTE_UPDATE                     0xFD
 #define HCI_EVENT_VENDOR_REMOTE_TEST                       0xFE
 #define HCI_EVENT_VENDOR_SPECIFIC                          0xFF
+
+#define BTSTACK_EVENT_HCI_CONNECTIONS_DELETE                  0x6D
 
 /**
  * @format 11H11B2221

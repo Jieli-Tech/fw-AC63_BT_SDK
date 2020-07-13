@@ -294,7 +294,7 @@ const struct charge_wakeup charge_wkup = {
 const struct wakeup_param wk_param = {
     .filter     = PORT_FLT_2ms,
 	.port[1]    = &port0,
-#if(!TCFG_UART0_ENABLE || TCFG_UART0_TX_PORT !=	IO_PORT_DP)					
+#if(!TCFG_UART0_ENABLE || TCFG_UART0_TX_PORT !=	IO_PORT_DP)
 	.port[2]    = &port1,
 #endif
 	.sub        = &sub_wkup,
@@ -382,7 +382,7 @@ void board_power_init(void)
     power_mclr(0);
     //< close long key reset
     power_pin_reset(0);
-    
+
     power_set_callback(TCFG_LOWPOWER_LOWPOWER_SEL, sleep_enter_callback, sleep_exit_callback, board_set_soft_poweroff);
 
 	power_keep_dacvdd_en(0);

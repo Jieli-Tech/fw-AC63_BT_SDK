@@ -8,7 +8,7 @@
 
 #include "adaptation.h"
 #include "ble/hci_ll.h"
-#include "ble_api.h"
+#include "btstack/bluetooth.h"
 
 #define LOG_TAG             "[MESH-scan_core]"
 #define LOG_INFO_ENABLE
@@ -21,9 +21,15 @@
 
 #if ADAPTATION_COMPILE_DEBUG
 
-int bt_le_scan_start(bt_le_scan_cb_t cb) { return 0; }
+int bt_le_scan_start(bt_le_scan_cb_t cb)
+{
+    return 0;
+}
 
-int bt_le_scan_stop(void) { return 0; }
+int bt_le_scan_stop(void)
+{
+    return 0;
+}
 
 #else /* ADAPTATION_COMPILE_DEBUG */
 
@@ -64,7 +70,6 @@ struct bt_le_scan_param {
 
 static bt_le_scan_cb_t *scan_dev_found_cb;
 
-extern void reverse_bytes(const u8 *src, u8 *dst, u32 len);
 
 static void ble_set_scan_param(u8 scan_type, u16 scan_interval, u16 scan_window)
 {

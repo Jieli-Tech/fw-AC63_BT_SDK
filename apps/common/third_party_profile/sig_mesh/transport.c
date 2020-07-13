@@ -145,8 +145,8 @@ static int send_unseg(struct bt_mesh_net_tx *tx, struct net_buf_simple *sdu,
 
     net_buf_add_mem(buf, sdu->data, sdu->len);
 
-    if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) && 
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
+    if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
         if (bt_mesh_friend_enqueue_tx(tx, BT_MESH_FRIEND_PDU_SINGLE,
                                       NULL, &buf->b) &&
             BT_MESH_ADDR_IS_UNICAST(tx->ctx->addr)) {
@@ -397,7 +397,7 @@ static int send_seg(struct bt_mesh_net_tx *net_tx, struct net_buf_simple *sdu,
         tx->seg[seg_o] = net_buf_ref(seg);
 
         if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
-                BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
+            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
             enum bt_mesh_friend_pdu_type type;
 
             if (seg_o == tx->seg_n) {
@@ -430,8 +430,8 @@ static int send_seg(struct bt_mesh_net_tx *net_tx, struct net_buf_simple *sdu,
         }
     }
 
-    if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER) && 
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_LOW_POWER) &&
+    if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER) &&
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_LOW_POWER) &&
         bt_mesh_lpn_established()) {
         bt_mesh_lpn_poll();
     }
@@ -626,7 +626,7 @@ static int sdu_recv(struct bt_mesh_net_rx *rx, u32_t seq, u8_t hdr,
     }
 
     if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) && !rx->local_match) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) && !rx->local_match) {
         BT_DBG("Ignoring PDU for LPN 0x%04x of this Friend",
                rx->ctx.recv_dst);
         return 0;
@@ -748,7 +748,7 @@ static int trans_ack(struct bt_mesh_net_rx *rx, u8_t hdr,
     seq_zero = (seq_zero >> 2) & 0x1fff;
 
     if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) && rx->friend_match) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) && rx->friend_match) {
         BT_DBG("Ack for LPN 0x%04x of this Friend", rx->ctx.recv_dst);
         /* Best effort - we don't have enough info for true SeqAuth */
         *seq_auth = SEQ_AUTH(BT_MESH_NET_IVI_RX(rx), seq_zero);
@@ -850,7 +850,7 @@ static int ctl_recv(struct bt_mesh_net_rx *rx, u8_t hdr,
     }
 
     if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) && !bt_mesh_lpn_established()) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) && !bt_mesh_lpn_established()) {
         switch (ctl_op) {
         case TRANS_CTL_OP_FRIEND_POLL:
             /* BT_INFO("TRANS_CTL_OP_FRIEND_POLL"); */
@@ -1045,8 +1045,8 @@ static void seg_rx_reset(struct seg_rx *rx, bool full_reset)
     k_delayed_work_cancel(&rx->ack);
 
     if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) && rx->obo &&
-                rx->block != BLOCK_COMPLETE(rx->seg_n)) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) && rx->obo &&
+        rx->block != BLOCK_COMPLETE(rx->seg_n)) {
         BT_WARN("Clearing incomplete buffers from Friend queue");
         bt_mesh_friend_clear_incomplete(rx->sub, rx->src, rx->dst,
                                         &rx->seq_auth);
@@ -1386,7 +1386,7 @@ int bt_mesh_trans_recv(struct net_buf_simple *buf, struct bt_mesh_net_rx *rx)
     int err;
 
     if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
         rx->friend_match = bt_mesh_friend_match(rx->sub->net_idx,
                                                 rx->ctx.recv_dst);
     } else {
@@ -1451,7 +1451,7 @@ int bt_mesh_trans_recv(struct net_buf_simple *buf, struct bt_mesh_net_rx *rx)
 
     net_buf_simple_restore(buf, &state);
 
-    if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) && 
+    if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
         BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND) && rx->friend_match && !err) {
         if (seq_auth == TRANS_SEQ_AUTH_NVAL) {
             bt_mesh_friend_enqueue_rx(rx, pdu_type, NULL, buf);

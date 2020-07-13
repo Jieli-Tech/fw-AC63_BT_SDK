@@ -144,11 +144,14 @@ static void test_timer_handler(void)
 
 void transport_spp_init(void)
 {
+	log_info("transport_spp_init\n");
+#if (USER_SUPPORT_PROFILE_SPP==1)
     spp_state = 0;
-    spp_get_operation_table(&spp_api);
-    spp_api->regist_recieve_cbk(0, transport_spp_recieve_cbk);
+	spp_get_operation_table(&spp_api);
+	spp_api->regist_recieve_cbk(0, transport_spp_recieve_cbk);
     spp_api->regist_state_cbk(0, transport_spp_state_cbk);
     spp_api->regist_wakeup_send(NULL, transport_spp_send_wakeup);
+#endif
 
 #if TEST_SPP_DATA_RATE
     spp_timer_handle  = sys_timer_add(NULL, test_timer_handler, SPP_TIMER_MS);

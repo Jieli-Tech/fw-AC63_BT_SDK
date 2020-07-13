@@ -555,15 +555,15 @@ static void mod_set_sub(bool vnd, u8 model_count)
 
         get_elem_and_mod_idx(vnd, i, &elem_idx, &mod_idx);
         BT_INFO("Decoded elem_idx:%u; mod_idx:%u",
-               elem_idx, mod_idx);
+                elem_idx, mod_idx);
 
         mod = bt_mesh_model_get(vnd, elem_idx, mod_idx);
         memcpy((u8 *)mod->groups, (u8 *)_mod_sub.groups, sizeof(mod->groups));
 
         BT_INFO("Decoded %u subscribed group addresses for model",
-               sizeof(mod->groups) / sizeof(mod->groups[0]));
+                sizeof(mod->groups) / sizeof(mod->groups[0]));
         BT_INFO("Restored model subscribed, groups[0]:0x%x, groups[1]:0x%x ",
-               _mod_sub.groups[0], _mod_sub.groups[1]);
+                _mod_sub.groups[0], _mod_sub.groups[1]);
     }
 }
 
@@ -587,7 +587,7 @@ static void mod_set_pub(bool vnd, u8 model_count)
 
         get_elem_and_mod_idx(vnd, i, &elem_idx, &mod_idx);
         BT_INFO("Decoded elem_idx:%u; mod_idx:%u",
-               elem_idx, mod_idx);
+                elem_idx, mod_idx);
 
         mod = bt_mesh_model_get(vnd, elem_idx, mod_idx);
 
@@ -600,7 +600,7 @@ static void mod_set_pub(bool vnd, u8 model_count)
         mod->pub->count         = 0;
 
         BT_INFO("Restored model publication, dst 0x%04x app_idx 0x%03x",
-               _mod_pub.pub.addr, _mod_pub.pub.key);
+                _mod_pub.pub.addr, _mod_pub.pub.key);
     }
 }
 
@@ -681,7 +681,7 @@ static int subnet_init(struct bt_mesh_subnet *sub)
     }
 
     if (IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) {
         sub->node_id = BT_MESH_NODE_IDENTITY_STOPPED;
     } else {
         sub->node_id = BT_MESH_NODE_IDENTITY_NOT_SUPPORTED;
@@ -764,7 +764,7 @@ static int mesh_commit(void)
     bt_mesh.valid = 1;
 
     if (IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) {
         bt_mesh_proxy_identity_enable();
     }
     bt_mesh_net_start();

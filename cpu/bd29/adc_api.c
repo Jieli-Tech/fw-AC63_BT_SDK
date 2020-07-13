@@ -9,7 +9,6 @@
 #include "asm/power_interface.h"
 #include "jiffies.h"
 
-u32 adc_sample(u32 ch);
 
 static volatile u16 _adc_res;
 static volatile u16 cur_ch_value;
@@ -27,6 +26,9 @@ struct adc_info_t {
 static struct adc_info_t adc_queue[ADC_MAX_CH + ENABLE_OCCUPY_MODE];
 
 static u16 vbg_adc_value;
+static u16 vbat_adc_value;
+
+static u8 vbat_vddio_tieup = 0;
 
 #define     ADC_SRC_CLK clk_get("adc")
 
@@ -94,11 +96,23 @@ static u32 adc_get_next_ch(u32 cur_ch)
     }
     return 0;
 }
+
+void adc_set_vbat_vddio_tieup(u8 en)
+{
+    vbat_vddio_tieup = !!en;
+}
+
 u32 adc_get_value(u32 ch)
 {
-    if (ch == AD_CH_LDOREF) {
-        return vbg_adc_value;    
-    } 
+    if (vbat_vddio_tieup) {
+        if (ch == AD_CH_VBAT) {
+            return vbat_adc_value;
+        }
+    } else {
+        if (ch == AD_CH_LDOREF) {
+            return vbg_adc_value;
+        }
+    }
 
     for (int i = 0; i < ADC_MAX_CH; i++) {
         if (adc_queue[i].ch == ch) {
@@ -108,9 +122,9 @@ u32 adc_get_value(u32 ch)
     return 0;
 }
 
-static u32 adc_value_to_voltage(u32 adc_vbg, u32 adc_ch_val)
+u32 adc_value_to_voltage(u32 adc_vbg, u32 adc_ch_val)
 {
-#define CENTER  801 
+#define CENTER  801
 
     u32 adc_res = adc_ch_val;
     u32 adc_trim = get_vbg_trim();
@@ -137,7 +151,7 @@ u32 adc_get_voltage(u32 ch)
 u32 adc_check_vbat_lowpower()
 {
     u32 vbat = adc_get_value(AD_CH_VBAT);
-    return __builtin_abs(vbat-255) < 5;
+    return __builtin_abs(vbat - 255) < 5;
 }
 
 void adc_close()
@@ -271,7 +285,7 @@ void adc_scan(void *priv)
     if (JL_ADC->CON & BIT(4)) {
         return ;
     }
-    
+
     if (adc_sample_flag) {
         if (adc_sample_flag == 2) {
             vbg_adc_value = _adc_res;
@@ -311,26 +325,40 @@ void _adc_init(u32 sys_lvd_en)
     JL_ADC->CON = 0;
     JL_ADC->CON = 0;
 
-    u32 vbat_queue_ch = adc_add_sample_ch(AD_CH_VBAT);
-    adc_set_sample_freq(AD_CH_VBAT, 30000);
-
     adc_pmu_detect_en(1);
 
     u32 i;
+    vbat_adc_value = 0;
+    adc_sample(AD_CH_VBAT);
+    for (i = 0; i < 10; i++) {
+        while (!(JL_ADC->CON & BIT(7)));
+        vbat_adc_value += JL_ADC->RES;
+        JL_ADC->CON |= BIT(6);
+    }
+    vbat_adc_value /= 10;
+    printf("vbat_adc_value = %d\n", vbat_adc_value);
+
     vbg_adc_value = 0;
     adc_sample(AD_CH_LDOREF);
     for (i = 0; i < 10; i++) {
-        while(!(JL_ADC->CON & BIT(7)));
+        while (!(JL_ADC->CON & BIT(7)));
         vbg_adc_value += JL_ADC->RES;
         JL_ADC->CON |= BIT(6);
     }
     vbg_adc_value /= 10;
     printf("vbg_adc_value = %d\n", vbg_adc_value);
 
-    adc_sample(AD_CH_VBAT);
-    while(!(JL_ADC->CON & BIT(7)));
-    _adc_res = JL_ADC->RES;
-    adc_queue[vbat_queue_ch].value = _adc_res;
+    u32 vbat_queue_ch = 0;
+    u32 vbg_queue_ch = 0;
+    if (vbat_vddio_tieup) {
+        vbg_queue_ch = adc_add_sample_ch(AD_CH_LDOREF);
+        adc_set_sample_freq(AD_CH_LDOREF, 30000);
+        adc_queue[vbg_queue_ch].value = vbg_adc_value;
+    } else {
+        vbat_queue_ch = adc_add_sample_ch(AD_CH_VBAT);
+        adc_set_sample_freq(AD_CH_VBAT, 30000);
+        adc_queue[vbat_queue_ch].value = vbat_adc_value;
+    }
 
     request_irq(IRQ_SARADC_IDX, 0, adc_isr, 0);
 
@@ -345,181 +373,11 @@ void _adc_init(u32 sys_lvd_en)
     /* while(1); */
 }
 
-
-typedef enum {
-    closest,        //最接近目标值，不管偏大还是偏小
-    closest_min,    //最接近目标值，并小于目标值
-    closest_max,    //最接近目标值，并大于目标值
-} choose_type;
-static u8 get_aims_level(u16 aims, u16 *tmp_buf, u8 len, choose_type choose)
-{
-    u16 diff;
-    u16 min_diff0 = -1;
-    u16 min_diff1 = -1;
-    u8 closest_min_level = -1;
-    u8 closest_max_level = -1;
-    for (u8 i = 0; i < len; i ++) {
-        if (tmp_buf[i] >= aims) {
-            diff = tmp_buf[i] - aims;
-            if (diff < min_diff0) {
-                min_diff0 = diff;
-                closest_max_level = i;
-            }
-        } else {
-            diff = aims - tmp_buf[i];
-            if (diff < min_diff1) {
-                min_diff1 = diff;
-                closest_min_level = i;
-            }
-        }
-    }
-    u8 closest_level = -1;
-    if (min_diff0 < min_diff1) {
-        closest_level = closest_max_level;
-    } else {
-        closest_level = closest_min_level;
-    }
-    u8 res_level = -1;
-    if (choose == closest_min) {
-        res_level = closest_min_level;
-    } else if (choose == closest_max) {
-        res_level = closest_max_level;
-    } else {
-        res_level = closest_level;
-    }
-    return res_level;
-}
-
-static u32 get_ch_voltage(u32 ch)
-{
-    adc_pmu_detect_en(1);
-    u32 i;
-    u32 tmp_vbg = 0;
-    adc_sample(AD_CH_LDOREF);
-    for (i = 0; i < 10; i++) {
-        while (!(JL_ADC->CON & BIT(7)));
-        tmp_vbg += JL_ADC->RES;
-        JL_ADC->CON |= BIT(6);
-    }
-    tmp_vbg /= 10;
-
-    u32 tmp_ch_val = 0;
-    adc_sample(ch);
-    for (int i = 0; i < 10; i++) {
-        while (!(JL_ADC->CON & BIT(7)));
-        tmp_ch_val += JL_ADC->RES;
-        JL_ADC->CON |= BIT(6);
-    }
-    tmp_ch_val /= 10;
-    
-    return adc_value_to_voltage(tmp_vbg, tmp_ch_val);
-}
-
-static u16 sysvdd_voltage[16];
-static void record_sysvdd_voltage(void)
-{
-    u8 old_level = P33_CON_GET(P3_ANA_CON9);
-    for (u8 i = 0; i < 16; i ++) { 
-        P33_CON_SET(P3_ANA_CON9, 0, 4, i);
-        delay(2000);
-        sysvdd_voltage[i] = get_ch_voltage(AD_CH_SYSVDD);
-    }
-    P33_CON_SET(P3_ANA_CON9, 0, 4, old_level);
-}
-
-#define sysvdd_default_level    0b1101
-u8 get_sysvdd_aims_level(u16 aims_mv)
-{
-    if (sysvdd_voltage[0] == 0) {
-        return sysvdd_default_level;
-    }
-    return get_aims_level(aims_mv, sysvdd_voltage, 16, closest_max);
-}
-
-static u16 vdc13_voltage[8];
-static void record_vdc13_voltage(void)
-{
-    u8 old_level = P33_CON_GET(P3_ANA_CON6);
-    for (u8 i = 0; i < 8; i ++) { 
-        P33_CON_SET(P3_ANA_CON6, 0, 3, i);
-        delay(2000);
-        vdc13_voltage[i] = get_ch_voltage(AD_CH_VDC13);
-    }
-    P33_CON_SET(P3_ANA_CON6, 0, 3, old_level);
-}
-
-#define vdc13_default_level    0b110
-u8 get_vdc13_aims_level(u16 aims_mv)
-{
-    if (vdc13_voltage[0] == 0) {
-        return vdc13_default_level;
-    }
-    return get_aims_level(aims_mv, vdc13_voltage, 8, closest_max);
-}
-
-static u16 mvddio_voltage[8] = {0};
-AT(.volatile_ram_code)
-static void record_mvddio_voltage(void)
-{
-    u32 vbg_center = adc_value_to_voltage(1, 1);
-    u8 old_vddio_level = P33_CON_GET(P3_ANA_CON5);
-    u8 old_vlvd_level = P33_CON_GET(P3_VLVD_CON);
-    P33_CON_SET(P3_VLVD_CON, 6, 1, 1);  //clr_pend
-    P33_CON_SET(P3_VLVD_CON, 0, 1, 0);  //关掉LVD
-    adc_pmu_detect_en(1);
-    adc_sample(AD_CH_LDOREF);
-    u32 tmp_cnt;
-    for (u8 i = 0; i < 8; i ++) { 
-        P33_CON_SET(P3_ANA_CON5, 0, 3, i);
-        tmp_cnt = 2000;
-        while(tmp_cnt --) {
-            asm ("nop");
-        }
-        JL_ADC->CON |= BIT(6);
-        while(!(JL_ADC->CON & BIT(7)));
-        tmp_cnt = JL_ADC->RES;
-        mvddio_voltage[i] = vbg_center * 1024 / tmp_cnt;
-    }
-    P33_CON_SET(P3_ANA_CON5, 0, 3, old_vddio_level);
-    tmp_cnt = 2000;
-    while(tmp_cnt --) {
-        asm ("nop");
-    }
-    P33_CON_SET(P3_VLVD_CON, 0, 1, old_vlvd_level & 0x1);
-}
-
-#define mvddio_default_level    0b110
-u8 get_mvddio_aims_level(u16 aims_mv)
-{
-    if (mvddio_voltage[0] == 0) {
-        return mvddio_default_level;
-    }
-    return get_aims_level(aims_mv, mvddio_voltage, 8, closest_max);
-}
-
-
 void adc_init()
 {
-    record_sysvdd_voltage();
-    record_vdc13_voltage();
-    record_mvddio_voltage();
+    check_pmu_voltage();
 
     _adc_init(1);
-}
-
-void adc_dump(void)
-{
-    for (int i = 0; i < ARRAY_SIZE(sysvdd_voltage); i++) {
-        log_i("sysvdd_voltage[%d] %d", i, sysvdd_voltage[i]);
-    }
-
-    for (int i = 0; i < ARRAY_SIZE(vdc13_voltage); i++) {
-        log_i("vdc13_voltage[%d] %d", i, vdc13_voltage[i]);
-    }
-
-    for (int i = 0; i < ARRAY_SIZE(mvddio_voltage); i++) {
-        log_i("mvddio_voltage[%d] %d", i, mvddio_voltage[i]);
-    }
 }
 
 void adc_test()

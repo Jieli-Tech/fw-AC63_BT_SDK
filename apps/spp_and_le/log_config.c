@@ -108,5 +108,11 @@ const char log_tag_const_d_APP_CHARGE AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_w_APP_CHARGE AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_e_APP_CHARGE AT(.LOG_TAG_CONST) = 1;
 
+const char log_tag_const_v_DONGLE AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_i_DONGLE AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_d_DONGLE AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_w_DONGLE AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_e_DONGLE AT(.LOG_TAG_CONST) = 1;
+
 
 

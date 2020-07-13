@@ -50,5 +50,6 @@ u8   get_vm_statu(void);
 
 void spi_port_hd(u8 level);
 
+bool sfc_erase_zone(u32 addr, u32 len);
 #endif  //_VM_H_
 

@@ -34,7 +34,7 @@
 //*********************************************************************************//
 //                                 iokey 配置                                      //
 //*********************************************************************************//
-#define TCFG_IOKEY_ENABLE					ENABLE_THIS_MOUDLE //是否使能IO按键
+#define TCFG_IOKEY_ENABLE					DISABLE_THIS_MOUDLE //是否使能IO按键
 
 #define TCFG_IOKEY_POWER_CONNECT_WAY		ONE_PORT_TO_LOW    //按键一端接低电平一端接IO
 
@@ -49,7 +49,7 @@
 //*********************************************************************************//
 //                                 adkey 配置                                      //
 //*********************************************************************************//
-#define TCFG_ADKEY_ENABLE                   DISABLE_THIS_MOUDLE //是否使能AD按键
+#define TCFG_ADKEY_ENABLE                   ENABLE_THIS_MOUDLE //是否使能AD按键
 #define TCFG_ADKEY_PORT                     IO_PORTB_01         //AD按键端口(需要注意选择的IO口是否支持AD功能)
 /*AD通道选择，需要和AD按键的端口相对应:
     AD_CH_PA1    AD_CH_PA3    AD_CH_PA4    AD_CH_PA5
@@ -101,6 +101,12 @@
 #define TCFG_ADKEY_VALUE8                   8
 #define TCFG_ADKEY_VALUE9                   9
 
+
+//*********************************************************************************//
+//                                  RTC_ALARM配置                                  //
+//*********************************************************************************//
+#define TCFG_RTC_ALARM_ENABLE               DISABLE_THIS_MOUDLE
+
 //*********************************************************************************//
 //                                  充电仓配置                                     //
 //*********************************************************************************//
@@ -116,6 +122,18 @@
 #define TCFG_CHARGE_FULL_V					CHARGE_FULL_V_4202
 #define TCFG_CHARGE_FULL_MA					CHARGE_FULL_mA_10
 #define TCFG_CHARGE_MA						CHARGE_mA_50
+
+//                                 USB 配置                                        //
+//*********************************************************************************//
+#define TCFG_PC_ENABLE						DISABLE_THIS_MOUDLE//PC模块使能
+#define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE//U盘模块使能
+#define TCFG_OTG_USB_DEV_EN                 BIT(0)//USB0 = BIT(0)  USB1 = BIT(1)
+
+#include "usb_std_class_def.h"
+
+///USB 配置重定义
+#undef USB_DEVICE_CLASS_CONFIG
+#define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS)
 
 //*********************************************************************************//
 //                                  LED 配置                                       //
@@ -171,6 +189,16 @@
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
 
+#define USER_SUPPORT_PROFILE_SPP    1
+#define USER_SUPPORT_PROFILE_HFP    0
+#define USER_SUPPORT_PROFILE_A2DP   0
+#define USER_SUPPORT_PROFILE_AVCTP  0
+#define USER_SUPPORT_PROFILE_HID    0
+#define USER_SUPPORT_PROFILE_PNP    0
+#define USER_SUPPORT_PROFILE_PBAP   0
+
+
+
 #if(TCFG_USER_TWS_ENABLE || TCFG_USER_BLE_ENABLE)
 #define TCFG_BD_NUM						          1   //连接设备个数配置
 #define TCFG_AUTO_STOP_PAGE_SCAN_TIME             0   //配置一拖二第一台连接后自动关闭PAGE SCAN的时间(单位分钟)
@@ -193,6 +221,6 @@
 //                                 配置结束                                        //
 //*********************************************************************************//
 
-#endif 
+#endif
 
-#endif 
+#endif

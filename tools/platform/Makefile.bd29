@@ -34,7 +34,9 @@ export CC_DEFINE += \
 export cibuild ?= n
 ifeq ($(cibuild),y)
 CC_DEFINE += -DCONFIG_RELEASE_ENABLE
-else
+endif
+
+ifeq ($(linux),y)
 CC_DEFINE += -D__SHELL__
 endif
 
@@ -96,6 +98,7 @@ endif
 ifeq ($(HOST_OS), windows)
 export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.bat
 endif
+
 
 # - output file
 export ELF= sdk

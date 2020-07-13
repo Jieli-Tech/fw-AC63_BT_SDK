@@ -8,7 +8,7 @@
 #include "rcsp_adv_user_update.h"
 #endif
 
-#if RCSP_ADV_EN || RCSP_BTMATE_EN//RCSP_UPDATE_EN
+#if RCSP_ADV_EN || RCSP_BTMATE_EN || SMART_BOX_EN
 #include "app_config.h"
 #include "fs.h"
 //#include "crc_api.h"

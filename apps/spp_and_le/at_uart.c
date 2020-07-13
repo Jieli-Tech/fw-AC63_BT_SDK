@@ -20,7 +20,7 @@
 /* #include "at.h" */
 /* #include "bt_common.h" */
 
-#if TRANS_AT_COM           
+#if CONFIG_APP_AT_COM           
 
 #define LOG_TAG_CONST       AT_COM 
 #define LOG_TAG             "[AT_UART]"

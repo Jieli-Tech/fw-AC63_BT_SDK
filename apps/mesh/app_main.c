@@ -63,10 +63,10 @@ void app_main()
 #endif
     init_intent(&it);
 
-	it.name = "mesh";
+    it.name = "mesh";
     it.action = ACTION_AT_MAIN;
 
-	start_app(&it);
+    start_app(&it);
 }
 
 /*

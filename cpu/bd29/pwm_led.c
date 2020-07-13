@@ -279,7 +279,12 @@ void pwm_led_init(const struct led_platform_data *user_data)
     LED_PWM_OUT_LOGIC_SET;
     LED_PWM_CLR_PENDING;
 
-    pwm_clock_set(PWM_LED_CLK_RC32K);
+#if(TCFG_LOWPOWER_OSC_TYPE == OSC_TYPE_LRC)
+	pwm_clock_set(PWM_LED_CLK_RC32K);
+#else
+	pwm_clock_set(PWM_LED_CLK_BTOSC_24M);
+#endif
+
     //pwm_clock_set(PWM_LED_CLK_BTOSC_24M);
 
     if (user_data->io_mode == LED_ONE_IO_MODE) {
@@ -667,7 +672,7 @@ static void _pwm_led_off_display(void)
  *
  * @return void
  */
-static void _pwm_led_on_display(u8 led_index, u16 led0_bright, u16 led1_bright)
+void _pwm_led_on_display(u8 led_index, u16 led0_bright, u16 led1_bright)
 {
     //step1: pwm0 clock
     if (__this->clock == PWM_LED_CLK_RC32K) {

@@ -166,6 +166,14 @@
 //*********************************************************************************//
 //                                  蓝牙配置                                       //
 //*********************************************************************************//
+#define USER_SUPPORT_PROFILE_SPP    0
+#define USER_SUPPORT_PROFILE_HFP    1
+#define USER_SUPPORT_PROFILE_A2DP   1
+#define USER_SUPPORT_PROFILE_AVCTP  1
+#define USER_SUPPORT_PROFILE_HID    1
+#define USER_SUPPORT_PROFILE_PNP    1
+#define USER_SUPPORT_PROFILE_PBAP   0
+
 
 //*********************************************************************************//
 //                                 配置结束                                        //

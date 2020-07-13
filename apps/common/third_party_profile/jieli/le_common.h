@@ -17,7 +17,7 @@
 
 #include "typedef.h"
 #include <stdint.h>
-#include "btstack/le_user.h"
+#include "btstack/bluetooth.h"
 
 //--------------------------------------------
 

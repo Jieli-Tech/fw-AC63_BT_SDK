@@ -7,12 +7,6 @@
 #include  "app_config.h"
 #include  "classic/tws_api.h"
 #include  "bt_common.h"
-#include "le_rcsp_adv_module.h"
-
-#if ((TCFG_USER_BLE_ENABLE) && (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_ADV))
-#include "3th_profile_api.h"
-#endif
-
 
 #if (USER_SUPPORT_PROFILE_SPP==1)
 
@@ -96,7 +90,6 @@ static u32 user_spp_send(void *priv, u8 *buf, u32 len)
     return SPP_USER_ERR_NONE;
 }
 
-extern void ble_module_enable(u8 en);
 void user_spp_data_handler(u8 packet_type, u16 ch, u8 *packet, u16 size)
 {
     switch (packet_type) {
@@ -104,49 +97,11 @@ void user_spp_data_handler(u8 packet_type, u16 ch, u8 *packet, u16 size)
         log_info("spp connect ########################\n");
         user_spp_send_busy = 0;
 
-#if BT_FOR_APP_EN
-#if ((TCFG_USER_BLE_ENABLE) && (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_ADV))
-        bt_ble_adv_enable(0);
-        set_app_connect_type(TYPE_SPP);
-#endif
-#endif
-
-#if (RCSP_ADV_EN&&JL_EARPHONE_APP_EN)
-        void set_rcsp_dev_type_spp(void);
-        set_rcsp_dev_type_spp();
-		set_connect_flag(2);
-        bt_ble_adv_ioctl(BT_ADV_SET_NOTIFY_EN, 1, 1);
-#endif
-
         user_spp_state_cbk(SPP_USER_ST_CONNECT);
         break;
     case 2:
         log_info("spp disconnect ########################\n");
         user_spp_state_cbk(SPP_USER_ST_DISCONN);
-
-
-#if BT_FOR_APP_EN
-
-#if ((TCFG_USER_BLE_ENABLE) && (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_ADV))
-
-        set_app_connect_type(TYPE_NULL);
-
-#if TCFG_USER_TWS_ENABLE
-        if (!(tws_api_get_tws_state() & TWS_STA_SIBLING_CONNECTED)) {
-            ble_module_enable(1);
-            //bt_ble_adv_enable(1);
-        } else {
-            if (tws_api_get_role() == TWS_ROLE_MASTER) {
-                ble_module_enable(1);
-                //bt_ble_adv_enable(1);
-            }
-        }
-#else
-        ble_module_enable(1);
-        //bt_ble_adv_enable(1);
-#endif
-#endif
-#endif
 
         break;
     case 7:

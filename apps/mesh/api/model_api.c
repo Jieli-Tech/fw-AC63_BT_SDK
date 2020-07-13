@@ -1,6 +1,6 @@
+#include "btstack/bluetooth.h"
 #include "system/includes.h"
 #include "device/vm.h"
-#include "btstack/le_user.h"
 #include "bt_common.h"
 #include "api/sig_mesh_api.h"
 #include "model_api.h"

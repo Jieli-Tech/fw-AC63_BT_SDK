@@ -4,6 +4,7 @@
 
 #include "system/includes.h"
 #include "device/key_driver.h"
+#include "rtc_alarm.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -127,6 +128,31 @@ const struct key_remap_data iokey_remap_data = {
 
 #endif
 
+#if TCFG_RTC_ALARM_ENABLE
+const struct sys_time def_sys_time = {  //初始一下当前时间
+    .year = 2020,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+const struct sys_time def_alarm = {     //初始一下目标时间，即闹钟时间
+    .year = 2050,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+extern void alarm_isr_user_cbfun(u8 index);
+RTC_DEV_PLATFORM_DATA_BEGIN(rtc_data)
+    .default_sys_time = &def_sys_time,
+    .default_alarm = &def_alarm,
+    /* .cbfun = NULL,                      //闹钟中断的回调函数,用户自行定义 */
+    .cbfun = alarm_isr_user_cbfun,
+RTC_DEV_PLATFORM_DATA_END()
+#endif
 
 void debug_uart_init(const struct uart_platform_data *data)
 {
@@ -148,6 +174,12 @@ static void board_devices_init(void)
 #if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
 	key_driver_init();
 #endif
+
+
+#if TCFG_RTC_ALARM_ENABLE
+    alarm_init(&rtc_data);
+#endif
+
 }
 
 extern void cfg_file_parse(u8 idx);
@@ -194,6 +226,11 @@ static void close_gpio(void)
     port_protect(port_group, TCFG_IOKEY_PREV_ONE_PORT);
     port_protect(port_group, TCFG_IOKEY_NEXT_ONE_PORT);
 #endif /* TCFG_IOKEY_ENABLE */
+
+#if TCFG_RTC_ALARM_ENABLE
+    port_protect(port_group, IO_PORTA_01);
+    port_protect(port_group, IO_PORTA_02);
+#endif /* TCFG_RTC_ALARM_ENABLE */
 
     //< close gpio
     gpio_dir(GPIOA, 0, 9, port_group[PORTA_GROUP], GPIO_OR);

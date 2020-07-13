@@ -221,6 +221,16 @@ void pwm_led_breathe_display(u8 led_index, u16 breathe_time, u16 led0_bright, u1
 //=================================================================================//
 void pwm_led_register_irq(void (*func)(void));
 
+/**
+ * @brief: led 常亮显示设置
+ * @param led_index: 0: led0, 1:led1, 3:led0 & led1
+ * @param led0_bright, LED0亮度: 0 ~ 500
+ * @param led1_bright, LED1亮度: 0 ~ 500
+ *
+ * @return void
+ */
+void _pwm_led_on_display(u8 led_index, u16 led0_bright, u16 led1_bright);
+
 
 #endif //_PWM_LED_H_
 

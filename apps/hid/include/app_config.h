@@ -9,21 +9,22 @@
 #ifdef CONFIG_RELEASE_ENABLE
 #define LIB_DEBUG    0
 #else
-#define LIB_DEBUG    1 
+#define LIB_DEBUG    0
 #endif
 #define CONFIG_DEBUG_LIB(x)         (x & LIB_DEBUG)
 
 #define CONFIG_DEBUG_ENABLE
 
-//app case 选择
-// #define CONFIG_APP_KEYBOARD                 1//board_ac630x,hid按键 
-// #define CONFIG_APP_KEYFOB                   1//board_ac6318,自拍器 
-#define CONFIG_APP_MOUSE                    1//board_ac6302a,mouse 
+//app case 选择,只选1,要配置对应的board_config.h
+#define CONFIG_APP_KEYBOARD                 1//hid按键
+#define CONFIG_APP_KEYFOB                   0//自拍器
+#define CONFIG_APP_MOUSE                    0//mouse
 
-// #include "usb_common_def.h"
-// #include "bt_profile_def.h"
+
 
 #include "board_config.h"
+
+// #include "usb_common_def.h"
 
 #include "btcontroller_mode.h"
 
@@ -82,8 +83,8 @@
 #define BT_FOR_APP_EN                     0
 
 //需要app(BLE)升级要开一下宏定义
-#define RCSP_BTMATE_EN                    0 
-#define RCSP_UPDATE_EN                    0 
+#define RCSP_BTMATE_EN                    0
+#define RCSP_UPDATE_EN                    0
 #define UPDATE_MD5_ENABLE                 0
 
 
@@ -147,8 +148,3 @@
 #endif
 #endif
 
-//*********************************************************************************//
-//                              usb app差异化配置                                  //
-//*********************************************************************************//
-#undef USB_DEVICE_CLASS_CONFIG
-#define USB_DEVICE_CLASS_CONFIG (HID_CLASS)

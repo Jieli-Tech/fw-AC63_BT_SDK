@@ -9,7 +9,6 @@
 #include "adaptation.h"
 #include "bluetooth.h"
 #include "ble/hci_ll.h"
-#include "le_user.h"
 
 #define LOG_TAG             "[MESH-hci_core]"
 #define LOG_INFO_ENABLE
@@ -22,13 +21,25 @@
 
 #if ADAPTATION_COMPILE_DEBUG
 
-int bt_pub_key_gen(struct bt_pub_key_cb *new_cb) { return 0; }
+int bt_pub_key_gen(struct bt_pub_key_cb *new_cb)
+{
+    return 0;
+}
 
-const u8_t *bt_pub_key_get(void) { return NULL; }
+const u8_t *bt_pub_key_get(void)
+{
+    return NULL;
+}
 
-int bt_dh_key_gen(const u8_t remote_pk[64], bt_dh_key_cb_t cb) { return 0; }
+int bt_dh_key_gen(const u8_t remote_pk[64], bt_dh_key_cb_t cb)
+{
+    return 0;
+}
 
-struct bt_conn *bt_conn_ref(struct bt_conn *conn) { return NULL; }
+struct bt_conn *bt_conn_ref(struct bt_conn *conn)
+{
+    return NULL;
+}
 
 void bt_conn_unref(struct bt_conn *conn) {}
 
@@ -94,7 +105,7 @@ int bt_pub_key_gen(struct bt_pub_key_cb *new_cb)
     struct bt_pub_key_cb *cb;
 
     if (pub_key_cb) {
-        return 0;    
+        return 0;
     }
 
     new_cb->_next = pub_key_cb;

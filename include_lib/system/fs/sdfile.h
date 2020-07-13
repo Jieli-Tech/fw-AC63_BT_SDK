@@ -6,7 +6,7 @@
 /********* sdfile 文件头 **********/
 #define SDFILE_NAME_LEN 			16
 
-struct sdfile_file_head {
+typedef struct sdfile_file_head {
     u16 head_crc;
     u16 data_crc;
     u32 addr;
@@ -15,8 +15,10 @@ struct sdfile_file_head {
     u8 res;
     u16 index;
     char name[SDFILE_NAME_LEN];
-};
+}SDFILE_FILE_HEAD;
 
+#if 0
+////////////////////////////sdfile_file_head成员详细说明///////////////////////////////////////
 typedef struct SDFILEJL_FILE_HEAD {
     u16 u16Crc;     // 结构体自身校验码
     u16 u16DataCrc; // 文件数据校验码
@@ -28,7 +30,20 @@ typedef struct SDFILEJL_FILE_HEAD {
     char szFileName[16];// 文件名
 } JL_SDFILE_HEAD;
 
+////////////////////////////flash_head成员详细说明///////////////////////////////////////
+typedef struct SDFILEJL_FLASH_HEAD_V2 {
+    u16 u16Crc;             // 结构体自身校验码
+    u16 u16SizeForBurner;   // 为烧写器保留的空间大小
+    char vid[4];    		// 存放VID信息，长度是4个byte
+    u32 u32FlashSize;       // FLASH大小,由isd_download计算得出
+    u8 u8FsVersion;         // flash类型：BR18(0)/BR22(1)
+    u8 u8BlockAlingnModulus;// 对齐系数，对齐的值=对齐系数*256
+    u8 u8Res;          		// 保留
+    u8 u8SpecialOptFlag;    // 用于标记是否需要生成2种flash格式的标记位，目前只用1位
+    char pid[16];    		// 存放PID信息，长度是16个byte
+} SDFILEJL_FLASH_HEAD_V2;
 
+#endif
 
 struct sdfile_dir {
     u16 file_num;
@@ -104,6 +119,7 @@ int sdfile_pos(SDFILE *fp);
 int sdfile_len(SDFILE *fp);
 int sdfile_get_name(SDFILE *fp, u8 *name, int len);
 int sdfile_get_attrs(SDFILE *fp, struct vfs_attr *attr);
+int sdfile_delete_data(SDFILE *fp);
 
 #define fopen 	sdfile_open
 #define fread 	sdfile_read
@@ -114,6 +130,7 @@ int sdfile_get_attrs(SDFILE *fp, struct vfs_attr *attr);
 #define fpos 	sdfile_pos
 #define fget_name 	sdfile_get_name
 #define fget_attrs 	sdfile_get_attrs
+#define fdel_data   sdfile_delete_data
 
 #endif  /* VFS_ENABLE */
 
@@ -144,6 +161,8 @@ u32 sdfile_get_disk_capacity(void);
 u32 sdfile_flash_addr2cpu_addr(u32 offset);
 //cpu addr  -> flash addr
 u32 sdfile_cpu_addr2flash_addr(u32 offset);
+
+u32 decode_data_by_user_key_in_sdfile(u16 key, u8 *buff, u16 size, u32 dec_addr, u8 dec_len);
 
 #endif /* _SDFILE_H_ */
 

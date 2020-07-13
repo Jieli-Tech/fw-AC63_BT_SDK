@@ -816,7 +816,7 @@ static void lpn_timeout(struct k_work *work)
             bt_mesh_scan_disable();
         }
         //< 3.6.6.4.1 Low Power establishment
-        //After each Friend Request message is sent, this value shall be incremented by 1. 
+        //After each Friend Request message is sent, this value shall be incremented by 1.
         //The LPNCounter may wrap.
         //If no acceptable Friend Offer message is received, the node may send a new Friend Request message.
         //The time interval between two consecutive Friend Request messages shall be greater than 1.1 seconds
@@ -1098,7 +1098,7 @@ void bt_mesh_lpn_set_cb(void (*cb)(u16_t friend_addr, bool established))
 }
 
 static void lpn_sub_add(struct bt_mesh_model *mod, struct bt_mesh_elem *elem,
-                       bool vnd, bool primary, void *user_data)
+                        bool vnd, bool primary, void *user_data)
 {
     BT_INFO("--func=%s", __FUNCTION__);
 

@@ -10,6 +10,7 @@
 #include "asm/power_interface.h"
 #include "app_config.h"
 #include "rdec_key.h"
+
 #if(TCFG_IRSENSOR_ENABLE == 1)
 #include "irSensor/ir_manage.h"
 #endif
@@ -188,6 +189,7 @@ _notify:
     e.u.key.value = key_value;
     e.u.key.tmr = timer_get_ms();
 
+
     scan_para->click_cnt = 0;  //单击次数清0
     scan_para->notify_value = NO_KEY;
 
@@ -219,9 +221,16 @@ int key_driver_init(void)
     extern const struct iokey_platform_data iokey_data;
     extern struct key_driver_para iokey_scan_para;
     err = iokey_init(&iokey_data);
+#ifdef TCFG_IOKEY_TIME_REDEFINE
+    extern struct key_driver_para iokey_scan_user_para;
+    if (err == 0) {
+        sys_s_hi_timer_add((void *)&iokey_scan_user_para, key_driver_scan, iokey_scan_user_para.scan_time); //注册按键扫描定时器
+    }
+#else
     if (err == 0) {
         sys_s_hi_timer_add((void *)&iokey_scan_para, key_driver_scan, iokey_scan_para.scan_time); //注册按键扫描定时器
     }
+#endif
 #endif
 
 #if TCFG_ADKEY_ENABLE
@@ -281,10 +290,10 @@ int key_driver_init(void)
     }
 #endif /* #if TCFG_CTMU_TOUCH_KEY_ENABLE */
 
-#if (defined(TCFG_SLIDE_KEY_ENABLE) && (TCFG_SLIDE_KEY_ENABLE))
+#if TCFG_SLIDE_KEY_ENABLE
     extern const struct slidekey_platform_data slidekey_data;
     extern struct key_driver_para slidekey_scan_para;
-    extern int slidekey_init(const struct slidekey_platform_data *slidekey_data);
+    extern int slidekey_init(const struct slidekey_platform_data * slidekey_data);
     err = slidekey_init(&slidekey_data);
     if (err == 0) {
         sys_s_hi_timer_add((void *)&slidekey_scan_para, key_driver_scan, slidekey_scan_para.scan_time); //注册按键扫描定时器

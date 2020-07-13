@@ -28,9 +28,7 @@
 #include "app_action.h"
 
 #include "btstack/btstack_task.h"
-#include "btstack/ble_api.h"
 #include "btstack/bluetooth.h"
-#include "btstack/le_user.h"
 #include "user_cfg.h"
 #include "vm.h"
 #include "btcontroller_modules.h"
@@ -937,7 +935,6 @@ void ble_profile_init(void)
 
 #if EXT_ADV_MODE_EN
 
-#include "ble_data_types.h"
 
 #define EXT_ADV_NAME                    'J', 'L', '_', 'E', 'X', 'T', '_', 'A', 'D', 'V'
 /* #define EXT_ADV_NAME                    "JL_EXT_ADV" */

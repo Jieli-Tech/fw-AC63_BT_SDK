@@ -30,6 +30,7 @@ typedef enum {
     SPP_APP_UPDATA,
     DUAL_BANK_UPDATA,
     BLE_TEST_UPDATA,
+    NORFLASH_UPDATA,
 
     NON_DEV = 0xFFFF,
 } UPDATA_TYPE;

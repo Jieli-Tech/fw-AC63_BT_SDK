@@ -108,4 +108,5 @@ void ll_hci_set_periodic_adv_data(u8 *data, u32 size);
 void ll_hci_set_periodic_adv_enable(u8 *data, u32 size);
 void ll_hci_periodic_adv_creat_sync(u8 *data, u32 size);
 
+extern int le_controller_set_mac(void *addr);
 #endif

@@ -222,4 +222,7 @@ int tws_api_power_saving_mode_disable();
 
 int tws_api_enter_pure_monitor_mode();
 
+void tws_try_connect_disable(void);
+
+extern void tws_conn_switch_role();
 #endif

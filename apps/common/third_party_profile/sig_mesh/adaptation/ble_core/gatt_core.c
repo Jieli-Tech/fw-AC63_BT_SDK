@@ -7,10 +7,9 @@
  */
 
 #include "adaptation.h"
-#include "ble_data_types.h"
 #include "proxy.h"
 #include "ble/hci_ll.h"
-#include "ble_api.h"
+#include "btstack/bluetooth.h"
 
 #define LOG_TAG             "[MESH-gatt_core]"
 #define LOG_INFO_ENABLE
@@ -22,15 +21,24 @@
 
 #if ADAPTATION_COMPILE_DEBUG
 
-u8 *get_server_data_addr(void) { return NULL; }
+u8 *get_server_data_addr(void)
+{
+    return NULL;
+}
 
 void bt_gatt_service_register(u32 uuid) {}
 
 void bt_gatt_service_unregister(u32 uuid) {}
 
-int bt_gatt_notify(struct bt_conn *conn, const void *data, u16_t len) { return 0; }
+int bt_gatt_notify(struct bt_conn *conn, const void *data, u16_t len)
+{
+    return 0;
+}
 
-u16 bt_gatt_get_mtu(struct bt_conn *conn) { return 0; }
+u16 bt_gatt_get_mtu(struct bt_conn *conn)
+{
+    return 0;
+}
 
 void bt_conn_disconnect(struct bt_conn *conn, u8 reason) {}
 
@@ -202,7 +210,7 @@ extern void mesh_gatt_change_profile(void *data);
 extern void mesh_gatt_init(u8 *buf, u16 len);
 extern bool mesh_adv_send_timer_busy(void);
 extern void ble_set_adv_param(u16 interval_min, u16 interval_max, u8 type, u8 direct_addr_type, u8 *direct_addr,
-                           u8 channel_map, u8 filter_policy);
+                              u8 channel_map, u8 filter_policy);
 extern void ble_set_adv_data(u8 data_length, u8 *data);
 extern void ble_set_scan_rsp_data(u8 data_length, u8 *data);
 extern void get_mesh_adv_name(u8 *len, u8 **data);

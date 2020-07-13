@@ -151,22 +151,22 @@ static int comp_get_page_0(struct net_buf_simple *buf)
     comp = bt_mesh_comp_get();
 
     if (IS_ENABLED(CONFIG_BT_MESH_RELAY) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_RELAY)) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_RELAY)) {
         feat |= BT_MESH_FEAT_RELAY;
     }
 
     if (IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) {
         feat |= BT_MESH_FEAT_PROXY;
     }
 
     if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
-           BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
         feat |= BT_MESH_FEAT_FRIEND;
     }
 
-    if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER) && 
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_LOW_POWER)) {
+    if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER) &&
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_LOW_POWER)) {
         feat |= BT_MESH_FEAT_LOW_POWER;
     }
 
@@ -850,7 +850,7 @@ static void gatt_proxy_set(struct bt_mesh_model *model,
     }
 
     if (!(IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY) &&
-                BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) ||
+          BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) ||
         bt_mesh_gatt_proxy_get() == BT_MESH_GATT_PROXY_NOT_SUPPORTED) {
         goto send_status;
     }
@@ -2209,7 +2209,7 @@ static void net_key_add(struct bt_mesh_model *model,
     bt_mesh_net_beacon_update(sub);
 
     if (IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY) &&
-            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY)) {
         sub->node_id = BT_MESH_NODE_IDENTITY_STOPPED;
         bt_mesh_proxy_beacon_send(sub);
         bt_mesh_adv_update();
@@ -2457,9 +2457,9 @@ static void node_identity_set(struct bt_mesh_model *model,
          * 0x00, the Node Identity state for all subnets shall be set
          * to 0x00 and shall not be changed."
          */
-        if (IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY) && 
-                BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY) &&
-                    bt_mesh_gatt_proxy_get() == BT_MESH_GATT_PROXY_ENABLED) {
+        if (IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY) &&
+            BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY) &&
+            bt_mesh_gatt_proxy_get() == BT_MESH_GATT_PROXY_ENABLED) {
             if (node_id) {
                 bt_mesh_proxy_identity_start(sub);
             } else {
@@ -2741,7 +2741,7 @@ static void friend_set(struct bt_mesh_model *model,
     }
 
     if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
-           BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
+        BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND)) {
         cfg->frnd = buf->data[0];
 
         if (IS_ENABLED(CONFIG_BT_SETTINGS)) {
@@ -2787,8 +2787,8 @@ static void lpn_timeout_get(struct bt_mesh_model *model,
     bt_mesh_model_msg_init(&msg, OP_LPN_TIMEOUT_STATUS);
     net_buf_simple_add_le16(&msg, lpn_addr);
 
-    if (!(IS_ENABLED(CONFIG_BT_MESH_FRIEND) && 
-                BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND))) {
+    if (!(IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
+          BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND))) {
         timeout = 0;
         goto send_rsp;
     }
@@ -3321,18 +3321,18 @@ int bt_mesh_cfg_srv_init(struct bt_mesh_model *model, bool primary)
     /* Configuration Model security is device-key based */
     model->keys[0] = BT_MESH_KEY_DEV;
 
-    if (!(IS_ENABLED(CONFIG_BT_MESH_RELAY) && 
-                BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_RELAY))) {
+    if (!(IS_ENABLED(CONFIG_BT_MESH_RELAY) &&
+          BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_RELAY))) {
         cfg->relay = BT_MESH_RELAY_NOT_SUPPORTED;
     }
 
     if (!(IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
-                BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND))) {
+          BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_FRIEND))) {
         cfg->frnd = BT_MESH_FRIEND_NOT_SUPPORTED;
     }
 
     if (!(IS_ENABLED(CONFIG_BT_MESH_GATT_PROXY) &&
-                BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY))) {
+          BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_PROXY))) {
         cfg->gatt_proxy = BT_MESH_GATT_PROXY_NOT_SUPPORTED;
     }
 

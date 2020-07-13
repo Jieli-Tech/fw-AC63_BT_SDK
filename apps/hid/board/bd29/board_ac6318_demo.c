@@ -4,6 +4,8 @@
 
 #include "system/includes.h"
 #include "device/key_driver.h"
+#include "asm/pwm_led.h"
+#include "rtc_alarm.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -90,7 +92,7 @@ const struct iokey_port iokey_list[] = {
 		/* .key_value = 0,                                       //按键值 */
 	/* }, */
 
-#if(!TCFG_UART0_ENABLE || TCFG_UART0_TX_PORT !=	IO_PORT_DP)					
+#if(!TCFG_UART0_ENABLE || TCFG_UART0_TX_PORT !=	IO_PORT_DP)
 	{
 		.connect_way = TCFG_IOKEY_PREV_CONNECT_WAY,
 		.key_type.one_io.port = TCFG_IOKEY_PREV_ONE_PORT,
@@ -129,6 +131,31 @@ const struct key_remap_data iokey_remap_data = {
 
 #endif
 
+#if TCFG_RTC_ALARM_ENABLE
+const struct sys_time def_sys_time = {  //初始一下当前时间
+    .year = 2020,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+const struct sys_time def_alarm = {     //初始一下目标时间，即闹钟时间
+    .year = 2050,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+extern void alarm_isr_user_cbfun(u8 index);
+RTC_DEV_PLATFORM_DATA_BEGIN(rtc_data)
+    .default_sys_time = &def_sys_time,
+    .default_alarm = &def_alarm,
+    /* .cbfun = NULL,                      //闹钟中断的回调函数,用户自行定义 */
+    .cbfun = alarm_isr_user_cbfun,
+RTC_DEV_PLATFORM_DATA_END()
+#endif
 
 void debug_uart_init(const struct uart_platform_data *data)
 {
@@ -141,21 +168,38 @@ void debug_uart_init(const struct uart_platform_data *data)
 #endif
 }
 
+/************************** PWM_LED ****************************/
+#if TCFG_PWMLED_ENABLE
+LED_PLATFORM_DATA_BEGIN(pwm_led_data)
+	.io_mode = TCFG_PWMLED_IOMODE,              //推灯模式设置:支持单个IO推两个灯和两个IO推两个灯
+	.io_cfg.one_io.pin = TCFG_PWMLED_PIN,       //单个IO推两个灯的IO口配置
+LED_PLATFORM_DATA_END()
+#endif
+
+
 static void board_devices_init(void)
 {
 #if TCFG_PWMLED_ENABLE
-//    pwm_led_init(&pwm_led_data);
+   /* pwm_led_init(&pwm_led_data); */ //bd29 没有pwm模块,用io推
 #endif
 
 #if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
 	key_driver_init();
 #endif
+
+
+#if TCFG_RTC_ALARM_ENABLE
+    alarm_init(&rtc_data);
+#endif
+
 }
 
 extern void cfg_file_parse(u8 idx);
 void board_init()
 {
     board_power_init();
+
+    adc_set_vbat_vddio_tieup(1);
     adc_vbg_init();
     adc_init();
     cfg_file_parse(0);
@@ -196,6 +240,11 @@ static void close_gpio(void)
     port_protect(port_group, TCFG_IOKEY_PREV_ONE_PORT);
     port_protect(port_group, TCFG_IOKEY_NEXT_ONE_PORT);
 #endif /* TCFG_IOKEY_ENABLE */
+
+#if TCFG_RTC_ALARM_ENABLE
+    port_protect(port_group, IO_PORTA_01);
+    port_protect(port_group, IO_PORTA_02);
+#endif /* TCFG_RTC_ALARM_ENABLE */
 
     //< close gpio
     gpio_dir(GPIOA, 0, 9, port_group[PORTA_GROUP], GPIO_OR);
@@ -277,7 +326,7 @@ const struct charge_wakeup charge_wkup = {
 const struct wakeup_param wk_param = {
     .filter     = PORT_FLT_2ms,
 	.port[1]    = &port0,
-#if(!TCFG_UART0_ENABLE || TCFG_UART0_TX_PORT !=	IO_PORT_DP)					
+#if(!TCFG_UART0_ENABLE || TCFG_UART0_TX_PORT !=	IO_PORT_DP)
 	.port[2]    = &port1,
 #endif
 	.sub        = &sub_wkup,
@@ -285,6 +334,26 @@ const struct wakeup_param wk_param = {
 };
 
 //-----------------------------------------------
+int io_key_is_vaild(void)
+{
+	int value = 0;
+
+#if TCFG_IOKEY_ENABLE
+#if(!TCFG_UART0_ENABLE)
+	if(TCFG_IOKEY_PREV_CONNECT_WAY == gpio_read(TCFG_IOKEY_PREV_ONE_PORT)){
+		value |= BIT(0);
+		/* putchar('K'); */
+	}
+#endif
+
+	if(TCFG_IOKEY_NEXT_CONNECT_WAY == gpio_read(TCFG_IOKEY_NEXT_ONE_PORT)){
+		value |= BIT(1);
+		putchar('k');
+	}
+#endif
+
+	return value;
+}
 
 
 /*进软关机之前默认将IO口都设置成高阻状态，需要保留原来状态的请修改该函数*/
@@ -365,13 +434,14 @@ void board_power_init(void)
     power_mclr(0);
     //< close long key reset
     power_pin_reset(0);
-    
+
     power_set_callback(TCFG_LOWPOWER_LOWPOWER_SEL, sleep_enter_callback, sleep_exit_callback, board_set_soft_poweroff);
 
 	power_keep_dacvdd_en(0);
 
 	power_wakeup_init(&wk_param);
 
+	log_info("P3_VLVD_CON = %02x",p33_rx_1byte(P3_VLVD_CON));
 
 /* #if (!TCFG_IOKEY_ENABLE && !TCFG_ADKEY_ENABLE) */
     /* charge_check_and_set_pinr(0); */

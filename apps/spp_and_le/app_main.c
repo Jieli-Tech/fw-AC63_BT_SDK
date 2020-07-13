@@ -63,14 +63,22 @@ void app_main()
 #endif
     init_intent(&it);
 
-#if TRANS_AT_COM
-	it.name = "at_com";
-    it.action = ACTION_AT_COM;
-#else
-	it.name = "at";
-    it.action = ACTION_AT_MAIN;
+#if CONFIG_APP_SPP_LE
+	it.name = "spp_le";
+    it.action = ACTION_SPPLE_MAIN;
 #endif
 
+#if CONFIG_APP_AT_COM
+	it.name = "at_com";
+    it.action = ACTION_AT_COM;
+#endif
+
+#if CONFIG_APP_DONGLE
+	it.name = "dongle";
+    it.action = ACTION_DONGLE_MAIN;
+#endif
+
+	log_info("app_name:%s\n",it.name);
 	/* it.name = "idle"; */
     /* it.action = ACTION_IDLE_MAIN; */
 

@@ -441,18 +441,18 @@ static void fill_dev_info(struct _DEV_info *p_dev_info)
     u32 dev_status_tmp = 0;
 
     //udisk
-    if (file_opr_dev_check("udisk")) {
+    if (storage_dev_check_ex("udisk", NULL)) {
         printf("dev [udisk] online\n");
         p_dev_info->status |= BIT(BS_UDISK);
         p_dev_info->usb_handle = app_htonl((u32)BS_UDISK);
     }
 
-    if (file_opr_dev_check("sd0")) {
+    if (storage_dev_check_ex("sd0", NULL)) {
         printf("dev [sd0] online\n");
         p_dev_info->status |= BIT(BS_SD0);
         p_dev_info->sd0_handle = app_htonl((u32)BS_SD0);
     }
-    if (file_opr_dev_check("sd1")) {
+    if (storage_dev_check_ex("sd1", NULL)) {
         printf("dev [sd1] online\n");
         p_dev_info->status |= BIT(BS_SD1);
         p_dev_info->sd1_handle = app_htonl((u32)BS_SD1);
@@ -1316,8 +1316,8 @@ void rcsp_init()
 
     u32 size = rcsp_protocol_need_buf_size();
     rcsp_printf("rcsp need buf size:%x\n", size);
-    
-	rcsp_buffer = zalloc(size);
+
+    rcsp_buffer = zalloc(size);
     ASSERT(rcsp_buffer, "no, memory for rcsp_init\n");
     JL_protocol_init(rcsp_buffer, size);
 
@@ -1349,11 +1349,11 @@ void rcsp_exit(void)
     if (__this->rcsp_timer_hdl) {
         sys_timer_del(__this->rcsp_timer_hdl);
     }
-	if(rcsp_buffer){
-		free(rcsp_buffer);
-		rcsp_buffer = 0;
-	}
-	task_kill("rcsp_task");
+    if (rcsp_buffer) {
+        free(rcsp_buffer);
+        rcsp_buffer = 0;
+    }
+    task_kill("rcsp_task");
     __this->rcsp_run_flag = 0;
     return;
 }
@@ -1459,7 +1459,12 @@ static int JL_rcsp_event_handler(RCSP_MSG msg, int argc, int *argv)
             rcsp_bs_stop();
             printf("reason = %d, dev_logo = %s, sclust = %x\n", reason, dev_logo, sclust);
             if (reason == 2) {
+
+#ifdef CONFIG_SOUNDBOX
+                if (true ==	app_check_curr_task(APP_MUSIC_TASK)) {
+#else
                 if (true == app_cur_task_check("music")) {
+#endif
                     printf("is music mode \n");
                     printf("%s, %d\n", __FUNCTION__, __LINE__);
                     //music_play_by_dev_filesclut((int)dev_logo, sclust);

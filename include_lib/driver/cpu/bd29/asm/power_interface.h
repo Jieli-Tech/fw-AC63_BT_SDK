@@ -101,7 +101,7 @@ typedef enum {
     PORT_FLT_512us,
     PORT_FLT_1ms,
     PORT_FLT_2ms,
-}PORT_FLT;
+} PORT_FLT;
 
 struct port_wakeup {
     u8 pullup_down_enable;        //
@@ -195,6 +195,10 @@ u8 power_is_poweroff_post(void);
 void power_set_proweroff(void);
 
 void power_reset_source_dump(void);
+
+u8 get_p33_pmu_por_flag(void);
+
+u8 get_power_reset_source_info(void);
 /*-----------------------------------------------------------*/
 
 void low_power_on(void);

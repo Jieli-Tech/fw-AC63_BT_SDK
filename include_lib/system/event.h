@@ -17,6 +17,7 @@
 #define     KEY_ENC             9
 #define     KEY_VOLUME_DEC      10
 #define     KEY_VOLUME_INC      11
+#define     KEY_PHONE           12
 
 
 #define  	KEY_LEFT 			37
@@ -84,7 +85,9 @@
 #define DEVICE_EVENT_FROM_ENDLESS_LOOP_DEBUG          (('E' << 24) | ('L' << 16) | ('D' << 8) | '\0')
 #define DEVICE_EVENT_FROM_EARTCH	   (('E' << 24) | ('T' << 16) | ('H' << 8) | '\0')
 #define DEVICE_EVENT_ONLINE_DATA	   (('O' << 24) | ('L' << 16) | ('D' << 8) | '\0')
-
+#define SYS_BT_EVENT_FROM_KEY       (('K' << 24) | ('E' << 16) | ('Y' << 8) | '\0')
+#define SYS_BT_EVENT_FORM_SELF  (('S' << 24) | ('E' << 16) | ('F' << 8) | '\0')
+#define DEVICE_EVENT_FROM_ANC   	   (('A' << 24) | ('N' << 16) | ('C' << 8) | '\0')
 
 enum {
     KEY_EVENT_CLICK,
@@ -129,8 +132,8 @@ enum {
 struct key_event {
     u8 init;
     u8 type;
-    u8 event;
-    u8 value;
+    u16 event;
+    u32 value;
     u32 tmr;
 };
 
@@ -158,6 +161,11 @@ struct chargestore_event {
     u8 event;
     u8 *packet ;
     u8 size;
+};
+
+struct ancbox_event {
+    u8 event;
+    u8 value;
 };
 
 struct net_event {
@@ -239,6 +247,7 @@ struct sys_event {
         struct ear_event    ear;
         struct rcsp_event	rcsp;
         struct chargebox_event chargebox;
+        struct ancbox_event ancbox;
     } u;
 };
 

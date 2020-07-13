@@ -12,11 +12,11 @@
 #include "timer.h"
 #include "ble/hci_ll.h"
 #include "os/os_cpu.h"
-#include "ble_api.h"
+#include "btstack/bluetooth.h"
 
 #define LOG_TAG             "[MESH-adv_core]"
-#define LOG_INFO_ENABLE
-#define LOG_DEBUG_ENABLE
+/* #define LOG_INFO_ENABLE */
+/* #define LOG_DEBUG_ENABLE */
 #define LOG_WARN_ENABLE
 #define LOG_ERROR_ENABLE
 #define LOG_DUMP_ENABLE
@@ -132,7 +132,7 @@ static void mesh_adv_send_end(void *param)
 
         BT_INFO("adv_list.head=0x%x", adv_list.head);
         BT_INFO("adv_list.tail=0x%x", adv_list.tail);
-        BT_DBG("adv_send %s", send_busy? "busy" : "succ");
+        BT_DBG("adv_send %s", send_busy ? "busy" : "succ");
     } else {
         resume_mesh_gatt_proxy_adv_thread();
     }
@@ -169,11 +169,11 @@ static void mesh_adv_timeout_start(u16 delay, u16 duration, void *param)
     if (0 == mesh_AdvSend_timer) {
         /* mesh_AdvSend_timer = sys_timer_register(delay? delay : duration, mesh_adv_timer_handler); */
         /* sys_timer_set_context(mesh_AdvSend_timer, param); */
-        mesh_AdvSend_timer = sys_timer_add(param, mesh_adv_timer_handler, delay? delay : duration);
-        BT_INFO("mesh_AdvSend_timer id = %d, %s= %dms", 
-                mesh_AdvSend_timer, 
-                delay? "delay first":"only duration",
-                delay? delay:duration);
+        mesh_AdvSend_timer = sys_timer_add(param, mesh_adv_timer_handler, delay ? delay : duration);
+        BT_INFO("mesh_AdvSend_timer id = %d, %s= %dms",
+                mesh_AdvSend_timer,
+                delay ? "delay first" : "only duration",
+                delay ? delay : duration);
         BT_INFO("param addr=0x%x", param);
     }
 
@@ -186,11 +186,11 @@ bool mesh_adv_send_timer_busy(void)
 }
 
 void ble_set_adv_param(u16 interval_min, u16 interval_max, u8 type, u8 direct_addr_type, u8 *direct_addr,
-                           u8 channel_map, u8 filter_policy)
+                       u8 channel_map, u8 filter_policy)
 {
 #if CMD_DIRECT_TO_BTCTRLER_TASK_EN
-    ll_hci_adv_set_params(interval_min, interval_max, type, direct_addr_type, direct_addr, 
-                            channel_map, filter_policy);
+    ll_hci_adv_set_params(interval_min, interval_max, type, direct_addr_type, direct_addr,
+                          channel_map, filter_policy);
 #else
     ble_user_cmd_prepare(BLE_CMD_ADV_PARAM, 3, interval_min, type, channel_map);
 #endif /* CMD_DIRECT_TO_BTCTRLER_TASK_EN */
@@ -362,7 +362,7 @@ void bt_mesh_adv_send(struct net_buf *buf, const struct bt_mesh_send_cb *cb,
 
     BT_INFO("adv_list.head=0x%x", adv_list.head);
     BT_INFO("adv_list.tail=0x%x", adv_list.tail);
-    BT_INFO("mesh_adv_send %s", send_busy? "busy" : "succ");
+    BT_INFO("mesh_adv_send %s", send_busy ? "busy" : "succ");
 }
 
 void bt_mesh_adv_init(void)

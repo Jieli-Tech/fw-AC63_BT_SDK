@@ -16,6 +16,8 @@ else ifeq ($(APP_CASE),soundbox)
 include $(ROOT)/apps/$(APP_CASE)/aec/$(CPU)/Makefile
 else ifeq ($(APP_CASE),earphone_ai)
 include $(ROOT)/apps/$(APP_CASE)/aec/$(CPU)/Makefile
+else ifeq ($(APP_CASE),watch)
+include $(ROOT)/apps/$(APP_CASE)/aec/$(CPU)/Makefile
 endif
 
 GEN_LIB=n

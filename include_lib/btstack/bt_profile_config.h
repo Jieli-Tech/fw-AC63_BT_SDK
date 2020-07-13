@@ -1,9 +1,18 @@
+/*********************************************************************************************
+    *   Filename        : bt_profile_config.h
+
+    *   Description     : 
+
+    *   Author          : Tongai 
+
+    *   Email           : laotongai@zh-jieli.com
+
+    *   Last modifiled  : 2020-07-01 16:31
+
+    *   Copyright:(c)JIELI  2011-2019  @ , All Rights Reserved.
+*********************************************************************************************/
 #ifndef BT_PROFILE_H
 #define BT_PROFILE_H
-
-
-
-
 
 
 #define BT_BTSTACK_CLASSIC                   BIT(0)

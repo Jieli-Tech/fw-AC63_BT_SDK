@@ -24,17 +24,17 @@
 #include "btstack/btstack_task.h"
 #include "bt_common.h"
 #include "hid_user.h"
-#include "ble_api.h"
 /* #include "code_switch.h" */
 /* #include "omsensor/OMSensor_manage.h" */
 #include "le_common.h"
 #include <stdlib.h>
 #include "standard_hid.h"
 #include "rcsp_bluetooth.h"
+#include "asm/pwm_led.h"
 
 #if(CONFIG_APP_KEYFOB)
 
-#define LOG_TAG_CONST      KEYFOB 
+#define LOG_TAG_CONST      KEYFOB
 #define LOG_TAG             "[KEYFOB]"
 #define LOG_ERROR_ENABLE
 #define LOG_DEBUG_ENABLE
@@ -57,6 +57,10 @@ extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 static void app_select_btmode(u8 mode);
 void sys_auto_sniff_controle(u8 enable, u8 *addr);
 void bt_sniff_ready_clean(void);
+static void bt_wait_phone_connect_control(u8 enable);
+static void auto_reconnect_handle(void);
+static void auto_reconnect_start(void);
+static void auto_reconnect_stop(void);
 
 extern int edr_hid_is_connected(void);
 extern int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type);
@@ -73,234 +77,345 @@ static bt_mode_e bt_hid_mode;
 static volatile u8 is_hid_active = 0;//1-临界点,系统不允许进入低功耗，0-系统可以进入低功耗
 
 //----------------------------------
-static const u8 hid_report_map[] = 
-{
-	0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
-	0x09, 0x06,        // Usage (Keyboard)
-	0xA1, 0x01,        // Collection (Application)
-	0x85, 0x01,        //   Report ID (1)
-	0x75, 0x01,        //   Report Size (1)
-	0x95, 0x08,        //   Report Count (8)
-	0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
-	0x19, 0xE0,        //   Usage Minimum (0xE0)
-	0x29, 0xE7,        //   Usage Maximum (0xE7)
-	0x15, 0x00,        //   Logical Minimum (0)
-	0x25, 0x01,        //   Logical Maximum (1)
-	0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-	0x95, 0x01,        //   Report Count (1)
-	0x75, 0x08,        //   Report Size (8)
-	0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-	0x95, 0x05,        //   Report Count (5)
-	0x75, 0x01,        //   Report Size (1)
-	0x05, 0x08,        //   Usage Page (LEDs)
-	0x19, 0x01,        //   Usage Minimum (Num Lock)
-	0x29, 0x05,        //   Usage Maximum (Kana)
-	0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-	0x95, 0x01,        //   Report Count (1)
-	0x75, 0x03,        //   Report Size (3)
-	0x91, 0x03,        //   Output (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-	0x95, 0x06,        //   Report Count (6)
-	0x75, 0x08,        //   Report Size (8)
-	0x15, 0x00,        //   Logical Minimum (0)
-	0x26, 0xFF, 0x00,  //   Logical Maximum (255)
-	0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
-	0x19, 0x00,        //   Usage Minimum (0x00)
-	0x29, 0xFF,        //   Usage Maximum (0xFF)
-	0x81, 0x00,        //   Input (Data,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
-	0xC0,              // End Collection
-	0x05, 0x0C,        // Usage Page (Consumer)
-	0x09, 0x01,        // Usage (Consumer Control)
-	0xA1, 0x01,        // Collection (Application)
-	0x85, 0x03,        //   Report ID (3)
-	0x15, 0x00,        //   Logical Minimum (0)
-	0x25, 0x01,        //   Logical Maximum (1)
-	0x75, 0x01,        //   Report Size (1)
-	0x95, 0x0B,        //   Report Count (11)
-	0x0A, 0x23, 0x02,  //   Usage (AC Home)
-	0x0A, 0x21, 0x02,  //   Usage (AC Search)
-	0x0A, 0xB1, 0x01,  //   Usage (AL Screen Saver)
-	0x09, 0xB8,        //   Usage (Eject)
-	0x09, 0xB6,        //   Usage (Scan Previous Track)
-	0x09, 0xCD,        //   Usage (Play/Pause)
-	0x09, 0xB5,        //   Usage (Scan Next Track)
-	0x09, 0xE2,        //   Usage (Mute)
-	0x09, 0xEA,        //   Usage (Volume Decrement)
-	0x09, 0xE9,        //   Usage (Volume Increment)
-	0x09, 0x30,        //   Usage (Power)
-	0x0A, 0xAE, 0x01,  //   Usage (AL Keyboard Layout)
-	0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-	0x95, 0x01,        //   Report Count (1)
-	0x75, 0x0D,        //   Report Size (13)
-	0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-	0xC0,              // End Collection
+static const u8 hid_report_map[] = {
+#if 0
+    // keyboard 描述符
+    0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+    0x09, 0x06,        // Usage (Keyboard)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x01,        //   Report ID (1)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x08,        //   Report Count (8)
+    0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
+    0x19, 0xE0,        //   Usage Minimum (0xE0)
+    0x29, 0xE7,        //   Usage Maximum (0xE7)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x01,        //   Logical Maximum (1)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x08,        //   Report Size (8)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x95, 0x05,        //   Report Count (5)
+    0x75, 0x01,        //   Report Size (1)
+    0x05, 0x08,        //   Usage Page (LEDs)
+    0x19, 0x01,        //   Usage Minimum (Num Lock)
+    0x29, 0x05,        //   Usage Maximum (Kana)
+    0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x03,        //   Report Size (3)
+    0x91, 0x03,        //   Output (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x95, 0x06,        //   Report Count (6)
+    0x75, 0x08,        //   Report Size (8)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x26, 0xFF, 0x00,  //   Logical Maximum (255)
+    0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
+    0x19, 0x00,        //   Usage Minimum (0x00)
+    0x29, 0xFF,        //   Usage Maximum (0xFF)
+    0x81, 0x00,        //   Input (Data,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              // End Collection
+#endif
 
-	// 119 bytes
+    //通用按键
+    0x05, 0x0C,        // Usage Page (Consumer)
+    0x09, 0x01,        // Usage (Consumer Control)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x03,        //   Report ID (3)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x01,        //   Logical Maximum (1)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x0B,        //   Report Count (11)
+    0x0A, 0x23, 0x02,  //   Usage (AC Home)
+    0x0A, 0x21, 0x02,  //   Usage (AC Search)
+    0x0A, 0xB1, 0x01,  //   Usage (AL Screen Saver)
+    0x09, 0xB8,        //   Usage (Eject)
+    0x09, 0xB6,        //   Usage (Scan Previous Track)
+    0x09, 0xCD,        //   Usage (Play/Pause)
+    0x09, 0xB5,        //   Usage (Scan Next Track)
+    0x09, 0xE2,        //   Usage (Mute)
+    0x09, 0xEA,        //   Usage (Volume Decrement)
+    0x09, 0xE9,        //   Usage (Volume Increment)
+    0x09, 0x30,        //   Usage (Power)
+    0x0A, 0xAE, 0x01,  //   Usage (AL Keyboard Layout)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x0D,        //   Report Size (13)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              // End Collection
+
+    // 119 bytes
 };
 
 // consumer key
 
 //----------------------------------
 extern void p33_soft_reset(void);
-extern void edr_hid_key_deal_test(u16 key_msg);
-extern void ble_hid_key_deal_test(u16 key_msg);
 static void hid_set_soft_poweroff(void);
-int bt_connect_phone_back_start(void);
+int bt_connect_phone_back_start(u8 mode);
 
-enum
-{
-	LED_INIT = 0,
-	LED_WAIT_CONNECT,
-	LED_AUTO_CONNECT,
-	LED_CONNECTED,
-	LED_KEY_PRESS,
-	LED_KEY_HOLD,
-	LED_CLOSE,
-	LED_POWER_OFF,
+enum {
+    LED_NULL = 0,
+    LED_INIT,
+    LED_WAIT_CONNECT,
+    LED_AUTO_CONNECT,
+    LED_KEY_UP,
+    LED_KEY_HOLD,
+    LED_KEY_IO_VAILD,
+    LED_CLOSE,
+    LED_POWER_OFF,
 };
 
 static u8  led_state;
 static u8  led_next_state;
+static u8  led_io_flash;
 static u32 led_state_count = 0;
 static u32 led_timer_ms;
 static u32 led_timer_id = 0;
-static u32 led_timeout_count;;
-#define LED_GPIO_PIN     IO_PORTB_01//IO_PORTA_00
+static u32 led_timeout_count;
+static u8 reconnect_mode = 0;
 
+static u32 auto_reconnect_timer = 0;
 
 static void led_timer_stop(void);
 static void led_timer_start(u32 time_ms);
-static void led_on_off(u8 state,u8 on_off);
+static void led_on_off(u8 state, u8 res);
 
-static void led_init(void)
+#define LED_FLASH_1S           1 //未连接闪灯时间，1秒 or 0.5s
+
+#define SOFT_OFF_TIME_MS      (160000L)//
+#define AUTO_CONNECT_TIME_MS  (8000L)//
+#define POWER_LED_ON_TIME_MS  (2000L)//
+
+#ifndef VBAT_LOW_POWER_LEVEL
+#define VBAT_LOW_POWER_LEVEL    (250)
+#endif
+
+#if TCFG_PWMLED_IO_PUSH
+//bd29 没有pwm模块,用io反转推灯
+#define KEYF_LED_ON()    gpio_direction_output(TCFG_PWMLED_PIN, 1)
+#define KEYF_LED_OFF()   gpio_direction_output(TCFG_PWMLED_PIN, 0)
+#define KEYF_LED_FLASH() //NULL
+#define KEYF_LED_INIT()  {gpio_set_dieh(TCFG_PWMLED_PIN, 0);gpio_set_die(TCFG_PWMLED_PIN, 1);gpio_set_pull_down(TCFG_PWMLED_PIN, 0);gpio_set_pull_up(TCFG_PWMLED_PIN, 0);} //
+
+#else
+#define KEYF_LED_ON()    _pwm_led_on_display(1,200,200)
+#define KEYF_LED_OFF()   pwm_led_set_off()
+
+#if(LED_FLASH_1S)
+#define KEYF_LED_FLASH() pwm_led_one_flash_display(1,200,200,1000,-1,500)
+#else
+#define KEYF_LED_FLASH() pwm_led_one_flash_display(1,200,200,500,-1,250)
+#endif
+
+#define KEYF_LED_INIT() //NULL
+#endif
+
+
+void set_change_vbg_value_flag(void);
+static int check_vbat_level(void)
 {
-	gpio_set_die(LED_GPIO_PIN, 1);
-	gpio_set_pull_down(LED_GPIO_PIN, 0);
-	gpio_set_pull_up(LED_GPIO_PIN, 0);
-	gpio_direction_output(LED_GPIO_PIN, 0);
-	led_on_off(LED_INIT,1);
+    static u8 lpwr_cnt = 0;
+    u32 value = (adc_get_voltage(AD_CH_VBAT) * 4 / 10);
+
+    log_info("{%d}", value);
+    if (value < VBAT_LOW_POWER_LEVEL) {
+        log_info("{%d,%d}", value, VBAT_LOW_POWER_LEVEL);
+        if (++lpwr_cnt > 1) {
+            return 1;
+        }
+    } else {
+        lpwr_cnt = 0;
+    }
+    return 0;
 }
 
-static void led_on_off(u8 state,u8 on_off)
+
+static u16 io_check_timer = 0;
+int io_key_is_vaild(void);
+static void io_check_timer_handle(void)
 {
-	if(on_off < 2)
-	{
-		gpio_direction_output(LED_GPIO_PIN, on_off);
-	}
+    static u32 vaild_cnt = 0;
+    static u8 check_time = 0;
 
-	if(led_state != state){
-		u8 prev_state = led_state;
-		log_info("led_state: %d>>>%d",led_state,state);
-		led_state = state; 
+#if 0 //低电关机检测,佳宝确认再打开
+    if (led_state != LED_AUTO_CONNECT) {
+        ++check_time;
+        if (check_time % 35 == 0) {
+            check_time = 0;
+            if (check_vbat_level()) {
+                led_on_off(LED_POWER_OFF, 0);
+                return;
+            }
+        }
+    }
+#endif
 
-		switch(state)
-		{
-			case LED_INIT:
-				led_timeout_count = 2;//2s
-				led_timer_start(2000);
-				led_next_state = LED_WAIT_CONNECT;
-				break;
+    if (led_state != LED_KEY_IO_VAILD && led_state != LED_CLOSE && led_state != LED_WAIT_CONNECT) {
+        vaild_cnt = 0;
+        return;
+    }
 
-			case LED_WAIT_CONNECT:
-				led_timeout_count = 2*150;//150s
-				led_timer_start(500);
-				led_next_state = LED_POWER_OFF;
-				break;
+    if (io_key_is_vaild()) {
+        if (++vaild_cnt > 1) {
+            led_on_off(LED_KEY_IO_VAILD, 0);
+        }
+    } else {
+        vaild_cnt = 0;
+    }
 
-			case LED_AUTO_CONNECT:
-				led_timeout_count = 1;//8s
-				led_timer_start(8000);
-				led_next_state = LED_WAIT_CONNECT;
-				break;
+}
 
-			case LED_CONNECTED:
-				led_timer_stop();
-				break;
+static void led_on_off(u8 state, u8 res)
+{
+    /* if(led_state != state || (state == LED_KEY_HOLD)){ */
+    if (1) { //相同状态也要更新时间
+        u8 prev_state = led_state;
+        log_info("led_state: %d>>>%d", led_state, state);
+        led_state = state;
+        led_io_flash = 0;
 
-			case LED_KEY_PRESS:
-				led_timeout_count = 1;//500ms
-				led_timer_start(500);
-				if(edr_hid_is_connected()){
-					led_next_state = LED_CONNECTED;
-				}
-				else{
-					led_next_state = LED_WAIT_CONNECT;
-				}
-				break;
+        switch (state) {
+        case LED_INIT:
+            KEYF_LED_INIT();
+            led_timeout_count = POWER_LED_ON_TIME_MS / 1000; //
+            led_timer_start(1000);
+            led_next_state = LED_WAIT_CONNECT;
+            KEYF_LED_ON();
+            if (!io_check_timer) {
+                io_check_timer = sys_s_hi_timer_add((void *)0, io_check_timer_handle, 15);
+            }
+            break;
 
-			case LED_KEY_HOLD:
-				led_timeout_count = 1;
-				led_timer_start(2000);
-				if(edr_hid_is_connected()){
-					led_next_state = LED_CONNECTED;
-				}
-				else{
-					led_next_state = LED_WAIT_CONNECT;
-				}
-				break;
+        case LED_WAIT_CONNECT:
+#if TCFG_PWMLED_IO_PUSH
 
-			case LED_CLOSE:
-				led_timeout_count = 0;
-				led_timer_stop();
-				break;
+#if(LED_FLASH_1S)
+            led_timeout_count = (SOFT_OFF_TIME_MS / 1000) * 2;
+            led_timer_start(500);//<
+#else
+            led_timeout_count = (SOFT_OFF_TIME_MS / 1000) * 4;
+            led_timer_start(250);//<
+#endif
 
-			case LED_POWER_OFF:
-				led_timeout_count = 0;
-				led_timer_stop();
-				hid_set_soft_poweroff();
-				break;
+            KEYF_LED_ON();
+            led_io_flash = BIT(7) | BIT(0);
+#else
+            led_timeout_count = (SOFT_OFF_TIME_MS / 1000) / 5;
+            led_timer_start(5000);//<
+            KEYF_LED_FLASH();
+#endif
+            led_next_state = LED_POWER_OFF;
+            break;
 
-			default:
-				break;
-		}
-	}
+        case LED_AUTO_CONNECT:
+            led_timeout_count = 1;//
+            led_timer_start(AUTO_CONNECT_TIME_MS);
+            led_next_state = LED_WAIT_CONNECT;
+            KEYF_LED_ON();
+            break;
+
+        case LED_KEY_UP:
+            led_timeout_count = 1;//
+            led_timer_start(100);
+            if (edr_hid_is_connected()) {
+                led_next_state = LED_CLOSE;
+            } else {
+                led_next_state = LED_WAIT_CONNECT;
+            }
+            KEYF_LED_ON();
+            break;
+
+        case LED_KEY_IO_VAILD:
+            led_timeout_count = 1;//
+            led_timer_start(650);
+            if (edr_hid_is_connected()) {
+                led_next_state = LED_CLOSE;
+            } else {
+                led_next_state = LED_WAIT_CONNECT;
+            }
+            KEYF_LED_ON();
+            break;
+
+
+        case LED_KEY_HOLD:
+            led_timeout_count = 4;//2s
+            led_timer_start(500);
+            if (edr_hid_is_connected()) {
+                led_next_state = LED_CLOSE;
+            } else {
+                led_next_state = LED_WAIT_CONNECT;
+            }
+            KEYF_LED_ON();
+            break;
+
+        case LED_CLOSE:
+            KEYF_LED_OFF();
+            led_timeout_count = 0;
+            led_timer_stop();
+            break;
+
+        case LED_POWER_OFF:
+            KEYF_LED_OFF();
+            led_timeout_count = 0;
+            led_timer_stop();
+            hid_set_soft_poweroff();
+            if (io_check_timer) {
+                sys_s_hi_timer_del(io_check_timer);
+                io_check_timer = 0;
+            }
+            break;
+
+        default:
+            log_error("Unknow led_state:%d", led_state);
+            break;
+        }
+    }
 
 }
 
 static void led_timer_handle(void)
 {
-	static u8 onoff = 0;
+    static u8 onoff = 0;
 
-	/* putchar('H'); */
-	//printf("{%d}",led_timeout_count);
+    /* putchar('H'); */
+    //printf("{%d}",led_timeout_count);
 
-	if(led_timeout_count < 2){
-		led_on_off(led_next_state,0);
-		return;
-	}
+    if (led_timeout_count < 2) {
+        if (LED_INIT == led_state) {
+            bt_wait_phone_connect_control(1);
+        }
+        led_on_off(led_next_state, 0);
+        return;
+    }
+    led_timeout_count--;
 
-	led_timeout_count--;
+    //io 反转推灯才需要
+    if (led_io_flash & BIT(7)) {
+        led_io_flash ^= BIT(0);
+        if (led_io_flash & BIT(0)) {
+            KEYF_LED_ON();
+        } else {
+            KEYF_LED_OFF();
+        }
+    }
 
-	if(led_state != LED_KEY_PRESS){
-		onoff =!onoff;
-		gpio_direction_output(LED_GPIO_PIN, onoff);
-	}
-}	
-
-static void led_timer_start(u32 time_ms)
-{
-	if(!led_timer_id){
-		log_info("led_timer start %d ms",time_ms);
-		led_timer_ms = time_ms;
-		led_timer_id = sys_timer_add(0,led_timer_handle,led_timer_ms);
-	}
-	else{
-		if(time_ms != led_timer_ms){
-			led_timer_ms = time_ms;
-			log_info("led_timer mdy %d ms",time_ms);
-			sys_timer_modify(led_timer_id,time_ms);
-		}
-	}
-}	
+}
 
 static void led_timer_stop(void)
 {
-	if(led_timer_id){
-		log_info("led_timer stop");
-		sys_timer_del(led_timer_id);
-		led_timer_id = 0;
-	}
-}	
+    if (led_timer_id) {
+        log_info("led_timer stop");
+        sys_timer_del(led_timer_id);
+        led_timer_id = 0;
+    }
+}
 
+static void led_timer_start(u32 time_ms)
+{
+    led_timer_stop(); //stop firstly
+    log_info("led_timer start %d ms", time_ms);
+    led_timer_ms = time_ms;
+    led_timer_id = sys_timer_add(0, led_timer_handle, led_timer_ms);
+}
 
 void auto_shutdown_disable(void)
 {
@@ -309,83 +424,147 @@ void auto_shutdown_disable(void)
     }
 }
 
-static const u8 key_a_big_press[3] = {0x00,0x0a,0x00};
-static const u8 key_a_big_null[3] =  {0x00,0x00,0x00};
 
+//----------------------------------------
+/* static const u8 key_a_big_press[3] = {0x00,0x0a,0x00}; */
+static const u8 key_a_big_press[3] = {0x00, 0x02, 0x00};
+static const u8 key_a_big_null[3] =  {0x00, 0x00, 0x00};
 
-static const u8 key_b_small_press[8] = {0x00,0x00,0x28,0x00,0x00,0x00,0x00,0x00};
-static const u8 key_b_small_null[8] =  {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+/* static const u8 key_b_small_press[4] = {0x28,0x00,0x00,0x00}; */
+/* static const u8 key_b_small_null[4] =  {0x00,0x00,0x00,0x00}; */
+
+/* static const u8 key_b_small_press[8] = {0x00,0x00,0x28,0x00,0x00,0x00,0x00,0x00}; */
+/* static const u8 key_b_small_null[8] =  {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}; */
 
 extern int ble_hid_data_send(u8 report_id, u8 *data, u16 len);
 extern void edr_hid_data_send(u8 report_id, u8 *data, u16 len);
+
+//按键ID
+#define KEY_BIG_ID    1
+#define KEY_SMALL_ID  2
+
+//mode >> 0：press + up，1：press，2：up
+static void key_value_send(u8 key_value, u8 mode)
+{
+    void (*hid_data_send_pt)(u8 report_id, u8 * data, u16 len) = NULL;
+
+    if (bt_hid_mode == HID_MODE_EDR) {
+#if TCFG_USER_EDR_ENABLE
+        hid_data_send_pt = edr_hid_data_send;
+#endif
+    } else {
+#if TCFG_USER_BLE_ENABLE
+        hid_data_send_pt = ble_hid_data_send;
+#endif
+    }
+
+    if (!hid_data_send_pt) {
+        return;
+    }
+
+    if (key_value == KEY_BIG_ID) {
+        if (mode == 0 || mode == 1) {
+            hid_data_send_pt(3, key_a_big_press, 3);
+        }
+        if (mode == 0 || mode == 2) {
+            hid_data_send_pt(3, key_a_big_null, 3);
+        }
+    } else if (key_value == KEY_SMALL_ID) {
+        if (mode == 0 || mode == 1) {
+            /* hid_data_send_pt(1,key_b_small_press,8); */
+            hid_data_send_pt(3, key_a_big_press, 3);
+        }
+        if (mode == 0 || mode == 2) {
+            /* hid_data_send_pt(1,key_b_small_null,8); */
+            hid_data_send_pt(3, key_a_big_null, 3);
+        }
+    }
+
+}
+
+/* static u16 key_timer_id = 0; */
+/* static void key_timer_handle(void *priv) */
+/* { */
+/* key_value_send((u32)priv,0); */
+/* } */
+
+/* static void key_timer_start(u32 priv) */
+/* { */
+/* if(!key_timer_id){ */
+/* log_info("key_timer start"); */
+/* key_timer_id = sys_timer_add((void*)priv,key_timer_handle,30); */
+/* } */
+/* }	 */
+
+/* static void key_timer_stop(void) */
+/* { */
+/* if(key_timer_id){ */
+/* log_info("key_timer stop"); */
+/* sys_timer_del(key_timer_id); */
+/* key_timer_id = 0; */
+/* } */
+/* } */
+
 static void app_key_deal_test(u8 key_type, u8 key_value)
 {
-	u16 key_msg = 0;
-	void (*hid_data_send_pt)(u8 report_id, u8 *data, u16 len) = NULL;
+    u16 key_msg = 0;
 
 #if TCFG_USER_EDR_ENABLE
-	if(!edr_hid_is_connected()){
-		bt_connect_phone_back_start();//回连
-		return;
-	}
+    if (!edr_hid_is_connected()) {
+        if (bt_connect_phone_back_start(1)) { //回连
+            return;
+        }
+    }
 #endif
 
-	if (key_type == KEY_EVENT_HOLD) {
-		led_on_off(LED_KEY_HOLD,1);
-	}
-	else{
-		led_on_off(LED_KEY_PRESS,1);
-	}
+    switch (key_type) {
+    case KEY_EVENT_CLICK:
+        key_value_send(key_value, 0);
+        led_on_off(LED_KEY_UP, 0);
+        break;
 
-	if (bt_hid_mode == HID_MODE_EDR) {
-#if TCFG_USER_EDR_ENABLE
-		hid_data_send_pt = edr_hid_data_send;
-#endif
-	}
-	else{
-#if TCFG_USER_BLE_ENABLE
-		hid_data_send_pt = ble_hid_data_send;
-#endif
-	}
+    case KEY_EVENT_LONG:
+        key_value_send(key_value, 0);
+        if (io_key_is_vaild) {
+            led_on_off(LED_KEY_HOLD, 0);
+        } else {
+            led_on_off(LED_KEY_UP, 0);
+        }
+        break;
 
-	if(!hid_data_send_pt){
-		return;
-	}
+    case KEY_EVENT_HOLD:
+        if (key_value == KEY_BIG_ID) {
+            //启动连拍
+            key_value_send(key_value, 1);
+        }
+        led_on_off(LED_KEY_HOLD, 0);
+        break;
 
-	if (key_type == KEY_EVENT_CLICK || key_type == KEY_EVENT_LONG) {
-		if(key_value == 1){
-			hid_data_send_pt(3,key_a_big_press,3);
-			hid_data_send_pt(3,key_a_big_null,3);
-		}
-		else if(key_value == 2){
-			hid_data_send_pt(1,key_b_small_press,8);
-			hid_data_send_pt(1,key_b_small_null,8);
-		}
-	} 
+    case KEY_EVENT_UP:
+        if (key_value == KEY_BIG_ID) {
+            //停止连拍
+            key_value_send(key_value, 2);
+        }
+        led_on_off(LED_KEY_UP, 0);
+        break;
 
-	if (key_type == KEY_EVENT_HOLD) {
-		if(key_value == 1){
-			hid_data_send_pt(3,key_a_big_press,3);
-			hid_data_send_pt(3,key_a_big_null,3);
-		}
-		else if(key_value == 2){
-			hid_data_send_pt(1,key_b_small_press,8);
-			hid_data_send_pt(1,key_b_small_null,8);
-		}
-	} 
+    default:
+        break;
+    }
+
 
     /* if (key_type == KEY_EVENT_DOUBLE_CLICK && key_value == TCFG_ADKEY_VALUE0) { */
-/* #if (TCFG_USER_EDR_ENABLE && TCFG_USER_BLE_ENABLE) */
-        /* is_hid_active = 1; */
-        /* if (HID_MODE_BLE == bt_hid_mode) { */
-            /* app_select_btmode(HID_MODE_EDR); */
-        /* } else { */
-            /* app_select_btmode(HID_MODE_BLE); */
-        /* } */
-        /* os_time_dly(WAIT_DISCONN_TIME_MS / 10); //for disconnect ok */
-        /* p33_soft_reset(); */
-        /* while (1); */
-/* #endif */
+    /* #if (TCFG_USER_EDR_ENABLE && TCFG_USER_BLE_ENABLE) */
+    /* is_hid_active = 1; */
+    /* if (HID_MODE_BLE == bt_hid_mode) { */
+    /* app_select_btmode(HID_MODE_EDR); */
+    /* } else { */
+    /* app_select_btmode(HID_MODE_BLE); */
+    /* } */
+    /* os_time_dly(WAIT_DISCONN_TIME_MS / 10); //for disconnect ok */
+    /* p33_soft_reset(); */
+    /* while (1); */
+    /* #endif */
     /* } */
 }
 //----------------------------------
@@ -516,8 +695,7 @@ static void hid_set_soft_poweroff(void)
     sys_timeout_add(NULL, power_set_soft_poweroff, WAIT_DISCONN_TIME_MS);
 }
 
-
-
+void bredr_set_fix_pwr(u8 fix);
 extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
 static void app_start()
 {
@@ -529,6 +707,7 @@ static void app_start()
     u32 sys_clk =  clk_get("sys");
     bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
 
+    led_on_off(LED_INIT, 0);
 
     bt_function_select_init();
     bredr_handle_register();
@@ -546,8 +725,7 @@ static void app_start()
 #endif
     /* sys_auto_shut_down_enable(); */
     /* sys_auto_sniff_controle(1, NULL); */
-	led_init();
-
+    bredr_set_fix_pwr(7);
 }
 
 static int state_machine(struct application *app, enum app_state state, struct intent *it)
@@ -581,7 +759,7 @@ static int state_machine(struct application *app, enum app_state state, struct i
 
 #define  SNIFF_CNT_TIME               5/////<空闲5S之后进入sniff模式
 
-#define SNIFF_MAX_INTERVALSLOT        (800 *2)
+#define SNIFF_MAX_INTERVALSLOT        800//(800 *2)
 #define SNIFF_MIN_INTERVALSLOT        100
 #define SNIFF_ATTEMPT_SLOT            4
 #define SNIFF_TIMEOUT_SLOT            1
@@ -679,8 +857,11 @@ static void bt_wait_phone_connect_control(u8 enable)
         if (bt_hid_mode != HID_MODE_EDR) {
             return;
         }
-		led_on_off(LED_WAIT_CONNECT,1);
-		log_info("is_1t2_connection:%d \t total_conn_dev:%d, enable:%d\n", is_1t2_connection(), get_total_connect_dev(), enable);
+        if (LED_INIT != led_state) {
+            led_on_off(LED_WAIT_CONNECT, 0);
+        }
+        reconnect_mode = 0;
+        log_info("is_1t2_connection:%d \t total_conn_dev:%d, enable:%d\n", is_1t2_connection(), get_total_connect_dev(), enable);
         if (is_1t2_connection()) {
             /*达到最大连接数，可发现(0)可连接(0)*/
             user_send_cmd_prepare(USER_CTRL_WRITE_SCAN_DISABLE, 0, NULL);
@@ -724,35 +905,71 @@ void bt_send_pair(u8 en)
 }
 
 
-
 u8 connect_last_device_from_vm();
-int bt_connect_phone_back_start(void)
+int bt_connect_phone_back_start(u8 mode)
 {
-	log_info("bt_hid_mode= %d",bt_hid_mode);
-	if (bt_hid_mode != HID_MODE_EDR) {
-		return 0;
-	}
+    log_info("bt_hid_mode= %d", bt_hid_mode);
+    if (bt_hid_mode != HID_MODE_EDR) {
+        return 0;
+    }
 
-	if(led_state == LED_AUTO_CONNECT){
-		log_info("connect doing");
-		return 1;
-	}
+    if (led_state == LED_AUTO_CONNECT) {
+        log_info("doing1");
+        auto_reconnect_stop();
+        return 1;
+    }
+
+    log_info("old:%d,new:%d\n", reconnect_mode, mode);
+
+    if (reconnect_mode == 2 && mode == 1) {
+        reconnect_mode = mode;
+        led_on_off(LED_AUTO_CONNECT, 0);
+        log_info("doing2");
+        return 1;
+    }
+
+    reconnect_mode = mode;
 
     if (connect_last_device_from_vm()) {
         log_info("------bt_connect_phone_start------");
-        /* clear_current_poweron_memory_search_index(1); */
-		led_on_off(LED_AUTO_CONNECT,1);
-        return 1 ;
+        if (reconnect_mode == 1) {
+            led_on_off(LED_AUTO_CONNECT, 0);
+        }
+        return 1;
+    } else {
+        log_info("no pair info");
     }
-	else{
-		log_info("no pair info");
-	}
     return 0;
 }
 
+static void auto_reconnect_stop(void)
+{
+    if (auto_reconnect_timer) {
+        log_info("auto_reconnect stop");
+        sys_timer_del(auto_reconnect_timer);
+        auto_reconnect_timer = 0;
+    }
+}
+
+static void auto_reconnect_start(void)
+{
+    if (!auto_reconnect_timer) {
+        log_info("auto_reconnect start");
+        auto_reconnect_handle();//do firstly
+        auto_reconnect_timer = sys_timer_add(0, auto_reconnect_handle, 15000);
+    }
+}
 
 
-
+static void auto_reconnect_handle(void)
+{
+    if (reconnect_mode == 2) {
+        reconnect_mode = 0;
+    }
+    if (!bt_connect_phone_back_start(2)) {
+        auto_reconnect_stop();
+    }
+}
 
 
 #define HCI_EVENT_INQUIRY_COMPLETE                            0x01
@@ -779,6 +996,7 @@ int bt_connect_phone_back_start(void)
 #define ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR    0x0F
 #define ERROR_CODE_CONNECTION_ACCEPT_TIMEOUT_EXCEEDED         0x10
 #define ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION          0x13
+#define ERROR_CODE_REMOTE_USER_TERMINATED_LOW_RESOURCES       0x14
 #define ERROR_CODE_CONNECTION_TERMINATED_BY_LOCAL_HOST        0x16
 
 #define CUSTOM_BB_AUTO_CANCEL_PAGE                            0xFD  //// app cancle page
@@ -787,17 +1005,18 @@ int bt_connect_phone_back_start(void)
 
 static void bt_hci_event_connection(struct bt_event *bt)
 {
-    led_on_off(LED_CONNECTED,0);
-	bt_wait_phone_connect_control(0);
+    auto_reconnect_stop();
+    led_on_off(LED_CLOSE, 0);
+    bt_wait_phone_connect_control(0);
 }
 
 static void bt_hci_event_disconnect(struct bt_event *bt)
 {
-/* #if (RCSP_BTMATE_EN && RCSP_UPDATE_EN) */
-/*     if (get_jl_update_flag()) { */
-/*         JL_rcsp_event_to_user(DEVICE_EVENT_FROM_RCSP, MSG_JL_UPDATE_START, NULL, 0); */
-/*     } */
-/* #endif */
+    /* #if (RCSP_BTMATE_EN && RCSP_UPDATE_EN) */
+    /*     if (get_jl_update_flag()) { */
+    /*         JL_rcsp_event_to_user(DEVICE_EVENT_FROM_RCSP, MSG_JL_UPDATE_START, NULL, 0); */
+    /*     } */
+    /* #endif */
     bt_wait_phone_connect_control(1);
 }
 
@@ -834,11 +1053,11 @@ static int bt_hci_event_handler(struct bt_event *bt)
         } else {
 
 #if TCFG_USER_BLE_ENABLE
-			//1:edr con;2:ble con;
-			if(1 == bt->value) {
-				extern void bt_ble_adv_enable(u8 enable);
-				bt_ble_adv_enable(0);
-			}
+            //1:edr con;2:ble con;
+            if (1 == bt->value) {
+                extern void bt_ble_adv_enable(u8 enable);
+                bt_ble_adv_enable(0);
+            }
 #endif
         }
     }
@@ -922,9 +1141,11 @@ static int bt_hci_event_handler(struct bt_event *bt)
             bt_hci_event_page_timeout(bt);
             break;
 
+        case ERROR_CODE_REMOTE_USER_TERMINATED_LOW_RESOURCES:
         case ERROR_CODE_CONNECTION_TIMEOUT:
             log_info(" ERROR_CODE_CONNECTION_TIMEOUT \n");
             bt_hci_event_connection_timeout(bt);
+            auto_reconnect_start();
             break;
 
         case ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS  :
@@ -1020,6 +1241,9 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
             sys_auto_sniff_controle(0, bt->args);
         }
         break;
+    case  BT_STATUS_TRIM_OVER:
+        log_info("BT STATUS TRIM OVER\n");
+        break;
     default:
         log_info(" BT STATUS DEFAULT\n");
         break;
@@ -1093,9 +1317,7 @@ static void app_select_btmode(u8 mode)
         //init start
     }
 
-
     log_info("###### %s: %d,%d\n", __FUNCTION__, mode, bt_hid_mode);
-
 
     if (bt_hid_mode == HID_MODE_BLE) {
         //ble
@@ -1118,12 +1340,12 @@ static void app_select_btmode(u8 mode)
 
 #if TCFG_USER_EDR_ENABLE
         //close edr
-		
+
 #ifndef CONFIG_CPU_BR30
-		radio_set_eninv(0);
+        radio_set_eninv(0);
 #endif
-		bredr_power_put();
-		sys_auto_sniff_controle(0, NULL);
+        bredr_power_put();
+        sys_auto_sniff_controle(0, NULL);
 #endif
     } else {
         //edr
@@ -1144,8 +1366,8 @@ static void app_select_btmode(u8 mode)
 #if TCFG_USER_EDR_ENABLE
         if (mode == HID_MODE_INIT) {
             user_hid_enable(1);
-            if (!bt_connect_phone_back_start()) {
-                bt_wait_phone_connect_control(1);
+            if (!bt_connect_phone_back_start(1)) {
+                /* bt_wait_phone_connect_control(1); */
             }
         }
 #endif
@@ -1153,7 +1375,7 @@ static void app_select_btmode(u8 mode)
     }
 
     trace_run_debug_val(0);
-	hid_vm_deal(1);
+    hid_vm_deal(1);
 }
 
 

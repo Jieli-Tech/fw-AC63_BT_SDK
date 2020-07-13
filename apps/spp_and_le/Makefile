@@ -27,6 +27,7 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/app_idle.o \
 	$(ROOT)/apps/$(APP_CASE)/app_spp_and_le.o \
 	$(ROOT)/apps/$(APP_CASE)/app_at_com.o \
+	$(ROOT)/apps/$(APP_CASE)/app_dongle.o \
 	$(ROOT)/apps/$(APP_CASE)/at_cmds.o \
 	$(ROOT)/apps/$(APP_CASE)/at_uart.o \
 	$(ROOT)/apps/$(APP_CASE)/misc.o \
@@ -34,6 +35,8 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/log_config.o \
 	$(ROOT)/apps/$(APP_CASE)/user_cfg.o \
 	$(ROOT)/apps/$(APP_CASE)/app_charge.o \
+	$(ROOT)/apps/$(APP_CASE)/rtc_alarm.o \
+	$(ROOT)/apps/$(APP_CASE)/hid_mouse_keyboard.o \
 	$(ROOT)/apps/common/update/update.o \
 	$(ROOT)/apps/common/third_party_profile/common/custom_cfg.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/trans_data_demo/spp_user.o \
@@ -56,3 +59,4 @@ objs += \
 	$(ROOT)/apps/common/third_party_profile/jieli/le_client_demo.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/le_at_com.o \
 
+-include $(ROOT)/apps/common/usb/Makefile.inc

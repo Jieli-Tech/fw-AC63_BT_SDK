@@ -106,5 +106,9 @@ void bt_get_tws_local_addr(u8 *addr);
 STATUS *get_led_config(void);
 STATUS *get_tone_config(void);
 void get_random_number(u8 *ptr, u8 len);
+extern void bt_get_vm_mac_addr(u8 *addr);
+extern u8 get_max_sys_vol(void);
+extern const char *bt_get_local_name();
+extern u16 bt_get_tws_device_indicate(u8 *tws_device_indicate);
 
 #endif

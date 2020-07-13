@@ -6,6 +6,7 @@
 #include "code_switch.h"
 #include "OMSensor_manage.h"
 #include "device/key_driver.h"
+#include "rtc_alarm.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -34,12 +35,12 @@ const struct low_power_param power_param = {
 /************************** UART config****************************/
 #if TCFG_UART0_ENABLE
 UART0_PLATFORM_DATA_BEGIN(uart0_data)
-    .tx_pin = TCFG_UART0_TX_PORT,                             //串口打印TX引脚选择
-    .rx_pin = TCFG_UART0_RX_PORT,                             //串口打印RX引脚选择
-    .baudrate = TCFG_UART0_BAUDRATE,                          //串口波特率
+.tx_pin = TCFG_UART0_TX_PORT,                             //串口打印TX引脚选择
+ .rx_pin = TCFG_UART0_RX_PORT,                             //串口打印RX引脚选择
+  .baudrate = TCFG_UART0_BAUDRATE,                          //串口波特率
 
-    .flags = UART_DEBUG,                                      //串口用来打印需要把改参数设置为UART_DEBUG
-UART0_PLATFORM_DATA_END()
+   .flags = UART_DEBUG,                                      //串口用来打印需要把改参数设置为UART_DEBUG
+    UART0_PLATFORM_DATA_END()
 #endif //TCFG_UART0_ENABLE
 
 
@@ -207,8 +208,33 @@ struct wakeup_param wk_param = {
     .charge = &charge_wkup,
 };
 
+#if TCFG_RTC_ALARM_ENABLE
+const struct sys_time def_sys_time = {  //初始一下当前时间
+    .year = 2020,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+const struct sys_time def_alarm = {     //初始一下目标时间，即闹钟时间
+    .year = 2050,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+extern void alarm_isr_user_cbfun(u8 index);
+RTC_DEV_PLATFORM_DATA_BEGIN(rtc_data)
+.default_sys_time = &def_sys_time,
+ .default_alarm = &def_alarm,
+  /* .cbfun = NULL,                      //闹钟中断的回调函数,用户自行定义 */
+  .cbfun = alarm_isr_user_cbfun,
+   RTC_DEV_PLATFORM_DATA_END()
+#endif
 
-void debug_uart_init(const struct uart_platform_data *data)
+   void debug_uart_init(const struct uart_platform_data *data)
 {
 #if TCFG_UART0_ENABLE
     if (data) {
@@ -235,6 +261,10 @@ void mouse_board_devices_init(void)
 #if TCFG_IOKEY_ENABLE
     key_driver_init();
 #endif /* TCFG_IOKEY_ENABLE */
+
+#if TCFG_RTC_ALARM_ENABLE
+    alarm_init(&rtc_data);
+#endif
 }
 
 
@@ -251,9 +281,9 @@ void board_init()
 
     power_set_mode(TCFG_LOWPOWER_POWER_SEL);
 
-	/*close FAST CHARGE */
-	/* CHARGE_EN(0); */
-	/* CHGBG_EN(0); */
+    /*close FAST CHARGE */
+    /* CHARGE_EN(0); */
+    /* CHGBG_EN(0); */
 }
 
 enum {
@@ -291,6 +321,11 @@ static void close_gpio(void)
     port_protect(port_group, TCFG_IOKEY_MOUSE_RK_PORT);
     port_protect(port_group, TCFG_IOKEY_MOUSE_HK_PORT);
 #endif /* TCFG_IOKEY_ENABLE */
+
+#if TCFG_RTC_ALARM_ENABLE
+    port_protect(port_group, IO_PORTA_01);
+    port_protect(port_group, IO_PORTA_02);
+#endif /* TCFG_RTC_ALARM_ENABLE */
 
     //< close gpio
     gpio_dir(GPIOA, 0, 9, port_group[PORTA_GROUP], GPIO_OR);

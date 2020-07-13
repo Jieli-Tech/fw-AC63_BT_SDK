@@ -10,6 +10,7 @@
 #include "timer.h"
 #include "wait.h"
 #include "app_core.h"
+#include "app_msg.h"
 #include "database.h"
 #include "fs/fs.h"
 #include "power_manage.h"

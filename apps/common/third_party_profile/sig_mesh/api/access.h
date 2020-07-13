@@ -353,18 +353,18 @@ struct bt_mesh_model {
 
 /** Callback structure for monitoring model message sending */
 struct bt_mesh_send_cb {
-	/** @brief Handler called at the start of the transmission.
-	 *
-	 *  @param duration The duration of the full transmission.
-	 *  @param err      Error occurring during sending.
-	 *  @param cb_data  Callback data, as passed to the send API.
-	 */
+    /** @brief Handler called at the start of the transmission.
+     *
+     *  @param duration The duration of the full transmission.
+     *  @param err      Error occurring during sending.
+     *  @param cb_data  Callback data, as passed to the send API.
+     */
     void (*start)(u16_t duration, int err, void *cb_data);
-	/** @brief Handler called at the end of the transmission.
-	 *
-	 *  @param err     Error occurring during sending.
-	 *  @param cb_data Callback data, as passed to the send API.
-	 */
+    /** @brief Handler called at the end of the transmission.
+     *
+     *  @param err     Error occurring during sending.
+     *  @param cb_data Callback data, as passed to the send API.
+     */
     void (*end)(int err, void *cb_data);
 
     void (*user_intercept)(u16_t *delay, u16_t *duration, void *cb_data);

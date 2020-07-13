@@ -28,9 +28,7 @@
 #include "app_action.h"
 
 #include "btstack/btstack_task.h"
-#include "btstack/ble_api.h"
 #include "btstack/bluetooth.h"
-#include "btstack/le_user.h"
 #include "user_cfg.h"
 #include "vm.h"
 #include "btcontroller_modules.h"
@@ -126,7 +124,7 @@ static u8 scan_rsp_data[ADV_RSP_PACKET_MAX];//max is 31
 /* #define adv_data       &att_ram_buffer[0] */
 /* #define scan_rsp_data  &att_ram_buffer[32] */
 
-static char gap_device_name[BT_NAME_LEN_MAX] = "br22_ble_test";
+static char gap_device_name[BT_NAME_LEN_MAX] = "jl_ble_test";
 static u8 gap_device_name_len = 0;
 static u8 ble_work_state = 0;
 static u8 test_read_write_buf[4];
@@ -907,7 +905,6 @@ void ble_profile_init(void)
 
 #if EXT_ADV_MODE_EN
 
-#include "ble_data_types.h"
 
 #define EXT_ADV_NAME                    'J', 'L', '_', 'E', 'X', 'T', '_', 'A', 'D', 'V'
 /* #define EXT_ADV_NAME                    "JL_EXT_ADV" */
@@ -1145,7 +1142,7 @@ void bt_ble_init(void)
 {
     log_info("***** ble_init******\n");
     char *name_p;
-    u8 ext_name_len = sizeof(ble_ext_name);
+    u8 ext_name_len = sizeof(ble_ext_name)-1;
 
     name_p = bt_get_local_name();
     gap_device_name_len = strlen(name_p);

@@ -12,14 +12,12 @@
 <Option compiler="q32s_lto_compiler" />
 <Compiler>
 <Add option="-integrated-as" />
-<Add option="-fno-builtin" />
 <Add option="-c" />
 <Add option="-g" />
 <Add option="-O0" />
 <Add option="-flto" />
 <Add option="-Os" />
 <Add option="-Wcast-align" />
-<Add option="-ffreestanding" />
 <Add option="-w" />
 <Add option="-fallow-pointer-null" />
 <Add option="-Wincompatible-pointer-types" />
@@ -27,8 +25,8 @@
 <Add option="-DCONFIG_CPU_BD29" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
 <Add option="-DCONFIG_FREE_RTOS_ENABLE" />
-<Add option="-DTCFG_APP_BT_EN=1" />
 <Add option="-DCONFIG_LINK_INQUIRY_ENABLE=0" />
+<Add option="-DTCFG_APP_BT_EN=1" />
 <Add option="-DEVENT_HANDLER_NUM_CONFIG=2" />
 <Add option="-DEVENT_TOUCH_ENABLE_CONFIG=0" />
 <Add option="-DEVENT_POOL_SIZE_CONFIG=256" />
@@ -42,6 +40,7 @@
 <Add option="-DVM_MAX_SIZE_CONFIG=16*1024" />
 <Add option="-DVM_ITEM_MAX_NUM=128" />
 <Add option="-DCONFIG_TWS_ENABLE" />
+<Add option="-DCONFIG_MESH_CASE_ENABLE" />
 <Add option="-DCONFIG_LITE_DECODER=0" />
 <Add option="-DCONFIG_LITE_AEC_ENABLE=0" />
 <Add option="-DTEST_DUT_CODE=1" />
@@ -53,11 +52,6 @@
 <Add option="-DCONFIG_MMU_ENABLE" />
 <Add option="-D__GCC_Q32S__" />
 <Add option="-DCONFIG_NEW_ECC_ENABLE" />
-<Add directory="../../../../apps/mesh/board/bd29" />
-<Add directory="../../../../apps/mesh/include" />
-<Add directory="../../../../apps/common" />
-<Add directory="../../../../apps/common/include" />
-<Add directory="../../../../apps/config/include" />
 <Add directory="../../../../include_lib" />
 <Add directory="../../../../include_lib/driver" />
 <Add directory="../../../../include_lib/driver/device" />
@@ -66,12 +60,25 @@
 <Add directory="../../../../include_lib/system/generic" />
 <Add directory="../../../../include_lib/system/device" />
 <Add directory="../../../../include_lib/system/fs" />
-<Add directory="../../../../include_lib/system/os/FreeRTOS" />
-<Add directory="../../../../include_lib/update" />
-<Add directory="../../../../include_lib/btstack" />
+<Add directory="../../../../include_lib/system/ui" />
 <Add directory="../../../../include_lib/btctrler" />
 <Add directory="../../../../include_lib/btctrler/port/bd29" />
+<Add directory="../../../../include_lib/update" />
+<Add directory="../../../../include_lib/agreement" />
+<Add directory="../../../../include_lib/ai_stack" />
+<Add directory="../../../../include_lib/ai_stack/JL_rcsp" />
 <Add directory="../../../../include_lib/media/media_origin" />
+<Add directory="../../../../include_lib/media/media_origin/media" />
+<Add directory="../../../../include_lib/media/media_origin/media/cpu/bd29" />
+<Add directory="../../../../include_lib/media/media_origin/media/cpu/bd29/asm" />
+<Add directory="../../../../include_lib/media/media_origin/media/aec" />
+<Add directory="../../../../apps/mesh/board/bd29" />
+<Add directory="../../../../apps/mesh/include" />
+<Add directory="../../../../apps/common" />
+<Add directory="../../../../apps/common/include" />
+<Add directory="../../../../apps/config/include" />
+<Add directory="../../../../include_lib/system/os/FreeRTOS" />
+<Add directory="../../../../include_lib/btstack" />
 <Add directory="../../../../apps/common/third_party_profile" />
 <Add directory="../../../../apps/common/third_party_profile/sig_mesh" />
 <Add directory="../../../../apps/common/third_party_profile/sig_mesh/tinycrypt/include" />
@@ -101,6 +108,7 @@
 </Linker>
 <ExtraCommands>
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\sdk_ld.c -o ..\..\..\..\cpu\bd29\sdk.ld" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\tools\download.c -o ..\..\..\..\cpu\bd29\tools\download.bat" />
 <Mode before="always" />
 <Add after="..\..\..\..\cpu\bd29\tools\download.bat sdk" />
 <Mode after="always" />
@@ -183,6 +191,8 @@
 <Unit filename="../../../../apps/mesh/api/mesh_config_common.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/api/model_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/api/model_api.h" />
+<Unit filename="../../../../apps/mesh/api/unix_timestamp.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/mesh/api/unix_timestamp.h" />
 <Unit filename="../../../../apps/mesh/app_idle.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/app_main.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/app_mesh.c"><Option compilerVer="CC"/></Unit>
@@ -197,9 +207,9 @@
 <Unit filename="../../../../apps/mesh/board/bd29/board_ac6319_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd29/board_ac6319_demo_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd29/board_config.h" />
+<Unit filename="../../../../apps/mesh/examples/AliGenie_socket.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/generic_onoff_client.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/generic_onoff_server.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/mesh/examples/tmall_genie_vendor.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/vendor_client.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/vendor_server.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/include/app_action.h" />
@@ -240,12 +250,22 @@
 <Unit filename="../../../../include_lib/btctrler/hci_transport.h" />
 <Unit filename="../../../../include_lib/btctrler/port/bd29/btcontroller_config.h" />
 <Unit filename="../../../../include_lib/btstack/avctp_user.h" />
-<Unit filename="../../../../include_lib/btstack/ble_api.h" />
-<Unit filename="../../../../include_lib/btstack/ble_data_types.h" />
 <Unit filename="../../../../include_lib/btstack/bluetooth.h" />
 <Unit filename="../../../../include_lib/btstack/bt_profile_config.h" />
+<Unit filename="../../../../include_lib/btstack/btstack_event.h" />
 <Unit filename="../../../../include_lib/btstack/btstack_task.h" />
-<Unit filename="../../../../include_lib/btstack/le_user.h" />
+<Unit filename="../../../../include_lib/btstack/btstack_typedef.h" />
+<Unit filename="../../../../include_lib/btstack/frame_queque.h" />
+<Unit filename="../../../../include_lib/btstack/le/att.h" />
+<Unit filename="../../../../include_lib/btstack/le/ble_api.h" />
+<Unit filename="../../../../include_lib/btstack/le/ble_data_types.h" />
+<Unit filename="../../../../include_lib/btstack/le/gatt.h" />
+<Unit filename="../../../../include_lib/btstack/le/le_user.h" />
+<Unit filename="../../../../include_lib/btstack/le/sm.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/baidu/dma_protobuf.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_dma.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_dma_pb.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_platform.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/adc_api.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/bd29.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/charge.h" />
@@ -270,6 +290,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/power_interface.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/pwm_led.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/rdec.h" />
+<Unit filename="../../../../include_lib/driver/cpu/bd29/asm/rtc.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/spi.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/spiflash.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/uart.h" />
@@ -279,6 +300,7 @@
 <Unit filename="../../../../include_lib/driver/device/spiflash.h" />
 <Unit filename="../../../../include_lib/driver/device/uart.h" />
 <Unit filename="../../../../include_lib/system/app_core.h" />
+<Unit filename="../../../../include_lib/system/app_msg.h" />
 <Unit filename="../../../../include_lib/system/bank_switch.h" />
 <Unit filename="../../../../include_lib/system/config/config_transport.h" />
 <Unit filename="../../../../include_lib/system/crypto_toolbox/Crypto_hash.h" />

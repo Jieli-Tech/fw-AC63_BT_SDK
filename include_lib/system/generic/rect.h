@@ -4,6 +4,7 @@
 #include "typedef.h"
 
 
+#define AT_UI_RAM             AT(.ui_ram)
 
 struct position {
     int x;
@@ -35,7 +36,7 @@ static inline int in_rect(const struct rect *rect, struct position *pos)
     return false;
 }
 
-
+AT_UI_RAM
 static inline bool get_rect_cover(const struct rect *a, const struct rect *b, struct rect *c)
 {
     int right, bottom;

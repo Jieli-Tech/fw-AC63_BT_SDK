@@ -52,7 +52,7 @@ extern void adc_vbg_init();
 extern void adc_pmu_ch_select(u32 ch);
 extern void adc_pmu_detect_en(u32 ch);
 
-void adc_dump(void);
+u32 adc_sample(u32 ch);
 //
 u32 adc_get_value(u32 ch);
 
@@ -62,12 +62,22 @@ u32 adc_remove_sample_ch(u32 ch);
 
 u32 adc_get_voltage(u32 ch);
 
+u32 adc_value_to_voltage(u32 adc_vbg, u32 adc_ch_val);
+
+void adc_set_vbat_vddio_tieup(u8 en);
 
 u8 get_sysvdd_aims_level(u16 aims_mv);
 
 u8 get_vdc13_aims_level(u16 aims_mv);
 
 u8 get_mvddio_aims_level(u16 aims_mv);
+
+u8 get_wvddio_aims_level(u16 aims_mv);
+
+void pmu_voltage_dump(void);
+
+void check_pmu_voltage(void);
+
 
 void set_change_vbg_value_flag(void);
 u32 adc_check_vbat_lowpower();

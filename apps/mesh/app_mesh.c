@@ -75,7 +75,7 @@ static void app_start()
     log_info("-------------BLE MESH DEMO-------------");
     log_info("=======================================");
 
-    clk_set("sys", 24*1000000);
+    clk_set("sys", 24 * 1000000);
     u32 sys_clk =  clk_get("sys");
     bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
 
@@ -129,7 +129,7 @@ static int bt_hci_event_handler(struct bt_event *bt)
             return 0;
         } else {
             //1:edr con;2:ble con;
-            if(1 == bt->value) {
+            if (1 == bt->value) {
                 bt_ble_adv_enable(0);
             }
         }

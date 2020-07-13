@@ -4,6 +4,7 @@
 #include "asm/wdt.h"
 #include "os/os_api.h"
 #include "app_config.h"
+#include "cpu.h"
 
 #if RCSP_BTMATE_EN
 #include "rcsp_user_update.h"
@@ -28,6 +29,8 @@ extern void reset_bt_bredrexm_addr(void);
 extern void enter_sys_soft_poweroff();
 extern void *sdmmc_get_update_parm(void);
 extern u8 get_ota_status();
+extern void get_nor_update_param(void *buf);
+extern const int support_norflash_update_en;
 
 
 #ifdef DEV_UPDATE_SUPPORT_JUMP
@@ -118,10 +121,8 @@ int update_result_deal()
     result = (g_updata_flag & 0xffff);
     log_info("<--------update_result_deal=0x%x %x--------->\n", result, g_updata_flag >> 16);
 #ifdef  CONFIG_DEBUG_ENABLE
-#if (defined(TCFG_APP_BT_EN) && TCFG_APP_BT_EN)
     u8 check_update_param_len(void);
     ASSERT(check_update_param_len(), "UPDATE_PARAM_LEN ERROR");
-#endif
 #endif
     if (result == UPDATA_NON || 0 == result) {
         return 0;
@@ -200,7 +201,6 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
         memcpy(p->parm_priv, priv, len);
     } else {
         memset(p->parm_priv, 0x00, sizeof(p->parm_priv));
-#if (defined(TCFG_APP_BT_EN) && TCFG_APP_BT_EN)
         if (up_type == BLE_TEST_UPDATA) {
             extern int le_controller_get_mac(void *addr);
             le_controller_get_mac(addr);
@@ -208,7 +208,6 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
             puts("ble addr:\n");
             put_buf(p->parm_priv, 6);
         }
-#endif
     }
 #if (USE_SDFILE_NEW == 1)
     p->magic = UPDATE_PARAM_MAGIC;
@@ -219,7 +218,7 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
     if ((up_type == SD0_UPDATA) || (up_type == SD1_UPDATA)) {
         int sd_start = (u32)p + sizeof(UPDATA_PARM);
         void *sd = NULL;
-#if (defined(CONFIG_FATFS_ENBALE) && CONFIG_FATFS_ENBALE)
+#if CONFIG_FATFS_ENBALE
         sd = sdmmc_get_update_parm();
 #endif//CONFIG_FATFS_ENBALE
         if (sd) {
@@ -236,6 +235,10 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
         memset((void *)usb_start, 0, UPDATE_PRIV_PARAM_LEN);
     }
 #endif
+
+    if (support_norflash_update_en) {
+        get_nor_update_param(p->parm_priv);
+    }
     //log_info("UPDATA_PARM_ADDR = 0x%x\n", p);
     printf_buf((void *)p, sizeof(UPDATA_PARM));
 }
@@ -264,6 +267,7 @@ void ram_protect_close(void)
 
 extern void ll_hci_destory(void);
 extern void hci_controller_destory(void);
+extern const int support_norflash_update_en;
 
 void update_mode_api(UPDATA_TYPE up_type, ...)
 {
@@ -288,6 +292,10 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
     }
     //step 2: prepare parm
 
+
+    if (support_norflash_update_en) {          //外挂flash升级
+        up_type = NORFLASH_UPDATA;
+    }
 
     printf("update_type:0x%x\n", up_type);
     switch (up_type) {
@@ -324,7 +332,7 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
         updata_parm_set(up_type, (u8 *)&uart_param, sizeof(UPDATA_UART));
     }
     break;
-#if (defined(TCFG_APP_BT_EN) && TCFG_APP_BT_EN)
+
     case BT_UPDATA:
         if (__bt_updata_save_connection_info()) {
             log_error("bt save conn info fail!\n");
@@ -351,9 +359,9 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
         updata_parm_set(up_type, (u8 *)&addr, sizeof(addr));
         break;
 #endif
-#endif
 
     default:
+        updata_parm_set(up_type, NULL, 0);
         break;
     }
 
@@ -410,23 +418,28 @@ void update_parm_set_and_get_buf(int type, u32 loader_saddr, void **buf_addr, u1
     } else
 #endif
     {
-        updata_parm_set(type, (u8 *)loader_file_path, sizeof(loader_file_path));
+        if (support_norflash_update_en) {
+            updata_parm_set(NORFLASH_UPDATA, (u8 *)loader_file_path, sizeof(loader_file_path));
+        } else {
+            updata_parm_set(type, (u8 *)loader_file_path, sizeof(loader_file_path));
+        }
     }
 
     *buf_addr = UPDATA_FLAG_ADDR;
     *len = total_len;
 }
 
-int update_check_sniff_en(void){
-	#if (OTA_TWS_SAME_TIME_ENABLE && RCSP_ADV_EN)
-        if(tws_ota_control(OTA_STATUS_GET) != OTA_OVER){
-            return 0;
-        }
-    #endif
+int update_check_sniff_en(void)
+{
+#if (OTA_TWS_SAME_TIME_ENABLE && RCSP_ADV_EN)
+    if (tws_ota_control(OTA_STATUS_GET) != OTA_OVER) {
+        return 0;
+    }
+#endif
     if (get_ota_status()) {
         log_info("ota ing...");
         return 0;
-    }else{
+    } else {
         return 1;
     }
 }

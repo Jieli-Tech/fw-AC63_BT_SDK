@@ -220,8 +220,8 @@
  */
 static inline void sys_put_be16(u16_t val, u8_t dst[2])
 {
-	dst[0] = val >> 8;
-	dst[1] = val;
+    dst[0] = val >> 8;
+    dst[1] = val;
 }
 
 /**
@@ -235,8 +235,8 @@ static inline void sys_put_be16(u16_t val, u8_t dst[2])
  */
 static inline void sys_put_be24(u32_t val, u8_t dst[3])
 {
-	dst[0] = val >> 16;
-	sys_put_be16(val, &dst[1]);
+    dst[0] = val >> 16;
+    sys_put_be16(val, &dst[1]);
 }
 
 /**
@@ -250,8 +250,8 @@ static inline void sys_put_be24(u32_t val, u8_t dst[3])
  */
 static inline void sys_put_be32(u32_t val, u8_t dst[4])
 {
-	sys_put_be16(val >> 16, dst);
-	sys_put_be16(val, &dst[2]);
+    sys_put_be16(val >> 16, dst);
+    sys_put_be16(val, &dst[2]);
 }
 
 /**
@@ -265,8 +265,8 @@ static inline void sys_put_be32(u32_t val, u8_t dst[4])
  */
 static inline void sys_put_be48(u64_t val, u8_t dst[6])
 {
-	sys_put_be16(val >> 32, dst);
-	sys_put_be32(val, &dst[2]);
+    sys_put_be16(val >> 32, dst);
+    sys_put_be32(val, &dst[2]);
 }
 
 /**
@@ -280,8 +280,8 @@ static inline void sys_put_be48(u64_t val, u8_t dst[6])
  */
 static inline void sys_put_be64(u64_t val, u8_t dst[8])
 {
-	sys_put_be32(val >> 32, dst);
-	sys_put_be32(val, &dst[4]);
+    sys_put_be32(val >> 32, dst);
+    sys_put_be32(val, &dst[4]);
 }
 
 /**
@@ -295,8 +295,8 @@ static inline void sys_put_be64(u64_t val, u8_t dst[8])
  */
 static inline void sys_put_le16(u16_t val, u8_t dst[2])
 {
-	dst[0] = val;
-	dst[1] = val >> 8;
+    dst[0] = val;
+    dst[1] = val >> 8;
 }
 
 /**
@@ -310,8 +310,8 @@ static inline void sys_put_le16(u16_t val, u8_t dst[2])
  */
 static inline void sys_put_le24(u32_t val, u8_t dst[3])
 {
-	sys_put_le16(val, dst);
-	dst[2] = val >> 16;
+    sys_put_le16(val, dst);
+    dst[2] = val >> 16;
 }
 
 /**
@@ -325,8 +325,8 @@ static inline void sys_put_le24(u32_t val, u8_t dst[3])
  */
 static inline void sys_put_le32(u32_t val, u8_t dst[4])
 {
-	sys_put_le16(val, dst);
-	sys_put_le16(val >> 16, &dst[2]);
+    sys_put_le16(val, dst);
+    sys_put_le16(val >> 16, &dst[2]);
 }
 
 /**
@@ -340,8 +340,8 @@ static inline void sys_put_le32(u32_t val, u8_t dst[4])
  */
 static inline void sys_put_le48(u64_t val, u8_t dst[6])
 {
-	sys_put_le32(val, dst);
-	sys_put_le16(val >> 32, &dst[4]);
+    sys_put_le32(val, dst);
+    sys_put_le16(val >> 32, &dst[4]);
 }
 
 /**
@@ -355,8 +355,8 @@ static inline void sys_put_le48(u64_t val, u8_t dst[6])
  */
 static inline void sys_put_le64(u64_t val, u8_t dst[8])
 {
-	sys_put_le32(val, dst);
-	sys_put_le32(val >> 32, &dst[4]);
+    sys_put_le32(val, dst);
+    sys_put_le32(val >> 32, &dst[4]);
 }
 
 /**
@@ -371,7 +371,7 @@ static inline void sys_put_le64(u64_t val, u8_t dst[8])
  */
 static inline u16_t sys_get_be16(const u8_t src[2])
 {
-	return ((u16_t)src[0] << 8) | src[1];
+    return ((u16_t)src[0] << 8) | src[1];
 }
 
 /**
@@ -386,7 +386,7 @@ static inline u16_t sys_get_be16(const u8_t src[2])
  */
 static inline u32_t sys_get_be24(const u8_t src[3])
 {
-	return ((u32_t)src[0] << 16) | sys_get_be16(&src[1]);
+    return ((u32_t)src[0] << 16) | sys_get_be16(&src[1]);
 }
 
 /**
@@ -401,7 +401,7 @@ static inline u32_t sys_get_be24(const u8_t src[3])
  */
 static inline u32_t sys_get_be32(const u8_t src[4])
 {
-	return ((u32_t)sys_get_be16(&src[0]) << 16) | sys_get_be16(&src[2]);
+    return ((u32_t)sys_get_be16(&src[0]) << 16) | sys_get_be16(&src[2]);
 }
 
 /**
@@ -416,7 +416,7 @@ static inline u32_t sys_get_be32(const u8_t src[4])
  */
 static inline u64_t sys_get_be48(const u8_t src[6])
 {
-	return ((u64_t)sys_get_be32(&src[0]) << 32) | sys_get_be16(&src[4]);
+    return ((u64_t)sys_get_be32(&src[0]) << 32) | sys_get_be16(&src[4]);
 }
 
 /**
@@ -431,7 +431,7 @@ static inline u64_t sys_get_be48(const u8_t src[6])
  */
 static inline u64_t sys_get_be64(const u8_t src[8])
 {
-	return ((u64_t)sys_get_be32(&src[0]) << 32) | sys_get_be32(&src[4]);
+    return ((u64_t)sys_get_be32(&src[0]) << 32) | sys_get_be32(&src[4]);
 }
 
 /**
@@ -446,7 +446,7 @@ static inline u64_t sys_get_be64(const u8_t src[8])
  */
 static inline u16_t sys_get_le16(const u8_t src[2])
 {
-	return ((u16_t)src[1] << 8) | src[0];
+    return ((u16_t)src[1] << 8) | src[0];
 }
 
 /**
@@ -461,7 +461,7 @@ static inline u16_t sys_get_le16(const u8_t src[2])
  */
 static inline u32_t sys_get_le24(const u8_t src[3])
 {
-	return ((u32_t)src[2] << 16) | sys_get_le16(&src[0]);
+    return ((u32_t)src[2] << 16) | sys_get_le16(&src[0]);
 }
 
 /**
@@ -476,7 +476,7 @@ static inline u32_t sys_get_le24(const u8_t src[3])
  */
 static inline u32_t sys_get_le32(const u8_t src[4])
 {
-	return ((u32_t)sys_get_le16(&src[2]) << 16) | sys_get_le16(&src[0]);
+    return ((u32_t)sys_get_le16(&src[2]) << 16) | sys_get_le16(&src[0]);
 }
 
 /**
@@ -491,7 +491,7 @@ static inline u32_t sys_get_le32(const u8_t src[4])
  */
 static inline u64_t sys_get_le48(const u8_t src[6])
 {
-	return ((u64_t)sys_get_le32(&src[2]) << 32) | sys_get_le16(&src[0]);
+    return ((u64_t)sys_get_le32(&src[2]) << 32) | sys_get_le16(&src[0]);
 }
 
 /**
@@ -506,7 +506,7 @@ static inline u64_t sys_get_le48(const u8_t src[6])
  */
 static inline u64_t sys_get_le64(const u8_t src[8])
 {
-	return ((u64_t)sys_get_le32(&src[4]) << 32) | sys_get_le32(&src[0]);
+    return ((u64_t)sys_get_le32(&src[4]) << 32) | sys_get_le32(&src[0]);
 }
 
 /**
@@ -525,18 +525,18 @@ static inline u64_t sys_get_le64(const u8_t src[8])
 #if 0
 static inline void sys_memcpy_swap(void *dst, const void *src, size_t length)
 {
-	u8_t *pdst = (u8_t *)dst;
-	const u8_t *psrc = (const u8_t *)src;
+    u8_t *pdst = (u8_t *)dst;
+    const u8_t *psrc = (const u8_t *)src;
 
-	__ASSERT(((psrc < pdst && (psrc + length) <= pdst) ||
-		  (psrc > pdst && (pdst + length) <= psrc)),
-		 "Source and destination buffers must not overlap");
+    __ASSERT(((psrc < pdst && (psrc + length) <= pdst) ||
+              (psrc > pdst && (pdst + length) <= psrc)),
+             "Source and destination buffers must not overlap");
 
-	psrc += length - 1;
+    psrc += length - 1;
 
-	for (; length > 0; length--) {
-		*pdst++ = *psrc--;
-	}
+    for (; length > 0; length--) {
+        *pdst++ = *psrc--;
+    }
 }
 #else
 void sys_memcpy_swap(void *dst, const void *src, size_t length);
@@ -554,14 +554,14 @@ void sys_memcpy_swap(void *dst, const void *src, size_t length);
  */
 static inline void sys_mem_swap(void *buf, size_t length)
 {
-	size_t i;
+    size_t i;
 
-	for (i = 0; i < (length/2); i++) {
-		u8_t tmp = ((u8_t *)buf)[i];
+    for (i = 0; i < (length / 2); i++) {
+        u8_t tmp = ((u8_t *)buf)[i];
 
-		((u8_t *)buf)[i] = ((u8_t *)buf)[length - 1 - i];
-		((u8_t *)buf)[length - 1 - i] = tmp;
-	}
+        ((u8_t *)buf)[i] = ((u8_t *)buf)[length - 1 - i];
+        ((u8_t *)buf)[length - 1 - i] = tmp;
+    }
 }
 
 #endif /* ZEPHYR_INCLUDE_SYS_BYTEORDER_H_ */

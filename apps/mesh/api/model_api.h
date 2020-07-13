@@ -6,11 +6,11 @@
 #define SIG_MESH_GENERIC_ONOFF_SERVER       1 // examples/generic_onoff_server.c
 #define SIG_MESH_VENDOR_CLIENT              2 // examples/vendor_client.c
 #define SIG_MESH_VENDOR_SERVER              3 // examples/vendor_server.c
-#define SIG_MESH_TMALL_GENIE_VENDOR         4 // examples/tmall_genie_vendor.c
+#define SIG_MESH_ALIGENIE_SOCKET            4 // examples/AliGenie_socket.c
 // more...
 
 //< Config whick example will use in <examples>
-#define CONFIG_MESH_MODEL                   SIG_MESH_GENERIC_ONOFF_CLIENT
+#define CONFIG_MESH_MODEL                   SIG_MESH_VENDOR_SERVER
 
 
 #define BYTE_LEN(x...)                      sizeof((u8 []) {x})

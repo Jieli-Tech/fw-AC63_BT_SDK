@@ -36,22 +36,15 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
-#if (!TRANS_AT_COM) 
+#if CONFIG_APP_SPP_LE
 
 #define WAIT_DISCONN_TIME_MS     (300)
 
-void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
-
-const ci_transport_t *at_transport_uart_instance(void);
-
-void at_send_event(u8 opcode, const u8 *packet, int size);
-
 extern const u8 *bt_get_mac_addr();
 extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 void sys_auto_sniff_controle(u8 enable, u8 *addr);
-
-static const u8 bt_address_default[] = {0x11, 0x22, 0x33, 0x66, 0x77, 0x88};
+void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 
 static u8 is_app_active = 0;
 
@@ -87,7 +80,6 @@ static void bt_function_select_init()
         printf("\n-----edr + ble 's address-----");
         printf_buf((void *)bt_get_mac_addr(), 6);
         printf_buf((void *)tmp_ble_addr, 6);
-        /* bt_set_tx_power(9);//0~9 */
     }
 #endif
 }
@@ -130,53 +122,52 @@ static void app_set_soft_poweroff(void)
 #define LED_GPIO_PIN     IO_PORTB_05//IO_PORTB_01//IO_PORTA_00
 static void led_io_init(void)
 {
-	gpio_set_die(LED_GPIO_PIN, 1);
-	gpio_set_pull_down(LED_GPIO_PIN, 0);
-	gpio_set_pull_up(LED_GPIO_PIN, 0);
-	gpio_direction_output(LED_GPIO_PIN, 0);
+    gpio_set_die(LED_GPIO_PIN, 1);
+    gpio_set_pull_down(LED_GPIO_PIN, 0);
+    gpio_set_pull_up(LED_GPIO_PIN, 0);
+    gpio_direction_output(LED_GPIO_PIN, 0);
 }
 
 
 #define MHz_UNIT	1000000L
 #define KHz_UNIT	1000L
 
-static const u32 sys_clock_test_table[] = 
-{
-	24 * MHz_UNIT,
-	48 * MHz_UNIT,
-	64 * MHz_UNIT,
-	96 * MHz_UNIT,
-	120 * MHz_UNIT,
-	128 * MHz_UNIT,
-	160 * MHz_UNIT,
+static const u32 sys_clock_test_table[] = {
+    24 * MHz_UNIT,
+    48 * MHz_UNIT,
+    64 * MHz_UNIT,
+    96 * MHz_UNIT,
+    120 * MHz_UNIT,
+    128 * MHz_UNIT,
+    160 * MHz_UNIT,
 };
 
 
 
 static void led_timer_handle(void)
 {
-	static u8 clk_index = 0;
-	static u8 onoff = 0;
-	u32 clock_set_value;
+    static u8 clk_index = 0;
+    static u8 onoff = 0;
+    u32 clock_set_value;
 
-	onoff =!onoff;
-	gpio_direction_output(LED_GPIO_PIN, onoff);
+    onoff = !onoff;
+    gpio_direction_output(LED_GPIO_PIN, onoff);
 
-	if(onoff){
-		if(clk_index >= (sizeof(sys_clock_test_table)/4)){
-			clk_index = 0;
-		}   	
-		clock_set_value = sys_clock_test_table[clk_index]; 	
-		log_info("sys_clk_set:%d\n",clock_set_value);
-		clk_set("sys", clock_set_value);
-		clk_index++;
-	}
-}	
+    if (onoff) {
+        if (clk_index >= (sizeof(sys_clock_test_table) / 4)) {
+            clk_index = 0;
+        }
+        clock_set_value = sys_clock_test_table[clk_index];
+        log_info("sys_clk_set:%d\n", clock_set_value);
+        clk_set("sys", clock_set_value);
+        clk_index++;
+    }
+}
 
 static void app_start()
 {
     log_info("=======================================");
-    log_info("-------------spp_and_le DEMO-----------------");
+    log_info("-----------spp_and_le demo-------------");
     log_info("=======================================");
 
     clk_set("sys", BT_NORMAL_HZ);
@@ -199,8 +190,8 @@ static void app_start()
     /* app_timer_handle  = sys_timer_add(NULL, app_timer_handler, 500); */
 
 #if 0//for test
-	led_io_init();
-	sys_timer_add(0,led_timer_handle,500);
+    led_io_init();
+    sys_timer_add(0, led_timer_handle, 500);
 #endif
 }
 
@@ -214,7 +205,7 @@ static int state_machine(struct application *app, enum app_state state, struct i
             break;
         }
         switch (it->action) {
-        case ACTION_AT_MAIN:
+        case ACTION_SPPLE_MAIN:
             app_start();
             break;
         }
@@ -418,11 +409,11 @@ static void bt_hci_event_connection(struct bt_event *bt)
 extern void bt_get_vm_mac_addr(u8 *addr);
 static void bt_hci_event_disconnect(struct bt_event *bt)
 {
-/* #if (RCSP_BTMATE_EN && RCSP_UPDATE_EN) */
-/*     if (get_jl_update_flag()) { */
-/*         JL_rcsp_event_to_user(DEVICE_EVENT_FROM_RCSP, MSG_JL_UPDATE_START, NULL, 0); */
-/*     } */
-/* #endif */
+    /* #if (RCSP_BTMATE_EN && RCSP_UPDATE_EN) */
+    /*     if (get_jl_update_flag()) { */
+    /*         JL_rcsp_event_to_user(DEVICE_EVENT_FROM_RCSP, MSG_JL_UPDATE_START, NULL, 0); */
+    /*     } */
+    /* #endif */
     bt_wait_phone_connect_control_ext(1, 1);
 }
 
@@ -461,11 +452,11 @@ static int bt_hci_event_handler(struct bt_event *bt)
         } else {
 
 #if TCFG_USER_BLE_ENABLE
-			//1:edr con;2:ble con;
-			if(1 == bt->value) {
-				extern void bt_ble_adv_enable(u8 enable);
-				bt_ble_adv_enable(0);
-			}
+            //1:edr con;2:ble con;
+            if (1 == bt->value) {
+                extern void bt_ble_adv_enable(u8 enable);
+                bt_ble_adv_enable(0);
+            }
 #endif
         }
     }
@@ -584,14 +575,19 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
          */
         log_info("BT_STATUS_INIT_OK\n");
 
-#if TRANS_DATA_EN
+#if(TCFG_USER_EDR_ENABLE && TRANS_DATA_EN)
         transport_spp_init();
-#endif
         bt_wait_phone_connect_control_ext(1, 1);
+#endif
 
 #if TCFG_USER_BLE_ENABLE
-        extern void bt_ble_init(void);
-        bt_ble_init();
+        if (BT_MODE_IS(BT_BQB)) {
+            void ble_bqb_test_thread_init(void);
+            ble_bqb_test_thread_init();
+        } else {
+            extern void bt_ble_init(void);
+            bt_ble_init();
+        }
 #endif
         break;
 
@@ -645,6 +641,11 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
             sys_auto_sniff_controle(0, bt->args);
         }
         break;
+
+    case  BT_STATUS_TRIM_OVER:
+        log_info("BT STATUS TRIM OVER\n");
+        break;
+
     default:
         log_info(" BT STATUS DEFAULT\n");
         break;
@@ -699,7 +700,7 @@ static int event_handler(struct application *app, struct sys_event *event)
     return FALSE;
 }
 
-static const struct application_operation app_at_ops = {
+static const struct application_operation app_spple_ops = {
     .state_machine  = state_machine,
     .event_handler 	= event_handler,
 };
@@ -707,10 +708,10 @@ static const struct application_operation app_at_ops = {
 /*
  * 注册AT Module模式
  */
-REGISTER_APPLICATION(app_app_music) = {
-    .name 	= "at",
-    .action	= ACTION_AT_MAIN,
-    .ops 	= &app_at_ops,
+REGISTER_APPLICATION(app_spple) = {
+    .name 	= "spp_le",
+    .action	= ACTION_SPPLE_MAIN,
+    .ops 	= &app_spple_ops,
     .state  = APP_STA_DESTROY,
 };
 

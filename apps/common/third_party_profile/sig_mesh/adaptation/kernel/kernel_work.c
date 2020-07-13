@@ -2,7 +2,7 @@
 #include "system/timer.h"
 
 #define LOG_TAG             "[MESH-kwork]"
-#define LOG_INFO_ENABLE
+/* #define LOG_INFO_ENABLE */
 #define LOG_DEBUG_ENABLE
 #define LOG_WARN_ENABLE
 #define LOG_ERROR_ENABLE
@@ -12,11 +12,20 @@
 
 #if ADAPTATION_COMPILE_DEBUG
 
-u32 k_uptime_get(void) { return 0; }
+u32 k_uptime_get(void)
+{
+    return 0;
+}
 
-u32 k_uptime_get_32(void) { return 0; }
+u32 k_uptime_get_32(void)
+{
+    return 0;
+}
 
-u32 k_delayed_work_remaining_get(struct k_delayed_work *timer) { return 0; }
+u32 k_delayed_work_remaining_get(struct k_delayed_work *timer)
+{
+    return 0;
+}
 
 void k_delayed_work_cancel(struct k_delayed_work *timer) {}
 

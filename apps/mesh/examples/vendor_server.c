@@ -6,10 +6,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "btstack/bluetooth.h"
 #include "system/includes.h"
-#include "btstack/le_user.h"
 #include "bt_common.h"
-#include "btstack/ble_data_types.h"
 #include "api/sig_mesh_api.h"
 #include "model_api.h"
 
@@ -31,9 +30,6 @@ extern void prov_reset(void);
 static void vendor_set(struct bt_mesh_model *model,
                        struct bt_mesh_msg_ctx *ctx,
                        struct net_buf_simple *buf);
-static void vendor_status(struct bt_mesh_model *model,
-                          struct bt_mesh_msg_ctx *ctx,
-                          struct net_buf_simple *buf);
 
 /**
  * @brief Config current node features(Relay/Proxy/Friend/Low Power)
@@ -167,7 +163,6 @@ BT_MESH_MODEL_PUB_DEFINE(vendor_pub_cli, NULL, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
  */
 /*
  * Vendor Model Server Op Dispatch Table
- *
  */
 static const struct bt_mesh_model_op vendor_srv_op[] = {
     { BT_MESH_VENDOR_MODEL_OP_SET, ACCESS_OP_SIZE, vendor_set },
@@ -175,18 +170,8 @@ static const struct bt_mesh_model_op vendor_srv_op[] = {
 };
 
 /*
- * Vendor Model Client Op Dispatch Table
- */
-
-static const struct bt_mesh_model_op vendor_cli_op[] = {
-    { BT_MESH_VENDOR_MODEL_OP_STATUS, ACCESS_OP_SIZE, vendor_status },
-    BT_MESH_MODEL_OP_END,
-};
-
-/*
  * Server Configuration Declaration
  */
-
 static struct bt_mesh_cfg_srv cfg_srv = {
     .relay          = BT_MESH_FEATURES_GET(BT_MESH_FEAT_RELAY),
     .frnd           = BT_MESH_FEATURES_GET(BT_MESH_FEAT_FRIEND),
@@ -273,20 +258,6 @@ static void vendor_set(struct bt_mesh_model *model,
     if (bt_mesh_model_send(model, ctx, &ack_msg, NULL, NULL)) {
         log_info("Unable to send Status response\n");
     }
-}
-
-static void vendor_status(struct bt_mesh_model *model,
-                          struct bt_mesh_msg_ctx *ctx,
-                          struct net_buf_simple *buf)
-{
-    log_info("receive vendor server message len except opcode =0x%x", buf->len);
-    log_info_hexdump(buf->data, buf->len);
-
-    u8_t state;
-
-    state = buffer_pull_u8_from_head(buf);
-    log_info("Local Node 0x%04x receive ACK from Remote Node 0x%04x with led 0x%02x\n",
-             bt_mesh_model_elem(model)->addr, ctx->addr, state);
 }
 
 #define NODE_ADDR 0x0002

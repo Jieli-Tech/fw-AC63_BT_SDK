@@ -28,9 +28,7 @@
 #include "app_action.h"
 
 #include "btstack/btstack_task.h"
-#include "btstack/ble_api.h"
 #include "btstack/bluetooth.h"
-#include "btstack/le_user.h"
 #include "user_cfg.h"
 #include "vm.h"
 #include "btcontroller_modules.h"
@@ -101,6 +99,7 @@ static const uint8_t sm_min_key_size = 7;
 //连接参数设置
 static const uint8_t connection_update_enable = 1; ///0--disable, 1--enable
 static uint8_t connection_update_cnt = 0; //
+static uint8_t connection_update_waiting = 0; //
 static const struct conn_update_param_t Peripheral_Preferred_Connection_Parameters[] = {
     {6, 9,  100, 600}, //android
     {12, 12, 30, 400}, //ios
@@ -119,7 +118,7 @@ static u8 adv_data[ADV_RSP_PACKET_MAX];//max is 31
 static u8 scan_rsp_data_len;
 static u8 scan_rsp_data[ADV_RSP_PACKET_MAX];//max is 31
 
-static char gap_device_name[BT_NAME_LEN_MAX] = "br22_ble_test";
+static char gap_device_name[BT_NAME_LEN_MAX] = "jl_ble_test";
 static u8 gap_device_name_len = 0;
 static u8 ble_work_state = 0;
 static u8 first_pair_flag = 0;
@@ -129,7 +128,7 @@ static u8 adv_ctrl_en;
 static u16 adv_interval_val;
 
 //--------------------------------------------
-#define PAIR_DIREDT_ADV_EN            1//有配对，先定向广播，再普通广播
+#define PAIR_DIREDT_ADV_EN         1//有配对，先定向广播，再普通广播
 #define BLE_VM_HEAD_TAG           (0xB35C)
 #define BLE_VM_TAIL_TAG           (0x5CB3)
 struct pair_info_t {
@@ -161,7 +160,6 @@ static const char Software_Revision_String[] = "0.0.1";
 static const u8 System_ID[] = {0, 0, 0, 0, 0, 0, 0, 0};
 static const u8 PnP_ID[] = {0x02, 0x17, 0x27, 0x40, 0x00, 0x23, 0x00};
 static const u8 hid_information[] = {0x01, 0x01, 0x00, 0x02};
-
 
 static  u8 *report_map;
 static  u16 report_map_size;
@@ -470,7 +468,8 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     con_handle = little_endian_read_16(packet, 4);
                     first_pair_flag = 0;
                     connection_update_cnt = 0;
-                    cur_conn_latency = 0xffff;
+                    connection_update_waiting = 0;
+					cur_conn_latency = 0xffff;
                     log_info("HCI_SUBEVENT_LE_CONNECTION_COMPLETE: %0x\n", con_handle);
                     connection_update_complete_success(packet + 8);
                     ble_user_cmd_prepare(BLE_CMD_ATT_SEND_INIT, 4, con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_PAYLOAD_SIZE);
@@ -517,10 +516,11 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             }
             break;
 
-            case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
-                connection_update_complete_success(packet);
-                break;
-            }
+			case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
+			connection_update_waiting = 0;
+			connection_update_complete_success(packet);
+			break;
+			}
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -565,7 +565,8 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 log_info("remoter reject!!!\n");
                 check_connetion_updata_deal();
             } else {
-                connection_update_cnt = CONN_PARAM_TABLE_CNT;
+                connection_update_waiting = 1;
+				connection_update_cnt = CONN_PARAM_TABLE_CNT;
             }
             break;
 
@@ -834,17 +835,18 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
     case ATT_CHARACTERISTIC_2a4d_03_CLIENT_CONFIGURATION_HANDLE:
         set_ble_work_state(BLE_ST_NOTIFY_IDICATE);
         ble_user_cmd_prepare(BLE_CMD_LATENCY_HOLD_CNT, 2, con_handle, HOLD_LATENCY_CNT_MIN); //
-    case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
-    case ATT_CHARACTERISTIC_2a19_01_CLIENT_CONFIGURATION_HANDLE:
-        if ((cur_conn_latency == 0)
-            && (connection_update_cnt == CONN_PARAM_TABLE_CNT)
-            && (Peripheral_Preferred_Connection_Parameters[0].latency != 0)) {
-            connection_update_cnt = 0;
-        }
-        check_connetion_updata_deal();
-        log_info("\n------write ccc:%04x,%02x\n", handle, buffer[0]);
-        att_set_ccc_config(handle, buffer[0]);
-        break;
+	case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
+	case ATT_CHARACTERISTIC_2a19_01_CLIENT_CONFIGURATION_HANDLE:
+		if ((cur_conn_latency == 0)
+				&& (connection_update_waiting == 0)
+				&& (connection_update_cnt == CONN_PARAM_TABLE_CNT)
+				&& (Peripheral_Preferred_Connection_Parameters[0].latency != 0)) {
+			connection_update_cnt = 0;//update again
+		}
+		check_connetion_updata_deal();
+		log_info("\n------write ccc:%04x,%02x\n", handle, buffer[0]);
+		att_set_ccc_config(handle, buffer[0]);
+		break;
 
 #if RCSP_BTMATE_EN
     case ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE:
@@ -996,7 +998,7 @@ static void advertisements_setup_init()
     ret |= make_set_rsp_data();
 
     if (ret) {
-        puts("advertisements_setup_init fail !!!!!!\n");
+        puts("adv_setup_init fail !!!!!!\n");
         ASSERT(0);
     }
 
@@ -1206,43 +1208,42 @@ void bt_ble_adv_enable(u8 enable)
     set_adv_enable(0, enable);
 }
 
-typedef struct {
-    u8 button;
-    s8 x;
-    s8 y;
-} hid_ctl_info_t;
-#define M_STEP   50
-static hid_ctl_info_t test_hid_point_table[] = {
-    {0, 0, M_STEP},
-    {0, M_STEP, 0},
-    {0, 0, -M_STEP},
-    {0, -M_STEP, 0},
-};
+/* typedef struct { */
+    /* u8 button; */
+    /* s8 x; */
+    /* s8 y; */
+/* } hid_ctl_info_t; */
+/* #define M_STEP   50 */
+/* static hid_ctl_info_t test_hid_point_table[] = { */
+    /* {0, 0, M_STEP}, */
+    /* {0, M_STEP, 0}, */
+    /* {0, 0, -M_STEP}, */
+    /* {0, -M_STEP, 0}, */
+/* }; */
 
-static void hid_timer_handler(void *param)
-{
-    static u8 test_id = 0;
-    if (!con_handle) {
-        return;
-    }
+/* static void hid_timer_handler(void *param) */
+/* { */
+    /* static u8 test_id = 0; */
+    /* if (!con_handle) { */
+        /* return; */
+    /* } */
 
-    if (get_ble_work_state() != BLE_ST_NOTIFY_IDICATE) {
-        return;
-    }
+    /* if (get_ble_work_state() != BLE_ST_NOTIFY_IDICATE) { */
+        /* return; */
+    /* } */
 
-    int ret;
-    if (test_id < sizeof(test_hid_point_table) / sizeof(hid_ctl_info_t)) {
-        int ret = app_send_user_data_do(0, &test_hid_point_table[test_id], 3);
-        if (ret) {
-            printf("s_fail!\n");
-        } else {
-            test_id++;
-        }
-    } else {
-        test_id = 0;
-        /* putchar('%'); */
-    }
-}
+    /* int ret; */
+    /* if (test_id < sizeof(test_hid_point_table) / sizeof(hid_ctl_info_t)) { */
+        /* int ret = app_send_user_data_do(0, &test_hid_point_table[test_id], 3); */
+        /* if (ret) { */
+            /* printf("s_fail!\n"); */
+        /* } else { */
+            /* test_id++; */
+        /* } */
+    /* } else { */
+        /* test_id = 0; */
+    /* } */
+/* } */
 
 static u8 hogp_idle_query(void)
 {
@@ -1254,10 +1255,7 @@ REGISTER_LP_TARGET(le_hogp_target) = {
     .is_idle = hogp_idle_query,
 };
 
-
-
 static const char ble_ext_name[] = "(BLE)";
-
 void bt_ble_init(void)
 {
     log_info("***** ble_init******\n");
@@ -1291,8 +1289,6 @@ void bt_ble_init(void)
     conn_pair_vm_do(&conn_pair_info, 0);
     adv_interval_val = ADV_INTERVAL_MIN;
     set_ble_work_state(BLE_ST_INIT_OK);
-    /* bt_ble_adv_enable(1); */
-
 
 #if TEST_SEND_DATA_RATE
     server_timer_start();

@@ -11,6 +11,9 @@ const int support_dual_bank_update_en = 0;
 //是否支持升级之后保留vm数据
 const int support_vm_data_keep = 0;
 
+//是否支持外挂flash升级,需要打开Board.h中的TCFG_NOR_FS_ENABLE
+const int support_norflash_update_en  = 0;
+
 const char log_tag_const_v_UPDATE AT(.LOG_TAG_CONST) = LIB_DEBUG &  FALSE;
 const char log_tag_const_i_UPDATE AT(.LOG_TAG_CONST) = LIB_DEBUG &  FALSE;
 const char log_tag_const_d_UPDATE AT(.LOG_TAG_CONST) = LIB_DEBUG &  FALSE;

@@ -20,7 +20,7 @@
 //*********************************************************************************//
 //                                 UART配置                                        //
 //*********************************************************************************//
-#define TCFG_UART0_ENABLE					DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
+#define TCFG_UART0_ENABLE					ENABLE_THIS_MOUDLE//
 #define TCFG_UART0_RX_PORT					NO_CONFIG_PORT
 #define TCFG_UART0_TX_PORT  				IO_PORT_DP
 #define TCFG_UART0_BAUDRATE  				1000000
@@ -101,6 +101,12 @@
 #define TCFG_ADKEY_VALUE8                   8
 #define TCFG_ADKEY_VALUE9                   9
 
+
+//*********************************************************************************//
+//                                  RTC_ALARM配置                                  //
+//*********************************************************************************//
+#define TCFG_RTC_ALARM_ENABLE               DISABLE_THIS_MOUDLE
+
 //*********************************************************************************//
 //                                  充电仓配置                                     //
 //*********************************************************************************//
@@ -122,8 +128,10 @@
 //*********************************************************************************//
 //                                  LED 配置                                       //
 //*********************************************************************************//
-#define TCFG_PWMLED_ENABLE					DISABLE_THIS_MOUDLE
-#define TCFG_PWMLED_PORT					IO_PORTB_06
+#define TCFG_PWMLED_ENABLE					ENABLE_THIS_MOUDLE			//是否支持IO推灯模块,bd29没有PWM模块
+#define TCFG_PWMLED_IO_PUSH					ENABLE						//LED使用的IO 推灯
+#define TCFG_PWMLED_IOMODE					LED_ONE_IO_MODE				//LED模式，单IO还是两个IO推灯
+#define TCFG_PWMLED_PIN						IO_PORTB_01					//LED使用的IO口
 #define TCFG_REDLED_LIGHT					1   //1 ~ 10, value越大, (红灯)亮度越高
 #define TCFG_BLUELED_LIGHT					1   //1 ~ 10, value越大, (蓝灯)亮度越高
 #define TCFG_SINGLE_SLOW_FLASH_FREQ			3	//1 ~ 8, value越大, LED单独慢闪速度越慢, value * 0.5s闪烁一次
@@ -171,6 +179,14 @@
 #define TCFG_USER_BLE_ENABLE                      0   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
+#define USER_SUPPORT_PROFILE_SPP    0
+#define USER_SUPPORT_PROFILE_HFP    1
+#define USER_SUPPORT_PROFILE_A2DP   1
+#define USER_SUPPORT_PROFILE_AVCTP  1
+#define USER_SUPPORT_PROFILE_HID    1
+#define USER_SUPPORT_PROFILE_PNP    1
+#define USER_SUPPORT_PROFILE_PBAP   0
+
 
 #if(TCFG_USER_TWS_ENABLE || TCFG_USER_BLE_ENABLE)
 #define TCFG_BD_NUM						          1   //连接设备个数配置
@@ -191,9 +207,13 @@
 #define CONFIG_BT_NORMAL_HZ	            (24 * 1000000L)
 
 //*********************************************************************************//
+//                                 低电配置                                    //
+//*********************************************************************************//
+#define VBAT_LOW_POWER_LEVEL           (230)
+//*********************************************************************************//
 //                                 配置结束                                        //
 //*********************************************************************************//
 
-#endif 
+#endif
 
-#endif 
+#endif

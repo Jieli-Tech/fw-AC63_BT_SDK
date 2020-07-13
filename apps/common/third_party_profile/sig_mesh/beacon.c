@@ -16,8 +16,8 @@
 #include "foundation.h"
 
 #define LOG_TAG             "[MESH-beacon]"
-#define LOG_INFO_ENABLE
-#define LOG_DEBUG_ENABLE
+/* #define LOG_INFO_ENABLE */
+/* #define LOG_DEBUG_ENABLE */
 #define LOG_WARN_ENABLE
 #define LOG_ERROR_ENABLE
 #define LOG_DUMP_ENABLE

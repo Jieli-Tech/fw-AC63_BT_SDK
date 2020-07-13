@@ -27,14 +27,14 @@ extern "C" {
 
 
 struct _snode {
-	struct _snode *next;
+    struct _snode *next;
 };
 
 typedef struct _snode sys_snode_t;
 
 struct _slist {
-	sys_snode_t *head;
-	sys_snode_t *tail;
+    sys_snode_t *head;
+    sys_snode_t *tail;
 };
 
 typedef struct _slist sys_slist_t;
@@ -189,30 +189,30 @@ typedef struct _slist sys_slist_t;
  */
 static inline void sys_slist_init(sys_slist_t *list)
 {
-	list->head = NULL;
-	list->tail = NULL;
+    list->head = NULL;
+    list->tail = NULL;
 }
 
 #define SYS_SLIST_STATIC_INIT(ptr_to_list) {NULL, NULL}
 
 static inline sys_snode_t *z_snode_next_peek(sys_snode_t *node)
 {
-	return node->next;
+    return node->next;
 }
 
 static inline void z_snode_next_set(sys_snode_t *parent, sys_snode_t *child)
 {
-	parent->next = child;
+    parent->next = child;
 }
 
 static inline void z_slist_head_set(sys_slist_t *list, sys_snode_t *node)
 {
-	list->head = node;
+    list->head = node;
 }
 
 static inline void z_slist_tail_set(sys_slist_t *list, sys_snode_t *node)
 {
-	list->tail = node;
+    list->tail = node;
 }
 
 /**
@@ -224,7 +224,7 @@ static inline void z_slist_tail_set(sys_slist_t *list, sys_snode_t *node)
  */
 static inline sys_snode_t *sys_slist_peek_head(sys_slist_t *list)
 {
-	return list->head;
+    return list->head;
 }
 
 /**
@@ -236,7 +236,7 @@ static inline sys_snode_t *sys_slist_peek_head(sys_slist_t *list)
  */
 static inline sys_snode_t *sys_slist_peek_tail(sys_slist_t *list)
 {
-	return list->tail;
+    return list->tail;
 }
 
 /*
@@ -308,7 +308,7 @@ Z_GENLIST_PEEK_NEXT(slist, snode)
  * @param node A pointer on the node to prepend
  */
 static inline void sys_slist_prepend(sys_slist_t *list,
-				     sys_snode_t *node);
+                                     sys_snode_t *node);
 
 Z_GENLIST_PREPEND(slist, snode)
 
@@ -321,7 +321,7 @@ Z_GENLIST_PREPEND(slist, snode)
  * @param node A pointer on the node to append
  */
 static inline void sys_slist_append(sys_slist_t *list,
-				    sys_snode_t *node);
+                                    sys_snode_t *node);
 
 Z_GENLIST_APPEND(slist, snode)
 
@@ -340,18 +340,18 @@ Z_GENLIST_APPEND(slist, snode)
  */
 #if 1
 static inline void sys_slist_append_list(sys_slist_t *list,
-					 void *head, void *tail)
+        void *head, void *tail)
 {
-	if (!sys_slist_peek_tail(list)) {
-		z_slist_head_set(list, (sys_snode_t *)head);
-	} else {
-		z_snode_next_set(sys_slist_peek_tail(list), (sys_snode_t *)head);
-	}
-	z_slist_tail_set(list, (sys_snode_t *)tail);
+    if (!sys_slist_peek_tail(list)) {
+        z_slist_head_set(list, (sys_snode_t *)head);
+    } else {
+        z_snode_next_set(sys_slist_peek_tail(list), (sys_snode_t *)head);
+    }
+    z_slist_tail_set(list, (sys_snode_t *)tail);
 }
 #else
 static inline void sys_slist_append_list(sys_slist_t *list,
-					 void *head, void *tail);
+        void *head, void *tail);
 
 Z_GENLIST_APPEND_LIST(slist, snode)
 #endif
@@ -367,7 +367,7 @@ Z_GENLIST_APPEND_LIST(slist, snode)
  * @param list_to_append A pointer to the list to append.
  */
 static inline void sys_slist_merge_slist(sys_slist_t *list,
-					 sys_slist_t *list_to_append);
+        sys_slist_t *list_to_append);
 
 Z_GENLIST_MERGE_LIST(slist)
 
@@ -381,8 +381,8 @@ Z_GENLIST_MERGE_LIST(slist)
  * @param node A pointer on the node to insert
  */
 static inline void sys_slist_insert(sys_slist_t *list,
-				    sys_snode_t *prev,
-				    sys_snode_t *node);
+                                    sys_snode_t *prev,
+                                    sys_snode_t *node);
 
 Z_GENLIST_INSERT(slist, snode)
 
@@ -400,9 +400,9 @@ Z_GENLIST_INSERT(slist, snode)
 static inline sys_snode_t *sys_slist_get_not_empty(sys_slist_t *list)
 {
     sys_snode_t *node = sys_slist_peek_head(list);
-            
+
     z_slist_head_set(list, z_snode_next_peek(node));
-            
+
     if (sys_slist_peek_tail(list) == node) {
         z_slist_tail_set(list, sys_slist_peek_head(list));
     }
@@ -447,8 +447,8 @@ Z_GENLIST_GET(slist, snode)
  */
 #if 1
 static inline void sys_slist_remove(sys_slist_t *list,
-				    sys_snode_t *prev_node,
-				    sys_snode_t *node)
+                                    sys_snode_t *prev_node,
+                                    sys_snode_t *node)
 {
     if (!prev_node) {
         z_slist_head_set(list, z_snode_next_peek(node));
@@ -468,8 +468,8 @@ static inline void sys_slist_remove(sys_slist_t *list,
 }
 #else
 static inline void sys_slist_remove(sys_slist_t *list,
-				    sys_snode_t *prev_node,
-				    sys_snode_t *node);
+                                    sys_snode_t *prev_node,
+                                    sys_snode_t *node);
 
 Z_GENLIST_REMOVE(slist, snode)
 #endif
@@ -485,7 +485,7 @@ Z_GENLIST_REMOVE(slist, snode)
  * @return true if node was removed
  */
 static inline bool sys_slist_find_and_remove(sys_slist_t *list,
-					     sys_snode_t *node);
+        sys_snode_t *node);
 
 Z_GENLIST_FIND_AND_REMOVE(slist, snode)
 

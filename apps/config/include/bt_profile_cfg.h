@@ -6,7 +6,7 @@
 #include "btcontroller_modules.h"
 
 
-#if (DUEROS_DMA_EN || TRANS_DATA_EN || RCSP_BTMATE_EN || RCSP_ADV_EN || GMA_EN || SMART_BOX_EN)
+#if (DUEROS_DMA_EN || TRANS_DATA_EN || RCSP_BTMATE_EN || RCSP_ADV_EN || GMA_EN || SMART_BOX_EN || TME_EN)
 #define    BT_FOR_APP_EN             1
 #else
 #define    BT_FOR_APP_EN             0
@@ -28,6 +28,7 @@
 #define DEF_BLE_DEMO_ADV_RCSP             5
 #define DEF_BLE_DEMO_GMA                  6
 #define DEF_BLE_DEMO_CLIENT               7 //
+#define DEF_BLE_TME_ADV					  8
 
 
 //配置选择的demo
@@ -47,6 +48,9 @@
 
 #elif GMA_EN
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_GMA
+
+#elif TME_EN
+#define TCFG_BLE_DEMO_SELECT		  DEF_BLE_TME_ADV
 
 #elif BLE_CLIENT_EN
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_CLIENT

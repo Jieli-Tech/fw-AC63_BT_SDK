@@ -17,16 +17,25 @@
 
 #if ADAPTATION_COMPILE_DEBUG
 
-const char *bt_hex_real(const void *buf, size_t len) { return NULL; }
+const char *bt_hex_real(const void *buf, size_t len)
+{
+    return NULL;
+}
 
-int bt_rand(void *buf, size_t len) { return 0; }
+int bt_rand(void *buf, size_t len)
+{
+    return 0;
+}
 
-const char *bt_uuid_str(const struct bt_uuid *uuid) { return NULL; }
+const char *bt_uuid_str(const struct bt_uuid *uuid)
+{
+    return NULL;
+}
 
 #else
 
-const char *bt_hex_real(const void *buf, size_t len) 
-{ 
+const char *bt_hex_real(const void *buf, size_t len)
+{
     static const char hex[] = "0123456789abcdef";
     static char str[130];
     const u8_t *b = buf;
@@ -85,18 +94,18 @@ const char *bt_uuid_str(const struct bt_uuid *uuid)
 
 void sys_memcpy_swap(void *dst, const void *src, size_t length)
 {
-	u8_t *pdst = (u8_t *)dst;
-	const u8_t *psrc = (const u8_t *)src;
+    u8_t *pdst = (u8_t *)dst;
+    const u8_t *psrc = (const u8_t *)src;
 
-	__ASSERT(((psrc < pdst && (psrc + length) <= pdst) ||
-		  (psrc > pdst && (pdst + length) <= psrc)),
-		 "Source and destination buffers must not overlap");
+    __ASSERT(((psrc < pdst && (psrc + length) <= pdst) ||
+              (psrc > pdst && (pdst + length) <= psrc)),
+             "Source and destination buffers must not overlap");
 
-	psrc += length - 1;
+    psrc += length - 1;
 
-	for (; length > 0; length--) {
-		*pdst++ = *psrc--;
-	}
+    for (; length > 0; length--) {
+        *pdst++ = *psrc--;
+    }
 }
 
 #endif /* ADAPTATION_COMPILE_DEBUG */

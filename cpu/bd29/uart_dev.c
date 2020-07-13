@@ -20,6 +20,7 @@
 #endif
 
 #define UART_CLK  clk_get("uart")
+#define UART_OT_CLK  clk_get("lsb")
 
 
 
@@ -243,9 +244,9 @@ static void UT0_set_baud(u32 baud)
     JL_UART0->BAUD = ((UART_CLK + baud / 2) / baud) / 4 - 1;
     if (JL_UART0->CON0 & BIT(5)) {
         if (uart0.rx_timeout > 10) {
-            JL_UART0->OTCNT = (uart0.rx_timeout / 10) * (UART_CLK / 10) / 10;
+            JL_UART0->OTCNT = (uart0.rx_timeout / 10) * (UART_OT_CLK / 10) / 10;
         } else {
-            JL_UART0->OTCNT = uart0.rx_timeout * UART_CLK / 1000;
+            JL_UART0->OTCNT = uart0.rx_timeout * UART_OT_CLK / 1000;
         }
     }
     JL_UART0->CON0 |= BIT(13) | BIT(12) | BIT(10) | BIT(0);
@@ -459,9 +460,9 @@ static void UT1_set_baud(u32 baud)
     JL_UART1->BAUD = ((UART_CLK + baud / 2) / baud) / 4 - 1;
     if (JL_UART1->CON0 & BIT(5)) {
         if (uart1.rx_timeout > 10) {
-            JL_UART1->OTCNT = (uart1.rx_timeout / 10) * (UART_CLK / 10) / 10;
+            JL_UART1->OTCNT = (uart1.rx_timeout / 10) * (UART_OT_CLK / 10) / 10;
         } else {
-            JL_UART1->OTCNT = uart1.rx_timeout * UART_CLK / 1000;
+            JL_UART1->OTCNT = uart1.rx_timeout * UART_OT_CLK / 1000;
         }
     }
     JL_UART1->CON0 |= BIT(13) | BIT(12) | BIT(10) | BIT(0);
@@ -676,9 +677,9 @@ static void UT2_set_baud(u32 baud)
     JL_UART2->BAUD = ((UART_CLK + baud / 2) / baud) / 4 - 1;
     if (JL_UART2->CON0 & BIT(5)) {
         if (uart2.rx_timeout > 10) {
-            JL_UART2->OTCNT = (uart2.rx_timeout / 10) * (UART_CLK / 10) / 10;
+            JL_UART2->OTCNT = (uart2.rx_timeout / 10) * (UART_OT_CLK / 10) / 10;
         } else {
-            JL_UART2->OTCNT = uart2.rx_timeout * UART_CLK / 1000;
+            JL_UART2->OTCNT = uart2.rx_timeout * UART_OT_CLK / 1000;
         }
     }
     JL_UART2->CON0 |= BIT(13) | BIT(12) | BIT(10) | BIT(0);

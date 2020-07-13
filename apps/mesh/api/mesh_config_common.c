@@ -1,6 +1,5 @@
 #include "app_config.h"
 #include "bt_common.h"
-#include "btstack/ble_data_types.h"
 #include "api/sig_mesh_api.h"
 
 /**

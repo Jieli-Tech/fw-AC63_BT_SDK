@@ -44,6 +44,7 @@ const int config_btctler_le_tws         = 0;
 const int CONFIG_BTCTLER_TWS_ENABLE     = 0;
 const int CONFIG_TWS_AFH_ENABLE         = 0;
 const u8 rx_fre_offset_adjust_enable    = 1;
+const int ble_disable_wait_enable = 1;
 
 /*-----------------------------------------------------------*/
 /**

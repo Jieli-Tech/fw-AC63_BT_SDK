@@ -115,6 +115,42 @@ struct net_buf_simple {
 u8 *buffer_add_u8_at_tail(void *buf, u8 val);
 
 /**
+ * @brief Add a little-endian unsigned short variable at the tail of the buffer.
+ *
+ * @param buf Target buffer head address.
+ *
+ * @param val The variable will set.
+ */
+void buffer_add_le16_at_tail(void *buf, u16 val);
+
+/**
+ * @brief Add a big-endian unsigned short variable at the tail of the buffer.
+ *
+ * @param buf Target buffer head address.
+ *
+ * @param val The variable will set.
+ */
+void buffer_add_be16_at_tail(void *buf, u16 val);
+
+/**
+ * @brief Add a little-endian unsigned long variable at the tail of the buffer.
+ *
+ * @param buf Target buffer head address.
+ *
+ * @param val The variable will set.
+ */
+void buffer_add_le32_at_tail(void *buf, u32 val);
+
+/**
+ * @brief Add a big-endian unsigned long variable at the tail of the buffer.
+ *
+ * @param buf Target buffer head address.
+ *
+ * @param val The variable will set.
+ */
+void buffer_add_be32_at_tail(void *buf, u32 val);
+
+/**
  * @brief Get the unsigned char variable from the buffer head address.
  *
  * @param buf Target buffer head address.
@@ -122,6 +158,42 @@ u8 *buffer_add_u8_at_tail(void *buf, u8 val);
  * @return Target variable.
  */
 u8 buffer_pull_u8_from_head(void *buf);
+
+/**
+ * @brief Get the little-endian unsigned short variable from the buffer head address.
+ *
+ * @param buf Target buffer head address.
+ *
+ * @return Target variable.
+ */
+u16 buffer_pull_le16_from_head(void *buf);
+
+/**
+ * @brief Get the big-endian unsigned short variable from the buffer head address.
+ *
+ * @param buf Target buffer head address.
+ *
+ * @return Target variable.
+ */
+u16 buffer_pull_be16_from_head(void *buf);
+
+/**
+ * @brief Get the little-endian unsigned long variable from the buffer head address.
+ *
+ * @param buf Target buffer head address.
+ *
+ * @return Target variable.
+ */
+u32 buffer_pull_le32_from_head(void *buf);
+
+/**
+ * @brief Get the big-endian unsigned long variable from the buffer head address.
+ *
+ * @param buf Target buffer head address.
+ *
+ * @return Target variable.
+ */
+u32 buffer_pull_be32_from_head(void *buf);
 
 /**
  * @brief Memcpy a array at the tail of the buffer.
@@ -148,6 +220,15 @@ void *buffer_memcpy(void *buf, const void *mem, u32 len);
  * @return The result of the process : 0 is succ.
  */
 void *buffer_memset(struct net_buf_simple *buf, u8 val, u32 len);
+
+/**
+ * @brief Init the opcode at the head of the buffer.
+ *
+ * @param opcode Big-endian opcode.
+ *
+ * @return Little-endian opcode.
+ */
+u32 buffer_head_init(u32 opcode);
 
 /**
  * @brief Loading the node info from storage (such as flash and so on).

@@ -28,13 +28,8 @@ struct key_driver_para iokey_scan_para = {
     .scan_time 	  	  = 10,				//按键扫描频率, 单位: ms
     .last_key 		  = NO_KEY,  		//上一次get_value按键值, 初始化为NO_KEY;
     .filter_time  	  = 4,				//按键消抖延时;
-#ifdef TCFG_IOKEY_LONG_TIME_EN
-    .long_time 		  = 150,  			//按键判定长按数量
-    .hold_time 		  = (150 + 15),  	//按键判定HOLD数量
-#else
     .long_time 		  = 75,  			//按键判定长按数量
     .hold_time 		  = (75 + 15),  	//按键判定HOLD数量
-#endif
     .click_delay_time = 20,				//按键被抬起后等待连击延时数量
     .key_type		  = KEY_DRIVER_TYPE_IO,
     .get_value 		  = io_get_key_value,
@@ -91,7 +86,7 @@ static void key_io_reset(void)
             break;
 
         case ONE_PORT_TO_LOW:
-#if (defined(TCFG_IO_MULTIPLEX_WITH_SD) && (TCFG_IO_MULTIPLEX_WITH_SD == ENABLE))
+#if (TCFG_IO_MULTIPLEX_WITH_SD == ENABLE)
             if (TCFG_MULTIPLEX_PORT != __this->port[i].key_type.one_io.port) {
                 key_io_pull_up_input(__this->port[i].key_type.one_io.port);
             }
@@ -127,7 +122,7 @@ static u8 iokey_value_remap(u8 bit_mark)
 #endif
 
 
-#if (defined(TCFG_IO_MULTIPLEX_WITH_SD) && (TCFG_IO_MULTIPLEX_WITH_SD == ENABLE))
+#if TCFG_IO_MULTIPLEX_WITH_SD == ENABLE
 static u8 mult_key_value = 1;
 static void udelay(u32 usec)
 {
@@ -160,7 +155,7 @@ void sd_mult_io_detect(void *arg)
 
 __attribute__((weak)) u8 iokey_filter_hook(u8 io_state)
 {
-	return 0;
+    return 0;
 }
 
 u8 io_get_key_value(void)
@@ -192,7 +187,7 @@ u8 io_get_key_value(void)
 
         read_io = __this->port[i].key_type.one_io.port;
 
-#if (defined(TCFG_IO_MULTIPLEX_WITH_SD) && (TCFG_IO_MULTIPLEX_WITH_SD == ENABLE))
+#if (TCFG_IO_MULTIPLEX_WITH_SD == ENABLE)
         if (read_io == TCFG_MULTIPLEX_PORT) {
             read_value = mult_key_value;
         } else {
@@ -201,15 +196,23 @@ u8 io_get_key_value(void)
 #else
         read_value = get_io_key_value(read_io);
 #endif
-		if (iokey_filter_hook(read_value)) {
-			iokey_scan_para.filter_cnt = 0;
-			iokey_scan_para.press_cnt = 0;
-			iokey_scan_para.click_cnt = 0;
-			iokey_scan_para.click_delay_cnt = 0;
-			iokey_scan_para.last_key = NO_KEY;
-			return NO_KEY;
-		}
-		if (read_value == press_value) {
+        if (iokey_filter_hook(read_value)) {
+#ifdef TCFG_IOKEY_TIME_REDEFINE
+            iokey_scan_user_para.filter_cnt = 0;
+            iokey_scan_user_para.press_cnt = 0;
+            iokey_scan_user_para.click_cnt = 0;
+            iokey_scan_user_para.click_delay_cnt = 0;
+            iokey_scan_user_para.last_key = NO_KEY;
+#else
+            iokey_scan_para.filter_cnt = 0;
+            iokey_scan_para.press_cnt = 0;
+            iokey_scan_para.click_cnt = 0;
+            iokey_scan_para.click_delay_cnt = 0;
+            iokey_scan_para.last_key = NO_KEY;
+#endif
+            return NO_KEY;
+        }
+        if (read_value == press_value) {
             ret_value = __this->port[i].key_value;
 #if MULT_KEY_ENABLE
             MARK_BIT_VALUE(bit_mark, ret_value);  //标记被按下的按键

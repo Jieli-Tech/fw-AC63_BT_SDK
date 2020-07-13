@@ -54,8 +54,8 @@ struct storage_dev *file_opr_available_dev_check(void *logo);
 struct storage_dev *file_opr_available_dev_get_last_active(void);
 int file_opr_available_dev_total(void);
 
-int file_opr_dev_add(void *logo);
-int file_opr_dev_del(void *logo);
+int app_storage_dev_add(void *logo);
+int app_storage_dev_del(void *logo);
 int file_opr_dev_total(void);
 int file_opr_available_dev_offline(struct storage_dev *p);
 int file_opr_available_dev_online(struct storage_dev *p);

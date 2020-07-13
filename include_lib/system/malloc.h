@@ -5,15 +5,15 @@
 extern "C" {
 #endif
 
-extern void *malloc(unsigned long size);
-extern void *zalloc(unsigned long size);
-extern void *calloc(unsigned long count, unsigned long size);
-extern void *realloc(void *rmem, unsigned long newsize);
+extern void *malloc(size_t size);
+extern void *zalloc(size_t size);
+extern void *calloc(size_t count, size_t size);
+extern void *realloc(void *rmem, size_t newsize);
 extern void  free(void *mem);
 
 
-extern void *kmalloc(unsigned long size, int flags);
-extern void *vmalloc(unsigned long size);
+extern void *kmalloc(size_t size, int flags);
+extern void *vmalloc(size_t size);
 extern void vfree(void *addr);
 extern void *kzalloc(unsigned int len, int a);
 extern void kfree(void *p);

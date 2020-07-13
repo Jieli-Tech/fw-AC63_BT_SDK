@@ -49,7 +49,7 @@
 //*********************************************************************************//
 //                                 adkey 配置                                      //
 //*********************************************************************************//
-#define TCFG_ADKEY_ENABLE                   DISABLE_THIS_MOUDLE //是否使能AD按键
+#define TCFG_ADKEY_ENABLE                   ENABLE_THIS_MOUDLE //是否使能AD按键
 #define TCFG_ADKEY_PORT                     IO_PORTB_01         //AD按键端口(需要注意选择的IO口是否支持AD功能)
 /*AD通道选择，需要和AD按键的端口相对应:
     AD_CH_PA1    AD_CH_PA3    AD_CH_PA4    AD_CH_PA5
@@ -100,6 +100,12 @@
 #define TCFG_ADKEY_VALUE7                   7
 #define TCFG_ADKEY_VALUE8                   8
 #define TCFG_ADKEY_VALUE9                   9
+
+
+//*********************************************************************************//
+//                                  RTC_ALARM配置                                  //
+//*********************************************************************************//
+#define TCFG_RTC_ALARM_ENABLE               DISABLE_THIS_MOUDLE
 
 //*********************************************************************************//
 //                                  充电仓配置                                     //
@@ -171,6 +177,14 @@
 #define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
+
+#define USER_SUPPORT_PROFILE_SPP    0
+#define USER_SUPPORT_PROFILE_HFP    1
+#define USER_SUPPORT_PROFILE_A2DP   1
+#define USER_SUPPORT_PROFILE_AVCTP  1
+#define USER_SUPPORT_PROFILE_HID    1
+#define USER_SUPPORT_PROFILE_PNP    1
+#define USER_SUPPORT_PROFILE_PBAP   0
 
 
 #if(TCFG_USER_TWS_ENABLE || TCFG_USER_BLE_ENABLE)

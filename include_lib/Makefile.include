@@ -12,11 +12,20 @@ export includes += \
 -I$(ROOT)/include_lib/btctrler \
 -I$(ROOT)/include_lib/btctrler/port/$(CPU) \
 -I$(ROOT)/include_lib/update \
--I$(ROOT)/include_lib/ai_stack \
--I$(ROOT)/include_lib/ai_stack/JL_rcsp \
 -I$(ROOT)/include_lib/agreement \
 
 
+ifeq ($(THIRD_PARTY_PROFILE_ENABLE),y)
+includes += \
+-I$(ROOT)/include_lib/btstack/third_party/rcsp/ \
+
+else
+
+includes += \
+-I$(ROOT)/include_lib/ai_stack \
+-I$(ROOT)/include_lib/ai_stack/JL_rcsp \
+
+endif
 
 ifeq ($(MEDIA_NEW_ENABLE),y)
 includes += \
@@ -24,6 +33,13 @@ includes += \
 -I$(ROOT)/include_lib/media/media_new/media \
 -I$(ROOT)/include_lib/media/media_new/media/cpu/$(CPU) \
 -I$(ROOT)/include_lib/media/media_new/media/cpu/$(CPU)/asm \
+
+else ifeq ($(MEDIA_NEW_ENABLE),d)
+includes += \
+-I$(ROOT)/include_lib/media/media_develop \
+-I$(ROOT)/include_lib/media/media_develop/media \
+-I$(ROOT)/include_lib/media/media_develop/media/cpu/$(CPU) \
+-I$(ROOT)/include_lib/media/media_develop/media/cpu/$(CPU)/asm \
 
 else #ifeq ($(MEDIA_NEW_ENABLE),y)
 

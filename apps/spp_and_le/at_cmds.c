@@ -46,7 +46,7 @@
 #include "debug.h"
 
 
-#if TRANS_AT_COM           
+#if CONFIG_APP_AT_COM           
 
 static struct at_layer {
     void *config;     //ci transport config

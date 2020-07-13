@@ -17,8 +17,8 @@ includes += \
 # 添加外设
 includes += \
 	-I$(ROOT)/apps/common/code_switch/include/ \
-	-I$(ROOT)/apps/common/optical_mouse_sensor/include/ \
-	-I$(ROOT)/apps/common/optical_mouse_sensor/include/hal3205 \
+	-I$(ROOT)/apps/common/device/optical_mouse_sensor/include/ \
+	-I$(ROOT)/apps/common/device/optical_mouse_sensor/include/hal3205 \
 
 objs += \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_btctrler_config.o \
@@ -34,6 +34,7 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/version.o \
 	$(ROOT)/apps/$(APP_CASE)/log_config.o \
 	$(ROOT)/apps/$(APP_CASE)/user_cfg.o \
+	$(ROOT)/apps/$(APP_CASE)/rtc_alarm.o \
 	$(ROOT)/apps/common/third_party_profile/common/custom_cfg.o \
     $(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.o \
     $(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_user_update.o \
@@ -43,8 +44,8 @@ objs += \
 
 objs += \
 	$(ROOT)/apps/common/code_switch/code_switch.o \
-	$(ROOT)/apps/common/optical_mouse_sensor/OMSensor_manage.o \
-	$(ROOT)/apps/common/optical_mouse_sensor/hal3205/hal3205.o \
+	$(ROOT)/apps/common/device/optical_mouse_sensor/OMSensor_manage.o \
+	$(ROOT)/apps/common/device/optical_mouse_sensor/hal3205/hal3205.o \
 	$(ROOT)/apps/common/key/iokey.o \
 	$(ROOT)/apps/common/key/adkey.o \
     $(ROOT)/apps/common/key/key_driver.o \

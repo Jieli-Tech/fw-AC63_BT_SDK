@@ -20,25 +20,27 @@ export SLASH=\\
 export ADDITION_DEP=
 endif
 
+
 # 默认注释编译信息(None/@)
 export V=@
 export jtag ?=n
-
+export TIDY_CHECK ?= n
+export CLANG_TIDY=/opt/utils/llvm11/bin/clang-tidy
+export TIDY_FILTER=/opt/utils/tidy-filter
 
 
 
 #配置下载目标SoC(br18/br21/br22/br23/br25/br26/bd29)
 #export前面不要有空格，会导致文件sync异常
-#export SoC?=br18
-#export SoC?=br21
-#export SoC?=br22
-#export SoC?=br23
-#export SoC?=br25
-#export SoC?=br26
-export SoC?=bd29
-# export SoC?=br30
-#export SoC?=br34
-#export SoC?=br28
+export SoC?=br25
+#export SoC?=bd29
+
+
+
+#配置App
+#export APP_CASE?=spp_and_le
+export APP_CASE?=hid
+#export APP_CASE?=mesh
 
 
 # --------------common var begin-----------------------
@@ -83,6 +85,7 @@ clean:
 	@echo "Clean ..."
 	@find . -name "*.d" -delete
 	@find . -name "*.o" -delete
+	@find . -name "*.z.S" -delete
 
 dry_run:
 	@for i in $(AR_TARGET); do \
@@ -130,9 +133,8 @@ cbp:
 		--outdir `realpath ../cbp_out` \
 		--other_files $(DIR_OUTPUT)/uboot.bin \
 			$(DIR_OUTPUT)/download.bat	\
+			make_prompt.bat \
 			$(OTHER_FILES) \
-		--generate_entry make_prompt.bat \
-		--entry_template make_prompt.bat \
 		--other_dirs tools/utils
 
 winmake:
@@ -145,8 +147,6 @@ winmake:
 			make_prompt.bat \
 			README.md *.pdf \
 			$(OTHER_FILES) 	\
-		--generate_entry make_prompt.bat \
-		--entry_template make_prompt.bat \
 		--other_dirs tools/utils
 
 winrelease: cbp winmake

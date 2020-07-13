@@ -11,7 +11,7 @@
 #include "adv.h"
 
 #define LOG_TAG             "[MESH-buf]"
-#define LOG_INFO_ENABLE
+/* #define LOG_INFO_ENABLE */
 #define LOG_DEBUG_ENABLE
 #define LOG_WARN_ENABLE
 #define LOG_ERROR_ENABLE
@@ -239,7 +239,7 @@ int net_buf_free(struct net_buf *buf)
     pool = net_buf_pool_get(buf->pool_id);
 
     if (pool->free_count < pool->buf_count) {
-        pool->free_count++;    
+        pool->free_count++;
     }
 
     irq_unlock(key);
@@ -260,7 +260,7 @@ struct net_buf *net_buf_get_next(struct net_buf *buf)
 
     next_id = net_buf_id(buf) + 1;
 
-    next_id = (next_id < pool->buf_count)? next_id : 0;
+    next_id = (next_id < pool->buf_count) ? next_id : 0;
 
     buf = &pool->__bufs[next_id];
 
@@ -288,7 +288,7 @@ void net_buf_test(void)
 
     //< test 1
     for (i = 0; ; i++) {
-        BT_INFO("allloc i=%d, buf_count=%d, uninit_count=%d, free_count=%d", 
+        BT_INFO("allloc i=%d, buf_count=%d, uninit_count=%d, free_count=%d",
                 i, pool->buf_count, pool->uninit_count, pool->free_count);
         buf[i] = net_buf_alloc_fixed(pool, 0);
         BT_INFO("buf addr=0x%x", buf[i]);
@@ -301,7 +301,7 @@ void net_buf_test(void)
         return;
     }
     for (j = 0; j < i; j++) {
-        BT_INFO("free j=%d, free_count=%d", j, pool->free_count); 
+        BT_INFO("free j=%d, free_count=%d", j, pool->free_count);
         BT_INFO("buf addr=0x%x", buf[j]);
         net_buf_free(buf[j]);
         BT_INFO("next buf addr=0x%x", net_buf_get_next(buf[j]));
@@ -327,7 +327,7 @@ void net_buf_test(void)
 
     BT_INFO("--- net_buf_test succ !!!");
 
-    while(1);
+    while (1);
 }
 
 #endif /* NET_BUF_TEST_EN */
@@ -612,38 +612,38 @@ static void log_dump_slist(sys_slist_t *list)
 
 void net_buf_slist_put(sys_slist_t *list, struct net_buf *buf)
 {
-	struct net_buf *tail;
-	unsigned int key;
+    struct net_buf *tail;
+    unsigned int key;
 
     BT_INFO("--func=%s", __FUNCTION__);
 
     log_dump_slist(list);
 
-	NET_BUF_ASSERT(list);
-	NET_BUF_ASSERT(buf);
+    NET_BUF_ASSERT(list);
+    NET_BUF_ASSERT(buf);
 
-	for (tail = buf; tail->frags; tail = tail->frags) {
-		tail->flags |= NET_BUF_FRAGS;
+    for (tail = buf; tail->frags; tail = tail->frags) {
+        tail->flags |= NET_BUF_FRAGS;
         BT_INFO("net_buf_slist_put NET_BUF_FRAGS");
-	}
+    }
 
-	key = irq_lock();
-	sys_slist_append_list(list, &buf->node, &tail->node);
-	irq_unlock(key);
+    key = irq_lock();
+    sys_slist_append_list(list, &buf->node, &tail->node);
+    irq_unlock(key);
 
     log_dump_slist(list);
 }
 
 void net_buf_slist_simple_put(sys_slist_t *head_list, sys_snode_t *dst_node)
 {
-	sys_snode_t *tail_node;
-	unsigned int key;
+    sys_snode_t *tail_node;
+    unsigned int key;
 
     tail_node = dst_node;
 
-	key = irq_lock();
-	sys_slist_append_list(head_list, dst_node, tail_node);
-	irq_unlock(key);
+    key = irq_lock();
+    sys_slist_append_list(head_list, dst_node, tail_node);
+    irq_unlock(key);
 }
 
 #define GET_STRUCT_MEMBER_OFFSET(type, member) \
@@ -651,41 +651,41 @@ void net_buf_slist_simple_put(sys_slist_t *head_list, sys_snode_t *dst_node)
 
 struct net_buf *net_buf_slist_simple_get(sys_slist_t *list)
 {
-	u8 *buf;
-	unsigned int key;
+    u8 *buf;
+    unsigned int key;
 
-	key = irq_lock();
-	buf = (void *)sys_slist_get(list);
+    key = irq_lock();
+    buf = (void *)sys_slist_get(list);
     if (buf) {
         buf -= GET_STRUCT_MEMBER_OFFSET(net_buf, entry_node);
     }
-	irq_unlock(key);
+    irq_unlock(key);
 
     return (struct net_buf *)buf;
 }
 
 struct net_buf *net_buf_slist_get(sys_slist_t *list)
 {
-	struct net_buf *buf, *frag;
-	unsigned int key;
+    struct net_buf *buf, *frag;
+    unsigned int key;
 
     BT_INFO("--func=%s", __FUNCTION__);
 
     log_dump_slist(list);
 
-	NET_BUF_ASSERT(list);
+    NET_BUF_ASSERT(list);
 
-	key = irq_lock();
-	buf = (void *)sys_slist_get(list);
-	irq_unlock(key);
+    key = irq_lock();
+    buf = (void *)sys_slist_get(list);
+    irq_unlock(key);
 
-	if (!buf) {
+    if (!buf) {
         log_dump_slist(list);
-		return NULL;
-	}
+        return NULL;
+    }
 
-	/* Get any fragments belonging to this buffer */
-	for (frag = buf; (frag->flags & NET_BUF_FRAGS); frag = frag->frags) {
+    /* Get any fragments belonging to this buffer */
+    for (frag = buf; (frag->flags & NET_BUF_FRAGS); frag = frag->frags) {
         BT_INFO("NET_BUF_FRAGS");
         key = irq_lock();
         frag->frags = (void *)sys_slist_get(list);
@@ -695,12 +695,12 @@ struct net_buf *net_buf_slist_get(sys_slist_t *list)
 
         /* The fragments flag is only for list-internal usage */
         frag->flags &= ~NET_BUF_FRAGS;
-	}
+    }
 
-	/* Mark the end of the fragment list */
-	frag->frags = NULL;
+    /* Mark the end of the fragment list */
+    frag->frags = NULL;
 
     log_dump_slist(list);
 
-	return buf;
+    return buf;
 }

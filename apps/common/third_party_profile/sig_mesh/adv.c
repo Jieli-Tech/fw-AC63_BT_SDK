@@ -17,7 +17,7 @@
 #include "proxy.h"
 
 #define LOG_TAG             "[MESH-adv]"
-#define LOG_INFO_ENABLE
+/* #define LOG_INFO_ENABLE */
 #define LOG_DEBUG_ENABLE
 #define LOG_WARN_ENABLE
 #define LOG_ERROR_ENABLE
@@ -203,8 +203,8 @@ void bt_mesh_adv_buf_alloc(void)
     adv_pool_p += net_buf_p;
 
     NET_BUF_MALLOC(adv_buf_pool,
-            net_buf_p, net_buf_data_p, (struct bt_mesh_adv *)adv_pool_p,
-            config_bt_mesh_adv_buf_count);
+                   net_buf_p, net_buf_data_p, (struct bt_mesh_adv *)adv_pool_p,
+                   config_bt_mesh_adv_buf_count);
 
     BT_DBG("total buf_size=0x%x", buf_size);
     BT_DBG("net_buf addr=0x%x", net_buf_p);

@@ -15,6 +15,7 @@
 #include "asm/debug.h"
 #include "asm/charge.h"
 #include "asm/power/p33.h"
+#include "asm/rtc.h"
 
 
 

@@ -1,5 +1,5 @@
 # apps include
-includes = \
+includes += \
 	-I$(ROOT)/apps/$(APP_CASE)/board/$(CPU) \
 	-I$(ROOT)/apps/$(APP_CASE)/include \
 	-I$(ROOT)/apps/common \
@@ -23,15 +23,6 @@ includes += \
 	-I$(ROOT)/include_lib/btctrler \
 	-I$(ROOT)/include_lib/btctrler/port/$(CPU) \
 
-ifeq ($(MEDIA_NEW_ENABLE),y)
-includes += \
-	-I$(ROOT)/include_lib/media/media_new \
-
-else #ifeq ($(MEDIA_NEW_ENABLE),y)
-includes += \
-	-I$(ROOT)/include_lib/media/media_origin \
-
-endif #ifeq ($(MEDIA_NEW_ENABLE),y)
 
 # APP case code
 objs += \

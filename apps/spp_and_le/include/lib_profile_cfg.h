@@ -13,7 +13,6 @@ extern const int config_stack_modules;
 #define STACK_MODULES_IS_SUPPORT(x)         (config_stack_modules & (x))
 
 ///---sdp service record profile- 用户选择支持协议--///
-#define USER_SUPPORT_PROFILE_SPP    1
 
 //ble demo的例子
 #define DEF_BLE_DEMO_NULL                 0 //ble 没有使能
@@ -27,7 +26,7 @@ extern const int config_stack_modules;
 #if TRANS_DATA_EN
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_TRANS_DATA
 
-#elif TRANS_CLIENT_EN
+#elif (TRANS_CLIENT_EN || TRANS_DONGLE_EN)
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_CLIENT
 
 #elif TRANS_AT_COM
