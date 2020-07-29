@@ -1,4 +1,4 @@
-# fw-AC630N_BT_SDK
+# fw-AC63_BT_SDK
 
 firmware for Generic bluetooth SDK（AC63 series）
 
