@@ -19,14 +19,19 @@ and the documentation's `Getting Started Guide` to start developing.
 Toolchain
 ------------
 
-how to get the `JL Toolchain` and setup the build enviroment,see below
+How to get the `JL Toolchain` and setup the build enviroment,see below
 
-* Lastest：(https://pan.baidu.com/s/1f5pK7ZaBNnvbflD-7R22zA) 提取码: ukgx
+* Complie Tool ：install the JL complie tool to setup the build enviroment, [download link](https://pan.baidu.com/s/1f5pK7ZaBNnvbflD-7R22zA) code: `ukgx`
+
+* USB updater : program flash tool to download the `hex` file to the target board, please accquire the tool form the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.5.504d246bXKwyeH&id=620295020803) and check the related [doc](.Stuff)
+
 
 Documentation
 ------------
 
-* Latest: [相关文档](./doc)
+* Chipset brief : [SoC datasheet](./doc)
+
+* SDK introduction : [SDK quick start quide](./doc/)
 
 
 Build
@@ -55,10 +60,15 @@ Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.0 s
 * [QDID 134104](https://launchstudio.bluetooth.com/ListingDetails/88799)
 
 
-EV Board
+Hardware
 -------------
 
-* 开发板申请入口：(https://shop321455197.taobao.com/?spm=a230r.7195193.1997079397.2.2a6d391d3n5udo)
+* EV Board ：(https://shop321455197.taobao.com/?spm=a230r.7195193.1997079397.2.2a6d391d3n5udo)
+
+* Production Tool : massive prodution and program the SoC, please accquire the tool from the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.8.504d246bXKwyeH&id=620941819219) and check the releated [doc](./Stuff)
+
+* Wireless Tester : Over the air update/RF Calibration/Fast production test, please accuire the tool from the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511),check [doc](./stuff) for more infomation.
+
 
 Disclaimer
 ------------
