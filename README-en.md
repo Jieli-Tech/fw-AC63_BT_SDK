@@ -73,6 +73,11 @@ Hardware
 * Wireless Tester : Over the air update/RF Calibration/Fast production test, please accuire the tool from the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511),check [doc](./doc/stuff/AC690x_1T2测试盒使用说明.pdf) for more infomation.
 
 
+Community
+--------------
+
+* [Dingtalk Group](./doc/stuff/dingtalk.jpg)
+
 Disclaimer
 ------------
 
