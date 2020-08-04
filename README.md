@@ -49,7 +49,7 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 
 * Makefile 编译 : `apps/app_cfg` 开始编译之前，需要先选择好目标应用并编辑保存, 请双击 `make_prompt` 并输入 `make`
 
-  `before build the project make sure the USB updater is connect and enter the update mode correctly`
+  `在编译下载代码前，请确保USB 升级工具正确连接并且进入编程模式`
 
 蓝牙官方认证
 -------------
