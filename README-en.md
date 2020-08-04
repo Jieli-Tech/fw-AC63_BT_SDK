@@ -1,6 +1,6 @@
 # fw-AC63_BT_SDK
 
-EN | [中文](./README.md)
+[中文](./README.md) | EN
 
 firmware for Generic bluetooth SDK（AC63 series）
 
@@ -31,8 +31,9 @@ Documentation
 
 * Chipset brief : [SoC datasheet](./doc)
 
-* SDK introduction : [SDK quick start quide](./doc/)
+* SDK Version: [SDK History](doc/AC630N_bt_data_transfer_sdk_发布版本信息.pdf)
 
+* SDK introduction : [SDK quick start guide](./doc/AC630N_bt_data_transfer_sdk介绍.pdf)
 
 Build
 -------------
@@ -55,9 +56,11 @@ SDK support Codeblock & Make to build to project,make sure you already setup the
 Certification
 -------------
 
-Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.0 specification
+Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.0/5.1 specification
 
-* [QDID 134104](https://launchstudio.bluetooth.com/ListingDetails/88799)
+* Core v5.0 [QDID 134104](https://launchstudio.bluetooth.com/ListingDetails/88799)
+
+* Core v5.1 [QDID 136145](https://launchstudio.bluetooth.com/ListingDetails/91371)
 
 
 Hardware
@@ -65,9 +68,9 @@ Hardware
 
 * EV Board ：(https://shop321455197.taobao.com/?spm=a230r.7195193.1997079397.2.2a6d391d3n5udo)
 
-* Production Tool : massive prodution and program the SoC, please accquire the tool from the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.8.504d246bXKwyeH&id=620941819219) and check the releated [doc](./Stuff)
+* Production Tool : massive prodution and program the SoC, please accquire the tool from the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.8.504d246bXKwyeH&id=620941819219) and check the releated [doc](./doc/stuff/烧写器使用说明文档.pdf)
 
-* Wireless Tester : Over the air update/RF Calibration/Fast production test, please accuire the tool from the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511),check [doc](./stuff) for more infomation.
+* Wireless Tester : Over the air update/RF Calibration/Fast production test, please accuire the tool from the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511),check [doc](./doc/stuff/AC690x_1T2测试盒使用说明.pdf) for more infomation.
 
 
 Disclaimer

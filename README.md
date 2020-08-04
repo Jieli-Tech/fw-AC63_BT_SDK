@@ -1,6 +1,6 @@
 # fw-AC63_BT_SDK
 
-[EN](./README-en.md) | [中文]
+中文 | [EN](./README-en.md)
 
 AC63 系列通用蓝牙SDK 固件程序
 
@@ -11,7 +11,7 @@ AC63 系列通用蓝牙SDK 固件程序
 快速开始
 ------------
 
-欢迎试用杰理开源项目，在开始进入项目之前，请详细阅读SDK 介绍文档，
+欢迎使用杰理开源项目，在开始进入项目之前，请详细阅读SDK 介绍文档，
 从而获得对杰理系列芯片和SDK 的大概认识，并且可以通过快速开始介绍来进行开发.
 
 工具链
@@ -29,8 +29,9 @@ AC63 系列通用蓝牙SDK 固件程序
 
 * 芯片简介 : [SoC 数据手册扼要](./doc)
 
-* SDK 介绍文档 : [SDK 快速开始简介](./doc/)
+* SDK 版本信息 : [SDK 历史版本](doc/AC630N_bt_data_transfer_sdk_发布版本信息.pdf)
 
+* SDK 介绍文档 : [SDK 快速开始简介](./doc/AC630N_bt_data_transfer_sdk介绍.pdf)
 
 编译工程
 -------------
@@ -53,9 +54,11 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 蓝牙官方认证
 -------------
 
-经典蓝牙LMP / 低功耗蓝牙Link Layer 层和Host 协议栈均支持蓝牙5.0 版本实现
+经典蓝牙LMP / 低功耗蓝牙Link Layer 层和Host 协议栈均支持蓝牙5.0 和 5.1版本实现
 
-* [QDID 134104](https://launchstudio.bluetooth.com/ListingDetails/88799)
+* Core v5.0 [QDID 134104](https://launchstudio.bluetooth.com/ListingDetails/88799)
+
+* Core v5.1 [QDID 136145](https://launchstudio.bluetooth.com/ListingDetails/91371)
 
 
 硬件环境
@@ -63,9 +66,9 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 
 * 开发评估板 ：开发板申请入口[链接](https://shop321455197.taobao.com/?spm=a230r.7195193.1997079397.2.2a6d391d3n5udo)
 
-* 生产烧写工具 : 为量产和裸片烧写而设计, 申请入口 [连接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.8.504d246bXKwyeH&id=620941819219) 并仔细阅读相关 [文档](./Stuff)
+* 生产烧写工具 : 为量产和裸片烧写而设计, 申请入口 [连接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.8.504d246bXKwyeH&id=620941819219) 并仔细阅读相关 [文档](./doc/stuff/烧写器使用说明文档.pdf)
 
-* 无线测试盒 : 为空中升级/射频标定/快速产品测试而设计, 申请入口 [链接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511), 阅读[文档](./stuff) 获取更多详细信息.
+* 无线测试盒 : 为空中升级/射频标定/快速产品测试而设计, 申请入口 [链接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511), 阅读[文档](./doc/stuff/AC690x_1T2测试盒使用说明.pdf) 获取更多详细信息.
 
 
 免责声明
