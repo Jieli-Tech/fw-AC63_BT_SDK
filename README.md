@@ -1,5 +1,7 @@
 # fw-AC63_BT_SDK
 
+EN | [中文](./README-zh.md)
+
 firmware for Generic bluetooth SDK（AC63 series）
 
 This repository contains the Jieli source code additions to open
