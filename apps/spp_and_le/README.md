@@ -3,7 +3,10 @@
 # APP - Bluetooth：SPP 透传 ![Build result][icon_build]
 ---------------
 
-代码工程：`apps\spp_and_le\board\bd29\AC631X_spp_and_le.cbp` 
+代码工程 <br>
+AC631 ：[apps\spp_and_le\board\bd29\AC631X_spp_and_le.cbp](../../apps/spp_and_le/board/bd29) <br>
+AC636 ：[apps\spp_and_le\board\br25\AC636X_spp_and_le.cbp](../../apps/spp_and_le/board/br25) 
+
  
 ## 1.模块使能
 
@@ -309,7 +312,7 @@ APP - Bluetooth：AT 命令![Build result][icon_build]
 
 ### 4.1 概述
 主要功能是在数传SPP+BLE的基础上，增加了由上位机或其他MCU可以通过UART对接蓝牙芯片进行基本的配置、状态获取、控制连接断开以及数据收发等操作。
-定义一套串口的控制协议，具体请查看协议文档[《蓝牙AT协议》](./doc/蓝牙AT协议)。
+定义一套串口的控制协议，具体请查看协议文档[《蓝牙AT协议》](../../doc/蓝牙AT协议)。
 
 简单说明代码文件
 |代码文件                              |描述说明                                |
