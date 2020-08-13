@@ -18,6 +18,10 @@
 # APP - Bluetooth: Mesh ![Build result][icon_build]
 ---------------
 
+代码工程 <br>
+AC631 ：[apps\mesh\board\bd29\AC631X_mesh.cbp](../../apps/mesh/board/bd29) <br>
+AC636 ：[apps\mesh\board\br25\AC636X_mesh.cbp](../../apps/mesh/board/br25) 
+
 ## 概述
 :book: 标准 [蓝牙Mesh][1] 协议，基于 [蓝牙5 ble][2] 实现网内节点间通讯，具体功能如下：
 
@@ -74,18 +78,6 @@
         unix_timestamp.c
         unix_timestamp.h
     ▾ board/
-      ▾ bd29/
-          board_ac630x_demo.c
-          board_ac630x_demo_cfg.h
-          board_ac6311_demo.c
-          board_ac6311_demo_cfg.h
-          board_ac6313_demo.c
-          board_ac6313_demo_cfg.h
-          board_ac6318_demo.c
-          board_ac6318_demo_cfg.h
-          board_ac6319_demo.c
-          board_ac6319_demo_cfg.h
-          board_config.h
     ▾ examples/
         generic_onoff_client.c
         generic_onoff_server.c
