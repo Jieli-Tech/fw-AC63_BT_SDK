@@ -3,7 +3,9 @@
 # APP - Bluetooth: Dual-Mode HID ![Build result][icon_build]
 ---------------
 
-代码工程：`apps\hid\board\bd29\AC631X_hid.cbp`
+代码工程 <br>
+AC631 ：[apps\hid\board\bd29\AC631X_hid.cbp](../../apps/hid/board/bd29) <br>
+AC636 ：[apps\hid\board\br25\AC636X_hid.cbp](../../apps/hid/board/br25) 
 
 ## 1.APP 概述
 
