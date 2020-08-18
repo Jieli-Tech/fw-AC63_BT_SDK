@@ -221,7 +221,7 @@ Report Map 在线解析工具地址： http://eleccelerator.com/usbdescreqparser
 
 ## 8.蓝牙鼠标 APP 总体框架
 蓝牙鼠标 APP 总体框架如图 4.2 所示。
- ![hid](./../../doc/stuff/hid_4.1.png)
+ ![hid](./../../doc/stuff/hid_4.2.png)
 
 ## 9.蓝牙鼠标功耗
 
