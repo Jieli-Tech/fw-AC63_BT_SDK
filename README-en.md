@@ -39,11 +39,21 @@ Build
 -------------
 Select a project to build. The following folders contains buildable projects:
 
-* APP_Bluetooth : [SPP_LE](./apps/spp_and_le)
+* APP_Bluetooth : [SPP_LE](./apps/spp_and_le), usage: data transfer,centeral devices,boardcast devices
 
-* APP_Bluetooth : [HID](./apps/hid)
+* APP_Bluetooth : [HID](./apps/hid), usage: remote control，keyboard，mouse
 
-* APP_Bluetooth : [Mesh](./apps/mesh)
+* APP_Bluetooth : [Mesh](./apps/mesh), usage: Mesh nodes
+
+Comming Soon：
+
+* APP_Bluetooth ：`IoT (ipv6 / 6lowpan)`
+
+* APP_Bluetooth ：`Beacon`
+
+* APP_Bluetooth ：`Multi-link`
+
+* 2.4G_APP : `Vendor Wireless`
 
 SDK support Codeblock & Make to build to project,make sure you already setup the enviroment
 
