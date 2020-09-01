@@ -20,7 +20,7 @@
 
 代码工程 <br>
 AC631 ：[apps\mesh\board\bd29\AC631X_mesh.cbp](../../apps/mesh/board/bd29) <br>
-AC636 ：[apps\mesh\board\br25\AC636X_mesh.cbp](../../apps/mesh/board/br25) 
+AC636 ：[apps\mesh\board\br25\AC636X_mesh.cbp](../../apps/mesh/board/br25)
 
 ## 概述
 :book: 标准 [蓝牙Mesh][1] 协议，基于 [蓝牙5 ble][2] 实现网内节点间通讯，具体功能如下：
@@ -158,6 +158,15 @@ const u16 config_bt_mesh_proxy_node_adv_interval = ADV_SCAN_UNIT(300); // 
     -> Elements个数：1
     -> Model：Configuration Server + Generic On Off Client
     ```
+
+  - 通信距离
+
+    - 空旷场地水平通信距离：极限距离50米，建议通信目标间距小于30米
+
+    - 空旷场地垂直通信距离：极限距离20米，建议通信目标间距小于10米
+
+    - 室内环境水平通信距离：受环境中的障碍物影响，建议通信目标间距小于18米
+
   - #### 实际操作
     - 基本配置
 
@@ -233,6 +242,15 @@ const u16 config_bt_mesh_proxy_node_adv_interval = ADV_SCAN_UNIT(300); // 
     -> Elements个数：1
     -> Model：Configuration Server + Generic On Off Server
     ```
+    
+  - 通信距离
+
+    - 空旷场地水平通信距离：极限距离50米，建议通信目标间距小于30米
+
+    - 空旷场地垂直通信距离：极限距离20米，建议通信目标间距小于10米
+
+    - 室内环境水平通信距离：受环境中的障碍物影响，建议通信目标间距小于18米   
+
   - #### 实际操作
     - 基本配置
 
