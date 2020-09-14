@@ -6,19 +6,9 @@ ifeq ($(HOST_OS), linux)
 # --------------tools path-----------------------
 export JL_TOOLS=/opt/pi32v2
 
-ifeq ($(BANK_ENABLE),y)
-export CC = $(JL_TOOLS)/bin_test/pi32v2-uclinux-clang
-export LD = $(JL_TOOLS)/bin_test/lto-wrapper
-export AR = $(JL_TOOLS)/bin_test/lto-ar
-else
-export CC = $(JL_TOOLS)/bin_test_20190114/pi32v2-uclinux-clang
-export LD = $(JL_TOOLS)/bin_test_20190114/lto-wrapper
-export AR = $(JL_TOOLS)/bin_test_20190114/lto-ar
-#export CC = $(JL_TOOLS)/upstream/pi32v2-uclinux-clang
-#export AR = $(JL_TOOLS)/upstream/lto-ar
-#export LD = $(JL_TOOLS)/upstream/lto-wrapper
-
-endif
+export CC = $(JL_TOOLS)/bin/pi32v2-uclinux-clang
+export LD = $(JL_TOOLS)/bin/lto-wrapper
+export AR = $(JL_TOOLS)/bin/lto-ar
 
 export DUMPTY = $(JL_TOOLS)/dump-funty
 
@@ -114,13 +104,13 @@ export LD_ARGS += \
 --plugin-opt=-banknum-map-file-list=$(ROOT)/apps/$(APP_CASE)/banknum_func.list \
 --plugin-opt=-banknum-section-map-file-list=$(ROOT)/apps/$(APP_CASE)/banknum_sec.list \
 --plugin-opt=-banknum-exclude-func-file-list=$(ROOT)/apps/$(APP_CASE)/banknum_exclude.list \
-#--plugin-opt=-custom-section-map-file-list=$(ROOT)/cpu/$(CPU)/cussec_map.ld \
+--plugin-opt=-custom-section-map-file-list=$(ROOT)/cpu/$(CPU)/cussec_map.ld \
 
 endif
 
 ifeq ($(NEED_USED_LIST),y)
 export LD_ARGS += \
---plugin-opt=-used-symbol-file=$(addprefix $(ROOT)/apps/$(APP_CASE)/, sdk_used_list.used)
+--plugin-opt=-used-symbol-file=$(addprefix $(ROOT)/cpu/$(CPU)/, sdk_used_list.used)
 
 endif
 

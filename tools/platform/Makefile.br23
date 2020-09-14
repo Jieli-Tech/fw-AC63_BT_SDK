@@ -2,13 +2,13 @@
 # --------------Basic Setting-----------------------
 #
 #配置下载编译方式(/lto)
-COMPLIE_MODE=lto
+COMPLIE_MODE=_lto_r3
 
 #配置下载CPU架构(/pi32/pi32v2/q32/q32s)
 export CORE=pi32v2
 
 #配置项目文件指向(br20/br21)
-export CPU=br25
+export CPU=br23
 
 #配置项目的目标机器型号(generic(开发板)/...)
 export BOARD=generic
@@ -19,9 +19,9 @@ export TYPE=CHIP
 
 #配置下载匹配(br17sdk/br20_sdk/br21_sdk/br22_sdk/br23_sdk)
 ifeq ($(TYPE),FPGA)
-export NICKNAME=br25_sdk_fpga
+export NICKNAME=br23_sdk_fpga
 else
-export NICKNAME=br25_sdk
+export NICKNAME=br23_sdk
 endif
 
 
@@ -33,8 +33,7 @@ export NEW_ECC ?= y
 export THIRD_PARTY_PROFILE_ENABLE = y
 
 export CC_DEFINE += \
--DCONFIG_CPU_BR25 \
--DCONFIG_PRINT_IN_MASK \
+-DCONFIG_CPU_BR23 \
 
 export cibuild ?= n
 ifeq ($(cibuild),y)
@@ -46,10 +45,12 @@ ifneq ($(cibuild), y)
 CC_DEFINE += -D__SHELL__
 endif
 endif
+# -DCONFIG_PRINT_IN_MASK \
 
 ifeq ($(TYPE),FPGA)
 CC_DEFINE += -DCONFIG_FPGA_ENABLE
 endif
+
 CC_DEFINE += -DCONFIG_EQ_SUPPORT_ASYNC
 
 ifeq ($(MP3_WMA_LIB_SPECIAL),y)
@@ -63,29 +64,14 @@ endif
 
 -include apps$(SLASH)app_cfg
 
-export OS_IN_MASKROM = y
-export MEM_IN_MASKROM = y
-export CVSD_CODEC_IN_MASKROM = y
-export LZ4_CODEC_IN_MASKROM = y
-export BFILTERFUN_LIB_IN_MASKROM = y
-export libFFT_pi32v2_OnChip_IN_MASKROM = n
+export OS_IN_MASKROM = n
+export MEM_IN_MASKROM = n
+export CVSD_CODEC_IN_MASKROM = n
+export LZ4_CODEC_IN_MASKROM = n
 
 export CONFIG_MMU_ENABLE = y
 
 export CONFIG_PSRAM_ENABLE = n
-
-export CONFIG_MMU_VERSION = v1
-
-#lwip
-ifeq ($(APP_CASE), iot)
-export CONFIG_NET_ENABLE = y
-export CONFIG_NET_BT = y
-export CONFIG_NET_BNEP = y
-else
-export CONFIG_NET_ENABLE = n
-export CONFIG_NET_BT = n
-export CONFIG_NET_BNEP = n
-endif
 
 #n:media_origin
 #y:media_new
@@ -95,40 +81,29 @@ export MEDIA_NEW_ENABLE = n
 else
 export MEDIA_NEW_ENABLE = d
 endif
+
 export CONFIG_SBC_CODEC_HW = y
 export CONFIG_MSBC_CODEC_HW = y
 export CONFIG_AAC_CODEC_HW = n
 
 #VER_PI32V2_V1  : BR22
 #VER_PI32V2_V2  : BR25 BR30
-#VER_PI32V2_V2_STATIC  : BR25 BR30
 #VER_PI32V2_EST  : BR23
 #VER_PI32V2_DSP  : BR18
 #VER_PI32		: BR21
-export CONFIG_AEC_VER =  VER_PI32V2_V2
-
-#aec in_buf和ref_buf复用adc和dac
-export CONFIG_AEC_MUX ?= n
-export CONFIG_ANS_V2 ?= n
+export CONFIG_AEC_VER = VER_PI32V2_EST
 
 #Support Audio Onchip
 export CONFIG_AUDIO_ONCHIP = y
 
-
-ifeq ($(CONFIG_NET_BT),y)
-CC_DEFINE += -DLIWP_USE_BT\
-  			-D_SYS_SELECT_H
-endif
-ifeq ($(CONFIG_ANS_V2),y)
-CC_DEFINE += -DCONFIG_ANS_V2
-endif
-ifeq ($(CONFIG_AEC_MUX),y)
-CC_DEFINE += -DCONFIG_AEC_MUX
-endif
-
 ifeq ($(CONFIG_MMU_ENABLE),y)
 CC_DEFINE += -DCONFIG_MMU_ENABLE
+
+
+export CONFIG_MMU_VERSION = v1
+
 endif
+
 
 ifeq ($(CONFIG_PSRAM_ENABLE),y)
 CC_DEFINE += -DCONFIG_PSRAM_ENABLE
@@ -149,12 +124,37 @@ endif
 ifeq ($(APP_CASE),earphone)
 CC_DEFINE += -DCONFIG_AEC_M=128
 else
-CC_DEFINE += -DCONFIG_AEC_M=256
+CC_DEFINE += -DCONFIG_AEC_M=640
 endif
 #AEC config end--------------------------------------
 
 ifeq ($(CONFIG_AUDIO_ONCHIP),y)
 CC_DEFINE += -DCONFIG_AUDIO_ONCHIP
+endif
+
+ifeq ($(APP_CASE),soundbox)
+CC_DEFINE += -DCONFIG_LOCAL_TWS_ENABLE
+#///////////////
+
+
+#aec in_buf和ref_buf复用adc和dac
+export CONFIG_AEC_MUX ?= n
+export CONFIG_ANS_V2 ?= n
+endif
+
+ifeq ($(CONFIG_MMU_ENABLE),y)
+CC_DEFINE += -DCONFIG_MMU_ENABLE
+endif
+
+ifeq ($(CONFIG_ANS_V2),y)
+CC_DEFINE += -DCONFIG_ANS_V2
+endif
+ifeq ($(CONFIG_AEC_MUX),y)
+CC_DEFINE += -DCONFIG_AEC_MUX
+endif
+
+ifeq ($(CONFIG_PSRAM_ENABLE),y)
+CC_DEFINE += -DCONFIG_PSRAM_ENABLE
 endif
 
 ifeq ($(MEDIA_NEW_ENABLE),y)
@@ -163,12 +163,8 @@ endif
 
 ifeq ($(MEDIA_NEW_ENABLE),d)
 CC_DEFINE += -DCONFIG_MEDIA_DEVELOP_ENABLE
+CC_DEFINE += -DCONFIG_MEDIA_EFFECT_DISABLE
 endif
-
-ifeq ($(APP_CASE),soundbox)
-CC_DEFINE += -DCONFIG_LOCAL_TWS_ENABLE
-endif
-#///////////
 
 CC_DEFINE += -D__GCC_PI32V2__
 
@@ -176,36 +172,8 @@ ifeq ($(NEW_ECC),y)
 CC_DEFINE += -DCONFIG_NEW_ECC_ENABLE
 endif
 
-ifeq ($(BANK_ENABLE),y)
-CC_DEFINE += \
--DCONFIG_BANK_COMM \
--DCONFIG_BANK_NUM_INIT=0 \
--DCONFIG_BANK_NUM_TONE=1 \
--DCONFIG_BANK_NUM_ECDH=2 \
--DCONFIG_BANK_NUM_ENC=3 \
--DCONFIG_BANK_NUM_SDP=4 \
--DCONFIG_BANK_NUM_BT_HID=4 \
--DCONFIG_BANK_NUM_RFCOMM=8 \
--DCONFIG_BANK_NUM_A2DP=5 \
--DCONFIG_BANK_NUM_AVCTP=6 \
--DCONFIG_BANK_NUM_RF=7 \
--DCONFIG_BANK_NUM_LMP_SLAVE=3 \
--DCONFIG_BANK_NUM_LMP_MASTER=3 \
-#-DCONFIG_BANK_NUM_DUT=7 \
-#-DCONFIG_BANK_NUM_TWS_BLE=8 \
-
-endif
-
-
 # --------------Project path Setting-----------------------
 #
-export DIR_OUTPUT = $(ROOT)/cpu/$(CPU)/tools
-ifneq ($(cibuild),y)
-export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.sh
-else
-export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.bat
-endif
-
 export DIR_OUTPUT = $(ROOT)/cpu/$(CPU)/tools
 ifneq ($(cibuild),y)
 ifeq ($(HOST_OS), linux)
@@ -230,25 +198,19 @@ export LINKER = \
 -M=$(addprefix $(DIR_OUTPUT)$(SLASH), $(BUILD_MAP))
 
 
-#--plugin-opt=-used-symbol-file=$(addprefix $(ROOT)/cpu/$(CPU)/, sdk_used_list.used) \
-
 #
 # --------------CBP Setting-----------------------
-#
-export CBP_TITLE = AC696X_$(APP_CASE)$(PROJECT_SUFFIX)
+export CBP_TITLE = AC695N_$(APP_CASE)$(PROJECT_SUFFIX)
 export CBP_COMPILER = pi32v2_r3_lto_compiler
 export CBP_ADD_OPT =
 export CBP_POSITION ?= .
 
-#
-# ------------- Used List Generation -------------
-#
 export NEED_USED_LIST = y
 
 #
 # --------------Architecture & Complier Setting-----------------------
 #
--include tools$(SLASH)compiler$(SLASH)Makefile.$(CORE)_$(COMPLIE_MODE)_r3
+-include tools$(SLASH)compiler$(SLASH)Makefile.$(CORE)$(COMPLIE_MODE)
 
 pre_make:
-	@echo "Making... Soc : br25"
+	@echo "Making... Soc : br23"

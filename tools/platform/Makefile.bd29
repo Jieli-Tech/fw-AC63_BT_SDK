@@ -24,6 +24,7 @@ export NEW_BREDR = n
 export RTOS = FREE_RTOS
 export SERVER_CORE = lite
 export NEW_ECC ?= y
+export THIRD_PARTY_PROFILE_ENABLE = y
 
 export CC_DEFINE += \
 -DCONFIG_CPU_BD29 \
@@ -36,8 +37,10 @@ ifeq ($(cibuild),y)
 CC_DEFINE += -DCONFIG_RELEASE_ENABLE
 endif
 
-ifeq ($(linux),y)
+ifeq ($(HOST_OS), linux)
+ifneq ($(cibuild), y)
 CC_DEFINE += -D__SHELL__
+endif
 endif
 
 ifeq ($(TYPE),FPGA)
@@ -90,15 +93,15 @@ endif
 # --------------Project path Setting-----------------------
 #
 export DIR_OUTPUT = $(ROOT)/cpu/$(CPU)/tools
-
+ifneq ($(cibuild),y)
 ifeq ($(HOST_OS), linux)
 export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.sh
-endif
-
-ifeq ($(HOST_OS), windows)
+else
 export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.bat
 endif
-
+else
+export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.bat
+endif
 
 # - output file
 export ELF= sdk

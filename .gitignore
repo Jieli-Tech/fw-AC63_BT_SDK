@@ -11,7 +11,8 @@
 *.ilk
 *.map
 *.exp
-*.ld
+# *.ld
+sdk.ld
 
 # Precompiled Headers
 *.gch
