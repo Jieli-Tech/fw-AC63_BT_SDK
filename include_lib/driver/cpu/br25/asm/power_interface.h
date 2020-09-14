@@ -95,6 +95,7 @@ struct low_power_param {
     u8 vdc13_keep; //如果进入低功耗时哒哒声，可以将该标志置1。该位置1时，会同时keep住vddio，单耳功耗会大100ua左右，对耳会大200ua左右。(哒哒声是由于电容的效应导致的)
 
     u32 osc_delay_us;
+    u8  fake_rtc;
 };
 
 #define BLUETOOTH_RESUME    BIT(1)
@@ -142,7 +143,7 @@ struct sub_wakeup {
 
 struct wakeup_param {
     const PORT_FLT filter;
-    const struct port_wakeup *port[MAX_WAKEUP_PORT];
+    struct port_wakeup *port[MAX_WAKEUP_PORT];
     const struct charge_wakeup *charge;
     const struct alarm_wakeup *alram;
     const struct lvd_wakeup *lvd;
@@ -242,6 +243,8 @@ void power_wakeup_index_disable(u8 index);
 
 void power_wakeup_init(const struct wakeup_param *param);
 
+void power_wakeup_port_set(u8 idx, struct port_wakeup *port);
+
 void power_wakeup_init_test();
 
 u8 get_wakeup_source(void);
@@ -262,6 +265,7 @@ void power_set_wvdd(u8 level);
 
 int cpu_reset_by_soft();
 /*-----------------------------------------------------------*/
+void reset_vddiom_lev(u8 lev);
 
 typedef u8(*idle_handler_t)(void);
 

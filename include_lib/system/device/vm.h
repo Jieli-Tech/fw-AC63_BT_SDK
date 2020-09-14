@@ -51,5 +51,10 @@ u8   get_vm_statu(void);
 void spi_port_hd(u8 level);
 
 bool sfc_erase_zone(u32 addr, u32 len);
+
+void vm_api_write_mult(u16 start_id, u16 end_id, void *buf, u16 len, u32 delay);
+int vm_api_read_mult(u16 start_id, u16 end_id, void *buf, u16 len);
+
+
 #endif  //_VM_H_
 

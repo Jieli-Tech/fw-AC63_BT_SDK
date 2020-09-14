@@ -4,8 +4,8 @@
 #include "asm/usb.h"
 #include "usb_stack.h"
 
-#define MAX_MSD_DEV                 4
-#define MSD_DEV_NAME_LEN            32
+#define MAX_MSD_DEV                 2
+#define MSD_DEV_NAME_LEN            12
 
 struct msd_info {
     u8 bError;
@@ -20,8 +20,7 @@ struct msd_info {
 };
 
 
-u32 msd_usb2mcu(const struct usb_device_t *usb_device, u8 *buffer, u32 len);
-u32 msd_mcu2usb(const struct usb_device_t *usb_device, const u8 *buffer, u32 len);
+
 u32 msd_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
 void USB_MassStorage(const struct usb_device_t *usb_device);
 u32 msd_set_wakeup_handle(void (*handle)(struct usb_device_t *usb_device));

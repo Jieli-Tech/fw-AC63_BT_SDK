@@ -21,7 +21,7 @@
 //app case 选择,只能选1个,要配置对应的board_config.h
 #define CONFIG_APP_SPP_LE                 1
 #define CONFIG_APP_AT_COM                 0
-#define CONFIG_APP_DONGLE                 0
+#define CONFIG_APP_DONGLE                 0 //board_ac6368b_dongle
 
 //配置对应的APP的蓝牙功能
 #if CONFIG_APP_SPP_LE
@@ -33,8 +33,10 @@
 #endif
 #endif
 
+//选择AT: 主机从机二选一
 #if CONFIG_APP_AT_COM
 #define TRANS_AT_COM                      1 //串口控制对接蓝牙双模透传
+#define TRANS_AT_CLIENT                   0 //串口控制对接蓝牙BLE主机透传
 #endif
 
 #if CONFIG_APP_DONGLE
@@ -46,6 +48,8 @@
 #include "usb_common_def.h"
 
 #include "btcontroller_mode.h"
+
+#include "user_cfg_id.h"
 
 #define APP_PRIVATE_PROFILE_CFG
 
@@ -119,7 +123,7 @@
 #endif
 #if TCFG_USER_EDR_ENABLE
 #if RCSP_BTMATE_EN
-#define CONFIG_BT_RX_BUFF_SIZE  (2 * 1024 + 512)
+#define CONFIG_BT_RX_BUFF_SIZE  (2 * 1024)
 #define CONFIG_BT_TX_BUFF_SIZE  (2 * 1024)
 #else
 #define CONFIG_BT_RX_BUFF_SIZE  (3 * 1024)

@@ -77,6 +77,9 @@ void bit_clr_ie(unsigned char index);
 void bit_set_ie(unsigned char index);
 bool irq_read(u32 index);
 
+#define irq_disable(x)  bit_clr_ie(x)
+#define irq_enable(x)   bit_set_ie(x)
+
 #ifdef IRQ_TIME_COUNT_EN
 void irq_handler_enter(int irq);
 

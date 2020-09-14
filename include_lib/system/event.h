@@ -49,6 +49,8 @@
 #define SYS_PBG_EVENT           0x0040
 #define SYS_BT_AI_EVENT 		0x0080
 #define SYS_AI_EVENT 		    0x0100
+#define SYS_MATRIX_KEY_EVENT    0x0200
+#define SYS_TOUCHPAD_EVENT      0x0400
 
 
 
@@ -75,6 +77,7 @@
 #define DEVICE_EVENT_FROM_ALM		   (('A' << 24) | ('L' << 16) | ('M' << 8) | '\0')
 #define SYS_BT_EVENT_TYPE_CON_STATUS   (('C' << 24) | ('O' << 16) | ('N' << 8) | '\0')
 #define SYS_BT_EVENT_TYPE_HCI_STATUS   (('H' << 24) | ('C' << 16) | ('I' << 8) | '\0')
+#define SYS_BT_EVENT_BLE_STATUS        (('B' << 24) | ('L' << 16) | ('E' << 8) | '\0')
 #define DEVICE_EVENT_FROM_KEY		   (('K' << 24) | ('E' << 16) | ('Y' << 8) | '\0')
 #define SYS_BT_AI_EVENT_TYPE_STATUS    (('B' << 24) | ('A' << 16) | ('I' << 8) | '\0')
 #define DEVICE_EVENT_FROM_UART_RX_OVERFLOW		(('U' << 24) | ('R' << 16) | ('F' << 8) | '\0')
@@ -165,7 +168,7 @@ struct chargestore_event {
 
 struct ancbox_event {
     u8 event;
-    u8 value;
+    u32 value;
 };
 
 struct net_event {
@@ -222,6 +225,16 @@ struct chargebox_event {
     u8 event;
 };
 
+struct matrix_key_event {
+    u16 args[6];            //最多推6个按键出来，如果需要推多个按键需要自行修改，每个u16 低八位标识row 高八位标识col
+    u8 *map;
+};
+
+struct touchpad_event {
+    u8 gesture_event;       //手势事件
+    s8 x;
+    s8 y;
+};
 
 struct sys_event {
     u16 type;
@@ -248,6 +261,8 @@ struct sys_event {
         struct rcsp_event	rcsp;
         struct chargebox_event chargebox;
         struct ancbox_event ancbox;
+        struct matrix_key_event  matrix_key;
+        struct touchpad_event touchpad;
     } u;
 };
 
@@ -292,6 +307,10 @@ void sys_key_event_disable();
 
 
 void sys_key_event_enable();
+
+void sys_key_event_filter_disable();
+
+void sys_key_event_filter_enable();
 
 void sys_touch_event_disable();
 

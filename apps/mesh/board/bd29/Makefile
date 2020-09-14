@@ -7,7 +7,7 @@ LIBS = \
    $(AR_DIR)/btstack.a \
    $(AR_DIR)/update.a \
    $(AR_DIR)/crypto_toolbox_Osize.a \
-   $(AR_DIR)/JL_rcsp.a \
+   $(AR_DIR)/rcsp_stack.a \
    $(AR_DIR)/agreement.a \
 --end-group
 

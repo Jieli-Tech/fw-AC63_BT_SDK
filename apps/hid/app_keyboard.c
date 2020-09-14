@@ -280,13 +280,10 @@ static void bt_function_select_init()
 #endif
 }
 
-extern void user_hid_set_icon(u32 class_type);
-extern void user_hid_set_ReportMap(u8 *map, u16 size);
 static void bredr_handle_register()
 {
 #if (USER_SUPPORT_PROFILE_HID==1)
-    /* 0x002580,//mouse,ios not display device */
-    user_hid_set_icon(0x002540);
+    user_hid_set_icon(BD_CLASS_KEYBOARD);
     user_hid_set_ReportMap(hid_report_map, sizeof(hid_report_map));
     user_hid_init();
 #endif
@@ -734,10 +731,7 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         log_info("BT_STATUS_INIT_OK\n");
 
 #if TCFG_USER_BLE_ENABLE
-        extern void bt_ble_init(void);
-        extern void le_hogp_set_icon(u16 class_type);
-        extern void le_hogp_set_ReportMap(u8 * map, u16 size);
-        le_hogp_set_icon(0x03c1);//keyboard
+        le_hogp_set_icon(BLE_APPEARANCE_HID_KEYBOARD);//keyboard
         le_hogp_set_ReportMap(hid_report_map, sizeof(hid_report_map));
 
         bt_ble_init();

@@ -89,6 +89,26 @@ int usb_device_mode(const usb_dev usb_id, const u32 class)
     user_setup_filter_install(usb_id2device(usb_id));
     return 0;
 }
+void usb_otg_sof_check_init(const usb_dev id)
+{
+    u32 ep = 0;
+    u8 *ep_buffer = usb_get_ep_buffer(id, ep);
+
+    usb_g_sie_init(id);
+
+    usb_set_dma_raddr(id, ep, ep_buffer);
+
+    for (ep = 1; ep < USB_MAX_HW_EPNUM; ep++) {
+        usb_disable_ep(id, ep);
+    }
+    usb_sof_clr_pnd(id);
+}
+#else
+
+void usb_otg_sof_check_init(const usb_dev id)
+{
+
+}
 /* module_initcall(usb_device_mode); */
 
 #endif

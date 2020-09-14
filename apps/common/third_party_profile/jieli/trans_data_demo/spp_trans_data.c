@@ -8,6 +8,7 @@
 #include "circular_buf.h"
 #include "spp_trans_data.h"
 #include "bt_common.h"
+#include "btstack/avctp_user.h"
 
 #if 1
 extern void printf_buf(u8 *buf, u32 len);
@@ -36,11 +37,10 @@ static u32 spp_test_start;
 static struct spp_operation_t *spp_api = NULL;
 static u8 spp_state;
 
-extern void clear_sniff_cnt(void);
 int transport_spp_send_data(u8 *data, u16 len)
 {
     if (spp_api) {
-		log_info("spp_api_tx(%d) \n", len);
+        log_info("spp_api_tx(%d) \n", len);
         /* log_info_hexdump(data, len); */
         clear_sniff_cnt();
         return spp_api->send_data(NULL, data, len);
@@ -86,8 +86,8 @@ static void transport_spp_send_wakeup(void)
 static void transport_spp_recieve_cbk(void *priv, u8 *buf, u16 len)
 {
     log_info("spp_api_rx(%d) \n", len);
-	log_info_hexdump(buf, len);
-	clear_sniff_cnt();
+    log_info_hexdump(buf, len);
+    clear_sniff_cnt();
 
 #if TEST_SPP_DATA_RATE
     if ((buf[0] == 'A') && (buf[1] == 'F')) {
@@ -144,11 +144,11 @@ static void test_timer_handler(void)
 
 void transport_spp_init(void)
 {
-	log_info("transport_spp_init\n");
+    log_info("transport_spp_init\n");
 #if (USER_SUPPORT_PROFILE_SPP==1)
     spp_state = 0;
-	spp_get_operation_table(&spp_api);
-	spp_api->regist_recieve_cbk(0, transport_spp_recieve_cbk);
+    spp_get_operation_table(&spp_api);
+    spp_api->regist_recieve_cbk(0, transport_spp_recieve_cbk);
     spp_api->regist_state_cbk(0, transport_spp_state_cbk);
     spp_api->regist_wakeup_send(NULL, transport_spp_send_wakeup);
 #endif

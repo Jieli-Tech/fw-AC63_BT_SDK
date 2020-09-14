@@ -30,6 +30,8 @@ static u16 vbat_adc_value;
 
 static u8 vbat_vddio_tieup = 0;
 
+static u8 vbg_vbat_sample_mode = 0b10;    //默认只采vbat
+
 #define     ADC_SRC_CLK clk_get("adc")
 
 /*config adc clk according to sys_clk*/
@@ -97,20 +99,39 @@ static u32 adc_get_next_ch(u32 cur_ch)
     return 0;
 }
 
+//mode :  0b01只采VBG    0b10只采VBAT    0b11 VBG&VBAT都采   0b00 VBG&VBAT初始化时只采一次
+void adc_set_vbg_vbat_sample_mode(u8 mode)
+{
+    vbg_vbat_sample_mode = (mode & 0b11);
+}
+
 void adc_set_vbat_vddio_tieup(u8 en)
 {
-    vbat_vddio_tieup = !!en;
+    if (vbg_vbat_sample_mode == 0b11) {
+        return;
+    }
+    if (!!en) {
+        vbg_vbat_sample_mode = 0b01;
+        vbat_vddio_tieup = 1;
+    } else {
+        vbg_vbat_sample_mode = 0b10;    //恢复默认值
+        vbat_vddio_tieup = 0;
+    }
 }
 
 u32 adc_get_value(u32 ch)
 {
-    if (vbat_vddio_tieup) {
-        if (ch == AD_CH_VBAT) {
-            return vbat_adc_value;
-        }
-    } else {
-        if (ch == AD_CH_LDOREF) {
+    if (ch == AD_CH_LDOREF) {
+        if (vbg_vbat_sample_mode & BIT(0)) {
+        } else {
             return vbg_adc_value;
+        }
+    }
+
+    if (ch == AD_CH_VBAT) {
+        if (vbg_vbat_sample_mode & BIT(1)) {
+        } else {
+            return vbat_adc_value;
         }
     }
 
@@ -327,6 +348,12 @@ void _adc_init(u32 sys_lvd_en)
 
     adc_pmu_detect_en(1);
 
+    u32 dtemp_queue_ch = adc_add_sample_ch(AD_CH_DTEMP);
+    adc_set_sample_freq(AD_CH_DTEMP, 1500);
+    adc_sample(AD_CH_DTEMP);
+    while (!(JL_ADC->CON & BIT(7)));
+    adc_queue[dtemp_queue_ch].value = JL_ADC->RES;
+
     u32 i;
     vbat_adc_value = 0;
     adc_sample(AD_CH_VBAT);
@@ -350,11 +377,12 @@ void _adc_init(u32 sys_lvd_en)
 
     u32 vbat_queue_ch = 0;
     u32 vbg_queue_ch = 0;
-    if (vbat_vddio_tieup) {
+    if (vbg_vbat_sample_mode & BIT(0)) {
         vbg_queue_ch = adc_add_sample_ch(AD_CH_LDOREF);
-        adc_set_sample_freq(AD_CH_LDOREF, 30000);
+        adc_set_sample_freq(AD_CH_LDOREF, 5000);
         adc_queue[vbg_queue_ch].value = vbg_adc_value;
-    } else {
+    }
+    if (vbg_vbat_sample_mode & BIT(1)) {
         vbat_queue_ch = adc_add_sample_ch(AD_CH_VBAT);
         adc_set_sample_freq(AD_CH_VBAT, 30000);
         adc_queue[vbat_queue_ch].value = vbat_adc_value;
@@ -375,7 +403,7 @@ void _adc_init(u32 sys_lvd_en)
 
 void adc_init()
 {
-    check_pmu_voltage();
+    check_pmu_voltage(vbat_vddio_tieup);
 
     _adc_init(1);
 }

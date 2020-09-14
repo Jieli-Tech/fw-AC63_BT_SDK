@@ -10,6 +10,7 @@
 struct chargestore_handle {
     const struct chargestore_platform_data *data;
     JL_UART_TypeDef *UART;
+    u32 baudrate;
 };
 #define DMA_ISR_LEN 64
 #define DMA_BUF_LEN 64
@@ -137,6 +138,15 @@ void chargestore_close(void)
     memset((void *)uart_dma_buf, 0, sizeof(uart_dma_buf));
 }
 
+void chargestore_set_baudrate(u32 baudrate)
+{
+    u32 uart_timeout;
+    __this->baudrate = baudrate;
+    uart_timeout = 20 * 1000000 / __this->baudrate;
+    __this->UART->OTCNT = uart_timeout * (UART_OT_CLK / 1000000);
+    __this->UART->BAUD = (UART_SRC_CLK / __this->baudrate) / 4 - 1;
+}
+
 void chargestore_init(const struct chargestore_platform_data *data)
 {
     u32 uart_timeout;
@@ -161,7 +171,7 @@ void chargestore_init(const struct chargestore_platform_data *data)
     __this->UART->CON0 = BIT(13) | BIT(12) | BIT(10) | BIT(0);
     __this->UART->OTCNT = uart_timeout * (UART_OT_CLK / 1000000);
     __this->UART->BAUD = (UART_SRC_CLK / __this->data->baudrate) / 4 - 1;
-    __this->UART->CON1 = (((UART_SRC_CLK / __this->data->baudrate) % 4) << 4);
+    __this->baudrate = __this->data->baudrate;
     gpio_set_pull_down(__this->data->io_port, 0);
     gpio_set_pull_up(__this->data->io_port, 0);
     gpio_set_die(__this->data->io_port, 1);
@@ -192,10 +202,9 @@ static void clock_critical_exit(void)
     if (__this->UART == NULL) {
         return;
     }
-    uart_timeout = 20 * 1000000 / __this->data->baudrate;
+    uart_timeout = 20 * 1000000 / __this->baudrate;
     __this->UART->OTCNT = uart_timeout * (UART_OT_CLK / 1000000);
-    __this->UART->BAUD = (UART_SRC_CLK / __this->data->baudrate) / 4 - 1;
-    __this->UART->CON1 = (((UART_SRC_CLK / __this->data->baudrate) % 4) << 4);
+    __this->UART->BAUD = (UART_SRC_CLK / __this->baudrate) / 4 - 1;
 }
 CLOCK_CRITICAL_HANDLE_REG(chargestore, clock_critical_enter, clock_critical_exit)
 

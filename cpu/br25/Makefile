@@ -25,6 +25,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/spi_test.o \
 	  $(ROOT)/cpu/$(CPU)/iic_eeprom_test.o \
 	  $(ROOT)/cpu/$(CPU)/iic_slave_test.o
+
 else ifeq ($(APP_CASE),soundbox)
 objs += \
       $(ROOT)/cpu/$(CPU)/overlay_code.o \
@@ -33,6 +34,7 @@ objs += \
 
 objs += \
 	  $(ROOT)/cpu/$(CPU)/uart_test.o \
+	  $(ROOT)/cpu/$(CPU)/uart_bt_product.o \
 	  $(ROOT)/cpu/$(CPU)/spi_test.o \
 	  $(ROOT)/cpu/$(CPU)/iic_eeprom_test.o \
 	  $(ROOT)/cpu/$(CPU)/iic_slave_test.o \
@@ -48,4 +50,6 @@ include $(ROOT)/cpu/$(CPU)/audio_dec/Makefile
 include $(ROOT)/cpu/$(CPU)/audio_enc/Makefile
 include $(ROOT)/cpu/$(CPU)/audio_effect/Makefile
 include $(ROOT)/cpu/$(CPU)/localtws/Makefile
+include $(ROOT)/cpu/$(CPU)/audio_mic/Makefile
+
 

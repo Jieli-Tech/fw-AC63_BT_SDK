@@ -143,7 +143,19 @@ struct cmd_set_dcdc {
 #define AT_CMD_GET_BLE_ADDR         0x35
 #define AT_CMD_GET_BT_NAME          0x36
 #define AT_CMD_GET_BLE_NAME         0x37
-#define AT_CMD_GET_PINCODE          0x38
+#define AT_CMD_GET_PINCODE          0x33
+
+
+#define AT_CMD_BLE_CONN_PARAM_REQUEST 					0x38
+#define AT_CMD_SET_BLE_SCAN_PARAM 						0x50
+#define AT_CMD_SET_BLE_SCAN_ENABLE 						0x51
+#define AT_CMD_BLE_CREAT_CONNECT						0x52
+#define AT_CMD_BLE_CREAT_CONNECT_CANNEL					0x53
+#define AT_CMD_BLE_PROFILE_SEARCH						0x54
+#define AT_CMD_BLE_ATT_ENABLE_CCC 						0x55
+#define AT_CMD_BLE_ATT_READ 							0x56
+#define AT_CMD_BLE_ATT_WRITE 							0x57
+#define AT_CMD_BLE_ATT_WRITE_NO_RSP 					0x58
 
 
 #define AT_EVT_BT_CONNECTED         0x00
@@ -160,5 +172,14 @@ struct cmd_set_dcdc {
 #define AT_EVT_CONFIRM_GKEY         0x0E
 #define AT_EVT_UART_EXCEPTION       0x0F
 
+#define AT_EVT_CONN_PARAM_UPDATE_COMPLETE   0x10
+#define AT_EVT_ADV_REPORT                   0x20
+#define AT_EVT_PROFILE_REPOFT               0x21
+#define AT_EVT_PROFILE_SEARCH_END           0x22
+
+void at_uart_init(void *packet_handler);
+int at_uart_send_packet(const u8 *packet, int size);
+void slave_connect_param_update(u16 interval_min, u16 interval_max, u16 latency, u16 timeout);
+void at_send_event(u8 opcode, const u8 *packet, int size);
 
 #endif

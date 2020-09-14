@@ -3,19 +3,19 @@
 cd %~dp0
 
 
-..\..\json_to_res.exe json.txt
+json_to_res.exe json.txt
 
-copy ..\..\script.ver  .
-copy ..\..\uboot.boot  .
+copy ..\..\script.ver .
+copy ..\..\uboot.boot .
 copy ..\..\ota.bin .
 
 ..\..\isd_download.exe -tonorflash -dev bd29 -boot 0x2000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin  
 
-@REM å¸¸ç”¨å‘½ä»¤è¯´æ˜Ž
-@rem -format vm         // æ“¦é™¤VM åŒºåŸŸ
-@rem -format all        // æ“¦é™¤æ‰€æœ‰
+@REM ³£ÓÃÃüÁîËµÃ÷
+@rem -format vm         // ²Á³ýVM ÇøÓò
+@rem -format all        // ²Á³ýËùÓÐ
 @rem -reboot 500        // reset chip, valid in JTAG debug
-@rem åˆ é™¤ä¸´æ—¶æ–‡ä»¶-format all
+@rem É¾³ýÁÙÊ±ÎÄ¼þ-format all
 
 if exist *.mp3 del *.mp3 
 if exist *.PIX del *.PIX
@@ -25,9 +25,9 @@ if exist *.sty del *.sty
 
 
 
-@rem ç”Ÿæˆå›ºä»¶å‡çº§æ–‡ä»¶
+@rem Éú³É¹Ì¼þÉý¼¶ÎÄ¼þ
 ..\..\fw_add.exe -noenc -fw jl_isd.fw  -add ota.bin -type 100 -out jl_isd.fw
-@rem æ·»åŠ é…ç½®è„šæœ¬çš„ç‰ˆæœ¬ä¿¡æ¯åˆ° FW æ–‡ä»¶ä¸­
+@rem Ìí¼ÓÅäÖÃ½Å±¾µÄ°æ±¾ÐÅÏ¢µ½ FW ÎÄ¼þÖÐ
 ..\..\fw_add.exe -noenc -fw jl_isd.fw -add script.ver -out jl_isd.fw
 
 
@@ -36,17 +36,17 @@ copy jl_isd.ufw update.ufw
 del jl_isd.ufw
 
 
-@REM ç”Ÿæˆé…ç½®æ–‡ä»¶å‡çº§æ–‡ä»¶
+@REM Éú³ÉÅäÖÃÎÄ¼þÉý¼¶ÎÄ¼þ
 ::ufw_maker.exe -chip AC800X %ADD_KEY% -output config.ufw -res bt_cfg.cfg
 
 ::IF EXIST jl_696x.bin del jl_696x.bin 
 
 
-@rem å¸¸ç”¨å‘½ä»¤è¯´æ˜Ž
-@rem -format vm        //æ“¦é™¤VM åŒºåŸŸ
-@rem -format cfg       //æ“¦é™¤BT CFG åŒºåŸŸ
-@rem -format 0x3f0-2   //è¡¨ç¤ºä»Žç¬¬ 0x3f0 ä¸ª sector å¼€å§‹è¿žç»­æ“¦é™¤ 2 ä¸ª sector(ç¬¬ä¸€ä¸ªå‚æ•°ä¸º16è¿›åˆ¶æˆ–10è¿›åˆ¶éƒ½å¯ï¼Œç¬¬äºŒä¸ªå‚æ•°å¿…é¡»æ˜¯10è¿›åˆ¶)
+@rem ³£ÓÃÃüÁîËµÃ÷
+@rem -format vm        //²Á³ýVM ÇøÓò
+@rem -format cfg       //²Á³ýBT CFG ÇøÓò
+@rem -format 0x3f0-2   //±íÊ¾´ÓµÚ 0x3f0 ¸ö sector ¿ªÊ¼Á¬Ðø²Á³ý 2 ¸ö sector(µÚÒ»¸ö²ÎÊýÎª16½øÖÆ»ò10½øÖÆ¶¼¿É£¬µÚ¶þ¸ö²ÎÊý±ØÐëÊÇ10½øÖÆ)
 
 ping /n 2 127.1>null
 IF EXIST null del null
-::pause
+

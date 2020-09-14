@@ -219,6 +219,11 @@ static inline void list_add(struct list_head *new, struct list_head *head)
     __list_add(new, head, head->next);
 }
 
+static inline int list_is_head(struct list_head *head, struct list_head *member)
+{
+    return head->next == member;
+}
+
 #if 0
 static inline void __list_splice(const struct list_head *list,
                                  struct list_head *prev,

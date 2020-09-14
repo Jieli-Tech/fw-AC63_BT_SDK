@@ -5,6 +5,7 @@
 #include "generic/list.h"
 #include "media/audio_base.h"
 #include "media/audio_stream.h"
+#include "media/prevent_task_fill.h"
 #include "os/os_api.h"
 
 
@@ -41,40 +42,43 @@ enum {
 };
 
 enum {
-	AUDIO_IOCTRL_CMD_REPEAT_PLAY = 0x90,
+    AUDIO_IOCTRL_CMD_REPEAT_PLAY = 0x90,
 };
 
 struct fixphase_repair_obj {
-	short fifo_buf[18+12][32][2];
+    short fifo_buf[18 + 12][32][2];
 };
 
 struct audio_repeat_mode_param {
-	int flag;
-	int headcut_frame;
-	int tailcut_frame;
-	int (*repeat_callback)(void *);
-	void *callback_priv;
-	struct fixphase_repair_obj *repair_buf;
+    int flag;
+    int headcut_frame;
+    int tailcut_frame;
+    int (*repeat_callback)(void *);
+    void *callback_priv;
+    struct fixphase_repair_obj *repair_buf;
 };
 
 struct audio_res_wait {
-    struct list_head list_entry;
-    u8 priority;
-    u8 preemption : 1;
-    u8 protect : 1;
-    u8 only_del : 1; // 仅删除
-    u8 snatch_same_prio : 1; // 优先级相同也抢断
-    u32 format;
+    struct list_head list_entry;	// 链表。用于多个解码抢占/排序等
+    u8 priority;		// 优先级
+    u8 preemption : 1;	// 抢占
+    u8 protect : 1;		// 保护（叠加）
+    u8 only_del : 1; 	// 仅删除
+    u8 snatch_same_prio : 1; // 放在同优先级的前面
+    u8 is_work : 1; 	// 已经运行
+    u32 format;			// 格式锁
     int (*handler)(struct audio_res_wait *, int event);
 };
 
 struct audio_decoder_task {
-    struct list_head head;
-    struct list_head wait;
-    const char *name;
-    int wakeup_timer;
-    int fmt_lock;
-    OS_SEM sem;
+    struct list_head head;	// 用于解码任务中的轮询处理
+    struct list_head wait;	// 用于多个解码抢占/排序等
+    struct prevent_task_fill_ch *prevent_fill;	// 防止解码任务一直占满cpu
+    const char *name;	// 解码任务名称
+    int wakeup_timer;	// 定时唤醒
+    int fmt_lock;		// 格式锁
+    u32 is_add_wait;	// 正在添加res资源
+    OS_SEM sem;			// 信号量
 };
 
 
@@ -96,14 +100,14 @@ struct audio_dec_input {
     u32 *p_more_coding_type;
     u32 data_type : 8;
     union {
-        struct {
+        struct { // data_type == AUDIO_INPUT_FILE
             int (*fread)(struct audio_decoder *, void *buf, u32 len);
             int (*fseek)(struct audio_decoder *, u32 offset, int seek_mode);
             int (*ftell)(struct audio_decoder *);
             int (*flen)(struct audio_decoder *);
         } file;
 
-        struct {
+        struct { // data_type == AUDIO_INPUT_FRAME
             int (*fget)(struct audio_decoder *, u8 **frame);
             void (*fput)(struct audio_decoder *, u8 *frame);
             int (*ffetch)(struct audio_decoder *, u8 **frame);
@@ -112,10 +116,11 @@ struct audio_dec_input {
 };
 
 struct audio_dec_handler {
-    int (*dec_probe)(struct audio_decoder *);
+    int (*dec_probe)(struct audio_decoder *);	// 预处理
+    // 解码输出。解码会自动输出到数据流中，上层不必要实现该函数
     int (*dec_output)(struct audio_decoder *, s16 *data, int len, void *priv);
-    int (*dec_post)(struct audio_decoder *);
-    int (*dec_stop)(struct audio_decoder *);
+    int (*dec_post)(struct audio_decoder *);	// 后处理
+    int (*dec_stop)(struct audio_decoder *);	// 解码结束
 };
 struct stream_codec_info {
     int  time;
@@ -147,7 +152,7 @@ struct audio_decoder_ops {
 };
 
 #define REGISTER_AUDIO_DECODER(ops) \
-        const struct audio_decoder_ops ops sec(.audio_decoder)
+        const struct audio_decoder_ops ops SEC(.audio_decoder)
 
 extern const struct audio_decoder_ops audio_decoder_begin[];
 extern const struct audio_decoder_ops audio_decoder_end[];
@@ -159,30 +164,30 @@ extern const struct audio_decoder_ops audio_decoder_end[];
 
 
 struct audio_decoder {
-    struct list_head list_entry;
-    struct audio_decoder_task *task;
-    struct audio_fmt fmt;
-    const char *evt_owner;
-    const struct audio_dec_input *input;
-    const struct audio_decoder_ops *dec_ops;
-    const struct audio_dec_handler *dec_handler;
-    void (*evt_handler)(struct audio_decoder *dec, int, int *);
-    void *dec_priv;
-    void *bp;
-    u16 id;
-    u16 pick : 1;
-    u16 tws : 1;
-    u16 resume_flag : 1;
-    u16 output_err : 1;
-    u16 read_err : 1;
-    u16 reserved : 11;
-    u8 run_max;
-    u8 output_channel;
-    u8 state;
-    u8 err;
-    u8 remain;
-    u32 magic;
-	u32 process_len;
+    struct list_head list_entry;		// 链表。用于解码任务中轮询处理
+    struct audio_decoder_task *task;	// 解码任务
+    struct audio_fmt fmt;				// 解码格式
+    const char *evt_owner;				// 用于接受消息的任务名称
+    const struct audio_dec_input *input;			// 解码输入接口
+    const struct audio_decoder_ops *dec_ops;		// 解码器接口
+    const struct audio_dec_handler *dec_handler;	// 解码处理回调
+    void (*evt_handler)(struct audio_decoder *dec, int, int *);	// 事件回调
+    void *dec_priv;		// 解码器对应句柄
+    void *bp;			// 断点
+    // u16 id;			// ID号
+    u16 pick : 1;		// 本地拆包解码标记
+    u16 tws : 1;		// 本地tws解码标记
+    u16 resume_flag : 1;// 解码激活标记
+    u16 output_err : 1;	// 解码输出错误
+    u16 read_err : 1;	// 解码读取错误
+    u16 reserved : 11;	// 保留
+    u8 run_max;			// 正常解码最大次数
+    // u8 output_channel;	// 输出通道
+    u8 state;			// 解码状态
+    u8 err;				// 解码结束错误类型标记
+    u8 remain;			// 解码输出完成标记
+    u32 magic;			// 事件回调的私有标记
+    u32 process_len;	// 数据流处理长度
     struct audio_stream_entry entry;	// 音频流入口
 };
 
@@ -204,7 +209,6 @@ void audio_decoder_task_del_wait(struct audio_decoder_task *, struct audio_res_w
 int audio_decoder_task_wait_state(struct audio_decoder_task *task);
 
 int audio_decoder_resume_all(struct audio_decoder_task *task);
-int audio_decoder_resume_off_limits(struct audio_decoder_task *task, u8 limit_num, int *limit_dec);
 
 int audio_decoder_resume_all_by_sem(struct audio_decoder_task *task, int time_out);
 
@@ -212,7 +216,7 @@ int audio_decoder_fmt_lock(struct audio_decoder_task *task, int fmt);
 
 int audio_decoder_fmt_unlock(struct audio_decoder_task *task, int fmt);
 
-void *audio_decoder_get_output_buff(void *_dec, int *len);
+// void *audio_decoder_get_output_buff(void *_dec, int *len);
 
 int audio_decoder_put_output_buff(void *_dec, void *buff, int len, void *priv);
 
@@ -226,13 +230,13 @@ int audio_decoder_fetch_frame(void *_dec, u8 **frame);
 
 void audio_decoder_put_frame(void *_dec, u8 *frame);
 
-int audio_fmt_find_frame(void *_dec, u8 **frame);
+// int audio_fmt_find_frame(void *_dec, u8 **frame);
 int audio_decoder_open(struct audio_decoder *dec, const struct audio_dec_input *input,
                        struct audio_decoder_task *task);
 
 int audio_decoder_data_type(void *_dec);
 
-void audio_decoder_set_id(struct audio_decoder *dec, int);
+// void audio_decoder_set_id(struct audio_decoder *dec, int);
 
 int audio_decoder_get_fmt(struct audio_decoder *dec, struct audio_fmt **fmt);
 
@@ -246,10 +250,10 @@ void audio_decoder_set_handler(struct audio_decoder *dec, const struct audio_dec
 void audio_decoder_set_event_handler(struct audio_decoder *dec,
                                      void (*handler)(struct audio_decoder *, int, int *), u32 magic);
 
-void audio_decoder_set_input_buff(struct audio_decoder *dec, u8 *buff, u16 buff_size);
+// void audio_decoder_set_input_buff(struct audio_decoder *dec, u8 *buff, u16 buff_size);
 
-void audio_decoder_set_output_buffs(struct audio_decoder *dec, s16 *buffs,
-                                    u16 buff_size, u8 buff_num);
+// void audio_decoder_set_output_buffs(struct audio_decoder *dec, s16 *buffs,
+// u16 buff_size, u8 buff_num);
 
 int audio_decoder_set_output_channel(struct audio_decoder *dec, enum audio_channel);
 
@@ -259,14 +263,14 @@ int audio_decoder_stop(struct audio_decoder *dec);
 
 int audio_decoder_pause(struct audio_decoder *dec);
 
-int audio_decoder_suspend(struct audio_decoder *dec, int timeout_ms);
+int audio_decoder_suspend(struct audio_decoder *dec);
 
 int audio_decoder_resume(struct audio_decoder *dec);
 
 int audio_decoder_close(struct audio_decoder *dec);
 int audio_decoder_reset(struct audio_decoder *dec);
 
-int audio_decoder_set_breakpoint(struct audio_decoder *dec, struct audio_dec_breakpoint *bp);
+void audio_decoder_set_breakpoint(struct audio_decoder *dec, struct audio_dec_breakpoint *bp);
 
 int audio_decoder_get_breakpoint(struct audio_decoder *dec, struct audio_dec_breakpoint *bp);
 
@@ -277,13 +281,13 @@ int audio_decoder_rewind(struct audio_decoder *dec, int step_s);
 int audio_decoder_get_total_time(struct audio_decoder *dec);
 int audio_decoder_get_play_time(struct audio_decoder *dec);
 
-int audio_decoder_set_pick_stu(struct audio_decoder *dec, u8 pick);
+void audio_decoder_set_pick_stu(struct audio_decoder *dec, u8 pick);
 int audio_decoder_get_pick_stu(struct audio_decoder *dec);
 
-int audio_decoder_set_tws_stu(struct audio_decoder *dec, u8 tws);
+void audio_decoder_set_tws_stu(struct audio_decoder *dec, u8 tws);
 int audio_decoder_get_tws_stu(struct audio_decoder *dec);
 
-int audio_decoder_set_run_max(struct audio_decoder *dec, u8 run_max);
+void audio_decoder_set_run_max(struct audio_decoder *dec, u8 run_max);
 
 void audio_decoder_dual_switch(u8 ch_type, u8 half_lr, s16 *data, int len);
 

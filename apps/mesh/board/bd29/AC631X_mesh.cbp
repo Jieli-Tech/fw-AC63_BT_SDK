@@ -12,7 +12,6 @@
 <Option compiler="q32s_lto_compiler" />
 <Compiler>
 <Add option="-integrated-as" />
-<Add option="-c" />
 <Add option="-g" />
 <Add option="-O0" />
 <Add option="-flto" />
@@ -27,11 +26,12 @@
 <Add option="-DCONFIG_FREE_RTOS_ENABLE" />
 <Add option="-DCONFIG_LINK_INQUIRY_ENABLE=0" />
 <Add option="-DTCFG_APP_BT_EN=1" />
+<Add option="-DUSB_PC_NO_APP_MODE" />
 <Add option="-DEVENT_HANDLER_NUM_CONFIG=2" />
 <Add option="-DEVENT_TOUCH_ENABLE_CONFIG=0" />
 <Add option="-DEVENT_POOL_SIZE_CONFIG=256" />
 <Add option="-DCONFIG_EVENT_KEY_MAP_ENABLE=0" />
-<Add option="-DTIMER_POOL_NUM_CONFIG=2" />
+<Add option="-DTIMER_POOL_NUM_CONFIG=10" />
 <Add option="-DAPP_ASYNC_POOL_NUM_CONFIG=0" />
 <Add option="-DVFS_ENABLE=0" />
 <Add option="-DUSE_SDFILE_NEW=1" />
@@ -41,11 +41,11 @@
 <Add option="-DVM_ITEM_MAX_NUM=128" />
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_MESH_CASE_ENABLE" />
-<Add option="-DCONFIG_LITE_DECODER=0" />
-<Add option="-DCONFIG_LITE_AEC_ENABLE=0" />
-<Add option="-DTEST_DUT_CODE=1" />
-<Add option="-DTEST_DUT_ONLY_BOX_CODE=0" />
-<Add option="-DTEST_FCC_CODE=1" />
+<Add option="-DCONFIG_LMP_NAME_REQ_ENABLE" />
+<Add option="-DCONFIG_LMP_PASSKEY_ENABLE" />
+<Add option="-DCONFIG_LMP_RESET_ENABLE" />
+<Add option="-DCONFIG_LMP_MASTER_ESCO_ENABLE" />
+<Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
 <Add option="-DCONFIG_OTA_UPDATA_ENABLE" />
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
@@ -65,8 +65,8 @@
 <Add directory="../../../../include_lib/btctrler/port/bd29" />
 <Add directory="../../../../include_lib/update" />
 <Add directory="../../../../include_lib/agreement" />
-<Add directory="../../../../include_lib/ai_stack" />
-<Add directory="../../../../include_lib/ai_stack/JL_rcsp" />
+<Add directory="../../../../include_lib/btstack/third_party/common" />
+<Add directory="../../../../include_lib/btstack/third_party/rcsp" />
 <Add directory="../../../../include_lib/media/media_origin" />
 <Add directory="../../../../include_lib/media/media_origin/media" />
 <Add directory="../../../../include_lib/media/media_origin/media/cpu/bd29" />
@@ -76,7 +76,8 @@
 <Add directory="../../../../apps/mesh/include" />
 <Add directory="../../../../apps/common" />
 <Add directory="../../../../apps/common/include" />
-<Add directory="../../../../apps/config/include" />
+<Add directory="../../../../apps/common/config/include" />
+<Add directory="../../../../apps/common/third_party_profile/common" />
 <Add directory="../../../../include_lib/system/os/FreeRTOS" />
 <Add directory="../../../../include_lib/btstack" />
 <Add directory="../../../../apps/common/third_party_profile" />
@@ -99,7 +100,7 @@
 <Add option="../../../../include_lib/liba/bd29/btstack.a" />
 <Add option="../../../../include_lib/liba/bd29/update.a" />
 <Add option="../../../../include_lib/liba/bd29/crypto_toolbox_Osize.a" />
-<Add option="../../../../include_lib/liba/bd29/JL_rcsp.a" />
+<Add option="../../../../include_lib/liba/bd29/rcsp_stack.a" />
 <Add option="../../../../include_lib/liba/bd29/agreement.a" />
 <Add option="--end-group" />
 <Add option="-T../../../../cpu/bd29/sdk.ld" />
@@ -115,11 +116,14 @@
 </ExtraCommands>
 </Target>
 </Build>
+<Unit filename="../../../../apps/common/config/include/bt_profile_cfg.h" />
+<Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/include/bt_common.h" />
 <Unit filename="../../../../apps/common/include/update_tws.h" />
 <Unit filename="../../../../apps/common/key/adkey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/iokey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/key_driver.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/access.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/access.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/adaptation/adaptation.h" />
@@ -185,8 +189,6 @@
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/transport.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/transport.h" />
 <Unit filename="../../../../apps/common/update/update.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/config/include/bt_profile_cfg.h" />
-<Unit filename="../../../../apps/debug.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/api/feature_correct.h" />
 <Unit filename="../../../../apps/mesh/api/mesh_config_common.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/api/model_api.c"><Option compilerVer="CC"/></Unit>
@@ -215,6 +217,7 @@
 <Unit filename="../../../../apps/mesh/include/app_action.h" />
 <Unit filename="../../../../apps/mesh/include/app_config.h" />
 <Unit filename="../../../../apps/mesh/include/app_main.h" />
+<Unit filename="../../../../apps/mesh/include/user_cfg_id.h" />
 <Unit filename="../../../../apps/mesh/lib_config/lib_btctrler_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/lib_config/lib_driver_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/lib_config/lib_profile_config.c"><Option compilerVer="CC"/></Unit>
@@ -246,6 +249,7 @@
 <Unit filename="../../../../include_lib/btctrler/btcontroller_mode.h" />
 <Unit filename="../../../../include_lib/btctrler/btcontroller_modules.h" />
 <Unit filename="../../../../include_lib/btctrler/btctrler_task.h" />
+<Unit filename="../../../../include_lib/btctrler/classic/hci_lmp.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/lmp_config.h" />
 <Unit filename="../../../../include_lib/btctrler/hci_transport.h" />
 <Unit filename="../../../../include_lib/btctrler/port/bd29/btcontroller_config.h" />

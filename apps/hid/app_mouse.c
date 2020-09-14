@@ -45,8 +45,13 @@
 
 #define trace_run_debug_val(x)   //log_info("\n## %s: %d,  0x%04x ##\n",__FUNCTION__,__LINE__,x)
 
+//2.4G模式: 0---ble, 非0---2.4G配对码
+#define CFG_RF_24G_CODE_ID       (0) //<=24bits
+/* #define CFG_RF_24G_CODE_ID       (0x23) //<=24bits */
+
+
 #define MIDDLE_KEY_SWITCH       1   //中键长按1秒切换 edr & ble
-#define MIDDLE_KEY_HOLD_CNT  (3)
+#define MIDDLE_KEY_HOLD_CNT    (3)
 static u8 switch_key_long_cnt = 0;
 
 static u16 g_auto_shutdown_timer = 0;
@@ -63,6 +68,7 @@ extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 static void app_select_btmode(u8 mode);
 void sys_auto_sniff_controle(u8 enable, u8 *addr);
 void bt_sniff_ready_clean(void);
+static void hid_vm_deal(u8 rw_flag);
 
 extern int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type);
 
@@ -79,6 +85,7 @@ typedef enum {
 } bt_mode_e;
 static bt_mode_e bt_hid_mode;
 static volatile u8 is_hid_active = 0;//1-临界点,系统不允许进入低功耗，0-系统可以进入低功耗
+static u32 ble_24g_code;//record 2.4G mode
 
 //----------------------------------
 #define BUTTONS_IDX							0
@@ -106,16 +113,80 @@ static volatile mouse_packet_data_t first_packet = {0};
 static volatile mouse_packet_data_t second_packet = {0};
 
 static const u8 hid_report_map[] = {
-    0x05, 0x01, 0x09, 0x02, 0xA1, 0x01, 0x85, 0x01, 0x09, 0x01, 0xA1, 0x00, 0x95, 0x05, 0x75,
-    0x01, 0x05, 0x09, 0x19, 0x01, 0x29, 0x05, 0x15, 0x00, 0x25, 0x01, 0x81, 0x02, 0x95, 0x01,
-    0x75, 0x03, 0x81, 0x01, 0x75, 0x08, 0x95, 0x01, 0x05, 0x01, 0x09, 0x38, 0x15, 0x81, 0x25,
-    0x7F, 0x81, 0x06, 0x05, 0x0C, 0x0A, 0x38, 0x02, 0x95, 0x01, 0x81, 0x06, 0xC0, 0x85, 0x02,
-    0x09, 0x01, 0xA1, 0x00, 0x75, 0x0C, 0x95, 0x02, 0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x16,
-    0x01, 0xF8, 0x26, 0xFF, 0x07, 0x81, 0x06, 0xC0, 0xC0, 0x05, 0x0C, 0x09, 0x01, 0xA1, 0x01,
-    0x85, 0x03, 0x15, 0x00, 0x25, 0x01, 0x75, 0x01, 0x95, 0x01, 0x09, 0xCD, 0x81, 0x06, 0x0A,
-    0x83, 0x01, 0x81, 0x06, 0x09, 0xB5, 0x81, 0x06, 0x09, 0xB6, 0x81, 0x06, 0x09, 0xEA, 0x81,
-    0x06, 0x09, 0xE9, 0x81, 0x06, 0x0A, 0x25, 0x02, 0x81, 0x06, 0x0A, 0x24, 0x02, 0x81, 0x06,
-    0x09, 0x05, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x02, 0xB1, 0x02, 0xC0
+    0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+    0x09, 0x02,        // Usage (Mouse)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x01,        //   Report ID (1)
+    0x09, 0x01,        //   Usage (Pointer)
+    0xA1, 0x00,        //   Collection (Physical)
+    0x95, 0x05,        //     Report Count (5)
+    0x75, 0x01,        //     Report Size (1)
+    0x05, 0x09,        //     Usage Page (Button)
+    0x19, 0x01,        //     Usage Minimum (0x01)
+    0x29, 0x05,        //     Usage Maximum (0x05)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x25, 0x01,        //     Logical Maximum (1)
+    0x81, 0x02,        //     Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x95, 0x01,        //     Report Count (1)
+    0x75, 0x03,        //     Report Size (3)
+    0x81, 0x01,        //     Input (Const,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x75, 0x08,        //     Report Size (8)
+    0x95, 0x01,        //     Report Count (1)
+    0x05, 0x01,        //     Usage Page (Generic Desktop Ctrls)
+    0x09, 0x38,        //     Usage (Wheel)
+    0x15, 0x81,        //     Logical Minimum (-127)
+    0x25, 0x7F,        //     Logical Maximum (127)
+    0x81, 0x06,        //     Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x05, 0x0C,        //     Usage Page (Consumer)
+    0x0A, 0x38, 0x02,  //     Usage (AC Pan)
+    0x95, 0x01,        //     Report Count (1)
+    0x81, 0x06,        //     Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              //   End Collection
+    0x85, 0x02,        //   Report ID (2)
+    0x09, 0x01,        //   Usage (Consumer Control)
+    0xA1, 0x00,        //   Collection (Physical)
+    0x75, 0x0C,        //     Report Size (12)
+    0x95, 0x02,        //     Report Count (2)
+    0x05, 0x01,        //     Usage Page (Generic Desktop Ctrls)
+    0x09, 0x30,        //     Usage (X)
+    0x09, 0x31,        //     Usage (Y)
+    0x16, 0x01, 0xF8,  //     Logical Minimum (-2047)
+    0x26, 0xFF, 0x07,  //     Logical Maximum (2047)
+    0x81, 0x06,        //     Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              //   End Collection
+    0xC0,              // End Collection
+    0x05, 0x0C,        // Usage Page (Consumer)
+    0x09, 0x01,        // Usage (Consumer Control)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x03,        //   Report ID (3)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x01,        //   Logical Maximum (1)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x01,        //   Report Count (1)
+    0x09, 0xCD,        //   Usage (Play/Pause)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x0A, 0x83, 0x01,  //   Usage (AL Consumer Control Configuration)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0xB5,        //   Usage (Scan Next Track)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0xB6,        //   Usage (Scan Previous Track)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0xEA,        //   Usage (Volume Decrement)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0xE9,        //   Usage (Volume Increment)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x0A, 0x25, 0x02,  //   Usage (AC Forward)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x0A, 0x24, 0x02,  //   Usage (AC Back)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0x05,        //   Usage (Headphone)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x26, 0xFF, 0x00,  //   Logical Maximum (255)
+    0x75, 0x08,        //   Report Size (8)
+    0x95, 0x02,        //   Report Count (2)
+    0xB1, 0x02,        //   Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0xC0,              // End Collection
+    // 149 bytes
 };
 
 void auto_shutdown_disable(void)
@@ -221,9 +292,8 @@ static void power_set_soft_reset(void)
 
 static void mode_switch_handler(void)
 {
+    log_info("mode_switch_handler");
 #if (TCFG_USER_EDR_ENABLE && TCFG_USER_BLE_ENABLE)
-
-    log_info("long key hold switch...\n");
 
     if (edr_hid_is_connected() || ble_hid_is_connected()) {
         log_info("fail, disconnect bt firstly!!!\n");
@@ -241,6 +311,22 @@ static void mode_switch_handler(void)
 
 }
 
+static void mode_switch_24g(void)
+{
+    log_info("mode_switch_24g");
+#if TCFG_USER_BLE_ENABLE
+    ble_module_enable(0);
+    if (ble_24g_code) {
+        ble_24g_code = 0;
+    } else {
+        ble_24g_code = CFG_RF_24G_CODE_ID;
+    }
+    log_info("switch_24g_code: %04x", ble_24g_code);
+    rf_set_24g_hackable_coded(ble_24g_code);
+    hid_vm_deal(1);
+    ble_module_enable(1);
+#endif
+}
 
 
 static void app_code_sw_event_handler(struct sys_event *event)
@@ -312,8 +398,10 @@ static void app_optical_sensor_event_handler(struct sys_event *event)
 //----------------------------------
 
 typedef struct {
-    u16 head_tag;
-    u8  mode;
+    u16  head_tag;
+    u8   mode;
+    u8   res;
+    u32  ble_24g_code;
 } hid_vm_cfg_t;
 
 #define	HID_VM_HEAD_TAG (0x3AA3)
@@ -327,8 +415,11 @@ static void hid_vm_deal(u8 rw_flag)
     memset(&info, 0, vm_len);
 
     if (rw_flag == 0) {
+
+        //default set
         bt_hid_mode = HID_MODE_NULL;
         ret = syscfg_read(CFG_AAP_MODE_INFO, (u8 *)&info, vm_len);
+
         if (!ret) {
             log_info("-null--\n");
         } else {
@@ -336,12 +427,14 @@ static void hid_vm_deal(u8 rw_flag)
                 log_info("-exist--\n");
                 log_info_hexdump((u8 *)&info, vm_len);
                 bt_hid_mode = info.mode;
+                ble_24g_code = info.ble_24g_code;
             }
         }
 
         if (HID_MODE_NULL == bt_hid_mode) {
 #if TCFG_USER_BLE_ENABLE
             bt_hid_mode = HID_MODE_BLE;
+            ble_24g_code = CFG_RF_24G_CODE_ID;
 #else
             bt_hid_mode = HID_MODE_EDR;
 #endif
@@ -357,15 +450,26 @@ static void hid_vm_deal(u8 rw_flag)
             if (bt_hid_mode != info.mode) {
                 log_info("-write00--\n");
                 info.mode = bt_hid_mode;
+                info.ble_24g_code = ble_24g_code;
                 syscfg_write(CFG_AAP_MODE_INFO, (u8 *)&info, vm_len);
             }
         }
     } else {
+
         info.mode = bt_hid_mode;
+        info.ble_24g_code = ble_24g_code;
         info.head_tag = HID_VM_HEAD_TAG;
-        syscfg_write(CFG_AAP_MODE_INFO, (u8 *)&info, vm_len);
-        log_info("-write11--\n");
-        log_info_hexdump((u8 *)&info, vm_len);
+        info.res = 0;
+
+        hid_vm_cfg_t tmp_info;
+        syscfg_read(CFG_AAP_MODE_INFO, (u8 *)&tmp_info, vm_len);
+
+        if (memcmp(&tmp_info, &info, vm_len)) {
+            syscfg_write(CFG_AAP_MODE_INFO, (u8 *)&info, vm_len);
+            log_info("-write11--\n");
+            log_info_hexdump((u8 *)&info, vm_len);
+        }
+
     }
 }
 
@@ -407,13 +511,10 @@ static void bt_function_select_init()
 
 }
 
-extern void user_hid_set_icon(u32 class_type);
-extern void user_hid_set_ReportMap(u8 *map, u16 size);
 static void bredr_handle_register()
 {
 #if (USER_SUPPORT_PROFILE_HID==1)
-    /* 0x002580,//mouse,ios not display device */
-    user_hid_set_icon(0x002580);
+    user_hid_set_icon(BD_CLASS_MOUSE);
     user_hid_set_ReportMap(hid_report_map, sizeof(hid_report_map));
     user_hid_init();
 #endif
@@ -421,7 +522,6 @@ static void bredr_handle_register()
     /* bt_dut_test_handle_register(bt_dut_api); */
 }
 
-extern void ble_module_enable(u8 en);
 static void hid_set_soft_poweroff(void)
 {
     log_info("hid_set_soft_poweroff\n");
@@ -861,17 +961,19 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         log_info("BT_STATUS_INIT_OK\n");
         mouse_board_devices_init();
 
+        //read vm first
+        hid_vm_deal(0);//bt_hid_mode read for VM
+
 #if TCFG_USER_BLE_ENABLE
-        extern void bt_ble_init(void);
-        extern void le_hogp_set_icon(u16 class_type);
-        extern void le_hogp_set_ReportMap(u8 * map, u16 size);
-        le_hogp_set_icon(0x03c2);//mouse
+        le_hogp_set_icon(BLE_APPEARANCE_HID_MOUSE);//mouse
         le_hogp_set_ReportMap(hid_report_map, sizeof(hid_report_map));
+
+        log_info("init_24g_code: %04x", ble_24g_code);
+        rf_set_24g_hackable_coded(ble_24g_code);
 
         bt_ble_init();
 #endif
 
-        hid_vm_deal(0);//bt_hid_mode read for VM
         app_select_btmode(HID_MODE_INIT);//
 
         if (bt_hid_mode == HID_MODE_BLE) {
@@ -978,8 +1080,15 @@ static void app_key_event_handler(struct sys_event *event)
 
 #if MIDDLE_KEY_SWITCH
         if (4 == event->u.key.value && event_type == KEY_EVENT_LONG) {
+            log_info("key_value4 long hold:%d", switch_key_long_cnt);
             if (++switch_key_long_cnt > MIDDLE_KEY_HOLD_CNT) {
-                mode_switch_handler();
+                if (TCFG_USER_BLE_ENABLE && CFG_RF_24G_CODE_ID) {
+                    //定义2.4g,默认2.4g和ble切换
+                    mode_switch_24g();
+                } else {
+                    //edr和ble切换
+                    mode_switch_handler();
+                }
                 switch_key_long_cnt = 0;
             }
         } else {

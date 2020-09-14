@@ -196,13 +196,17 @@ void board_init()
 
 	power_set_mode(TCFG_LOWPOWER_POWER_SEL);
 
+#if(!TCFG_CHARGE_ENABLE)
 	/*close FAST CHARGE */
-	/* CHARGE_EN(0); */
-	/* CHGBG_EN(0); */
+	CHARGE_EN(0);
+	CHGBG_EN(0);
+#endif
 }
+
 enum {
     PORTA_GROUP = 0,
     PORTB_GROUP,
+    PORTC_GROUP,
 };
 
 static void port_protect(u16 *port_group, u32 port_num)
@@ -218,8 +222,14 @@ static void close_gpio(void)
 {
     u16 port_group[] = {
         [PORTA_GROUP] = 0x1ff,
-        [PORTB_GROUP] = 0x3ff &(~BIT(1)),//keep pb1
+        [PORTB_GROUP] = 0x3ff,//
+        [PORTC_GROUP] = 0x3ff,//
     };
+
+
+#if TCFG_ADKEY_ENABLE
+    port_protect(port_group,TCFG_ADKEY_PORT);
+#endif /* */
 
 #if TCFG_IOKEY_ENABLE
     port_protect(port_group, TCFG_IOKEY_POWER_ONE_PORT);
@@ -382,7 +392,6 @@ void board_power_init(void)
     power_mclr(0);
     //< close long key reset
     power_pin_reset(0);
-    /*sdpg_config(1);*/
 
     power_set_callback(TCFG_LOWPOWER_LOWPOWER_SEL, sleep_enter_callback, sleep_exit_callback, board_set_soft_poweroff);
 

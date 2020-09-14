@@ -1,6 +1,5 @@
 
-
-
+CONFIG_USB_ENABLE = y
 CONFIG_MEDIA_ENABLE = n
 #------------------------ event config --------------------------#
 SYS_EVENT_CFG_DEFINE += \
@@ -11,7 +10,7 @@ SYS_EVENT_CFG_DEFINE += \
 
 #------------------------ timer config --------------------------#
 SYS_TIMER_CFG_DEFINE += \
--DTIMER_POOL_NUM_CONFIG=2 \
+-DTIMER_POOL_NUM_CONFIG=10 \
 
 #----------------------- app_core config ------------------------#
 SYS_APP_CORE_CFG_DEFINE += \
@@ -29,6 +28,13 @@ SYS_VFS_CFG_DEFINE += \
 -DVFS_FILE_POOL_NUM_CONFIG=0 \
 -DSDFILE_VERSION=0x020000
 
+BTCTRLER_CFG_DEFINE += \
+-DCONFIG_LMP_NAME_REQ_ENABLE \
+-DCONFIG_LMP_PASSKEY_ENABLE \
+-DCONFIG_LMP_RESET_ENABLE \
+-DCONFIG_LMP_MASTER_ESCO_ENABLE \
+-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE \
+
 APP_FEATURE_DEFINE += \
 -DCONFIG_TWS_ENABLE \
 -DCONFIG_MESH_CASE_ENABLE \
@@ -43,4 +49,6 @@ endif #ifeq ($(CPU),br34)
 TWS_ENABLE = n
 
 CC_DEFINE += \
--DTCFG_APP_BT_EN=1
+-DTCFG_APP_BT_EN=1 \
+-DUSB_PC_NO_APP_MODE
+

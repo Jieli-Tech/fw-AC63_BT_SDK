@@ -72,7 +72,7 @@ enum {
     FS_IOCTL_GET_DISP_INFO, //用于长文件名获取
 
     FS_IOCTL_MK_DIR, //创建文件夹
-    FS_IOCTL_GET_ENCFOLDER_INFO, //获取录音文件信息 
+    FS_IOCTL_GET_ENCFOLDER_INFO, //获取录音文件信息
 };
 
 
@@ -148,7 +148,7 @@ struct vfscan {
     u8 attr;
     u8 cycle_mode;
     char sort;
-    char ftype[12 * 3 + 1];
+    char ftype[20 * 3 + 1];
     u16 file_number;
     u16 file_counter;
 
@@ -182,6 +182,7 @@ struct vfs_operations {
     int (*fclose)(FILE *);
     int (*fdelete)(FILE *);
     int (*fscan)(struct vfscan *, const char *path, u8 max_deepth);
+    int (*fscan_interrupt)(struct vfscan *, const char *path, u8 max_deepth, int (*callback)(void));
     void (*fscan_release)(struct vfscan *);
     int (*fsel)(struct vfscan *, int sel_mode, FILE *, int);
     int (*fget_attr)(FILE *, int *attr);
@@ -192,7 +193,7 @@ struct vfs_operations {
 };
 
 #define REGISTER_VFS_OPERATIONS(ops) \
-	static const struct vfs_operations ops sec(.vfs_operations)
+	const struct vfs_operations ops SEC(.vfs_operations)
 
 
 static inline struct vfs_partition *vfs_partition_next(struct vfs_partition *p)
@@ -223,11 +224,22 @@ static inline void vfs_partition_free(struct vfs_partition *p)
 struct imount *mount(const char *dev_name, const char *path, const char *fs_type,
                      int cache_num, void *dev_arg);   //挂载
 
-int unmount(const char *path); 
+int unmount(const char *path);
 
 int f_format(const char *path, const char *fs_type, u32 clust_size); //格式化接口
 
 int f_free_cache(const char *path);
+
+/*----------------------------------------------------------------------------*/
+/** @brief:
+@param: fopen 扩展功能
+@note:     fopen自动打开、创建文件夹和文件。
+    说明：
+    1. 设备路径+文件，其中文件传入格式:"music/test/1/2/3/pk*.wav"  "JL_REC/AC69****.wav"  "JL_REC/AC690000.wav"
+    2. 文件名带*号，带多少个*表示多少个可变数字，最多为8+3的大小，如表示可变数字名称变为XXX0001,XXXX002这样得格式，不带*号则只创建一个文件，写覆盖。
+@date: 2020-07-22
+*/
+/*----------------------------------------------------------------------------*/
 
 FILE *fopen(const char *path, const char *mode);
 
@@ -262,6 +274,8 @@ int fget_free_space(const char *path, u32 *space);
  * -s  排序方式， t:按时间排序， n:按文件号排序
  */
 struct vfscan *fscan(const char *path, const char *arg, u8 max_deepth); //扫描接口，参数配置如上。
+
+struct vfscan *fscan_interrupt(const char *path, const char *arg, u8 max_deepth, int (*callback)(void)); //可打断扫描
 
 struct vfscan *fscan_enterdir(struct vfscan *fs, const char *path);//进入指定子目录，只扫此目录下文件信息
 
@@ -312,7 +326,11 @@ int fmk_dir(const char *path, char *folder, u8 mode); //创建目录
 
 int fget_encfolder_info(const char *path, char *folder, char *ext, u32 *last_num, u32 *total_num); //获取录音文件信息
 
+int fget_name_type(char *path, int len); //判断是不是unicode码
+
 int fname_to_path(char *result, const char *path, const char *fname, int len); //把路径和文件名拼接
+
+int get_last_num(void);
 
 #endif  /* VFS_ENABLE */
 

@@ -17,11 +17,10 @@
 
 
 #if TCFG_PC_ENABLE
-#define EP0_DMA_SIZE    (64+2)
-#define HID_DMA_SIZE    (64+2)
-#define AUDIO_DMA_SIZE  (192+2)
+#define EP0_DMA_SIZE    (64+4)
+#define HID_DMA_SIZE    (64+4)
+#define AUDIO_DMA_SIZE  (256+4)
 #define MSD_DMA_SIZE    ((64+4)*2)
-#define DMA_SIZE    (512+2)
 #define     MAX_EP_TX   5
 #define     MAX_EP_RX   5
 static usb_interrupt usb_interrupt_tx[USB_MAX_HW_NUM][MAX_EP_TX];// SEC(.usb_g_bss);
@@ -38,14 +37,15 @@ static u8 spk_dma_buffer[AUDIO_DMA_SIZE]   __attribute__((aligned(4)))SEC(.usb_i
 static u8 mic_dma_buffer[AUDIO_DMA_SIZE]   __attribute__((aligned(4)))SEC(.usb_iso_dma);
 
 struct usb_config_var_t {
+    u8 usb_setup_buffer[USB_SETUP_SIZE];
     struct usb_ep_addr_t usb_ep_addr;
     struct usb_setup_t usb_setup;
 };
-struct usb_config_var_t *usb_config_var[USB_MAX_HW_NUM] = {NULL};
+static struct usb_config_var_t *usb_config_var[USB_MAX_HW_NUM] = {NULL};
 
 #if USB_MALLOC_ENABLE
 #else
-struct usb_config_var_t _usb_config_var[USB_MAX_HW_NUM] sec(.usb_config_var);
+static struct usb_config_var_t _usb_config_var[USB_MAX_HW_NUM] SEC(.usb_config_var);
 #endif
 
 __attribute__((always_inline_when_const_args))
@@ -161,7 +161,7 @@ void usb0_sof_isr()
     usb_sof_clr_pnd(usb_id);
     static u32 sof_count = 0;
     if ((sof_count++ % 1000) == 0) {
-        log_d("sof 1s isr frame:%d", musb_read_usb(usb_id, MUSB_FRAME1) | (musb_read_usb(usb_id, MUSB_FRAME2) << 8));
+        log_d("sof 1s isr frame:%d", usb_read_sofframe(usb_id));
     }
 }
 
@@ -189,38 +189,37 @@ u32 usb_config(const usb_dev usb_id)
     memset(usb_interrupt_tx[usb_id], 0, sizeof(usb_interrupt_tx[usb_id]));
 
     log_debug("zalloc: usb_config_var[%d] = %x\n", usb_id, usb_config_var[usb_id]);
-#if USB_MALLOC_ENABLE
     if (!usb_config_var[usb_id]) {
+#if USB_MALLOC_ENABLE
         usb_config_var[usb_id] = (struct usb_config_var_t *)zalloc(sizeof(struct usb_config_var_t));
         if (!usb_config_var[usb_id]) {
             return -1;
         }
-    }
 #else
-    memset(&_usb_config_var, 0, sizeof(_usb_config_var));
-    usb_config_var[usb_id] = &_usb_config_var[usb_id];
+        memset(&_usb_config_var, 0, sizeof(_usb_config_var));
+        usb_config_var[usb_id] = &_usb_config_var[usb_id];
 #endif
+    }
     log_debug("zalloc: usb_config_var[%d] = %x\n", usb_id, usb_config_var[usb_id]);
 
     usb_var_init(usb_id, &(usb_config_var[usb_id]->usb_ep_addr));
-    usb_setup_init(usb_id, &(usb_config_var[usb_id]->usb_setup));
-    /* set_usb_dma_mem(&(usb_config_var[usb_id]->usb_ep_buf[usb_id])); */
+    usb_setup_init(usb_id, &(usb_config_var[usb_id]->usb_setup), usb_config_var[usb_id]->usb_setup_buffer);
     return 0;
 }
 
 u32 usb_release(const usb_dev usb_id)
 {
+    log_debug("free zalloc: usb_config_var[%d] = %x\n", usb_id, usb_config_var[usb_id]);
     usb_var_init(usb_id, NULL);
-    usb_setup_init(usb_id, NULL);
+    usb_setup_init(usb_id, NULL, NULL);
 #if USB_MALLOC_ENABLE
     if (usb_config_var[usb_id]) {
         log_debug("free: usb_config_var[%d] = %x\n", usb_id, usb_config_var[usb_id]);
         free(usb_config_var[usb_id]);
-        usb_config_var[usb_id] = NULL;
     }
-#else
-    usb_config_var[usb_id] = NULL;
 #endif
+
+    usb_config_var[usb_id] = NULL;
 
     return 0;
 }

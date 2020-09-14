@@ -75,6 +75,8 @@ static void app_start()
     log_info("-------------BLE MESH DEMO-------------");
     log_info("=======================================");
 
+    is_app_active = 1;
+
     clk_set("sys", 24 * 1000000);
     u32 sys_clk =  clk_get("sys");
     bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
@@ -152,6 +154,7 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         log_info("BT_STATUS_INIT_OK\n");
 
         bt_ble_init();
+        is_app_active = 0;
 
         break;
 

@@ -12,7 +12,6 @@
 <Option compiler="q32s_lto_compiler" />
 <Compiler>
 <Add option="-integrated-as" />
-<Add option="-c" />
 <Add option="-g" />
 <Add option="-O0" />
 <Add option="-flto" />
@@ -42,11 +41,11 @@
 <Add option="-DVM_ITEM_MAX_NUM=128" />
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_SPP_AND_LE_CASE_ENABLE" />
-<Add option="-DCONFIG_LITE_DECODER=0" />
-<Add option="-DCONFIG_LITE_AEC_ENABLE=0" />
-<Add option="-DTEST_DUT_CODE=1" />
-<Add option="-DTEST_DUT_ONLY_BOX_CODE=0" />
-<Add option="-DTEST_FCC_CODE=1" />
+<Add option="-DCONFIG_LMP_NAME_REQ_ENABLE" />
+<Add option="-DCONFIG_LMP_PASSKEY_ENABLE" />
+<Add option="-DCONFIG_LMP_RESET_ENABLE" />
+<Add option="-DCONFIG_LMP_MASTER_ESCO_ENABLE" />
+<Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
 <Add option="-DCONFIG_OTA_UPDATA_ENABLE" />
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
@@ -66,8 +65,8 @@
 <Add directory="../../../../include_lib/btctrler/port/bd29" />
 <Add directory="../../../../include_lib/update" />
 <Add directory="../../../../include_lib/agreement" />
-<Add directory="../../../../include_lib/ai_stack" />
-<Add directory="../../../../include_lib/ai_stack/JL_rcsp" />
+<Add directory="../../../../include_lib/btstack/third_party/common" />
+<Add directory="../../../../include_lib/btstack/third_party/rcsp" />
 <Add directory="../../../../include_lib/media/media_origin" />
 <Add directory="../../../../include_lib/media/media_origin/media" />
 <Add directory="../../../../include_lib/media/media_origin/media/cpu/bd29" />
@@ -82,6 +81,7 @@
 <Add directory="../../../../apps/common/third_party_profile/jieli/trans_data_demo" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp" />
 <Add directory="../../../../apps/common/third_party_profile/common" />
+<Add directory="../../../../include_lib/ai_stack/JL_rcsp" />
 <Add directory="../../../../include_lib/btstack" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata" />
@@ -103,7 +103,7 @@
 <Add option="../../../../include_lib/liba/bd29/btstack.a" />
 <Add option="../../../../include_lib/liba/bd29/update.a" />
 <Add option="../../../../include_lib/liba/bd29/crypto_toolbox_Osize.a" />
-<Add option="../../../../include_lib/liba/bd29/JL_rcsp.a" />
+<Add option="../../../../include_lib/liba/bd29/rcsp_stack.a" />
 <Add option="../../../../include_lib/liba/bd29/agreement.a" />
 <Add option="--end-group" />
 <Add option="-T../../../../cpu/bd29/sdk.ld" />
@@ -119,12 +119,13 @@
 </ExtraCommands>
 </Target>
 </Build>
+<Unit filename="../../../../apps/common/bt_common/bt_test_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/include/bt_common.h" />
 <Unit filename="../../../../apps/common/include/update_tws.h" />
 <Unit filename="../../../../apps/common/key/adkey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/iokey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/key_driver.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/power_manage/app_charge.h" />
 <Unit filename="../../../../apps/common/third_party_profile/common/3th_profile_api.h" />
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.h" />
@@ -135,6 +136,8 @@
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_ch_loader_download.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_user_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_user_update.h" />
+<Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_client.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_client.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_com.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_com.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_client_demo.c"><Option compilerVer="CC"/></Unit>
@@ -146,8 +149,6 @@
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/le_trans_data.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.h" />
-<Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_user.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_user.h" />
 <Unit filename="../../../../apps/common/update/update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/descriptor.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/task_pc.c"><Option compilerVer="CC"/></Unit>
@@ -164,8 +165,6 @@
 <Unit filename="../../../../apps/common/usb/usb_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/usb_config.h" />
 <Unit filename="../../../../apps/common/usb/usb_host_config.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/usb/usb_std_class_def.h" />
-<Unit filename="../../../../apps/debug.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_at_com.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_charge.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_dongle.c"><Option compilerVer="CC"/></Unit>
@@ -174,8 +173,6 @@
 <Unit filename="../../../../apps/spp_and_le/app_spp_and_le.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/at_cmds.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/at_uart.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/spp_and_le/board/bd29/board_ac630x_demo.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/spp_and_le/board/bd29/board_ac630x_demo_cfg.h" />
 <Unit filename="../../../../apps/spp_and_le/board/bd29/board_ac6311_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/board/bd29/board_ac6311_demo_cfg.h" />
 <Unit filename="../../../../apps/spp_and_le/board/bd29/board_ac6313_demo.c"><Option compilerVer="CC"/></Unit>
@@ -184,15 +181,18 @@
 <Unit filename="../../../../apps/spp_and_le/board/bd29/board_ac6318_demo_cfg.h" />
 <Unit filename="../../../../apps/spp_and_le/board/bd29/board_ac6319_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/board/bd29/board_ac6319_demo_cfg.h" />
+<Unit filename="../../../../apps/spp_and_le/board/bd29/board_ac631n_demo.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/board/bd29/board_ac631n_demo_cfg.h" />
 <Unit filename="../../../../apps/spp_and_le/board/bd29/board_config.h" />
-<Unit filename="../../../../apps/spp_and_le/hid_mouse_keyboard.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/include/app_action.h" />
+<Unit filename="../../../../apps/spp_and_le/include/app_charge.h" />
 <Unit filename="../../../../apps/spp_and_le/include/app_config.h" />
 <Unit filename="../../../../apps/spp_and_le/include/app_main.h" />
 <Unit filename="../../../../apps/spp_and_le/include/app_task.h" />
 <Unit filename="../../../../apps/spp_and_le/include/at.h" />
 <Unit filename="../../../../apps/spp_and_le/include/lib_profile_cfg.h" />
 <Unit filename="../../../../apps/spp_and_le/include/rtc_alarm.h" />
+<Unit filename="../../../../apps/spp_and_le/include/user_cfg_id.h" />
 <Unit filename="../../../../apps/spp_and_le/lib_config/lib_btctrler_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/lib_config/lib_driver_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/lib_config/lib_profile_config.c"><Option compilerVer="CC"/></Unit>
@@ -201,6 +201,7 @@
 <Unit filename="../../../../apps/spp_and_le/log_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/misc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/rtc_alarm.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/usb_hid_devices.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/user_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/version.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd29/adc_api.c"><Option compilerVer="CC"/></Unit>
@@ -220,17 +221,13 @@
 <Unit filename="../../../../cpu/bd29/spi_test.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd29/uart_dev.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd29/uart_test.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../include_lib/ai_stack/JL_rcsp/JL_rcsp_api.h" />
-<Unit filename="../../../../include_lib/ai_stack/JL_rcsp/JL_rcsp_packet.h" />
-<Unit filename="../../../../include_lib/ai_stack/JL_rcsp/JL_rcsp_protocol.h" />
+<Unit filename="../../../../include_lib/btctrler/ble/hci_ll.h" />
 <Unit filename="../../../../include_lib/btctrler/ble/ll_config.h" />
 <Unit filename="../../../../include_lib/btctrler/btcontroller_mode.h" />
 <Unit filename="../../../../include_lib/btctrler/btcontroller_modules.h" />
 <Unit filename="../../../../include_lib/btctrler/btctrler_task.h" />
+<Unit filename="../../../../include_lib/btctrler/classic/hci_lmp.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/lmp_config.h" />
-<Unit filename="../../../../include_lib/btctrler/classic/tws_api.h" />
-<Unit filename="../../../../include_lib/btctrler/classic/tws_event.h" />
-<Unit filename="../../../../include_lib/btctrler/classic/tws_local_media_sync.h" />
 <Unit filename="../../../../include_lib/btctrler/hci_transport.h" />
 <Unit filename="../../../../include_lib/btctrler/port/bd29/btcontroller_config.h" />
 <Unit filename="../../../../include_lib/btstack/avctp_user.h" />
@@ -250,6 +247,15 @@
 <Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_dma.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_dma_pb.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_platform.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/common/ble_config.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/common/ble_user.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/common/btstack_3th_protocol_user.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/common/spp_config.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/common/spp_user.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/rcsp/JL_rcsp_api.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/rcsp/JL_rcsp_packet.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/rcsp/JL_rcsp_protocol.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/rcsp/attr.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/adc_api.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/bd29.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/charge.h" />

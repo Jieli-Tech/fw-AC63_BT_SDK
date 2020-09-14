@@ -11,6 +11,7 @@ includes += \
 	-I$(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data \
 	-I$(ROOT)/apps/common/third_party_profile/jieli/trans_data_demo \
 	-I$(ROOT)/apps/common/third_party_profile/common/ \
+	-I$(ROOT)/apps/common/usb/ \
     -I$(ROOT)/include_lib/ai_stack/JL_rcsp/ \
     -I$(ROOT)/include_lib/btstack/ \
 
@@ -19,6 +20,7 @@ includes += \
 	-I$(ROOT)/apps/common/code_switch/include/ \
 	-I$(ROOT)/apps/common/device/optical_mouse_sensor/include/ \
 	-I$(ROOT)/apps/common/device/optical_mouse_sensor/include/hal3205 \
+	-I$(ROOT)/apps/common/touch_pad \
 
 objs += \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_btctrler_config.o \
@@ -46,9 +48,11 @@ objs += \
 	$(ROOT)/apps/common/code_switch/code_switch.o \
 	$(ROOT)/apps/common/device/optical_mouse_sensor/OMSensor_manage.o \
 	$(ROOT)/apps/common/device/optical_mouse_sensor/hal3205/hal3205.o \
+	$(ROOT)/apps/common/key/matrix_keyboard.o \
 	$(ROOT)/apps/common/key/iokey.o \
 	$(ROOT)/apps/common/key/adkey.o \
     $(ROOT)/apps/common/key/key_driver.o \
+    $(ROOT)/apps/common/touch_pad/SYD9557M.o \
 
 # ble demo
 objs += \
@@ -60,4 +64,6 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/app_keyboard.o \
 	$(ROOT)/apps/$(APP_CASE)/app_mouse.o \
 	$(ROOT)/apps/$(APP_CASE)/app_keyfob.o \
+	$(ROOT)/apps/$(APP_CASE)/app_standard_keyboard.o \
+	$(ROOT)/apps/$(APP_CASE)/app_keypage.o \
 

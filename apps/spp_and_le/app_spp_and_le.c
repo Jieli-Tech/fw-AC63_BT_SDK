@@ -26,6 +26,7 @@
 #include "rcsp_bluetooth.h"
 #include "rcsp_user_update.h"
 #include "app_charge.h"
+#include "le_client_demo.h"
 
 #define LOG_TAG_CONST       SPP_AND_LE
 #define LOG_TAG             "[SPP_AND_LE]"
@@ -40,13 +41,186 @@
 
 #define WAIT_DISCONN_TIME_MS     (300)
 
-extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
 extern const u8 *bt_get_mac_addr();
 extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 void sys_auto_sniff_controle(u8 enable, u8 *addr);
 void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 
 static u8 is_app_active = 0;
+
+//---------------------------------------------------------------------
+#if TRANS_CLIENT_EN
+//指定搜索uuid
+//指定搜索uuid
+static const target_uuid_t  jl_search_uuid_table[] = {
+
+    // for uuid16
+    // PRIMARY_SERVICE, ae30
+    // CHARACTERISTIC,  ae01, WRITE_WITHOUT_RESPONSE | DYNAMIC,
+    // CHARACTERISTIC,  ae02, NOTIFY,
+
+    {
+        .services_uuid16 = 0xae30,
+        .characteristic_uuid16 = 0xae01,
+        .opt_type = ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
+    },
+
+    {
+        .services_uuid16 = 0xae30,
+        .characteristic_uuid16 = 0xae02,
+        .opt_type = ATT_PROPERTY_NOTIFY,
+    },
+
+    //for uuid128,sample
+    //	PRIMARY_SERVICE, 0000F530-1212-EFDE-1523-785FEABCD123
+    //	CHARACTERISTIC,  0000F531-1212-EFDE-1523-785FEABCD123, NOTIFY,
+    //	CHARACTERISTIC,  0000F532-1212-EFDE-1523-785FEABCD123, WRITE_WITHOUT_RESPONSE | DYNAMIC,
+    /*
+    	{
+    		.services_uuid16 = 0,
+    		.services_uuid128 =       {0x00,0x00,0xF5,0x30 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23} ,
+    		.characteristic_uuid16 = 0,
+    		.characteristic_uuid128 = {0x00,0x00,0xF5,0x31 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23},
+    		.opt_type = ATT_PROPERTY_NOTIFY,
+    	},
+
+    	{
+    		.services_uuid16 = 0,
+    		.services_uuid128 =       {0x00,0x00,0xF5,0x30 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23} ,
+    		.characteristic_uuid16 = 0,
+    		.characteristic_uuid128 = {0x00,0x00,0xF5,0x32 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23},
+    		.opt_type = ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
+    	},
+    */
+
+};
+
+
+static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *search_uuid)
+{
+    log_info("report_data:%02x,%02x,%d,len(%d)", report_data->packet_type,
+             report_data->value_handle, report_data->value_offset, report_data->blob_length);
+
+    log_info_hexdump(report_data->blob, report_data->blob_length);
+
+    /* if (search_uuid == NULL) { */
+    /* log_info("not_match handle"); */
+    /* return; */
+    /* } */
+
+    switch (report_data->packet_type) {
+    case GATT_EVENT_NOTIFICATION:  //notify
+        break;
+
+    case GATT_EVENT_INDICATION://indicate
+    case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT://read
+        break;
+
+    case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT://read long
+        break;
+
+    default:
+        break;
+    }
+}
+
+static struct ble_client_operation_t *ble_client_api;
+static const u8 test_remoter_name1[] = "AC630N_1(BLE)";//
+/* static const u8 test_remoter_name2[] = "AC630N_HID567(BLE)";// */
+static u16 ble_client_write_handle;
+static u16 ble_client_timer = 0;
+
+static const client_match_cfg_t match_dev01 = {
+    .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
+    .compare_data_len = sizeof(test_remoter_name1) - 1, //去结束符
+    .compare_data = test_remoter_name1,
+    .bonding_flag = 0,
+};
+
+/* static const client_match_cfg_t match_dev02 = { */
+/* .create_conn_mode = BIT(CLI_CREAT_BY_NAME), */
+/* .compare_data_len = sizeof(test_remoter_name2) - 1, //去结束符 */
+/* .compare_data = test_remoter_name2, */
+/* .bonding_flag = 1, */
+/* }; */
+
+static void client_test_write(void)
+{
+    static u32 count = 0;
+    count++;
+    int ret = ble_client_api->opt_comm_send(ble_client_write_handle, &count, 16, ATT_OP_WRITE_WITHOUT_RESPOND);
+    log_info("test_write:%x", ret);
+}
+
+
+static void client_event_callback(le_client_event_e event, u8 *packet, int size)
+{
+    switch (event) {
+    case CLI_EVENT_MATCH_DEV: {
+        client_match_cfg_t *match_dev = packet;
+        log_info("match_name:%s\n", match_dev->compare_data);
+    }
+    break;
+
+    case CLI_EVENT_MATCH_UUID: {
+        opt_handle_t *opt_hdl = packet;
+        if (opt_hdl->search_uuid == &jl_search_uuid_table[0]) {
+            ble_client_write_handle = opt_hdl->value_handle;
+            log_info("match_uuid22\n");
+        }
+    }
+    break;
+
+    case CLI_EVENT_SEARCH_PROFILE_COMPLETE:
+        log_info("CLI_EVENT_SEARCH_PROFILE_COMPLETE\n");
+        if ((!ble_client_timer) && ble_client_write_handle) {
+            log_info("test timer_add\n");
+            ble_client_timer = sys_timer_add(0, client_test_write, 500);
+        }
+        break;
+
+    case CLI_EVENT_CONNECTED:
+        break;
+
+    case CLI_EVENT_DISCONNECT:
+        if (ble_client_timer) {
+            sys_timeout_del(ble_client_timer);
+        }
+        ble_client_timer = 0;
+        ble_client_write_handle = 0;
+        break;
+
+    default:
+        break;
+    }
+}
+
+
+static const client_conn_cfg_t client_conn_config = {
+    .match_dev_cfg[0] = &match_dev01,
+    /* .match_dev_cfg[1] = &match_dev02, */
+    .report_data_callback = ble_report_data_deal,
+    /* .search_uuid_cnt = 0, //配置不搜索profile，加快回连速度 */
+    .search_uuid_cnt = (sizeof(jl_search_uuid_table) / sizeof(target_uuid_t)),
+    .search_uuid_table = jl_search_uuid_table,
+    .security_en = 0,
+    .event_callback = client_event_callback,
+};
+
+static void ble_client_config_init(void)
+{
+    ble_client_api = ble_get_client_operation_table();
+    ble_client_api->init_config(0, &client_conn_config);
+    /* client_clear_bonding_info();//for test */
+}
+
+#endif
+
+
+
+
+
+//----------------------------------------------------------------------------
 
 static void bt_function_select_init()
 {
@@ -80,6 +254,11 @@ static void bt_function_select_init()
         printf("\n-----edr + ble 's address-----");
         printf_buf((void *)bt_get_mac_addr(), 6);
         printf_buf((void *)tmp_ble_addr, 6);
+
+#if TRANS_CLIENT_EN
+        ble_client_config_init();
+#endif
+
     }
 #endif
 }

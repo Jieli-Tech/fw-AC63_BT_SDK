@@ -38,14 +38,15 @@ struct mass_storage {
 
 #if MULTI_DISK
     char *name;
+    struct read_capacity_data capacity[2];
     u8 lun;
     u8 curlun;
-    struct read_capacity_data capacity[2];
 #else
+    u8 cur_available_lun;
     struct read_capacity_data capacity[1];
 #endif
 
-    volatile u8 dev_status;
+    u8 dev_status;
     u8 suspend_cnt;
     u8 read_only;
 

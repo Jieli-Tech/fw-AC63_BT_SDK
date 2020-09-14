@@ -32,9 +32,9 @@ struct eq_coeff_info {
 #endif
     int *L_coeff;
     int *R_coeff;
-/*     int L_gain; */
+    /*     int L_gain; */
     /* int R_gain; */
-	float L_gain;
+    float L_gain;
     float R_gain;
 
 };
@@ -48,9 +48,9 @@ struct hw_eq {
 };
 
 enum {
-	HW_EQ_CMD_CLEAR_MEM = 0xffffff00,
-	HW_EQ_CMD_CLEAR_MEM_L,
-	HW_EQ_CMD_CLEAR_MEM_R,
+    HW_EQ_CMD_CLEAR_MEM = 0xffffff00,
+    HW_EQ_CMD_CLEAR_MEM_L,
+    HW_EQ_CMD_CLEAR_MEM_R,
 };
 
 struct hw_eq_handler {
@@ -72,6 +72,7 @@ struct hw_eq_ch {
     unsigned int nsection : 6;
     unsigned int no_coeff : 1;	// 非滤波系数
     volatile unsigned int active : 1;
+        volatile unsigned int need_run: 1;
 #ifdef CONFIG_EQ_NO_USE_COEFF_TABLE
         u16 sr;
 #endif
@@ -88,6 +89,8 @@ struct hw_eq_ch {
         struct list_head entry;
         struct hw_eq *eq;
         const struct hw_eq_handler *eq_handler;
+        void *irq_priv;
+        void (*irq_callback)(void *priv);
     };
 
 //系数计算子函数
@@ -126,10 +129,13 @@ struct hw_eq_ch {
     int audio_hw_eq_ch_close(struct hw_eq_ch *ch);
 
 // 挤出eq中的数据
-int audio_hw_eq_flush_out(struct hw_eq *eq);
+    int audio_hw_eq_flush_out(struct hw_eq *eq);
 
+// 挤出当前通道的数据eq中的数据
+    int audio_hw_eq_ch_flush_out(struct hw_eq_ch *ch);
 // eq正在运行
-int audio_hw_eq_is_running(struct hw_eq *eq);
-
+    int audio_hw_eq_is_running(struct hw_eq *eq);
+// 当前 eq_ch是否激活运行
+    int audio_hw_eq_ch_active(struct hw_eq_ch *ch);
 #endif /*__HW_EQ_H*/
 

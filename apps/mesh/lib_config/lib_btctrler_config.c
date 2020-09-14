@@ -29,6 +29,10 @@ const int config_btctler_modules        = BT_MODULE_LE;
  */
 /*-----------------------------------------------------------*/
 const int config_btctler_mode           = CONFIG_BT_MODE;
+
+//固定使用正常发射功率的等级:0-使用不同模式的各自等级;1~10-固定发射功率等级
+const int config_force_bt_pwr_tab_using_normal_level  = 0;
+
 #if (CONFIG_BT_MODE != BT_NORMAL)
 const int config_btctler_hci_standard   = 1;
 #else
@@ -46,12 +50,18 @@ const int CONFIG_TWS_AFH_ENABLE         = 0;
 const u8 rx_fre_offset_adjust_enable    = 1;
 const int ble_disable_wait_enable = 1;
 
+const int config_delete_link_key          = 1;           //配置是否连接失败返回PIN or Link Key Missing时删除linkKey
+
+const int CONFIG_TEST_DUT_CODE            = 1;
+const int CONFIG_TEST_FCC_CODE            = 1;
+const int CONFIG_TEST_DUT_ONLY_BOX_CODE   = 0;
+
 /*-----------------------------------------------------------*/
 /**
  * @brief Bluetooth LE setting
  */
 /*-----------------------------------------------------------*/
-const int config_btctler_le_features = LE_ENCRYPTION;
+const uint64_t config_btctler_le_features = LE_ENCRYPTION;
 const int config_btctler_le_roles    = (LE_ADV | LE_SCAN | LE_SLAVE | LE_MASTER);
 // Master AFH
 const int config_btctler_le_afh_en = 0;
@@ -61,12 +71,15 @@ const int config_btctler_le_rx_nums = 10;
 const int config_btctler_le_acl_packet_length = 27;
 const int config_btctler_le_acl_total_nums = 10;
 
+const int config_btctler_le_slave_conn_update_winden = 2500;//range:100 to 2500
 /*-----------------------------------------------------------*/
 /**
  * @brief Bluetooth Analog setting
  */
 /*-----------------------------------------------------------*/
 const int config_btctler_single_carrier_en = 1;
+
+const int config_btctler_eir_version_info_len = 0;
 
 
 /*-----------------------------------------------------------*/

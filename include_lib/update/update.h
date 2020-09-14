@@ -100,6 +100,7 @@ u16 update_result_get(void);
 bool device_is_first_start();
 int update_result_deal();
 void update_result_set(u16 result);
+bool update_success_boot_check(void);
 
 
 #endif

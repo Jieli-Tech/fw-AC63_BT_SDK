@@ -108,4 +108,11 @@ const char log_tag_const_w_KEYFOB AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_e_KEYFOB AT(.LOG_TAG_CONST) = 1;
 
 
+const char log_tag_const_v_KEYPAGE AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_i_KEYPAGE AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_d_KEYPAGE AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_w_KEYPAGE AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_e_KEYPAGE AT(.LOG_TAG_CONST) = 1;
+
+
 

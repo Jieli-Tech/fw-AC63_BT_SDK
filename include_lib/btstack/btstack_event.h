@@ -1,7 +1,7 @@
 /*********************************************************************************************
     *   Filename        : btstack_event.h
 
-    *   Description     : 
+    *   Description     :
 
     *   Author          : Tongai
 
@@ -3740,7 +3740,7 @@ extern "C" {
     }
     static inline uint8_t *hci_subevent_le_enhanced_connection_complete_get_peer_addresss_ptr(const uint8_t *event)
     {
-        return &event[8];
+        return (uint8_t *)&event[8];
     }
     /**
      * @brief Get field local_resolvable_private_addres from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE

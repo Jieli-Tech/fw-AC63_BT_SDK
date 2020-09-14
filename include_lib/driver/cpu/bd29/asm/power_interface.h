@@ -77,6 +77,7 @@ struct low_power_param {
     u8  delay_us;
     u8  config;
     u8  btosc_disable;
+    u8 dcdc_port;
 
     u8 vddiom_lev;
     u8 vddiow_lev;

@@ -118,7 +118,7 @@
 //*********************************************************************************//
 //                                  充电参数配置                                   //
 //*********************************************************************************//
-#define TCFG_CHARGE_ENABLE					ENABLE_THIS_MOUDLE
+#define TCFG_CHARGE_ENABLE					DISABLE_THIS_MOUDLE
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE
 #define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
 #define TCFG_CHARGE_FULL_V					CHARGE_FULL_V_4202
@@ -180,9 +180,9 @@
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
 #define USER_SUPPORT_PROFILE_SPP    0
-#define USER_SUPPORT_PROFILE_HFP    1
-#define USER_SUPPORT_PROFILE_A2DP   1
-#define USER_SUPPORT_PROFILE_AVCTP  1
+#define USER_SUPPORT_PROFILE_HFP    0
+#define USER_SUPPORT_PROFILE_A2DP   0
+#define USER_SUPPORT_PROFILE_AVCTP  0
 #define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    1
 #define USER_SUPPORT_PROFILE_PBAP   0

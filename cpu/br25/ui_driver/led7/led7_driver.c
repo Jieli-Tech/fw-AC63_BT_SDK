@@ -6,14 +6,15 @@
 #include "ui/ui_api.h"
 #include "led7_driver_cfg.h"
 
-#define LED7_DEBUG_ENABLE
+/* #define LED7_DEBUG_ENABLE */
 #ifdef LED7_DEBUG_ENABLE
 #define led7_debug(fmt, ...) 	printf("[LED7] "fmt, ##__VA_ARGS__)
+#define led7_error(fmt, ...) 	printf("[LED7 ERR] "fmt, ##__VA_ARGS__)
 #else
 #define led7_debug(...)
+#define led7_error(...)
 #endif
 
-#define led7_error(fmt, ...) 	printf("[LED7 ERR] "fmt, ##__VA_ARGS__)
 
 //#define  UI_LED7_TRUE_TABLE1
 //#define  UI_LED7_TRUE_TABLE2

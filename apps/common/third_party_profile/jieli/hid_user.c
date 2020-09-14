@@ -52,7 +52,7 @@ int edr_hid_timer_handle = 0;
 /* static volatile u16 edr_send_packet_len = 0; */
 static volatile u8  bt_send_busy = 0;
 
-#define HID_TMP_BUFSIZE  (64)
+#define HID_TMP_BUFSIZE  (64*2)
 #define cbuf_get_space(a) (a)->total_len
 static cbuffer_t user_send_cbuf;
 static u8 hid_tmp_buffer[HID_TMP_BUFSIZE];
@@ -230,7 +230,6 @@ void user_hid_regiser_wakeup_send(void *cbk)
 void user_hid_disconnect(void)
 {
     if (hid_channel) {
-        hid_channel = 0;
         user_send_cmd_prepare(USER_CTRL_HID_DISCONNECT, 0, NULL);
     }
 }

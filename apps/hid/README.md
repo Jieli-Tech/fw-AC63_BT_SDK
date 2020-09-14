@@ -3,9 +3,7 @@
 # APP - Bluetooth: Dual-Mode HID ![Build result][icon_build]
 ---------------
 
-代码工程 <br>
-AC631 ：[apps\hid\board\bd29\AC631X_hid.cbp](../../apps/hid/board/bd29) <br>
-AC636 ：[apps\hid\board\br25\AC636X_hid.cbp](../../apps/hid/board/br25) 
+代码工程：`apps\hid\board\bd29\AC631X_hid.cbp`
 
 ## 1.APP 概述
 
@@ -221,7 +219,7 @@ Report Map 在线解析工具地址： http://eleccelerator.com/usbdescreqparser
 
 ## 8.蓝牙鼠标 APP 总体框架
 蓝牙鼠标 APP 总体框架如图 4.2 所示。
- ![hid](./../../doc/stuff/hid_4.2.png)
+ ![hid](./../../doc/stuff/hid_4.1.png)
 
 ## 9.蓝牙鼠标功耗
 

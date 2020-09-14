@@ -21,7 +21,7 @@ export ADDITION_DEP=
 endif
 
 
-# 默认注释编译信息(None/@)
+## 默认注释编译信息(None/@)
 export V=@
 export jtag ?=n
 export TIDY_CHECK ?= n
@@ -30,10 +30,11 @@ export TIDY_FILTER=/opt/utils/tidy-filter
 
 
 
-#配置下载目标SoC(br18/br21/br22/br23/br25/br26/bd29)
+#配置下载目标SoC(br23/br25/bd29)
 #export前面不要有空格，会导致文件sync异常
-# export SoC?=br25
-export SoC?=bd29
+#export SoC?=br23
+export SoC?=br25
+#export SoC?=bd29
 
 
 
@@ -41,6 +42,7 @@ export SoC?=bd29
 #export APP_CASE?=spp_and_le
 export APP_CASE?=hid
 #export APP_CASE?=mesh
+
 
 
 # --------------common var begin-----------------------
@@ -58,8 +60,7 @@ export AR_TARGET = $(shell find lib -maxdepth 1 -type d)
 
 # read only , can not modify
 
-OTHER_FILES = apps/config/eq_tab.h
-OTHER_FILES += apps/config/eq_tab_coeff.h
+OTHER_FILES =
 
 ifeq ($(APP_CASE),dongle)
 	OTHER_FILES += \
@@ -68,6 +69,8 @@ else
 	OTHER_FILES += apps/$(APP_CASE)/include/bt_ble.h \
 
 endif
+
+
 
 
 .PHONY: all clean lib clean_lib libs clean_libs dry_run debug usage cbp winmake app
@@ -116,6 +119,7 @@ cbp:
 		--ld_path $(LD) --make_log make_log.txt \
 		--prefix `realpath .` \
 		--ignore_dirs `realpath lib` \
+		--omit_files $(OMIT_FILES) \
 		--gen_ld gen_sdk_ld.bat \
 		--gen_ld_cc C:\\JL\\pi32\\bin\\clang.exe \
 		--gen_ld_incs C:\\JL\\pi32\\pi32v2-include \
@@ -130,6 +134,7 @@ cbp:
 		--ld_path $(LD) --make_log make_log.txt \
 		--prefix `realpath .` \
 		--ignore_dirs `realpath lib` \
+		--omit_files $(OMIT_FILES) \
 		--outdir `realpath ../cbp_out` \
 		--other_files $(DIR_OUTPUT)/uboot.bin \
 			$(DIR_OUTPUT)/download.bat	\
@@ -154,6 +159,9 @@ winrelease: cbp winmake
 		`realpath ../winmake_out`  \
 		`realpath ../cbp_out`	   \
 		--outdir `realpath ../merge_out`
+
+branch_jenkins:
+	$(V) python3 /opt/utils/jenkins-gen-build-config.py --config jenkins/jenkins-librepo.json --project $(project) > jenkins/jenkins-build-branch.json
 
 
 usage:

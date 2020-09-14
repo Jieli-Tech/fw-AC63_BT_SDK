@@ -36,6 +36,10 @@
 
 #endif
 
+#if (TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0)
+#include "dev_multiplex_api.h"
+#endif
+
 
 #define LOG_TAG_CONST       APP_PC
 #define LOG_TAG             "[USB_TASK]"
@@ -61,12 +65,6 @@ extern void charge_event_to_user(u8 event);
 static usb_dev usbfd ;//SEC(.usb_g_bss);
 static OS_MUTEX msd_mutex ;//SEC(.usb_g_bss);
 
-
-#if (TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0)
-const int usb_dm_multiplex = 1;
-#else
-const int usb_dm_multiplex = 0;
-#endif
 
 static void usb_task(void *p)
 {
@@ -155,19 +153,20 @@ void usb_start()
     usb_device_mode(usbfd, USB_DEVICE_CLASS_CONFIG);
 
 #if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
-
-    if (!usb_dm_multiplex) {
-#if TCFG_SD0_ENABLE
-        msd_register_disk("sd0", NULL);
+    //没有复用时候判断 sd开关
+    //复用时候判断是否参与复用
+#if (!TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0 && TCFG_SD0_ENABLE)\
+     ||(TCFG_SD0_ENABLE && TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0 && TCFG_DM_MULTIPLEX_WITH_SD_PORT != 0)
+    msd_register_disk("sd0", NULL);
 #endif
 
-#if TCFG_SD1_ENABLE
-        msd_register_disk("sd1", NULL);
+#if (!TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0 && TCFG_SD1_ENABLE)\
+     ||(TCFG_SD1_ENABLE && TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0 && TCFG_DM_MULTIPLEX_WITH_SD_PORT != 1)
+    msd_register_disk("sd1", NULL);
 #endif
-    }
 
-#if TCFG_NORFLASH_DEV_ENABLE
-    msd_register_disk("norflash", NULL);
+#if TCFG_NOR_FAT
+    msd_register_disk("fat_nor", NULL);
 #endif
 
     msd_set_wakeup_handle(usb_msd_wakeup);
@@ -214,7 +213,6 @@ void usb_stop()
 }
 
 
-extern void usb_otg_suspend(usb_dev usb_id, u8 uninstall);
 int pc_device_event_handler(struct sys_event *event)
 {
     int switch_app_case = false;
@@ -225,79 +223,44 @@ int pc_device_event_handler(struct sys_event *event)
             log_debug("usb event : %d DEVICE_EVENT_FROM_OTG %s", event->u.dev.event, usb_msg);
 
             if (usb_msg[0] == 's') {
-                if (event->u.dev.event == DEVICE_EVENT_ONLINE) {
+                if (event->u.dev.event == DEVICE_EVENT_IN) {
                     log_info("usb %c online", usb_msg[2]);
                     usbfd = usb_msg[2] - '0';
-#ifdef  USB_PC_NO_APP_MODE
+#if   USB_PC_NO_APP_MODE
                     usb_start();
-#else
-
-#if TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0
-                    usb_otg_suspend(0, 0);
-#endif
+#elif TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0
+                    usb_otg_suspend(0, OTG_KEEP_STATE);
+                    mult_sdio_suspend();
                     usb_pause();
-#if TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0
-                    extern void m_sdio_resume(u8 num);
-                    m_sdio_resume(2);
-#endif
-
+                    mult_sdio_resume();
+#else
+                    usb_pause();
 #endif
                     switch_app_case = 1;
-                } else {
+                } else if (event->u.dev.event == DEVICE_EVENT_OUT) {
                     log_info("usb %c offline", usb_msg[2]);
                     switch_app_case = 2;
 #ifdef  USB_PC_NO_APP_MODE
                     usb_stop();
 #else
 
-#if TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0
-                    extern void m_sdio_resume(u8 num);
-                    extern int m_sdio_supend(u8 num);
-                    m_sdio_resume(2);
-                    m_sdio_supend(2);
-#endif
-
 #ifdef CONFIG_SOUNDBOX
                     if (!app_check_curr_task(APP_PC_TASK)) {
 #else
                     if (!app_cur_task_check(APP_NAME_PC)) {
 #endif
-                        usb_stop();
-                    }
 #if TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0
-                    extern void m_sdio_resume(u8 num);
-                    m_sdio_resume(2);
+                        mult_sdio_suspend();
 #endif
+                        usb_stop();
+#if TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0
+                        mult_sdio_resume();
+#endif
+                    }
 
 #endif
                 }
             }
-        } else if ((u32)event->arg == DRIVER_EVENT_FROM_SD0) {
-            log_info("usb event : %d DRIVER_EVENT_FROM_SD0 ", event->u.dev.event);
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
-            if (event->u.dev.event == DEVICE_EVENT_IN) {
-                if (!usb_dm_multiplex) {
-                    msd_register_disk("sd0", NULL);
-                }
-            } else if (event->u.dev.event == DEVICE_EVENT_OUT) {
-                if (!usb_dm_multiplex) {
-                    msd_unregister_disk("sd0");
-                }
-            }
-#endif
-        } else if ((u32)event->arg == DRIVER_EVENT_FROM_SD1) {
-            log_info("usb event : %d DRIVER_EVENT_FROM_SD0 ", event->u.dev.event);
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
-            if (event->u.dev.event == DEVICE_EVENT_IN) {
-                if (!usb_dm_multiplex) {
-                    msd_register_disk("sd1", NULL);
-                }
-            } else if (event->u.dev.event == DEVICE_EVENT_OUT) {
-                if (!usb_dm_multiplex) {
-                    msd_unregister_disk("sd1");
-                }
-            }
-#endif
         }
         break;
     default:

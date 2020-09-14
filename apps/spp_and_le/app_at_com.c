@@ -24,8 +24,9 @@
 #include "btstack/btstack_task.h"
 #include "bt_common.h"
 #include "rcsp_bluetooth.h"
+#include "le_client_demo.h"
 
-#define LOG_TAG_CONST       AT_COM 
+#define LOG_TAG_CONST       AT_COM
 #define LOG_TAG             "[AT_COM]"
 #define LOG_ERROR_ENABLE
 #define LOG_DEBUG_ENABLE
@@ -34,19 +35,37 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
-#if CONFIG_APP_AT_COM 
+#if CONFIG_APP_AT_COM
 
-#define TEST_AUTO_BT_OPEN          0   //for test 
+#define TEST_AUTO_BT_OPEN          0   //for test
 
 #define WAIT_DISCONN_TIME_MS     (300)
 
-extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
 extern const u8 *bt_get_mac_addr();
 extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 void sys_auto_sniff_controle(u8 enable, u8 *addr);
 void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 
 static u8 is_app_active = 0;
+static struct ble_client_operation_t *ble_client_api;
+//--------------------------------------
+
+#if TRANS_AT_CLIENT
+static const client_conn_cfg_t client_at_conn_config = {
+    .report_data_callback = NULL,
+    .event_callback = NULL,
+    .search_uuid_cnt = 0,
+    .security_en = 0,
+};
+
+static void ble_at_client_config_init(void)
+{
+    ble_client_api = ble_get_client_operation_table();
+    ble_client_api->init_config(0, &client_at_conn_config);
+}
+
+#endif
+
 
 static void bt_function_select_init()
 {
@@ -78,6 +97,11 @@ static void bt_function_select_init()
         printf_buf((void *)bt_get_mac_addr(), 6);
         printf_buf((void *)tmp_ble_addr, 6);
     }
+
+#if TRANS_AT_CLIENT
+    ble_at_client_config_init();
+#endif
+
 #endif
 }
 
@@ -118,7 +142,7 @@ static void app_set_soft_poweroff(void)
 
 void at_set_soft_poweroff(void)
 {
-	app_set_soft_poweroff();
+    app_set_soft_poweroff();
 }
 
 static void app_start()
@@ -136,14 +160,14 @@ static void app_start()
     __change_hci_class_type(0);//default icon
     btstack_init();
 
-#if TCFG_USER_EDR_ENABLE
+#if TCFG_USER_EDR_ENABLE && TRANS_AT_COM
     sys_auto_sniff_controle(1, NULL);
 #endif
     /* 按键消息使能 */
     sys_key_event_enable();
     /* sys_auto_shut_down_enable(); */
     /* sys_auto_sniff_controle(1, NULL); */
-	/* app_timer_handle  = sys_timer_add(NULL, app_timer_handler, 500); */
+    /* app_timer_handle  = sys_timer_add(NULL, app_timer_handler, 500); */
 
 }
 
@@ -203,11 +227,10 @@ void bt_sniff_ready_clean(void)
 
 void bt_sniff_exit_and_clean(void)
 {
-	if(!sniff_timer)
-	{
-		bt_check_exit_sniff();
-	}
-	bt_sniff_ready_clean();
+    if (!sniff_timer) {
+        bt_check_exit_sniff();
+    }
+    bt_sniff_ready_clean();
 }
 
 void bt_check_enter_sniff()
@@ -240,7 +263,7 @@ void bt_check_enter_sniff()
 }
 void sys_auto_sniff_controle(u8 enable, u8 *addr)
 {
-#if TCFG_USER_EDR_ENABLE
+#if TCFG_USER_EDR_ENABLE && TRANS_AT_COM
     if (addr) {
         if (bt_api_conn_mode_check(enable, addr) == 0) {
             log_info("sniff ctr not change\n");
@@ -307,7 +330,7 @@ static void bt_wait_phone_connect_control(u8 enable)
 
 void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en)
 {
-#if(TCFG_USER_EDR_ENABLE &&  TEST_AUTO_BT_OPEN)
+#if(TCFG_USER_EDR_ENABLE && TRANS_AT_COM  && TEST_AUTO_BT_OPEN)
 
     if (inquiry_en) {
         user_send_cmd_prepare(USER_CTRL_WRITE_SCAN_ENABLE, 0, NULL);
@@ -367,11 +390,11 @@ static void bt_hci_event_connection(struct bt_event *bt)
 extern void bt_get_vm_mac_addr(u8 *addr);
 static void bt_hci_event_disconnect(struct bt_event *bt)
 {
-/* #if (RCSP_BTMATE_EN && RCSP_UPDATE_EN) */
+    /* #if (RCSP_BTMATE_EN && RCSP_UPDATE_EN) */
     /* if (get_jl_update_flag()) { */
-        /* JL_rcsp_event_to_user(DEVICE_EVENT_FROM_RCSP, MSG_JL_UPDATE_START, NULL, 0); */
+    /* JL_rcsp_event_to_user(DEVICE_EVENT_FROM_RCSP, MSG_JL_UPDATE_START, NULL, 0); */
     /* } */
-/* #endif */
+    /* #endif */
     bt_wait_phone_connect_control_ext(1, 1);
 }
 
@@ -410,11 +433,11 @@ static int bt_hci_event_handler(struct bt_event *bt)
         } else {
 
 #if TCFG_USER_BLE_ENABLE
-			//1:edr con;2:ble con;
-			if(1 == bt->value) {
-				extern void bt_ble_adv_enable(u8 enable);
-				bt_ble_adv_enable(0);
-			}
+            //1:edr con;2:ble con;
+            if (1 == bt->value) {
+                extern void bt_ble_adv_enable(u8 enable);
+                bt_ble_adv_enable(0);
+            }
 #endif
         }
     }
@@ -532,20 +555,23 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
          * 蓝牙初始化完成
          */
         log_info("BT_STATUS_INIT_OK\n");
-		
+
 
 #if TCFG_USER_BLE_ENABLE
         extern void bt_ble_init(void);
         bt_ble_init();
 #endif
-		at_spp_init();
-		at_cmd_init();
-	
-#if TEST_AUTO_BT_OPEN	
-		ble_test_auto_adv(1);
-		bt_wait_phone_connect_control_ext(1, 1);
+
+#if TRANS_AT_COM
+        at_spp_init();
 #endif
-		break;
+        at_cmd_init();
+
+#if TEST_AUTO_BT_OPEN
+        ble_test_auto_adv(1);
+        bt_wait_phone_connect_control_ext(1, 1);
+#endif
+        break;
 
     case BT_STATUS_SECOND_CONNECTED:
     case BT_STATUS_FIRST_CONNECTED:
@@ -640,9 +666,9 @@ static int event_handler(struct application *app, struct sys_event *event)
         return 0;
 
     case SYS_DEVICE_EVENT:
-		if ((u32)event->arg == DEVICE_EVENT_FROM_AT_UART) {
-			at_cmd_rx_handler();
-		}
+        if ((u32)event->arg == DEVICE_EVENT_FROM_AT_UART) {
+            at_cmd_rx_handler();
+        }
         return 0;
 
     default:

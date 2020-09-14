@@ -3,19 +3,20 @@
 
 #include "asm/usb.h"
 
-//enum {
-//    HOST_MODE = 1,
-//    PRE_SLAVE_MODE,
-//    SLAVE_MODE,
-//    CHARGE_MODE,
-//};
 enum {
     IDLE_MODE = 0,
     DISCONN_MODE = 1,
     HOST_MODE = 2,
     PRE_SLAVE_MODE,
+    SLAVE_MODE_WAIT_CONFIRMATION,
     SLAVE_MODE,
     CHARGE_MODE,
+};
+
+enum {
+    OTG_OP_NULL = 0,
+    OTG_UNINSTALL = 1,
+    OTG_KEEP_STATE,
 };
 
 #define     OTG_HOST_MODE      BIT(0)
@@ -38,7 +39,7 @@ u32 usb_otg_online(const usb_dev usb_id);
 // u32 usb_otg_init(u32 mode);
 void usb_otg_io_suspend(usb_dev usb_id);
 void usb_otg_io_resume(usb_dev usb_id);
-void usb_otg_suspend(usb_dev usb_id, u8 uninstall);
+void usb_otg_suspend(usb_dev usb_id, u8 op_mode);
 void usb_otg_resume(usb_dev usb_id);
 
 extern const struct device_operations usb_dev_ops;

@@ -21,6 +21,7 @@ void bt_max_pwr_set(u8 pwr, u8 pg_pwr, u8 iq_pwr, u8 ble_pwr);
 
 extern APP_VAR app_var;
 
+
 BT_CONFIG bt_cfg = {
     .edr_name        = "JL_HID_DEBUG",
     .mac_addr        = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
@@ -31,6 +32,7 @@ BT_CONFIG bt_cfg = {
     .tws_device_indicate = 0x6688,
 };
 
+static const char edr_ext_name[] = " 3.0";
 
 //======================================================================================//
 //                                 		BTIF配置项表                               		//
@@ -160,7 +162,6 @@ void cfg_file_parse(u8 idx)
         bt_cfg.edr_name[LOCAL_NAME_LEN - 1] = 0;
     } else {
         memset(bt_cfg.edr_name, 0x00, LOCAL_NAME_LEN);
-        memcpy(bt_cfg.edr_name, tmp, ret);
     }
     /* g_printf("bt name config:%s\n", bt_cfg.edr_name); */
     log_info("bt name config:%s\n", bt_cfg.edr_name);

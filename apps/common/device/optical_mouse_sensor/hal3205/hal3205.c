@@ -481,7 +481,10 @@ REGISTER_OMSENSOR(optical_mouse_sensor) = {
 
 static u8 hal3205_idle_query(void)
 {
-    return (gpio_read(pdata->OMSensor_int_io));
+    if (pdata) {
+        return (gpio_read(pdata->OMSensor_int_io));
+    }
+    return 1;
 }
 
 REGISTER_LP_TARGET(hal3205_lp_target) = {

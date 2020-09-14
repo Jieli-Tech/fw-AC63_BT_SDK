@@ -32,14 +32,14 @@
   os_taskq_del_type = ABSOLUTE(0x117dbc);
   os_sem_create = ABSOLUTE(0x117dc0);
   os_sem_del = ABSOLUTE(0x117dc4);
-  os_sem_pend = ABSOLUTE(0x117dc8);
+  os_sem_pend_rom = ABSOLUTE(0x117dc8);
   os_sem_post = ABSOLUTE(0x117dcc);
   os_sem_set = ABSOLUTE(0x117dd0);
   os_sem_valid = ABSOLUTE(0x117dd4);
   os_sem_query = ABSOLUTE(0x117dd8);
   os_mutex_create = ABSOLUTE(0x117ddc);
   os_mutex_del = ABSOLUTE(0x117de0);
-  os_mutex_pend = ABSOLUTE(0x117de4);
+  os_mutex_pend_rom = ABSOLUTE(0x117de4);
   os_mutex_post = ABSOLUTE(0x117de8);
   os_mutex_valid = ABSOLUTE(0x117dec);
   xTaskCreate = ABSOLUTE(0x117df0);

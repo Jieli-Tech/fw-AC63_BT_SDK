@@ -20,8 +20,9 @@ struct adb_device_t {
     u8 extr_in;
     u8 extr_out;
 };
+u32 usb_adb_interface_ptp_mtp_parse(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf);
 int usb_adb_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf);
-void adb_process();
+u32 adb_process();
 void adb_switch_aoa(u32 id);
 
 #if 1

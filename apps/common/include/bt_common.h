@@ -31,5 +31,23 @@ extern void swapX(const uint8_t *src, uint8_t *dst, int len);
 extern void bt_ble_init(void);
 extern void bt_ble_exit(void);
 extern void bt_ble_adv_enable(u8 enable);
+extern void ble_app_disconnect(void);
+extern void ble_module_enable(u8 en);
+extern const u8 *bt_get_mac_addr();
+extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
+extern void user_spp_data_handler(u8 packet_type, u16 ch, u8 *packet, u16 size);
+extern void bt_get_vm_mac_addr(u8 *addr);
+extern void set_remote_test_flag(u8 own_remote_test);
+extern void bredr_power_get(void);
+extern void bredr_power_put(void);
+extern void radio_set_eninv(int v);
+extern void transport_spp_init(void);
+extern const char *bt_get_local_name();
+extern void wdt_clear(void);
+extern u8 ble_update_get_ready_jump_flag(void);
+extern void reset_PK_cb_register(void (*reset_pk)(u32 *));
+extern void att_server_flow_enable(u8 enable);
+extern void le_device_db_init(void);
+extern bool get_remote_test_flag();
 
 #endif

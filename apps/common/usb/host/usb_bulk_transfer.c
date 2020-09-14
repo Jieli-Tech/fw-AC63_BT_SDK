@@ -61,21 +61,23 @@ s32 usb_bulk_only_receive_async(struct device *device, u8 host_ep, u16 rxmaxp, u
 {
     struct usb_host_device *host_dev = device_to_usbdev(device);
     const usb_dev usb_id = host_device2id(host_dev);
-    usb_h_set_ep_isr(host_dev, host_ep | USB_DIR_IN, usb_bulk_rx_isr, host_dev);
-    usb_set_intr_rxe(usb_id, host_ep);
+
     urb.ptr = pBuf;
     urb.len = len;
     urb.target_ep = target_ep;
     urb.rxmap = 0x40;
     urb.msg = -DEV_ERR_OFFLINE;
 
-    /* g_printf("%s() %d %x", __func__, len, pBuf); */
+    usb_h_set_ep_isr(host_dev, host_ep | USB_DIR_IN, usb_bulk_rx_isr, host_dev);
+    usb_set_intr_rxe(usb_id, host_ep);
+
     int ret = usb_h_ep_read_async(usb_id, host_ep, target_ep, NULL, 0, USB_ENDPOINT_XFER_BULK, 1);
     if (ret < 0) {
         return ret;
     }
     ret = usb_sem_pend(host_dev, 250);
     usb_clr_intr_rxe(usb_id, host_ep);
+    usb_h_set_ep_isr(host_dev, host_ep | USB_DIR_IN, NULL, host_dev);
     if (ret) {
         return -DEV_ERR_TIMEOUT;
     }
@@ -126,20 +128,24 @@ s32 usb_bulk_only_send_async(struct device *device, u8 host_ep, u16 txmaxp, u8 t
 {
     struct usb_host_device *host_dev = device_to_usbdev(device);
     const usb_dev usb_id = host_device2id(host_dev);
-    usb_h_set_ep_isr(host_dev, host_ep, usb_bulk_tx_isr, host_dev);
-    usb_set_intr_txe(usb_id, host_ep);
+
     urb.target_ep = target_ep;
     urb.txmap = 0x40;
     urb.msg = -DEV_ERR_OFFLINE;
     urb.len = len - min(len, urb.txmap);
     urb.ptr = (u8 *)pBuf + min(len, urb.txmap);
 
+    usb_h_set_ep_isr(host_dev, host_ep, usb_bulk_tx_isr, host_dev);
+    usb_set_intr_txe(usb_id, host_ep);
+
     int ret = usb_h_ep_write_async(usb_id, host_ep, txmaxp, target_ep, pBuf, min(len, urb.txmap), USB_ENDPOINT_XFER_BULK, 1);
     if (ret < 0) {
         return ret;
     }
     ret = usb_sem_pend(host_dev, 250);
+
     usb_clr_intr_txe(usb_id, host_ep);
+    usb_h_set_ep_isr(host_dev, host_ep, NULL, host_dev);
 
     if (ret) {
         r_printf("ret %d", ret);

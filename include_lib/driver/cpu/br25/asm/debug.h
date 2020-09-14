@@ -31,6 +31,7 @@
 #define _ETM_CON                q32DSP(0)->ETM_CON
 
 
+void ram_protect_close(void);
 void debug_init();
 void exception_analyze();
 

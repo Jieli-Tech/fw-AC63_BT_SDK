@@ -105,24 +105,12 @@ void timer(void *p)
     /* DEBUG_SINGAL_1S(0);*/
 }
 
-extern void fm_set_osc_cap(u8 sel_l, u8 sel_r);
-extern void bt_set_osc_cap(u8 sel_l, u8 sel_r);
-
-int app_chip_set_osc_cap()
-{
-    u8 cap_l, cap_r;
-    cap_l = 0x0a;
-    cap_r = 0x0a;
-    /* fm_set_osc_cap(cap_l,cap_r); */
-    bt_set_osc_cap(cap_l, cap_r); ///电容 0~0x0f
-    return 0;
-}
-early_initcall(app_chip_set_osc_cap);
 
 void setup_arch()
 {
     wdt_init(WDT_4S);
 
+    clk_init_osc_cap(0x0b, 0x0b);
     clk_voltage_init(TCFG_CLOCK_MODE, 1160);
 
     clk_early_init(TCFG_CLOCK_SYS_SRC, TCFG_CLOCK_OSC_HZ, TCFG_CLOCK_SYS_HZ);

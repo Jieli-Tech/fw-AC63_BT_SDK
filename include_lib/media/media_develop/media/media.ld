@@ -193,6 +193,7 @@ SECTIONS
 		. = ALIGN(4);
 		*(.ns_code)
 		*(.ns_const)
+		*(.opcore_maskrom)
 
 		. = ALIGN(4);
         *(.pcm_code)

@@ -17,8 +17,8 @@ out: object
 	@[ -f $(ROOT)/cpu/$(CPU)/tools/download.c ] && \
 	$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU)/tools/download.c > $(ROOT)/cpu/$(CPU)/tools/download.d || true
 ifeq ($(NEED_USED_LIST),y)
-	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/apps/$(APP_CASE)/sdk_used_list.c > $(ROOT)/apps/$(APP_CASE)/sdk_used_list.d
-	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/apps/$(APP_CASE)/sdk_used_list.c -o $(ROOT)/apps/$(APP_CASE)/sdk_used_list.used
+	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU)/sdk_used_list.c > $(ROOT)/cpu/$(CPU)/sdk_used_list.d
+	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU)/sdk_used_list.c -o $(ROOT)/cpu/$(CPU)/sdk_used_list.used
 endif
 	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU)/sdk_ld.c -o $(ROOT)/cpu/$(CPU)/sdk.ld
 ifneq (,$(wildcard $(ROOT)/cpu/$(CPU)/tools/download.c))

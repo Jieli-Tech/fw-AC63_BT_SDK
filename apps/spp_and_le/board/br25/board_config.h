@@ -5,14 +5,20 @@
  *  板级配置选择
  */
 
-#define CONFIG_BOARD_AC696X_DEMO
-// #define CONFIG_BOARD_AC6963E_DEMO
-// #define CONFIG_BOARD_AC6969E_DEMO
-// #define CONFIG_BOARD_AC6968_DEMO
+#define CONFIG_BOARD_AC636N_DEMO
+// #define CONFIG_BOARD_AC6368B_DONGLE //CONFIG_APP_DONGLE
+// #define CONFIG_BOARD_AC6363F_DEMO
+// #define CONFIG_BOARD_AC6366C_DEMO
+// #define CONFIG_BOARD_AC6368A_DEMO
+// #define CONFIG_BOARD_AC6369F_DEMO
+// #define CONFIG_BOARD_AC6369C_DEMO
 
-#include "board_ac696x_demo_cfg.h"
-#include "board_ac6969e_demo_cfg.h"
-#include "board_ac6968_demo_cfg.h"
-#include "board_ac6963e_demo_cfg.h"
+#include "board_ac636n_demo_cfg.h"
+#include "board_ac6368b_dongle_cfg.h"
+#include "board_ac6363f_demo_cfg.h"
+#include "board_ac6366c_demo_cfg.h"
+#include "board_ac6368a_demo_cfg.h"
+#include "board_ac6369f_demo_cfg.h"
+#include "board_ac6369c_demo_cfg.h"
 
 #endif

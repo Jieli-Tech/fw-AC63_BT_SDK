@@ -3,10 +3,10 @@
 cd %~dp0
 
 
-../../json_to_res.exe json.txt
+..\..\json_to_res.exe json.txt
 
-copy ..\..\script.ver  .
-copy ..\..\uboot.boot  .
+copy ..\..\script.ver .
+copy ..\..\uboot.boot .
 copy ..\..\ota.bin .
 
 ..\..\isd_download.exe -tonorflash -dev br25 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin -res tone.cfg config.dat -uboot_compress
@@ -48,4 +48,3 @@ del jl_isd.ufw
 
 ping /n 2 127.1>null
 IF EXIST null del null
-::pause

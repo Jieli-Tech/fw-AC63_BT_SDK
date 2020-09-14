@@ -117,34 +117,6 @@ void test_fun()
 
 }
 
-extern void fm_set_osc_cap(u8 sel_l, u8 sel_r);
-extern void bt_set_osc_cap(u8 sel_l, u8 sel_r);
-
-int app_chip_set_osc_cap(void)
-{
-    u8 cap_l, cap_r;
-    cap_l = 0x07;
-    cap_r = 0x07;
-#ifdef CONFIG_BOARD_AC6963A_TWS
-    cap_l = 0x07;
-    cap_r = 0x07;
-#endif
-
-#ifdef CONFIG_BOARD_AC6969A_TWS
-    cap_l = 0x0c;
-    cap_r = 0x0c;
-#endif
-
-#ifdef CONFIG_CPU_BR25
-    cap_l = 0x0c;
-    cap_r = 0x0c;
-#endif
-
-    /* fm_set_osc_cap(cap_l, cap_r); */
-    bt_set_osc_cap(cap_l, cap_r); ///电容 0~0x0f
-    return 0;
-}
-early_initcall(app_chip_set_osc_cap);
 
 
 void load_common_code();
@@ -180,13 +152,19 @@ void setup_arch()
     /* memset(stack_magic, 0x5a, sizeof(stack_magic)); */
     /* memset(stack_magic0, 0x5a, sizeof(stack_magic0)); */
 
-    wdt_init(WDT_16S);
+    wdt_init(WDT_8S);
     /* wdt_close(); */
 
     u8 mode = TCFG_CLOCK_MODE;
     if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15) {
         mode = CLOCK_MODE_USR;
     }
+
+#ifdef CONFIG_BOARD_AC6963A_TWS
+    clk_init_osc_cap(0x07, 0x07);
+#else
+    clk_init_osc_cap(0x0a, 0x0a);
+#endif
 
     clk_voltage_init(mode, SYSVDD_VOL_SEL_102V, VDC13_VOL_SEL_110V);
 
@@ -231,6 +209,12 @@ void setup_arch()
     debug_init();
 
     sys_timer_init();
+
+#if TCFG_RTC_ENABLE
+    void app_fake_rtc_tick();
+    void set_fake_rtc_handle(void(* handle)());
+    set_fake_rtc_handle(app_fake_rtc_tick);
+#endif
 
     /* sys_timer_add(NULL, timer, 10 * 1000); */
 

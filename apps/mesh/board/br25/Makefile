@@ -6,7 +6,7 @@ LIBS = \
    $(AR_DIR)/btctrler.a \
    $(AR_DIR)/crypto_toolbox_Osize.a \
    $(AR_DIR)/agreement.a \
-   $(AR_DIR)/JL_rcsp.a \
+   $(AR_DIR)/rcsp_stack.a \
 --end-group
 
 ifeq ($(OTA_UPDATE),y)
@@ -17,4 +17,4 @@ endif
 
 
 objs += \
-	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac696x_demo.o \
+	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac636n_demo.o \

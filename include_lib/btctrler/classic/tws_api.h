@@ -93,6 +93,15 @@ int tws_api_search_sibling_by_code(u16 code, int timeout_ms);
 int tws_api_wait_pair_by_code(u16 code, const char *name, int timeout_ms);
 int tws_api_wait_pair_by_ble(u16 code, const char *name, int timeout_ms);
 
+int tws_api_wait_tws_pair(int code, const char *name);
+
+int tws_api_wait_phone_pair(int code, const char *name);
+
+
+int tws_wait_tws_pair(u16 code, const char *name);
+
+int tws_wait_phone_pair(u16 code, const char *name);
+
 
 /*
  *取消可发现, 可连接，可被tws搜索到

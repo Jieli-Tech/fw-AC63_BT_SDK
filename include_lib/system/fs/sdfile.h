@@ -15,7 +15,7 @@ typedef struct sdfile_file_head {
     u8 res;
     u16 index;
     char name[SDFILE_NAME_LEN];
-}SDFILE_FILE_HEAD;
+} SDFILE_FILE_HEAD;
 
 #if 0
 ////////////////////////////sdfile_file_head成员详细说明///////////////////////////////////////
@@ -163,6 +163,9 @@ u32 sdfile_flash_addr2cpu_addr(u32 offset);
 u32 sdfile_cpu_addr2flash_addr(u32 offset);
 
 u32 decode_data_by_user_key_in_sdfile(u16 key, u8 *buff, u16 size, u32 dec_addr, u8 dec_len);
+
+u32 init_norsdfile_hdl(void);
+int set_tone_startaddr(int offset);
 
 #endif /* _SDFILE_H_ */
 

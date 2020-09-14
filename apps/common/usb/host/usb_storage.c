@@ -27,7 +27,6 @@
 
 #if TCFG_UDISK_ENABLE
 
-
 static int set_stor_power(struct usb_host_device *host_dev, u32 value);
 static int get_stor_power(struct usb_host_device *host_dev, u32 value);
 
@@ -45,7 +44,7 @@ static const struct usb_interface_info udisk_inf = {
     .dev.disk = &mass_stor,
 };
 
-struct device udisk_device ;//SEC(.usb_h_udisk);
+static struct device udisk_device ;//SEC(.usb_h_udisk);
 static struct udisk_end_desc udisk_ep ;//SEC(.usb_h_udisk);
 
 #define     host_device2disk(host_dev)      (udisk_inf.dev.disk)
@@ -94,26 +93,56 @@ static int usb_stor_rxmaxp(struct mass_storage *disk)
     return 0x40;
 #endif
 }
-#define     UDISK_MUTEX_TIMEOUT     50
+#define     UDISK_MUTEX_TIMEOUT     5000/10 //5s
+static int usb_h_mutex_pend(struct usb_host_device *host_dev)
+{
+    struct mass_storage *disk = host_device2disk(host_dev);
+    /* putchar('{'); */
+    /* putchar('^'); */
+    /* putchar('['); */
+
+    int r = os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT);
+    if (r) {
+        log_error("-----------------%d -------------------", r);
+    }
+    if (r == OS_TIMEOUT) {
+        return OS_TIMEOUT;
+    }
+    return r;
+}
+static int usb_h_mutex_post(struct usb_host_device *host_dev)
+{
+    struct mass_storage *disk = host_device2disk(host_dev);
+    /* putchar(']'); */
+    /* putchar('^'); */
+    /* putchar('}'); */
+
+    int r = os_mutex_post(&disk->mutex);
+    return r;
+}
 static int set_stor_power(struct usb_host_device *host_dev, u32 value)
 {
     struct mass_storage *disk = host_device2disk(host_dev);
-
+    log_debug("%s() %d ", __func__, disk->dev_status);
     if (disk == NULL || disk->dev_status == DEV_IDLE) {
         return 0;
     }
-    if (os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT * 10) == OS_TIMEOUT) {
-        return OS_TIMEOUT;
-    }
+    int r = usb_h_mutex_pend(host_dev);
+
     if (disk->dev_status == DEV_READ || disk->dev_status == DEV_WRITE) {
-        /* if (value == 0) { */
-        if ((int)value < 0) {
+        if (value == -1) {
             log_error("%s disk busy", __func__);
-            disk->dev_status = DEV_CLOSE;
-            /* sys_timer_del(disk->test_unit_ready_tick); */
         }
     }
-    os_mutex_post(&disk->mutex);
+
+    disk->dev_status = DEV_CLOSE;
+
+    log_debug("%s() %d ", __func__, disk->dev_status);
+
+    if (r == OS_TIMEOUT) {
+        return OS_TIMEOUT;
+    }
+    usb_h_mutex_post(host_dev);
     return DEV_ERR_NONE;
 }
 
@@ -132,7 +161,11 @@ static void usb_init_cbw(struct device *device, u32 dir, u32 opcode, u32 length)
     struct mass_storage *disk = host_device2disk(host_dev);
 
     memset(&disk->cbw, 0x00, sizeof(struct usb_scsi_cbw));
+#if MULTI_DISK
     u32 curlun = usb_stor_get_curlun(disk);
+#else
+    u32 curlun = disk->cur_available_lun;
+#endif
     disk->cbw.dCBWSignature = CBW_SIGNATURE;
     disk->cbw.dCBWTag = rand32();
     disk->cbw.bCBWLUN = curlun;
@@ -305,11 +338,13 @@ static int usb_stor_inquiry(struct device *device)
     if (ret) {
         return ret;
     }
-    if (os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT) == OS_TIMEOUT) {
+    ret = usb_h_mutex_pend(host_dev);
+    if (ret == OS_TIMEOUT) {
         return -OS_TIMEOUT;
     }
+
     ret = _usb_stor_inquiry(device);
-    os_mutex_post(&disk->mutex);
+    usb_h_mutex_post(host_dev);
     return ret;
 }
 /**
@@ -377,11 +412,12 @@ static int usb_stor_test_unit_ready(struct device *device)
     if (ret) {
         return ret;
     }
-    if (os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT) == OS_TIMEOUT) {
+    ret = usb_h_mutex_pend(host_dev);
+    if (ret == OS_TIMEOUT) {
         return -OS_TIMEOUT;
     }
     ret = _usb_stor_test_unit_ready(device);
-    os_mutex_post(&disk->mutex);
+    usb_h_mutex_post(host_dev);
     return ret;
 }
 
@@ -469,11 +505,12 @@ static int usb_stor_mode_sense6(struct device *device)
     if (ret) {
         return ret;
     }
-    if (os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT) == OS_TIMEOUT) {
+    ret = usb_h_mutex_pend(host_dev);
+    if (ret == OS_TIMEOUT) {
         return -OS_TIMEOUT;
     }
     ret = _usb_stor_mode_sense6(device);
-    os_mutex_post(&disk->mutex);
+    usb_h_mutex_post(host_dev);
     return ret;
 
 }
@@ -560,11 +597,12 @@ static int usb_stor_request_sense(struct device *device)
     if (ret) {
         return ret;
     }
-    if (os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT) == OS_TIMEOUT) {
+    ret = usb_h_mutex_pend(host_dev);
+    if (ret == OS_TIMEOUT) {
         return -OS_TIMEOUT;
     }
     ret = _usb_stor_request_sense(device);
-    os_mutex_post(&disk->mutex);
+    usb_h_mutex_post(host_dev);
     return ret;
 }
 
@@ -664,11 +702,12 @@ static int usb_stor_read_capacity(struct device *device)
     if (ret) {
         return ret;
     }
-    if (os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT) == OS_TIMEOUT) {
+    ret = usb_h_mutex_pend(host_dev);
+    if (ret == OS_TIMEOUT) {
         return -OS_TIMEOUT;
     }
     ret = _usb_stor_read_capacity(device);
-    os_mutex_post(&disk->mutex);
+    usb_h_mutex_post(host_dev);
     return ret;
 }
 
@@ -763,7 +802,7 @@ __exit:
     if (disk->dev_status != DEV_CLOSE) {
         disk->dev_status = DEV_OPEN;
     }
-    log_error("%s---%d\n", __func__, __LINE__);
+    log_error("%s---%d", __func__, __LINE__);
     return 0;
 }
 static int usb_stor_read(struct device *device, void *pBuf, u32 num_lba, u32 lba)
@@ -775,17 +814,12 @@ static int usb_stor_read(struct device *device, void *pBuf, u32 num_lba, u32 lba
     if (ret) {
         return ret;
     }
-    if (os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT) == OS_TIMEOUT) {
+    ret = usb_h_mutex_pend(host_dev);
+    if (ret == OS_TIMEOUT) {
         return -OS_TIMEOUT;
     }
-    /* if (disk->dev_status == DEV_SUSPEND) {
-        if (usb_stor_resume(device) != DEV_ERR_NONE) {
-            disk->dev_status = DEV_IDLE;
-            goto __exit;
-        }
-    } */
     ret = _usb_stor_read(device, pBuf, num_lba, lba);
-    os_mutex_post(&disk->mutex);
+    usb_h_mutex_post(host_dev);
     return ret;
 }
 
@@ -913,11 +947,12 @@ static int usb_stor_write(struct device *device, void *pBuf,  u32 num_lba, u32 l
     if (ret) {
         return ret;
     }
-    if (os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT) == OS_TIMEOUT) {
+    ret = usb_h_mutex_pend(host_dev);
+    if (ret == OS_TIMEOUT) {
         return -OS_TIMEOUT;
     }
     ret = _usb_stor_write(device, pBuf, num_lba, lba);
-    os_mutex_post(&disk->mutex);
+    usb_h_mutex_post(host_dev);
     return ret;
 }
 #if ENABLE_DISK_HOTPLUG
@@ -995,13 +1030,14 @@ static void usb_stor_tick_handle(void *arg)
  */
 int usb_stor_init(struct device *device)
 {
+    log_debug("%s---%d\n", __func__, __LINE__);
     int ret = DEV_ERR_NONE;
     u32 state = 0;
     struct usb_host_device *host_dev = device_to_usbdev(device);
     struct mass_storage *disk = host_device2disk(host_dev);
     log_error("%s() disk = %x", __func__, disk);
 
-    if(!host_dev_status(host_dev)){
+    if (!host_dev_status(host_dev)) {
         return -DEV_ERR_OFFLINE;
     }
 
@@ -1020,15 +1056,6 @@ int usb_stor_init(struct device *device)
     const u32 txmaxp = usb_stor_txmaxp(disk);
     const u32 rxmaxp = usb_stor_rxmaxp(disk);
 
-    u8 *ep_buffer = usb_h_get_ep_buffer(usb_id, udisk_ep.host_epin | USB_DIR_IN);
-    usb_h_ep_config(usb_id, udisk_ep.host_epin | USB_DIR_IN, USB_ENDPOINT_XFER_BULK, 0, 0, ep_buffer, rxmaxp);
-
-
-    ep_buffer = usb_h_get_ep_buffer(usb_id, udisk_ep.host_epout | USB_DIR_OUT);
-    usb_h_ep_config(usb_id, udisk_ep.host_epout | USB_DIR_OUT, USB_ENDPOINT_XFER_BULK, 0, 0, ep_buffer, rxmaxp);
-
-    os_mutex_create(&disk->mutex);
-
     u8 lun;
     ret = get_msd_max_lun(host_dev, &lun);
     if (ret != DEV_ERR_NONE) {
@@ -1040,6 +1067,8 @@ int usb_stor_init(struct device *device)
 
 #if MULTI_DISK
     disk->lun = lun;
+#else
+    disk->cur_available_lun = 0;
 #endif
 
     int retry = 5;
@@ -1074,6 +1103,9 @@ int usb_stor_init(struct device *device)
                 if ((disk->sense.SenseKey & 0x0f) !=  NO_SENSE) {
                     if (disk->sense.SenseKey == NOT_READY) {
                         os_time_dly(30);
+                        if (disk->cur_available_lun++ == lun) {
+                            disk->cur_available_lun = 0;
+                        }
                     }
                 }
             } else {
@@ -1284,6 +1316,12 @@ int usb_msd_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 
             }
         }
     }
+    u8 *ep_buffer = usb_h_get_ep_buffer(usb_id, udisk_ep.host_epin | USB_DIR_IN);
+    usb_h_ep_config(usb_id, udisk_ep.host_epin | USB_DIR_IN, USB_ENDPOINT_XFER_BULK, 0, 0, ep_buffer, 64);
+
+
+    ep_buffer = usb_h_get_ep_buffer(usb_id, udisk_ep.host_epout | USB_DIR_OUT);
+    usb_h_ep_config(usb_id, udisk_ep.host_epout | USB_DIR_OUT, USB_ENDPOINT_XFER_BULK, 0, 0, ep_buffer, 64);
     return len;
 }
 /**
@@ -1301,30 +1339,31 @@ static int usb_stor_open(const char *name, struct device **device, void *arg)
     *device = &udisk_device;
     struct usb_host_device *host_dev = device_to_usbdev(*device);
     struct mass_storage *disk = host_device2disk(host_dev);
+    log_debug("=====================usb_stor_open===================== %d", disk->dev_status);
     if (disk->dev_status != DEV_IDLE) {
         if (disk->dev_status == DEV_CLOSE) {
             log_error("%s() fail, disconnect\n", __func__);
-            return -DEV_ERR_NOT_MOUNT; 
+            return -DEV_ERR_NOT_MOUNT;
         } else {
             return DEV_ERR_NONE;
         }
     }
-    log_info("=====================usb_stor_open=====================");
-    /* memset(&mass_stor, 0, sizeof(mass_stor)); */
+    memset(&disk->mutex, 0, sizeof(disk->mutex));
+    os_mutex_create(&disk->mutex);
     ret = usb_stor_init(*device);
     if (ret) {
         log_error("usb_stor_init err %d\n", ret);
         return -ENODEV;
     }
-    log_info("device %x", (u32)*device);
-    os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT);
+    log_debug("device %x", (u32)*device);
+    usb_h_mutex_pend(host_dev);
     if (*device) {
         log_error("mass storage dev name %s", name);
         disk->dev_status = DEV_OPEN;
-        os_mutex_post(&disk->mutex);
+        usb_h_mutex_post(host_dev);
         return DEV_ERR_NONE;
     } else {
-        os_mutex_post(&disk->mutex);
+        usb_h_mutex_post(host_dev);
         return -ENODEV;
     }
 }
@@ -1338,31 +1377,29 @@ static int usb_stor_open(const char *name, struct device **device, void *arg)
  */
 static int usb_stor_close(struct device *device)
 {
+    log_debug("%s---%d\n", __func__, __LINE__);
     struct usb_host_device *host_dev = device_to_usbdev(device);
     struct mass_storage *disk = host_device2disk(host_dev);
-    int err;
+    int ret;
     if (disk->dev_status == DEV_IDLE) {
         return 0;
     }
     log_info("=====================usb_stor_close=====================");
     if (disk) {
-#if 0
-        os_mutex_del(&disk->mutex, 0);
-        while (disk->dev_status == DEV_READ || disk->dev_status == DEV_WRITE) {
-            log_error("disk status isnot idle");
-            usb_mdelay(1);
-        }
+        log_info("=====================usb_stor_close===================== 333");
+        ret = usb_h_mutex_pend(host_dev);
+
         disk->dev_status = DEV_IDLE;
-#else
-        err = os_mutex_pend(&disk->mutex, UDISK_MUTEX_TIMEOUT);
-        if (err != OS_ERR_NONE) {
+
+        if (ret != OS_ERR_NONE) {
             log_error("disk close pend timeout!!!\n");
-            return err;
+        } else {
+            usb_h_mutex_post(host_dev);
         }
-        disk->dev_status = DEV_IDLE;
-        os_mutex_post(&disk->mutex);
+        log_info("=====================usb_stor_close===================== 1222 ");
+
         os_mutex_del(&disk->mutex, 0);
-#endif
+        memset(&disk->mutex, 0, sizeof(disk->mutex));
     }
     return DEV_ERR_NONE;
 }

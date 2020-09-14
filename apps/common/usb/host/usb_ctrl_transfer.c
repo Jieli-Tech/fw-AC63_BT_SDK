@@ -127,7 +127,7 @@ static int usb_ctlXfer(struct usb_host_device *host_dev, struct ctlXfer *urb)
 
             if (reg & CSR0H_RxPktRdy) {
                 data_len = usb_read_count0(usb_id);
-                data_len = min(data_len,urb->setup.wLength);
+                data_len = min(data_len, urb->setup.wLength);
                 usb_read_ep0(usb_id, urb->buffer, data_len);;
                 urb->buffer += data_len;
                 urb->setup.wLength -= data_len;
@@ -529,5 +529,15 @@ int usb_aoa_send_hid_event(struct usb_host_device *host_dev, u16 value, const u8
                            0,
                            (u8 *)pbuf,
                            len);
+}
+int get_ms_extended_compat_id(struct usb_host_device *host_dev,  u8 *buffer)
+{
+    return usb_control_msg(host_dev,
+                           0x01,
+                           USB_DIR_IN | USB_RECIP_DEVICE | USB_TYPE_VENDOR,
+                           0x0000,
+                           4,
+                           buffer,
+                           0x28);
 }
 #endif

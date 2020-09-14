@@ -4,8 +4,12 @@
 
 #if RCSP_BTMATE_EN
 #include "rcsp_user_update.h"
+#include "rcsp_bluetooth.h"
 #elif RCSP_ADV_EN
 #include "rcsp_adv_user_update.h"
+#include "rcsp_adv_bluetooth.h"
+#elif SMART_BOX_EN
+#include "smartbox_adv_bluetooth.h"
 #endif
 
 #if RCSP_ADV_EN || RCSP_BTMATE_EN || SMART_BOX_EN
@@ -185,6 +189,12 @@ typedef struct _md5_cfg_t {
     u8 data[32];
 } md5_cfg_t;
 
+typedef struct _sdk_type_cfg_t {
+    u16 crc;
+    u16 len;
+    u8 data;
+} sdk_type_cfg_t;
+
 typedef struct _ex_cfg_t {
     adv_data_cfg_t adv_data_cfg;
     adv_data_cfg_t scan_rsp_cfg;
@@ -208,6 +218,7 @@ typedef struct _ex_cfg_t {
 #endif
     pid_vid_cfg_t       pid_vid_cfg;
     md5_cfg_t           md5_cfg;
+    sdk_type_cfg_t      sdk_type_cfg;
 } ex_cfg_t;
 
 typedef union _ex_cfg_item_u {
@@ -234,6 +245,7 @@ typedef union _ex_cfg_item_u {
     common_cfg_t common_cfg;
     pid_vid_cfg_t       pid_vid_cfg;
     md5_cfg_t           md5_cfg;
+    sdk_type_cfg_t      sdk_type_cfg;
 } ex_cfg_item_u;
 
 typedef struct _cfg_item_head_t {
@@ -581,6 +593,11 @@ static const cfg_item_attr_t cfg_item_attr_tab[] = {
         MEMBER_SIZE_OF_STRUCT(ex_cfg_t, md5_cfg),
         MEMBER_SIZE_OF_STRUCT(ex_cfg_t, md5_cfg.data),
         MEMBER_OFFSET_OF_STRUCT(ex_cfg_t, md5_cfg),
+    },
+    [CFG_ITEM_SDK_TYPE] = {
+        MEMBER_SIZE_OF_STRUCT(ex_cfg_t, sdk_type_cfg),
+        MEMBER_SIZE_OF_STRUCT(ex_cfg_t, sdk_type_cfg.data),
+        MEMBER_OFFSET_OF_STRUCT(ex_cfg_t, sdk_type_cfg),
     }
 };
 
@@ -1088,8 +1105,13 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
     custom_cfg_item_write(CFG_ITEM_EDR_ADDR, bt_get_mac_addr(), sizeof(addr));
 
     //CFG_ITEM_PIN_CODE
+#if (BT_CONNECTION_VERIFY)
+    u8 pin_code[] = {BT_CONNECTION_VERIFY, VER_INFO_EXT_COUNT, 0, 0};
+    u16 pin_code_len = sizeof(pin_code);
+#else
     u8 *pin_code = (u8 *)bt_get_pin_code();
     u16 pin_code_len = strlen(bt_get_pin_code());
+#endif
     custom_cfg_item_write(CFG_ITEM_PIN_CODE, pin_code, pin_code_len);
 
     //CFG_ITEM_BLE_ADDR
@@ -1149,7 +1171,8 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
     }
     custom_cfg_item_write(CFG_ITEM_MD5, md5, sizeof(md5));
 
-
+    u8 sdk_type = RCSP_SDK_TYPE;
+    custom_cfg_item_write(CFG_ITEM_SDK_TYPE, &sdk_type, sizeof(sdk_type));
     return 0;
 }
 

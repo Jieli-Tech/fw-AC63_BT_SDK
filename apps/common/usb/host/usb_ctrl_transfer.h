@@ -61,6 +61,7 @@ int usb_switch2aoa(struct usb_host_device *host_dev);
 int usb_aoa_register_hid(struct usb_host_device *host_dev, u16 value, u16 index);
 int usb_aoa_set_hid_report_desc(struct usb_host_device *host_dev, u16 value, u16 offset, const char *pbuf, u32 len);
 int usb_aoa_send_hid_event(struct usb_host_device *host_dev, u16 value, const u8 *pbuf, u32 len);
+int get_ms_extended_compat_id(struct usb_host_device *host_dev,  u8 *buffer);
 
 
 #endif

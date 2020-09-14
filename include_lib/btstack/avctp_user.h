@@ -3,6 +3,8 @@
 
 
 #include "typedef.h"
+#include "btstack_typedef.h"
+
 
 
 ///***注意：该文件的枚举与库编译密切相关，主要是给用户提供调用所用。用户不能自己在中间添加值。*/
@@ -29,6 +31,8 @@ typedef enum {
     USER_CTRL_START_CONNEC_VIA_ADDR,
     //通过指定地址手动回连，该地址是最后一个断开设备的地址
     USER_CTRL_START_CONNEC_VIA_ADDR_MANUALLY,
+    //通过地址去连接spp，如果知道地址想去连接使用该接口
+    USER_CTRL_START_CONNEC_SPP_VIA_ADDR,
 
     //断开连接，断开当前所有蓝牙连接
     USER_CTRL_DISCONNECTION_HCI,
@@ -366,6 +370,10 @@ typedef enum {
 #define SYS_BT_EVENT_TYPE_CON_STATUS (('C' << 24) | ('O' << 16) | ('N' << 8) | '\0')
 #define SYS_BT_EVENT_TYPE_HCI_STATUS (('H' << 24) | ('C' << 16) | ('I' << 8) | '\0')
 
+
+
+
+
 #define    SPP_CH       0x01
 #define    HFP_CH       0x02
 #define    A2DP_CH      0x04    //media
@@ -499,6 +507,7 @@ extern u8 get_esco_coder_busy_flag();
 extern void tws_api_set_connect_aa(int);
 extern void tws_le_acc_generation_init(void);
 extern void tws_api_clear_connect_aa();
+extern void clear_sniff_cnt(void);
 
 #define BD_CLASS_WEARABLE_HEADSET	0x240404/*ios10.2 display headset icon*/
 #define BD_CLASS_HANDS_FREE			0x240408/*ios10.2 display bluetooth icon*/
@@ -508,6 +517,13 @@ extern void tws_api_clear_connect_aa();
 #define BD_CLASS_CAR_AUDIO			0x240420
 #define BD_CLASS_HIFI_AUDIO			0x240428
 #define BD_CLASS_PHONEBOOK			0x340404
+#define BD_CLASS_PAN_DEV            0X020118
+
+
+#define BD_CLASS_MOUSE              0x002580
+#define BD_CLASS_KEYBOARD           0x002540
+#define BD_CLASS_KEYBOARD_MOUSE     0x0025C0
+
 extern void __change_hci_class_type(u32 class);
 extern void __set_support_msbc_flag(bool flag);
 extern void __set_support_aac_flag(bool flag);
@@ -527,6 +543,14 @@ extern void __set_auto_pause_flag(u8 flag);
 extern void __set_music_break_in_flag(u8 flag);
 /*高级音频打断检测数据包阈值设置*/
 extern void __set_a2dp_sound_detect_counter(u8 sound_come, u8 sound_go);
+/*pan的控制接口和发数接口,
+  addr指定就按指定的查找，NULL就默认正在使用那个
+  cmd 下面定义的宏用户可以使用
+  param 传参数需要的值或者data包的长度
+  data 传的是要发数据的包指针
+ */
+#define USER_PAN_CMD_SEND_DATA  0xff
+int user_pan_send_cmd(u8 *addr, u32 cmd, u32 param, u8 *data);
 
 enum {
     BD_ESCO_IDLE = 0,		/*当前没有设备通话中*/
@@ -576,5 +600,17 @@ typedef struct {
 
 extern u16 sdp_create_diy_device_ID_service(u8 *buffer, u16 buffer_size);
 extern u16 sdp_create_diy_hid_service(u8 *buffer, u16 buffer_size, const u8 *hid_descriptor, u16 hid_descriptor_size);
+u8 get_remote_vol_sync(void);
+void set_start_search_spp_device(u8 spp);
+
+
+u8 restore_remote_device_info_opt(bd_addr_t *mac_addr, u8 conn_device_num, u8 id);
+/*remote dev type*/
+enum {
+    REMOTE_DEV_UNKNOWN  = 0,
+    REMOTE_DEV_ANDROID		,
+    REMOTE_DEV_IOS			,
+};
+u8 remote_dev_company_ioctrl(bd_addr_t dev_addr, u8 op_flag, u8 value);
 
 #endif

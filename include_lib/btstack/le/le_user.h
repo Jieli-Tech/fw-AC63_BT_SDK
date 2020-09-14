@@ -4,6 +4,7 @@
 
 #include "typedef.h"
 #include "btstack/btstack_typedef.h"
+#include "ble_api.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -84,20 +85,8 @@ extern "C" {
         int (*opt_comm_send)(u16 handle, u8 *data, u16 len, u8 att_op_type);
     };
 
-    void ble_get_client_operation_table(struct ble_client_operation_t **interface_pt);
+    struct ble_client_operation_t *ble_get_client_operation_table(void);
 
-
-
-    typedef struct {
-        //base info
-        uint8_t   type;                 ///< See <btstack/hci_cmds.h> SM_...
-        uint8_t   size;
-        hci_con_handle_t con_handle;
-        uint8_t   addr_type;
-        uint8_t   address[6];
-        //extend info
-        uint8_t   data[4];
-    } sm_just_event_t;
 
     static inline uint32_t ble_min(uint32_t a, uint32_t b)
     {

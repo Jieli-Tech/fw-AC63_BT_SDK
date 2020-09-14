@@ -173,6 +173,10 @@ extern void cfg_file_parse(u8 idx);
 void board_init()
 {
     board_power_init();
+
+    //封装是vbat和vddio绑一起的，要在adc初始化之前调用这个函数
+    adc_set_vbat_vddio_tieup(1);
+
     adc_vbg_init();
     adc_init();
     cfg_file_parse(0);
@@ -190,6 +194,7 @@ void board_init()
 enum {
     PORTA_GROUP = 0,
     PORTB_GROUP,
+    PORTC_GROUP,
 };
 
 static void port_protect(u16 *port_group, u32 port_num)
@@ -205,8 +210,13 @@ static void close_gpio(void)
 {
     u16 port_group[] = {
         [PORTA_GROUP] = 0x1ff,
-        [PORTB_GROUP] = 0x3ff &(~BIT(1)),//keep pb1
+        [PORTB_GROUP] = 0x3ff,
+        [PORTC_GROUP] = 0x3ff,//
     };
+
+#if TCFG_ADKEY_ENABLE
+    port_protect(port_group,TCFG_ADKEY_PORT);
+#endif /* */
 
 #if TCFG_IOKEY_ENABLE
     port_protect(port_group, TCFG_IOKEY_POWER_ONE_PORT);

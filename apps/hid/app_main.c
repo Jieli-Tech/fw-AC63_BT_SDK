@@ -62,7 +62,7 @@ void app_main()
     update = update_result_deal();
 #endif
 
-    printf(">>>>>>>>>>>>>>>>>>>>>>>>>app_main...\n");
+    printf(">>>>>>>>>>>>>>>>>app_main...\n");
     init_intent(&it);
 
 #if (CONFIG_APP_MOUSE)
@@ -74,11 +74,17 @@ void app_main()
 #elif(CONFIG_APP_KEYBOARD)
     it.name = "hid_key";
     it.action = ACTION_HID_MAIN;
+#elif(CONFIG_APP_STANDARD_KEYBOARD)
+    it.name = "hid_key";
+    it.action = ACTION_HID_MAIN;
+#elif(CONFIG_APP_KEYPAGE)
+    it.name = "keypage";
+    it.action = ACTION_KEYPAGE;
 #else
-	ASSERT(0,"no app!!!");
+    ASSERT(0, "no app!!!");
 #endif
 
-	log_info("run app>>>%s",it.name);
+    log_info("run app>>>%s", it.name);
 
     start_app(&it);
 }

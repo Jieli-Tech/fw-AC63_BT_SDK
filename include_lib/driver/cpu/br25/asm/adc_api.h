@@ -95,7 +95,7 @@ u8 get_wvddio_aims_level(u16 aims_mv);
 
 void pmu_voltage_dump(void);
 
-void check_pmu_voltage(void);
+void check_pmu_voltage(u8 tieup);
 
 
 

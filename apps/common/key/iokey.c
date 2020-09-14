@@ -198,6 +198,7 @@ u8 io_get_key_value(void)
 #endif
         if (iokey_filter_hook(read_value)) {
 #ifdef TCFG_IOKEY_TIME_REDEFINE
+            extern struct key_driver_para iokey_scan_user_para;
             iokey_scan_user_para.filter_cnt = 0;
             iokey_scan_user_para.press_cnt = 0;
             iokey_scan_user_para.click_cnt = 0;

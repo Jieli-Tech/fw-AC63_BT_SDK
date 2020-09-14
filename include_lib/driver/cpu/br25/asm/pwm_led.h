@@ -23,8 +23,10 @@
  * 	LED各个效果可供配置以下参数, 请按照参数后面的注释说明的范围进行配置
  */
 
-//#define PWM_LED_TWO_IO_SUPPORT					//定义该宏会支持两个IO推灯模式, 默认关闭
+#define PWM_LED_NEW_FORMAT_EN				1
+#define PWM_LED_TWO_IO_SUPPORT					//定义该宏会支持两个IO推灯模式, 默认关闭
 
+#if (!PWM_LED_NEW_FORMAT_EN)
 #define CFG_LED0_LIGHT						100  	//10 ~ 500, 值越大, (红灯)亮度越高
 #define CFG_LED1_LIGHT						100  	//10 ~ 500, 值越大, (蓝灯)亮度越高
 
@@ -45,7 +47,7 @@
 #define CFG_LED0_BREATH_BRIGHT 				300			//呼吸亮度, 范围: 0 ~ 500
 #define CFG_LED1_BREATH_BRIGHT 				300			//呼吸亮度, 范围: 0 ~ 500
 #define CFG_LED_BREATH_BLINK_TIME 			1000		//灭灯延时, 单位ms
-
+#endif
 
 enum pwm_led_clk_source {
     PWM_LED_CLK_RESERVED0,  //PWM_LED_CLK_OSC32K, no use
@@ -94,6 +96,48 @@ enum pwm_led_mode {
     PWM_LED_NULL = 0xFF,
 };
 
+/**************************************************
+ *		pwm led para
+ * ***********************************************/
+typedef struct {
+    u16 led0_bright;//led0_bright, LED0亮度: 0 ~ 500
+    u16 led1_bright;//led1_bright, LED1亮度: 0 ~ 500
+} pwm_led_on_para;
+
+typedef struct {
+    u16 led0_bright;//led0_bright: led0亮度(0 ~ 500),
+    u16 led1_bright;//led1_bright: led1亮度(0 ~ 500),
+    u32 period;//period: 闪灯周期(ms), 多少ms闪一下(100 ~ 20000), 100ms - 20S,
+    u32 start_light_time;//start_light_time: 在周期中开始亮灯的时间, -1: 周期最后亮灯, 默认填-1即可,
+    u32 light_time;//light_time: 灯亮持续时间,
+} pwm_led_one_flash_para;
+
+typedef struct {
+    u16 led0_bright;//led0_bright: led0亮度,
+    u16 led1_bright;//led1_bright: led1亮度,
+    u32 period;//period: 闪灯周期(ms), 多少ms闪一下
+    u32 first_light_time;//first_light_time: 第一次亮灯持续时间,
+    u32 gap_time;//gap_time: 两次亮灯时间间隔,
+    u32 second_light_time;//second_light_time: 第二次亮灯持续时间,
+} pwm_led_double_flash_para;
+
+typedef struct {
+    u16 breathe_time;//breathe_time: 呼吸周期(灭->最亮->灭), 设置范围: 500ms以上;
+    u16 led0_bright;//led0_bright: led0呼吸到最亮的亮度(0 ~ 500);
+    u16 led1_bright;//led1_bright: led1呼吸到最亮的亮度(0 ~ 500);
+    u32 led0_light_delay_time;//led0_light_delay_time: led0最高亮度延时(0 ~ 100ms);
+    u32 led1_light_delay_time;//led1_light_delay_time: led1最高亮度延时(0 ~ 100ms);
+    u32 led_blink_delay_time;//led_blink_delay_time: led0和led1灭灯延时(0 ~ 20000ms), 0 ~ 20S;
+} pwm_led_breathe_para;
+
+typedef union {
+    pwm_led_on_para on;
+    pwm_led_one_flash_para one_flash;
+    pwm_led_double_flash_para double_flash;
+    pwm_led_breathe_para breathe;
+} pwm_led_para;
+/**************************************************/
+
 struct pwm_led_two_io_mode {
     u8 two_io_mode_enable;
     u8 led0_pin;
@@ -134,6 +178,7 @@ void pwm_led_init(const struct led_platform_data *user_data);
 
 /********************** LED 闪烁模式切换 ************************/
 void pwm_led_mode_set(u8 fre_mode);
+void pwm_led_mode_set_with_para(u8 display, pwm_led_para para);
 
 /*****************************************************************
 	LED时钟源切换, support:
@@ -232,7 +277,28 @@ void pwm_led_register_irq(void (*func)(void));
  */
 void _pwm_led_on_display(u8 led_index, u16 led0_bright, u16 led1_bright);
 
+struct pwm_cycle_pattern {
+    u32 cycle_ms;         //PWM产生的一个亮灭周期，单位ms
+    u32 holdtime1_ms;  	  //初始状态保持时间,等于0时接近于PWM周期从亮灯开始
+    u32 holdtime2_ms;     //第一次反转后状态保持时间,等于0时关闭
+    u32 holdtime3_ms;     //第二次反转后状态保持时间,等于0时关闭
+    u32 holdtime4_ms;     //第三次反转后状态保持时间,等于0时关闭
+    u16 led_L_bright;     //低电平灯亮度设置
+    u16 led_H_bright;     //高电平灯亮度设置
+    u8  led_type;         //LED类型 1：高亮   0：低亮
+    u8  shift_duty;       //每隔shift_duty个周期后输出电平取反，亮度设置不变，也就是说当前灯的图案会切换到两外一个灯上，用于周期变色处理,等于0时功能关闭
+};
 
+struct pwm_breathe_pattern {
+    u32 breathe_interval; //呼吸间隔，LED处于灭灯状态,PWM初始化后经过一个呼吸间隔后才开始第一次呼吸动作。
+    u16 breathe_time;     //呼吸时间(灭->最亮->灭), 设置范围: 500ms以上;
+    u32 led_L_holdtime;   //低电平灯最高亮度保持时间,呼吸时间-保持时间=渐变时间	(0 ~ 100ms);
+    u32 led_H_holdtime;   //高电平灯最高亮度保持时间,呼吸时间-保持时间=渐变时间	(0 ~ 100ms);
+    u16 led_L_bright;     //低电平灯呼吸到最亮的亮度设置(0 ~ 500);
+    u16 led_H_bright;     //高电平灯呼吸到最亮的亮度设置(0 ~ 500);
+    u8  led_type;         //LED类型 1：高亮   0：低亮
+    u8  shift_duty;       //每隔shift_duty个周期后输出电平取反，亮度设置不变，也就是说当前灯的呼吸效果会切换到两外一个灯上，用于周期变色处理,等于0时功能关闭
+};
 #endif //_PWM_LED_H_
 
 

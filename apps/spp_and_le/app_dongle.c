@@ -40,30 +40,112 @@
 
 #if CONFIG_APP_DONGLE
 
+//2.4G模式: 0---ble, 非0---2.4G配对码
+#define CFG_RF_24G_CODE_ID       (0) //<=24bits
+/* #define CFG_RF_24G_CODE_ID       (0x23) //<=24bits */
+
+//等待连接断开时间
 #define WAIT_DISCONN_TIME_MS     (300)
 
-extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
-extern const u8 *bt_get_mac_addr();
-extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 void sys_auto_sniff_controle(u8 enable, u8 *addr);
 void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 
 static u8 is_app_active = 0;
 
+//描述符定义,匹配hogp profile定义,input的report id 可用范围 1~3
+//---------------------------------------------------------------------
+static const u8 sHIDReportDesc[] = {
+    0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+    0x09, 0x02,        // Usage (Mouse)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x01,        //   Report ID (1)
+    0x09, 0x01,        //   Usage (Pointer)
+    0xA1, 0x00,        //   Collection (Physical)
+    0x95, 0x05,        //     Report Count (5)
+    0x75, 0x01,        //     Report Size (1)
+    0x05, 0x09,        //     Usage Page (Button)
+    0x19, 0x01,        //     Usage Minimum (0x01)
+    0x29, 0x05,        //     Usage Maximum (0x05)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x25, 0x01,        //     Logical Maximum (1)
+    0x81, 0x02,        //     Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x95, 0x01,        //     Report Count (1)
+    0x75, 0x03,        //     Report Size (3)
+    0x81, 0x01,        //     Input (Const,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x75, 0x08,        //     Report Size (8)
+    0x95, 0x01,        //     Report Count (1)
+    0x05, 0x01,        //     Usage Page (Generic Desktop Ctrls)
+    0x09, 0x38,        //     Usage (Wheel)
+    0x15, 0x81,        //     Logical Minimum (-127)
+    0x25, 0x7F,        //     Logical Maximum (127)
+    0x81, 0x06,        //     Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x05, 0x0C,        //     Usage Page (Consumer)
+    0x0A, 0x38, 0x02,  //     Usage (AC Pan)
+    0x95, 0x01,        //     Report Count (1)
+    0x81, 0x06,        //     Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              //   End Collection
+    0x85, 0x02,        //   Report ID (2)
+    0x09, 0x01,        //   Usage (Consumer Control)
+    0xA1, 0x00,        //   Collection (Physical)
+    0x75, 0x0C,        //     Report Size (12)
+    0x95, 0x02,        //     Report Count (2)
+    0x05, 0x01,        //     Usage Page (Generic Desktop Ctrls)
+    0x09, 0x30,        //     Usage (X)
+    0x09, 0x31,        //     Usage (Y)
+    0x16, 0x01, 0xF8,  //     Logical Minimum (-2047)
+    0x26, 0xFF, 0x07,  //     Logical Maximum (2047)
+    0x81, 0x06,        //     Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              //   End Collection
+    0xC0,              // End Collection
+    0x05, 0x0C,        // Usage Page (Consumer)
+    0x09, 0x01,        // Usage (Consumer Control)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x03,        //   Report ID (3)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x01,        //   Logical Maximum (1)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x01,        //   Report Count (1)
+    0x09, 0xCD,        //   Usage (Play/Pause)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x0A, 0x83, 0x01,  //   Usage (AL Consumer Control Configuration)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0xB5,        //   Usage (Scan Next Track)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0xB6,        //   Usage (Scan Previous Track)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0xEA,        //   Usage (Volume Decrement)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0xE9,        //   Usage (Volume Increment)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x0A, 0x25, 0x02,  //   Usage (AC Forward)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x0A, 0x24, 0x02,  //   Usage (AC Back)
+    0x81, 0x06,        //   Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0x05,        //   Usage (Headphone)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x26, 0xFF, 0x00,  //   Logical Maximum (255)
+    0x75, 0x08,        //   Report Size (8)
+    0x95, 0x02,        //   Report Count (2)
+    0xB1, 0x02,        //   Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0xC0,              // End Collection
+// 149 bytes
+};
+
+
 //---------------------------------------------------------------------
 //指定搜索uuid
 static const target_uuid_t  dongle_search_ble_uuid_table[] = {
-    {
-        .services_uuid16 = 0x1800,
-        .characteristic_uuid16 = 0x2a00,
-        .opt_type = ATT_PROPERTY_READ,
-    },
+    /* { */
+    /* .services_uuid16 = 0x1800, */
+    /* .characteristic_uuid16 = 0x2a00, */
+    /* .opt_type = ATT_PROPERTY_READ, */
+    /* }, */
 
-    {
-        .services_uuid16 = 0x1812,
-        .characteristic_uuid16 = 0x2a4b,
-        .opt_type = ATT_PROPERTY_READ,
-    },
+    /* { */
+    /* .services_uuid16 = 0x1812, */
+    /* .characteristic_uuid16 = 0x2a4b, */
+    /* .opt_type = ATT_PROPERTY_READ, */
+    /* }, */
 
     {
         .services_uuid16 = 0x1812,
@@ -85,26 +167,29 @@ static const target_uuid_t  dongle_search_ble_uuid_table[] = {
 
 };
 
-static u8 get_report_map[256];
-static u8 get_report_map_size = 0;
+//report id 1~3 对应的notify handle
+static const u16 mouse_notify_handle[3] = {0x0027, 0x002b, 0x002f};
+/* static u8 get_report_map[256]; */
+/* static u8 get_report_map_size = 0; */
 static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *search_uuid)
 {
-    log_info("report_data:type %02x,handle %04x,offset %d,len %d", report_data->packet_type,
-             report_data->value_handle, report_data->value_offset, report_data->blob_length);
+    /* log_info("report_data:type %02x,handle %04x,offset %d,len %d", report_data->packet_type, */
+    /* report_data->value_handle, report_data->value_offset, report_data->blob_length); */
+
     log_info_hexdump(report_data->blob, report_data->blob_length);
 
-    if (search_uuid == NULL) {
-        log_info("not_match handle");
-        return;
-    }
+    /* if (search_uuid == NULL) { */
+    /* log_info("not_match handle"); */
+    /* return; */
+    /* } */
 
     switch (report_data->packet_type) {
     case GATT_EVENT_NOTIFICATION: { //notify
         u8 packet[4];
-        if (report_data->value_handle == 0x0027) {
-            packet[0] = 1;
-        } else if (report_data->value_handle == 0x002b) {
-            packet[0] = 2;
+        if (report_data->value_handle == mouse_notify_handle[0]) {
+            packet[0] = 1;//传入report id
+        } else if (report_data->value_handle == mouse_notify_handle[1]) {
+            packet[0] = 2;//传入report id
         }
         memcpy(&packet[1], report_data->blob, report_data->blob_length);
         hid_send_data(packet, sizeof(packet));
@@ -116,15 +201,15 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
         break;
 
     case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT://read long
-        if (search_uuid->characteristic_uuid16 == 0x2a4b) {
-            log_info("report_map");
-            if (0 == report_data->value_offset) {
-                get_report_map_size = report_data->blob_length;
-            } else {
-                get_report_map_size += report_data->blob_length;
-            }
-            memcpy(&get_report_map[report_data->value_offset], report_data->blob, report_data->blob_length);
-        }
+        /* if (search_uuid->characteristic_uuid16 == 0x2a4b) { */
+        /* log_info("report_map"); */
+        /* if (0 == report_data->value_offset) { */
+        /* get_report_map_size = report_data->blob_length; */
+        /* } else { */
+        /* get_report_map_size += report_data->blob_length; */
+        /* } */
+        /* memcpy(&get_report_map[report_data->value_offset], report_data->blob, report_data->blob_length); */
+        /* } */
         break;
 
     default:
@@ -133,22 +218,70 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
 }
 
 static struct ble_client_operation_t *ble_client_api;
-static const u8 dongle_remoter_name[] = "AC630N_1(BLE)";//"AC630N_HID(BLE)";//"MiMouse";//
-static const client_conn_cfg_t dongle_conn_config = {
+/* static const u8 dongle_remoter_name1[] = "AC630N_HIDTEST(BLE)";// */
+static const u8 dongle_remoter_name1[] = "AC696X_1mx(BLE)";//
+static const u8 dongle_remoter_name2[] = "AC630N_HID123(BLE)";//
+
+static const client_match_cfg_t match_dev01 = {
     .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
-    .compare_data_len = sizeof(dongle_remoter_name) - 1, //去结束符
-    .compare_data = dongle_remoter_name,
+    .compare_data_len = sizeof(dongle_remoter_name1) - 1, //去结束符
+    .compare_data = dongle_remoter_name1,
+    .bonding_flag = 0,//不绑定
+};
+
+static const client_match_cfg_t match_dev02 = {
+    .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
+    .compare_data_len = sizeof(dongle_remoter_name2) - 1, //去结束符
+    .compare_data = dongle_remoter_name2,
+    .bonding_flag = 1,//绑定
+};
+
+static const u16 mouse_ccc_value = 0x0001;
+static void dongle_enable_notify_ccc(void)
+{
+    ble_client_api->opt_comm_send(mouse_notify_handle[0] + 1, &mouse_ccc_value, 2, ATT_OP_WRITE);
+    ble_client_api->opt_comm_send(mouse_notify_handle[1] + 1, &mouse_ccc_value, 2, ATT_OP_WRITE);
+    ble_client_api->opt_comm_send(mouse_notify_handle[2] + 1, &mouse_ccc_value, 2, ATT_OP_WRITE);
+}
+
+static void dongle_event_callback(le_client_event_e event, u8 *packet, int size)
+{
+    switch (event) {
+    case CLI_EVENT_MATCH_DEV: {
+        client_match_cfg_t *match_dev = packet;
+        log_info("match_name:%s\n", match_dev->compare_data);
+    }
+    break;
+
+    case CLI_EVENT_SEARCH_PROFILE_COMPLETE:
+        dongle_enable_notify_ccc();
+        break;
+
+    case CLI_EVENT_CONNECTED:
+    case CLI_EVENT_DISCONNECT:
+    default:
+        break;
+    }
+}
+
+
+static const client_conn_cfg_t dongle_conn_config = {
+    .match_dev_cfg[0] = &match_dev01,
+    .match_dev_cfg[1] = &match_dev02,
+    .match_dev_cfg[2] = NULL,
     .report_data_callback = ble_report_data_deal,
-    .search_uuid_cnt = (sizeof(dongle_search_ble_uuid_table) / sizeof(target_uuid_t)),
-    .search_uuid_table = dongle_search_ble_uuid_table,
+    .search_uuid_cnt = 0, //配置不搜索profile，加快回连速度
+    /* .search_uuid_cnt = (sizeof(dongle_search_ble_uuid_table) / sizeof(target_uuid_t)), */
+    /* .search_uuid_table = dongle_search_ble_uuid_table, */
+    .security_en = 1,
+    .event_callback = dongle_event_callback,
 };
 
 static void dongle_ble_config_init(void)
 {
-#if TCFG_USER_BLE_ENABLE
-    ble_get_client_operation_table(&ble_client_api);
+    ble_client_api = ble_get_client_operation_table();
     ble_client_api->init_config(0, &dongle_conn_config);
-#endif
+    /* client_clear_bonding_info();//for test */
 }
 
 //---------------------------------------------------------------------
@@ -187,12 +320,12 @@ static void bt_function_select_init()
         printf_buf((void *)bt_get_mac_addr(), 6);
         printf_buf((void *)tmp_ble_addr, 6);
         /* bt_set_tx_power(9);//0~9 */
+        dongle_ble_config_init();
     }
 #endif
 }
 
 
-extern void user_spp_data_handler(u8 packet_type, u16 ch, u8 *packet, u16 size);
 static void bredr_handle_register()
 {
 
@@ -211,7 +344,6 @@ static void bredr_handle_register()
     /* bt_dut_test_handle_register(bt_dut_api); */
 }
 
-extern void ble_module_enable(u8 en);
 static void app_set_soft_poweroff(void)
 {
     log_info("set_soft_poweroff\n");
@@ -247,6 +379,14 @@ static void app_start()
 
     /* 按键消息使能 */
     sys_key_event_enable();
+
+#if (TCFG_PC_ENABLE)
+    void usb_start();
+    void usb_hid_set_repport_map(const u8 * map, int size);
+    usb_hid_set_repport_map(sHIDReportDesc, sizeof(sHIDReportDesc));
+    usb_start();
+#endif
+
     /* sys_auto_shut_down_enable(); */
     /* sys_auto_sniff_controle(1, NULL); */
     /* app_timer_handle  = sys_timer_add(NULL, app_timer_handler, 500); */
@@ -461,7 +601,6 @@ static void bt_hci_event_connection(struct bt_event *bt)
     bt_wait_phone_connect_control_ext(0, 0);
 }
 
-extern void bt_get_vm_mac_addr(u8 *addr);
 static void bt_hci_event_disconnect(struct bt_event *bt)
 {
     /* #if (RCSP_BTMATE_EN && RCSP_UPDATE_EN) */
@@ -492,7 +631,6 @@ static void bt_hci_event_connection_exist(struct bt_event *bt)
 }
 
 
-extern void set_remote_test_flag(u8 own_remote_test);
 
 static int bt_hci_event_handler(struct bt_event *bt)
 {
@@ -509,7 +647,6 @@ static int bt_hci_event_handler(struct bt_event *bt)
 #if TCFG_USER_BLE_ENABLE
             //1:edr con;2:ble con;
             if (1 == bt->value) {
-                extern void bt_ble_adv_enable(u8 enable);
                 bt_ble_adv_enable(0);
             }
 #endif
@@ -617,13 +754,8 @@ static int bt_hci_event_handler(struct bt_event *bt)
 }
 
 
-extern void bredr_power_get(void);
-extern void bredr_power_put(void);
-extern void radio_set_eninv(int v);
-extern void transport_spp_init(void);
 static int bt_connction_status_event_handler(struct bt_event *bt)
 {
-
     log_info("-----------------------bt_connction_status_event_handler %d", bt->event);
 
     switch (bt->event) {
@@ -637,8 +769,7 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         /* bt_wait_phone_connect_control_ext(1, 1); */
 
 #if TCFG_USER_BLE_ENABLE
-        extern void bt_ble_init(void);
-        dongle_ble_config_init();
+        rf_set_24g_hackable_coded(CFG_RF_24G_CODE_ID);
         bt_ble_init();
 #endif
 

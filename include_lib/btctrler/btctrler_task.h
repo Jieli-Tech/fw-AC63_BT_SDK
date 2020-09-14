@@ -59,4 +59,7 @@ int btctrler_task_ready();
 
 int btctrler_task_exit();
 
+int btctrler_task_close_bredr();
+void  btctrler_task_init_bredr();
+
 #endif

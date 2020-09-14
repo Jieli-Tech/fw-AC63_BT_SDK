@@ -68,100 +68,12 @@ u8 *syscfg_ptr_read(u16 item_id, u16 *len);
 //                             用户自定义配置项[1 ~ 49]                            //
 //=================================================================================//
 #define 	CFG_USER_DEFINE_BEGIN		1
-
-#define 	VM_FM_EMITTER_FREQ			2
-#define 	VM_FM_EMITTER_DIG_VOL		3
-
-#define 	VM_MUSIC_LAST_DEV	    	4
-
-#ifdef CONFIG_CPU_BR21
-#define 	VM_WAKEUP_PND				5//用于BR21 中判断充电唤醒源
-#endif
-
-#define     VM_USB_MIC_GAIN             6
-
-#define		VM_PMU_VOLTAGE              7
-
-#define     VM_ALARM_0                 (20)
-#define     VM_ALARM_1                 (VM_ALARM_0+1)
-#define     VM_ALARM_2                 (VM_ALARM_0+2)
-#define     VM_ALARM_3                 (VM_ALARM_0+3)
-#define     VM_ALARM_4                 (VM_ALARM_0+4)
-#define     VM_ALARM_MASK              (VM_ALARM_0+5)
-
-#define     VM_ALARM_NAME_0            (VM_ALARM_0+6)
-#define     VM_ALARM_NAME_1            (VM_ALARM_0+7)
-#define     VM_ALARM_NAME_2            (VM_ALARM_0+8)
-#define     VM_ALARM_NAME_3            (VM_ALARM_0+9)
-#define     VM_ALARM_NAME_4            (VM_ALARM_0+10)
-#define     VM_FM_INFO				   (VM_ALARM_0+11)
-
-#define		CFG_RCSP_ADV_HIGH_LOW_VOL		 40
-#define     CFG_RCSP_ADV_EQ_MODE_SETTING     41
-#define     CFG_RCSP_ADV_EQ_DATA_SETTING     42
-#define     ADV_SEQ_RAND                     43
-#define     CFG_RCSP_ADV_TIME_STAMP          44
-#define     CFG_RCSP_ADV_WORK_SETTING        45
-#define     CFG_RCSP_ADV_MIC_SETTING         46
-#define     CFG_RCSP_ADV_LED_SETTING         47
-#define     CFG_RCSP_ADV_KEY_SETTING         48
-#define 	CFG_USER_DEFINE_END			     49
+#define 	CFG_USER_DEFINE_END			49
 
 //=================================================================================//
 //                             只存VM配置项[50 ~ 99]                         	   //
 //=================================================================================//
 #define 	CFG_STORE_VM_ONLY_BEGIN		50
-
-#define 	CFG_REMOTE_DB_INFO		    50
-#define 	CFG_REMOTE_DB_00			51
-#define 	CFG_REMOTE_DB_01			52
-#define 	CFG_REMOTE_DB_02			53
-#define 	CFG_REMOTE_DB_03			54
-#define 	CFG_REMOTE_DB_04			55
-#define 	CFG_REMOTE_DB_05			56
-#define 	CFG_REMOTE_DB_06			57
-#define 	CFG_REMOTE_DB_07			58
-#define 	CFG_REMOTE_DB_08			59
-#define 	CFG_REMOTE_DB_09			60
-#define 	CFG_REMOTE_DB_10			61
-#define 	CFG_REMOTE_DB_11			62
-#define 	CFG_REMOTE_DB_12			63
-#define 	CFG_REMOTE_DB_13			64
-#define 	CFG_REMOTE_DB_14			65
-#define 	CFG_REMOTE_DB_15			66
-#define 	CFG_REMOTE_DB_16			67
-#define 	CFG_REMOTE_DB_17			68
-#define 	CFG_REMOTE_DB_18			69
-#define 	CFG_REMOTE_DB_19			70
-#define 	CFG_TWS_INFO				71
-#define 	CFG_PHONE_VOL			    72
-#define 	CFG_BT_OSC_INT_INFO		    73
-#define 	CFG_FLASH_BREAKPOINT		74
-#define 	CFG_USB_BREAKPOINT		    75
-#define 	CFG_SD0_BREAKPOINT		    76
-#define 	CFG_SD1_BREAKPOINT		    77
-#define 	CFG_MUSIC_DEVICE			78
-#define 	CFG_FM_RECEIVER_INFO		79
-#define 	CFG_FM_TRANSMIT_INFO		80
-#define 	CFG_DAC_TEST_VOLT		    81
-#define 	CFG_BLE_MODE_INFO 		    82
-#define     CFG_TWS_PAIR_AA             83
-#define     CFG_TWS_CONNECT_AA          84
-#define     CFG_MUSIC_VOL               85
-#define     CFG_USER_RESET_SOURCE       86
-#define     CFG_CHARGESTORE_TWS_CHANNEL 87
-#define 	CFG_DAC_DTB					88
-#define 	CFG_MC_BIAS					89
-#define 	CFG_POR_FLAG				90
-#define 	CFG_MIC_LDO_VSEL			91
-#define 	CFG_AAP_MODE_INFO 		    92
-#define 	CFG_DAC_TRIM_INFO		    93
-#define     CFG_BT_TRIM_INFO			94
-#define     CFG_ANC_COEFF				95
-#define     CFG_PBG_MODE_INFO           96
-#define 	CFG_EARTCH_ENABLE_ID 		97
-#define     CFG_UI_SYS_INFO             98
-
 #define 	CFG_STORE_VM_ONLY_END		99
 
 //=================================================================================//
@@ -169,98 +81,70 @@ u8 *syscfg_ptr_read(u16 item_id, u16 *len);
 //		   (VM支持扩展到511)    												   //
 //=================================================================================//
 #define 	CFG_STORE_VM_BIN_BTIF_BEGIN	100
+#define 	CFG_STORE_VM_BIN_BTIF_END	(VM_ITEM_MAX_NUM - 1) //在app_cfg文件中配置128/256
 
+//==================================================================================================//
+//ID号分配方案:
+// 1) 与APP CASE 相关的ID (0 ~ 50);
+// 3) lib库保留ID(蓝牙, trim 值) (范围: 61 ~ 127); //67项
+// 4) 与app_case 扩展ID号，需要更大的ram资源(128 ~ 511);
+//==================================================================================================//
+
+//=================================================================================//
+//                             SDK库保留配置项[61 ~ 127]                           //
+//=================================================================================//
+#define 	CFG_REMOTE_DB_INFO		    61
+#define 	CFG_REMOTE_DB_00			62
+#define 	CFG_REMOTE_DB_01			63
+#define 	CFG_REMOTE_DB_02			64
+#define 	CFG_REMOTE_DB_03			65
+#define 	CFG_REMOTE_DB_04			66
+#define 	CFG_REMOTE_DB_05			67
+#define 	CFG_REMOTE_DB_06			68
+#define 	CFG_REMOTE_DB_07			69
+#define 	CFG_REMOTE_DB_08			70
+#define 	CFG_REMOTE_DB_09			71
+#define 	CFG_REMOTE_DB_10			72
+#define 	CFG_REMOTE_DB_11			73
+#define 	CFG_REMOTE_DB_12			74
+#define 	CFG_REMOTE_DB_13			75
+#define 	CFG_REMOTE_DB_14			76
+#define 	CFG_REMOTE_DB_15			77
+#define 	CFG_REMOTE_DB_16			78
+#define 	CFG_REMOTE_DB_17			79
+#define 	CFG_REMOTE_DB_18			80
+#define 	CFG_REMOTE_DB_19			81
+#define 	CFG_DAC_TEST_VOLT		    82
+#define 	CFG_BLE_MODE_INFO 		    83
+#define     CFG_TWS_PAIR_AA             84
+#define     CFG_TWS_CONNECT_AA          85
+#define     CFG_MUSIC_VOL               86
+#define     CFG_CHARGESTORE_TWS_CHANNEL 87
+#define 	CFG_DAC_DTB					88
+#define 	CFG_MC_BIAS					89
+#define 	CFG_POR_FLAG				90
+#define 	CFG_MIC_LDO_VSEL			91
+#define 	CFG_DAC_TRIM_INFO		    92
+#define     CFG_BT_TRIM_INFO			93
+#define     CFG_ANC_INFO				94
+#define 	CFG_TWS_LOCAL_ADDR			95
+#define 	CFG_TWS_REMOTE_ADDR			96
+#define     CFG_TWS_COMMON_ADDR         97
+#define     CFG_TWS_CHANNEL             98
+#define		VM_PMU_VOLTAGE              99
+#define		CFG_SYS_VOL                 100
+
+//=========== btif & cfg_tool.bin & vm ============//
 #define		CFG_BT_NAME    				101
 #define     CFG_BT_MAC_ADDR             102
-#define		CFG_DEFAULT_VOL_ID  		103
-#define		CFG_SYS_VOL                 104
-#define		CFG_SYS_EQ					105
-#define		CFG_PC_SPK_VOL				106
-#define		CFG_PC_MIC_VOL				107
-#define 	VM_GMA_ALI_PARA				108
 #define     CFG_BT_FRE_OFFSET			110
-#define 	CFG_TWS_LOCAL_ADDR			111
-#define 	CFG_TWS_REMOTE_ADDR			112
-#define     CFG_TWS_COMMON_ADDR         113
-#define     CFG_TWS_CHANNEL             114
-#define 	VM_DMA_RAND					115
-#define 	VM_GMA_MAC					116
-#define 	VM_TME_AUTH_COOKIE			116
+#define 	VM_GMA_ALI_PARA				111
+#define 	VM_DMA_RAND					112
+#define 	VM_GMA_MAC					113
+#define 	VM_TME_AUTH_COOKIE			114
+#define     VM_UPDATE_FLAG              115
 
-#if (VM_ITEM_MAX_NUM > 128)
-#define		CFG_FLASH_BREAKPOINT0		117
-#define		CFG_FLASH_BREAKPOINT1		118
-#define		CFG_FLASH_BREAKPOINT2		119
-#define		CFG_FLASH_BREAKPOINT3		120
-#define		CFG_FLASH_BREAKPOINT4		121
-#define		CFG_FLASH_BREAKPOINT5		122
-#define		CFG_FLASH_BREAKPOINT6		123
-#define		CFG_FLASH_BREAKPOINT7		124
-#define		CFG_FLASH_BREAKPOINT8		125
-#define		CFG_FLASH_BREAKPOINT9		126
-
-#define 	CFG_USB_BREAKPOINT0			127
-#define 	CFG_USB_BREAKPOINT1			128
-#define 	CFG_USB_BREAKPOINT2			129
-#define 	CFG_USB_BREAKPOINT3			130
-#define 	CFG_USB_BREAKPOINT4			131
-#define 	CFG_USB_BREAKPOINT5			132
-#define 	CFG_USB_BREAKPOINT6			133
-#define 	CFG_USB_BREAKPOINT7			134
-#define 	CFG_USB_BREAKPOINT8			135
-#define 	CFG_USB_BREAKPOINT9			136
-
-
-#define 	CFG_SD0_BREAKPOINT0		    137
-#define 	CFG_SD0_BREAKPOINT1		    138
-#define 	CFG_SD0_BREAKPOINT2		    139
-#define 	CFG_SD0_BREAKPOINT3		    140
-#define 	CFG_SD0_BREAKPOINT4		    141
-#define 	CFG_SD0_BREAKPOINT5		    142
-#define 	CFG_SD0_BREAKPOINT6		    143
-#define 	CFG_SD0_BREAKPOINT7		    144
-#define 	CFG_SD0_BREAKPOINT8		    145
-#define 	CFG_SD0_BREAKPOINT9		    146
-
-
-#define 	CFG_SD1_BREAKPOINT0		    147
-#define 	CFG_SD1_BREAKPOINT1		    148
-#define 	CFG_SD1_BREAKPOINT2		    149
-#define 	CFG_SD1_BREAKPOINT3		    150
-#define 	CFG_SD1_BREAKPOINT4		    151
-#define 	CFG_SD1_BREAKPOINT5		    152
-#define 	CFG_SD1_BREAKPOINT6		    153
-#define 	CFG_SD1_BREAKPOINT7		    154
-#define 	CFG_SD1_BREAKPOINT8		    155
-#define 	CFG_SD1_BREAKPOINT9		    156
-
-#define     CFG_CHGBOX_ADDR             157
-
-#define 	CFG_REMOTE_DN_00		    158
-#define 	CFG_REMOTE_DN_01		    159
-#define 	CFG_REMOTE_DN_02		    160
-#define 	CFG_REMOTE_DN_03		    161
-#define 	CFG_REMOTE_DN_04		    162
-#define 	CFG_REMOTE_DN_05		    163
-#define 	CFG_REMOTE_DN_06		    164
-#define 	CFG_REMOTE_DN_07		    165
-#define 	CFG_REMOTE_DN_08		    166
-#define 	CFG_REMOTE_DN_09		    167
-#define 	CFG_REMOTE_DN_10		    168
-#define 	CFG_REMOTE_DN_11		    169
-#define 	CFG_REMOTE_DN_12		    170
-#define 	CFG_REMOTE_DN_13		    171
-#define 	CFG_REMOTE_DN_14		    172
-#define 	CFG_REMOTE_DN_15		    173
-#define 	CFG_REMOTE_DN_16		    174
-#define 	CFG_REMOTE_DN_17		    175
-#define 	CFG_REMOTE_DN_18		    176
-#define 	CFG_REMOTE_DN_19		    177
-
-
-#endif//(VM_ITEM_MAX_NUM > 128)
-
-#define 	CFG_STORE_VM_BIN_BTIF_END	(VM_ITEM_MAX_NUM - 1) //在app_cfg文件中配置128/256
+#define     VM_RTC_TRIM                 116
 
 //=================================================================================//
 //                   只存于sys_cfg.bin的配置项[512 ~ 700]                		   //
@@ -304,6 +188,8 @@ u8 *syscfg_ptr_read(u16 item_id, u16 *len);
 #define    	CFG_UI_TONE_STATUS_ID   	605
 #define    	CFG_KEY_MSG_ID   			606
 #define    	CFG_LRC_ID   				607
+#define    	CFG_DMS_ID   	            609
+#define    	CFG_ANC_ID   	            610
 
 //其它类配置项[651 ~ 700]
 #define 	CFG_STORE_BIN_ONLY_END		700

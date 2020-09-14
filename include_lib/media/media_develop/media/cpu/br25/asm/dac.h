@@ -5,6 +5,7 @@
 #include "generic/typedef.h"
 #include "generic/atomic.h"
 #include "os/os_api.h"
+#include "media/audio_stream.h"
 
 
 #define DAC_44_1KHZ            0
@@ -58,6 +59,14 @@
 #define DA_SOUND_RESET                  0x1
 #define DA_SOUND_WAIT_RESUME            0x2
 
+enum {
+    DAC_EVENT_START,
+    DAC_EVENT_SAMPLE_BEGIN,
+    DAC_EVENT_SAMPLE_STOP,
+    DAC_EVENT_SAMPLE_MISS_DATA,
+    DAC_EVENT_CLOSE,
+};
+
 struct dac_platform_data {
     u32 output : 4;             //DAC输出模式
     u32 ldo_volt : 4;           //DACVDD_LDO电压档选择
@@ -66,19 +75,10 @@ struct dac_platform_data {
     u32 ldo_fb_isel : 2;        //LDO负载电流选择, 0:15u, 1:48u, 2:81u, 3:114u
     u32 vcmo_en : 1;            //VCMO直推使能
     u32 keep_vcmo : 1;
-    u32 dither_type : 1;        //0: 
-    u32 dsm_clk : 1;            //0:dsm 6M dither 187.5KHz    1:dsm 12M dither 375KHz 
-    u32 vcm_speed : 1;          //0: 
-    s16 *dac_buff_addr;
-    u32 dac_buff_size;
-    u16 dac_start_ms;
-    u16 dac_max_ms;
-    void (*dac_irq_hook)(void);
-    void (*adc_irq_hook)(void);
-    void (*dac_status_hook)(u8);    //
-    int (*dac_trim_read_hook)(void *, u8);
-    int (*dac_trim_save_hook)(void *, u8);
-    void (*dac_trim_status_hook)(u8);    //
+    u32 dither_type : 1;        //0:
+    u32 dsm_clk : 1;            //0:dsm 6M dither 187.5KHz    1:dsm 12M dither 375KHz
+    u32 vcm_speed : 1;          //0:
+    u32 zero_cross_detect : 1;  //模拟增益过零检测配置
 };
 
 
@@ -92,14 +92,6 @@ struct audio_dac_trim {
     s16 right;
     s16 rear_left;
     s16 rear_right;
-};
-
-struct audio_dac_rate_info {
-    u8  sync_empty;
-    u32 buf_points_num;
-    u32 sync_points_num;
-    void *empty_priv;
-    void (*empty_handler)(void *, u8);
 };
 
 struct audio_dac_sync {
@@ -126,6 +118,14 @@ struct audio_dac_fade {
     volatile u8 ref_R_gain;
     int timer;
 };
+struct audio_dac_mix_ch {
+    u8 open;
+    u8 first_in;
+    s16 write_ptr;
+    s16 max_delay_time;
+    u16 data_size;
+    u16 dac_data_points;
+};
 
 struct audio_dac_hdl {
     struct analog_module analog;
@@ -133,14 +133,12 @@ struct audio_dac_hdl {
     struct dac_platform_data *pd;
     OS_SEM sem;
     struct audio_dac_trim trim;
-    struct audio_dac_sync sync;
-    struct audio_src_base_handle *src_base;
+    struct audio_sample_sync *sample_sync; /*样点同步句柄*/
+    struct audio_dac_mix_ch mix;
     void (*fade_handler)(u8 left_gain, u8 right_gain);
-    u8 avdd_level;
-    u8 lpf_i_level;
+    u8 inner_sync;
     volatile u8 mute;
     volatile u8 state;
-    volatile u8 agree_on;
     u8 gain_l;
     u8 gain_r;
     u8 vol_l;
@@ -157,18 +155,16 @@ struct audio_dac_hdl {
     u16 prepare_points;//未开始让DAC真正跑之前写入的PCM点数
 
     u16 irq_points;
-    int timer_count;
-    u32 timer_prd_ns;
     u8 channel_mode;
-    u8 volume_type; //系统音量类型， 0:默认调数字音量  1:默认调模拟音量
     u8 dec_channel_num;
     u8 mute_event;
 
     s16 *output_buf;
     u16 output_buf_len;
-    u8 rr_rl_channel_close;
     u8 sound_state;
+    u16 irq_timeout;
     unsigned long sound_resume_time;
+    struct audio_stream_entry entry;
 };
 
 
@@ -193,7 +189,7 @@ int audio_dac_set_buff(struct audio_dac_hdl *dac, s16 *buf, int len);
 
 int audio_dac_write(struct audio_dac_hdl *dac, void *buf, int len);
 
-int audio_dac_get_write_ptr(struct audio_dac_hdl *dac, s16 **ptr);
+s16 *audio_dac_get_write_ptr(struct audio_dac_hdl *dac, int *len);
 
 int audio_dac_update_write_ptr(struct audio_dac_hdl *dac, int len);
 
@@ -212,7 +208,12 @@ int audio_dac_set_pd_output(struct audio_dac_hdl *dac, u8 output);
 int audio_dac_set_digital_vol(struct audio_dac_hdl *dac, u16 vol);
 
 int audio_dac_set_analog_vol(struct audio_dac_hdl *dac, u16 vol);
+int audio_dac_mix_ch_get_datasize(struct audio_dac_hdl *dac);
+int audio_dac_mix_ch_open(struct audio_dac_hdl *dac, int delay_ms);
 
+int audio_dac_mix_ch_close(struct audio_dac_hdl *dac);
+
+int audio_dac_mix_write(struct audio_dac_hdl *dac, void *buf, int len);
 int audio_dac_start(struct audio_dac_hdl *dac);
 
 int audio_dac_stop(struct audio_dac_hdl *dac);
@@ -243,7 +244,6 @@ bool audio_dac_sample_rate_match(struct audio_dac_hdl *dac, u32 sample_rate);
 
 int audio_dac_sample_rate_select(struct audio_dac_hdl *dac, u32 sample_rate, u8 high);
 
-
 int audio_dac_power_off(struct audio_dac_hdl *dac);
 
 bool audio_dac_sample_rate_match(struct audio_dac_hdl *dac, u32 sample_rate);
@@ -257,61 +257,31 @@ u8 audio_dac_is_working(struct audio_dac_hdl *dac);
 void audio_dac_set_irq_time(struct audio_dac_hdl *dac, int time_ms);
 
 int audio_dac_data_time(struct audio_dac_hdl *dac);
-/*
- * 音频同步
- */
-#define AUDIO_SYNC_OUTPUT_NO_DATA       0
-#define AUDIO_SYNC_UPDATE_PCM_POSITION  1
-
-struct audio_dac_sync_param {
-    u8 channel;
-    u16 rate_in;
-    u16 rate_out;
-};
-
-u32 local_audio_us_time_set(u16 time);
-
-int local_audio_us_time(void);
-
-int audio_dac_start_time_set(void *_dac, u32 us_timeout, u32 cur_time, u8 on_off);
-
-u32 audio_dac_sync_pcm_position(struct audio_dac_hdl *dac);
-
-u32 audio_dac_buf_counter_number(struct audio_dac_hdl *dac);
-
-int audio_dac_buf_pcm_number(struct audio_dac_hdl *dac);
-
-int audio_dac_sync_open(struct audio_dac_hdl *dac);
-
-int audio_dac_sync_set_channel(struct audio_dac_hdl *dac, u8 channel);
-
-int audio_dac_set_sync_buff(struct audio_dac_hdl *dac, void *buf, int len);
-
-int audio_dac_sync_set_rate(struct audio_dac_hdl *dac, u16 in_rate, u16 out_rate);
-
-void audio_dac_set_sync_handler(struct audio_dac_hdl *dac, void *priv, int (*handler)(void *priv, u8 state));
 
 int audio_dac_get_status(struct audio_dac_hdl *dac);
 
+int audio_dac_get_max_channel(void);
+
 int audio_dac_ch_analog_gain_set(struct audio_dac_hdl *dac, u8 ch, u8 again);
+
+int audio_dac_ch_analog_gain_get(struct audio_dac_hdl *dac, u8 ch);
 
 int audio_dac_ch_digital_gain_set(struct audio_dac_hdl *dac, u8 ch, u32 dgain);
 
+int audio_dac_ch_digital_gain_get(struct audio_dac_hdl *dac, u8 ch);
+
 void audio_dac_ch_mute(struct audio_dac_hdl *dac, u8 ch, u8 mute);
-
-int audio_dac_sync_flush_data(struct audio_dac_hdl *dac);
-
-int audio_dac_sync_start(struct audio_dac_hdl *dac);
-
-int audio_dac_sync_fast_align(struct audio_dac_hdl *dac, int in_rate, int out_rate, int fast_output_points, s16 phase_diff);
-
-void audio_dac_sync_input_num_correct(struct audio_dac_hdl *dac, int num);
-
-int audio_dac_sync_stop(struct audio_dac_hdl *dac);
-
-void audio_dac_sync_close(struct audio_dac_hdl *dac);
 
 int audio_dac_set_RL_digital_vol(struct audio_dac_hdl *dac, u16 vol);
 int audio_dac_set_RR_digital_vol(struct audio_dac_hdl *dac, u16 vol);
+
+/*================================我是优雅的分割线===================================*/
+/*
+ * 这里只放DAC同步的接口
+ *
+ *===================================================================================*/
+int audio_dac_add_sample_sync(struct audio_dac_hdl *dac, void *sample_sync, u8 in_dac);
+
+int audio_dac_remove_sample_sync(struct audio_dac_hdl *dac, void *sample_sync);
 #endif
 

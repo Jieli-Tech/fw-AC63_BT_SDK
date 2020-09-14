@@ -57,6 +57,9 @@ const int config_btctler_mode        = CONFIG_BT_MODE;
 
 const int CONFIG_TWS_POWER_BALANCE_ENABLE   = 0;
 
+//固定使用正常发射功率的等级:0-使用不同模式的各自等级;1~10-固定发射功率等级
+const int config_force_bt_pwr_tab_using_normal_level  = 0;
+
 const int CONFIG_TWS_SUPER_TIMEOUT          = 2000;
 const int CONFIG_BTCTLER_QOS_ENABLE         = 1;
 const int CONFIG_A2DP_DATA_CACHE_LOW        = 120;
@@ -83,6 +86,15 @@ const u8 rx_fre_offset_adjust_enable = 1;
 
 const int config_bredr_fcc_fix_fre = 0;
 const int ble_disable_wait_enable = 1;
+
+const int config_btctler_eir_version_info_len = 0;
+
+const int config_delete_link_key          = 1;           //配置是否连接失败返回PIN or Link Key Missing时删除linkKey
+
+const int CONFIG_TEST_DUT_CODE            = 1;
+const int CONFIG_TEST_FCC_CODE            = 1;
+const int CONFIG_TEST_DUT_ONLY_BOX_CODE   = 0;
+
 /*-----------------------------------------------------------*/
 /**
  * @brief Bluetooth LE setting
@@ -90,25 +102,25 @@ const int ble_disable_wait_enable = 1;
 #if (TCFG_USER_BLE_ENABLE)
 
 #if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_ADV)
-const int config_btctler_le_features = 0;
+const uint64_t config_btctler_le_features = 0;
 const int config_btctler_le_roles    = (LE_ADV);
 
-#elif (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_CLIENT)
-const int config_btctler_le_features = LE_ENCRYPTION;
+#elif (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_CLIENT) || (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_AT_CLIENT)
+const uint64_t config_btctler_le_features = LE_ENCRYPTION;
 const int config_btctler_le_roles    = (LE_SCAN | LE_INIT | LE_MASTER);
 
 #else
-const int config_btctler_le_features = LE_ENCRYPTION;
+const uint64_t config_btctler_le_features = LE_ENCRYPTION;
 const int config_btctler_le_roles    = (LE_ADV | LE_SLAVE);
 #endif
 
 #else
 //no ble
-const int config_btctler_le_features = 0;
+const uint64_t config_btctler_le_features = 0;
 const int config_btctler_le_roles    = 0;
 #endif
 
-#if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_CLIENT)
+#if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_CLIENT) || (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_AT_CLIENT)
 // Master AFH
 const int config_btctler_le_afh_en = 1;
 // LE RAM Control
@@ -122,11 +134,12 @@ const int config_btctler_le_acl_total_nums = 4;
 const int config_btctler_le_afh_en = 0;
 // LE RAM Control
 const int config_btctler_le_hw_nums = 1;
-const int config_btctler_le_rx_nums = 4;
+const int config_btctler_le_rx_nums = 5;
 const int config_btctler_le_acl_packet_length = 27;
 const int config_btctler_le_acl_total_nums = 6;
 #endif /* (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_CLIENT) */
 
+const int config_btctler_le_slave_conn_update_winden = 2500;//range:100 to 2500
 /*-----------------------------------------------------------*/
 /**
  * @brief Bluetooth Analog setting

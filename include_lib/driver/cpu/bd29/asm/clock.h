@@ -95,7 +95,16 @@ void clk_voltage_init(u8 mode, u16 sys_dvdd);
 
 void clk_set_osc_cap(u8 sel_l, u8 sel_r);
 
+void clk_init_osc_cap(u8 sel_l, u8 sel_r);
+
+void clk_set_default_osc_cap();
+
 u32 clk_get_osc_cap();
 
+/**
+ * @brief sfc_enable_high_performance
+ * 使用前需要保证所使用的flash支持4bit 100Mhz 模式
+ */
+void sfc_enable_high_performance();
 #endif
 

@@ -1,6 +1,6 @@
 
 objs += \
-$(ROOT)/apps/debug.o \
+$(ROOT)/apps/common/debug/debug.o \
 
 include $(ROOT)/cpu/$(CPU)/Makefile
 

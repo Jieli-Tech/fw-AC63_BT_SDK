@@ -2,6 +2,7 @@
 #define __DEBUG_H__
 
 
+void ram_protect_close(void);
 void debug_init();
 void exception_analyze();
 

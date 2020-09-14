@@ -9,11 +9,15 @@
 
 #include <string.h>
 
-#if (OTA_TWS_SAME_TIME_ENABLE && RCSP_ADV_EN && USER_APP_EN)
-#include "rcsp_adv_tws_ota.h"
-#endif
+/* #if (OTA_TWS_SAME_TIME_ENABLE && RCSP_ADV_EN && USER_APP_EN) */
+/* #include "rcsp_adv_tws_ota.h" */
+/* #endif */
 
+#if OTA_TWS_SAME_TIME_NEW
+#include "update_tws_new.h"
+#else
 #include "update_tws.h"
+#endif
 
 #if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
@@ -117,17 +121,22 @@ u16 rcsp_f_read(void *fp, u8 *buff, u16 len)
     __this->read_len = 0;
     __this->read_buf = buff;
 
-#if((OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN)))
-    if ((tws_ota_control(OTA_TYPE_GET) == OTA_TWS) &&
-        (tws_api_get_tws_state() & TWS_STA_SIBLING_DISCONNECTED)) {
-        //假如TWS一起升级，TWS断开了,返回失败
-        r_printf("tws disconn, stop update");
-        rcsp_f_stop(DEVICE_UPDATE_STA_FAIL);
-        return (u16) - 1;
-    }
-#endif
+    /* #if((OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN) && !OTA_TWS_SAME_TIME_NEW)) */
+    /* #if TCFG_USER_TWS_ENABLE */
+    /*     if ((tws_ota_control(OTA_TYPE_GET) == OTA_TWS) && */
+    /*         (tws_api_get_tws_state() & TWS_STA_SIBLING_DISCONNECTED)) { */
+    /*         //假如TWS一起升级，TWS断开了,返回失败 */
+    /*         r_printf("tws disconn, stop update"); */
+    /*         rcsp_f_stop(DEVICE_UPDATE_STA_FAIL); */
+    /*         return (u16) - 1; */
+    /*     } */
+    /* #endif//TCFG_USER_TWS_ENABLE */
+    /* #endif */
 
 __RETRY:
+    if (!get_rcsp_connect_status()) {   //如果已经断开连接直接返回-1
+        return -1;
+    }
     __this->data_send_hdl(fp, __this->file_offset, len);
 
     while (!((0 == __this->state) && (__this->read_len == len))) {
@@ -181,9 +190,9 @@ static u8 update_result_handle(u8 err)
 {
     u8 res = DEVICE_UPDATE_STA_LOADER_DOWNLOAD_SUCC;
 
-#if OTA_TWS_SAME_TIME_ENABLE
-    tws_api_auto_role_switch_enable();
-#endif
+    /* #if OTA_TWS_SAME_TIME_ENABLE */
+    /*     tws_api_auto_role_switch_enable(); */
+    /* #endif */
 
     if (err & UPDATE_RESULT_FLAG_BITMAP) {
         switch (err & 0x7f) {
@@ -243,14 +252,12 @@ static u16 rcsp_f_stop(u8 err)
     return 1;
 }
 
-#if((OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN)))
 void db_update_notify_fail_to_phone()
 {
     if (get_rcsp_connect_status()) {
         rcsp_f_stop(DEVICE_UPDATE_STA_FAIL);
     }
 }
-#endif
 
 __attribute__((weak))
 void user_change_ble_conn_param(u8 param_index)
@@ -337,40 +344,46 @@ const update_op_api_t rcsp_update_op = {
     .notify_update_content_size = rcsp_notify_update_content_size,
 };
 
-#if((OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN)))
-const update_op_api_t rcsp_tws_update_op = {
-    .ch_init = rcsp_ch_update_init,
-    .f_open = rcsp_f_open,
-    .f_read = rcsp_f_read,
-    .f_seek = rcsp_f_seek,
-    .f_stop = rcsp_f_stop,
-    .notify_update_content_size = rcsp_notify_update_content_size,
-
-    //for tws ota
-    .tws_ota_start = tws_ota_open,
-    .tws_ota_data_send = tws_ota_data_send_m_to_s,
-    .tws_ota_err = tws_ota_err_callback,
-    .enter_verfiy_hdl = tws_ota_enter_verify,
-    .exit_verify_hdl = tws_ota_exit_verify,
-    .update_boot_info_hdl =  tws_ota_updata_boot_info_over,
-};
-#endif
+/* #if((OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN))) */
+/* const update_op_api_t rcsp_tws_update_op = { */
+/*     .ch_init = rcsp_ch_update_init, */
+/*     .f_open = rcsp_f_open, */
+/*     .f_read = rcsp_f_read, */
+/*     .f_seek = rcsp_f_seek, */
+/*     .f_stop = rcsp_f_stop, */
+/*     .notify_update_content_size = rcsp_notify_update_content_size, */
+/*  */
+/*     //for tws ota */
+/*     .tws_ota_start = tws_ota_open, */
+/*     .tws_ota_data_send = tws_ota_data_send_m_to_s, */
+/*     .tws_ota_err = tws_ota_err_callback, */
+/*     .enter_verfiy_hdl = tws_ota_enter_verify, */
+/*     .exit_verify_hdl = tws_ota_exit_verify, */
+/*     .update_boot_info_hdl = tws_ota_updata_boot_info_over, */
+/* #if OTA_TWS_SAME_TIME_NEW */
+/*     .tws_ota_result_hdl = tws_ota_result, */
+/*     .tws_ota_data_send_pend = tws_ota_data_send_pend, */
+/* #endif */
+/* }; */
+/* #endif */
 
 
 void rcsp_update_loader_download_init(int update_type, void (*result_cbk)(void *priv, u8 type, u8 cmd))
 {
-#if((OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN)))
-    tws_api_auto_role_switch_disable();
-    if ((tws_api_get_tws_state() & TWS_STA_SIBLING_CONNECTED) && support_dual_bank_update_en) { //双备份才支持tws同步升级
-        extern int tws_ota_init(void);
-        tws_ota_init();
-        app_update_loader_downloader_init(
-            update_type,
-            result_cbk,
-            NULL,
-            &rcsp_tws_update_op);
-    } else
-#endif
+    /* #if((OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN))) */
+    /* #if TCFG_USER_TWS_ENABLE */
+    /*     tws_api_auto_role_switch_disable(); */
+    /*     if ((tws_api_get_tws_state() & TWS_STA_SIBLING_CONNECTED) && support_dual_bank_update_en) { //双备份才支持tws同步升级 */
+    /*         extern int tws_ota_init(void); */
+    /*         tws_ota_init(); */
+    /*         app_update_loader_downloader_init( */
+    /*             update_type, */
+    /*             result_cbk, */
+    /*             NULL, */
+    /*             &rcsp_tws_update_op); */
+    /*     } else */
+    /* #endif//TCFG_USER_TWS_ENABLE */
+    /* #endif */
     {
         app_update_loader_downloader_init(
             update_type,

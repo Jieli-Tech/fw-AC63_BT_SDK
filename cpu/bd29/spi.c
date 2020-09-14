@@ -300,18 +300,33 @@ int spi_set_baud(spi_dev spi, u32 baud)
     sysclk = clk_get("spi");
     log_debug("spi clock source freq %lu", sysclk);
     if (sysclk < baud) {
+        spi_w_reg_baud(spi_regs[id], 0);
         return -EINVAL;
     }
     spi_w_reg_baud(spi_regs[id], sysclk / baud - 1);
     return 0;
 }
 
-static int __spi_wait_ok(spi_dev spi)
+/*
+ * @brief 获取波特率
+ * @parm spi  spi句柄
+ * @return  波特率
+ */
+u32 spi_get_baud(spi_dev spi)
 {
     u8 id = spi_get_info_id(spi);
-    u32 retry = 0xfffff;
+    return spi_get_info_clock(spi);
+}
+
+static int __spi_wait_ok(spi_dev spi, u32 n)
+{
+    u8 id = spi_get_info_id(spi);
+    u32 baud = spi_get_info_clock(spi);
+    baud = clk_get("spi") / baud - 1;
+    u32 retry = baud * (clk_get("sys") / clk_get("spi")) * 8 * n * 5;  //500% spi baudate
 
     while (!spi_pnd(spi_regs[id])) {
+        __asm__ volatile("nop");
         if (--retry == 0) {
             log_error("spi wait pnd timeout");
             return -EFAULT;
@@ -333,7 +348,7 @@ int spi_send_byte(spi_dev spi, u8 byte)
 
     spi_dir_out(spi_regs[id]);
     spi_w_reg_buf(spi_regs[id], byte);
-    return __spi_wait_ok(spi);
+    return __spi_wait_ok(spi, 1);
 }
 
 /*
@@ -363,7 +378,7 @@ u8 spi_recv_byte(spi_dev spi, int *err)
 
     spi_dir_in(spi_regs[id]);
     spi_w_reg_buf(spi_regs[id], 0xff);
-    ret = __spi_wait_ok(spi);
+    ret = __spi_wait_ok(spi, 1);
     if (ret) {
         err != NULL ? *err = ret : 0;
         return 0;
@@ -399,7 +414,7 @@ u8 spi_send_recv_byte(spi_dev spi, u8 byte, int *err)
     int ret;
 
     spi_w_reg_buf(spi_regs[id], byte);
-    ret = __spi_wait_ok(spi);
+    ret = __spi_wait_ok(spi, 1);
     if (ret) {
         err != NULL ? *err = ret : 0;
         return 0;
@@ -430,7 +445,7 @@ void spi_set_bit_mode(spi_dev spi, int mode)
         spi_data_width(spi_regs[id], 0);
         break;
     case SPI_MODE_UNIDIR_2BIT:
-        ASSERT(id == 0, "spi%d not support SPI_MODE_UNIDIR_2BIT\n", id);
+        /* ASSERT(id == 0, "spi%d not support SPI_MODE_UNIDIR_2BIT\n", id); */
         spi_unidir(spi_regs[id]);
         spi_data_width(spi_regs[id], 1);
         break;
@@ -485,8 +500,9 @@ int spi_open(spi_dev spi)
     spi_clr_pnd(spi_regs[id]);
     if ((err = spi_set_baud(spi, clock))) {
         log_error("invalid spi baudrate");
-        return err;
+        /* return 0; */
     }
+    spi_w_reg_buf(spi_regs[id], 0);//设定spi初始化后DO口默认电平为低
     spi_enable(spi_regs[id]);
 
 #if 0
@@ -516,12 +532,12 @@ int spi_dma_recv(spi_dev spi, void *buf, u32 len)
 {
     u8 id = spi_get_info_id(spi);
 
-    ASSERT((u32)buf % 4 == 0, "spi dma addr need 4-aligned");
+    /* ASSERT((u32)buf % 4 == 0, "spi dma addr need 4-aligned"); */
     spi_dir_in(spi_regs[id]);
     spi_w_reg_dma_addr(spi_regs[id], (u32)buf);
     spi_w_reg_dma_cnt(spi_regs[id], len);
     asm("csync");
-    if (__spi_wait_ok(spi)) {
+    if (__spi_wait_ok(spi, len)) {
         return -EFAULT;
     }
     return len;
@@ -538,12 +554,12 @@ int spi_dma_send(spi_dev spi, const void *buf, u32 len)
 {
     u8 id = spi_get_info_id(spi);
 
-    ASSERT((u32)buf % 4 == 0, "spi dma addr need 4-aligned");
+    /* ASSERT((u32)buf % 4 == 0, "spi dma addr need 4-aligned"); */
     spi_dir_out(spi_regs[id]);
     spi_w_reg_dma_addr(spi_regs[id], (u32)buf);
     spi_w_reg_dma_cnt(spi_regs[id], len);
     asm("csync");
-    if (__spi_wait_ok(spi)) {
+    if (__spi_wait_ok(spi, len)) {
         return -EFAULT;
     }
     return len;
@@ -561,7 +577,7 @@ void spi_dma_set_addr_for_isr(spi_dev spi, void *buf, u32 len, u8 rw)
 {
     u8 id = spi_get_info_id(spi);
 
-    ASSERT((u32)buf % 4 == 0, "spi dma addr need 4-aligned");
+    /* ASSERT((u32)buf % 4 == 0, "spi dma addr need 4-aligned"); */
     rw ? spi_dir_in(spi_regs[id]) : spi_dir_out(spi_regs[id]);
     spi_w_reg_dma_addr(spi_regs[id], (u32)buf);
     spi_w_reg_dma_cnt(spi_regs[id], len);

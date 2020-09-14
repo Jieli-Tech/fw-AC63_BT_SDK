@@ -12,6 +12,8 @@
 #include "media/audio_encoder.h"
 #include "media/mixer.h"
 #include "media/automute.h"
+#include "effectrs_sync.h"
+#include "audio_resample.h"
 
 #include "asm/cpu_includes.h"
 /*

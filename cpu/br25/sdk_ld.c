@@ -31,6 +31,10 @@
 
 #include "maskrom_stubs.ld"
 
+EXTERN(
+#include "sdk_used_list.c"
+);
+
 UPDATA_SIZE     = 0x80;
 UPDATA_BEG      = _MASK_MEM_BEGIN - UPDATA_SIZE;
 UPDATA_BREDR_BASE_BEG = 0xf9000; //depend on loader code & data
@@ -50,9 +54,9 @@ RAM_END         = RAM_LIMIT_H;
 RAM_SIZE        = RAM_END - RAM_BEGIN;
 
 #if (EQ_SECTION_MAX > 10)
-EQ_SECTION_NUM = EQ_SECTION_MAX;
+EQ_SECTION_NUM = EQ_SECTION_MAX + 3;
 #else
-EQ_SECTION_NUM = 10;
+EQ_SECTION_NUM = 10 + 3;
 #endif
 
 //=============== About BT RAM ===================
@@ -121,6 +125,12 @@ SECTIONS
         KEEP(*(.gsensor_dev))
         gsensor_dev_end = .;
 
+		//mouse sensor dev begin
+		. = ALIGN(4);
+		OMSensor_dev_begin = .;
+		KEEP(*(.omsensor_dev))
+		OMSensor_dev_end = .;
+
 		. = ALIGN(4);
         fm_dev_begin = .;
         KEEP(*(.fm_dev))
@@ -131,10 +141,10 @@ SECTIONS
         KEEP(*(.fm_emitter_dev))
         fm_emitter_dev_end = .;
 
-		. = ALIGN(4);
-        storage_device_begin = .;
-        KEEP(*(.storage_device))
-        storage_device_end = .;
+		/* . = ALIGN(4); */
+        /* storage_device_begin = .; */
+        /* KEEP(*(.storage_device)) */
+        /* storage_device_end = .; */
 
 		. = ALIGN(4);
 		ui_main_begin = .;
@@ -151,8 +161,6 @@ SECTIONS
 
         *(.tech_lib.aec.text)
 
-		. = ALIGN(4);
-		#include "btctrler/btctler_lib_text.ld"
 		. = ALIGN(4);
 		#include "btstack/btstack_lib_text.ld"
 		. = ALIGN(4);
@@ -247,22 +255,26 @@ SECTIONS
         . = ALIGN(4);
 		#include "btstack/btstack_lib_data.ld"
         . = ALIGN(4);
-		#include "btctrler/btctler_lib_data.ld"
-        . = ALIGN(4);
 		#include "system/system_lib_data.ld"
 		. = ALIGN(4);
 
         . = ALIGN(4);
 		EQ_COEFF_BASE = . ;
 		. = EQ_COEFF_BASE + 4 * EQ_SECTION_NUM * 14;
+        . = ALIGN(4);
+
 
 	  } > ram0
 
     .bss ALIGN(32):
     {
+        *(.usb_h_dma)   //由于usb有个bug，会导致dma写的数据超出预设的buf，最长可能写超1k，为了避免死机，所以usb dma buffer后面放一些其他模块的buff来避免死机
+        *(.usb_ep0)
+        *(.dec_mix_buff)
+        *(.sd0_var)
+        *(.sd1_var)
+        *(.dac_buff)
 		. = ALIGN(4);
-		#include "btctrler/btctler_lib_bss.ld"
-        . = ALIGN(4);
 		#include "btstack/btstack_lib_bss.ld"
         . = ALIGN(4);
 		#include "system/system_lib_bss.ld"
@@ -317,6 +329,8 @@ SECTIONS
     	data_code_end = .;
 	} > ram0
 
+
+
 	overlay_begin = .;
 	OVERLAY : NOCROSSREFS AT(0x200000) SUBALIGN(4)
     {
@@ -333,7 +347,41 @@ SECTIONS
 			*(.aec_mem)
             *(.msbc_enc)
 			*(.cvsd_bss)
+
+#if TCFG_BLUETOOTH_BACK_MODE == 0
+            . = ALIGN(4);
+            *(.bd_base)
+
+            *(.bredr_rxtx_bulk)
+            acl_tx_pool = .;
+            *(.bredr_tx_bulk)
+#ifdef CONFIG_BT_TX_BUFF_SIZE
+            acl_tx_pool_end = acl_tx_pool + CONFIG_BT_TX_BUFF_SIZE;
+#else
+            acl_tx_pool_end = acl_tx_pool;
+#endif
+            . = acl_tx_pool_end;
+
+            acl_rx_pool = .;
+            *(.bredr_rx_bulk)
+#ifdef CONFIG_BT_RX_BUFF_SIZE
+            acl_rx_pool_end = acl_rx_pool + CONFIG_BT_RX_BUFF_SIZE;
+#else
+            acl_rx_pool_end = acl_rx_pool;
+#endif
+            . = acl_rx_pool_end;
+
+
+            tws_bulk_pool = .;
+#ifdef CONFIG_TWS_BULK_POOL_SIZE
+            tws_bulk_pool_end = tws_bulk_pool + CONFIG_TWS_BULK_POOL_SIZE;
+#else
+            tws_bulk_pool_end = tws_bulk_pool;
+#endif
+            . = tws_bulk_pool_end;
+#endif
 		}
+
 		.overlay_mp3
 		{
 #ifdef CONFIG_MP3_WMA_LIB_SPECIAL
@@ -460,7 +508,6 @@ SECTIONS
             *(.uac_rx)
             *(.mass_storage)
 
-            *(.usb_ep0)
             *(.usb_msd_dma)
             *(.usb_hid_dma)
             *(.usb_iso_dma)
@@ -549,6 +596,7 @@ SECTIONS
 #include "update/update.ld"
 #include "media/media.ld"
 #include "driver/cpu/br25/driver_lib.ld"
+#include "btctrler/port/br25/btctler_lib.ld"
 
 //================== Section Info Export ====================//
 text_begin  = ADDR(.text);

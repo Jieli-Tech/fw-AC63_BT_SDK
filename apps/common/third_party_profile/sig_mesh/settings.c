@@ -39,7 +39,7 @@
 
 typedef enum _NODE_INFO_SETTING_INDEX {
     /* NODE_MAC_ADDR_INDEX = 0, */
-    NET_INDEX = 0,
+    NET_INDEX = 20,
     IV_INDEX,
     SEQ_INDEX,
     RPL_INDEX,

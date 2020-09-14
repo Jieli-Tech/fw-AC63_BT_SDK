@@ -136,7 +136,7 @@ int hw_iic_set_baud(hw_iic_dev iic, u32 baud)
     u32 sysclk;
     u8 id = iic_get_id(iic);
 
-    sysclk = clk_get("sys");
+    sysclk = clk_get("lsb");
     if (sysclk < 2 * baud) {
         return -EINVAL;
     }

@@ -5,6 +5,13 @@
 #include "os/os_api.h"
 #include "app_config.h"
 #include "cpu.h"
+#include "syscfg_id.h"
+#include "vm.h"
+#include "btcontroller_modules.h"
+
+#if TCFG_UI_ENABLE
+#include "ui/ui_api.h"
+#endif
 
 #if RCSP_BTMATE_EN
 #include "rcsp_user_update.h"
@@ -12,9 +19,7 @@
 #include "rcsp_adv_user_update.h"
 #endif
 
-#if RCSP_UPDATE_EN
 #include "custom_cfg.h"
-#endif
 
 #include "update_tws.h"
 
@@ -27,9 +32,10 @@
 
 extern void reset_bt_bredrexm_addr(void);
 extern void enter_sys_soft_poweroff();
-extern void *sdmmc_get_update_parm(void);
+extern void *dev_update_get_parm(int type);
 extern u8 get_ota_status();
 extern void get_nor_update_param(void *buf);
+extern s32 vm_write(vm_hdl hdl, u8 *data_buf, u16 len);
 extern const int support_norflash_update_en;
 
 
@@ -85,6 +91,15 @@ void update_result_set(u16 result)
     p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);
 }
 
+bool update_success_boot_check(void)
+{
+    u16 result = g_updata_flag & 0xffff;
+    u16 up_tpye = g_updata_flag >> 16;
+    if ((UPDATA_SUCC == result) && ((SD0_UPDATA == up_tpye) || (USB_UPDATA == up_tpye))) {
+        return true;
+    }
+    return false;
+}
 
 
 bool device_is_first_start()
@@ -111,6 +126,23 @@ void led_update_finish(void)
 #endif
 }
 
+static inline void dev_update_close_ui()
+{
+#if TCFG_UI_ENABLE
+    u8 count = 0;
+    UI_SHOW_WINDOW(ID_WINDOW_POWER_OFF);
+__try:
+        if (UI_GET_WINDOW_ID() != ID_WINDOW_POWER_OFF) {
+            os_time_dly(10);//增加延时防止没有关显示
+            if (count < 3) {
+                goto __try;
+            }
+            count++;
+        }
+#endif
+}
+
+
 extern void delay_2ms(int cnt);
 extern void app_audio_set_wt_volume(s16 volume);
 
@@ -129,11 +161,15 @@ int update_result_deal()
     }
 #ifdef UPDATE_VOICE_REMIND
 #endif
-#ifdef UPDATE_LED_REMIND
     if (result == UPDATA_SUCC) {
-        led_update_finish();
-    }
+#if(JL_EARPHONE_APP_EN && RCSP_UPDATE_EN)
+        u8 clear_update_flag = 0;
+        vm_write(VM_UPDATE_FLAG, &clear_update_flag, 1);
 #endif
+#ifdef UPDATE_LED_REMIND
+        led_update_finish();
+#endif
+    }
     extern u8 get_max_sys_vol(void);
     while (1) {
         clear_wdt();
@@ -198,7 +234,13 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
     p->parm_result = (u16)UPDATA_READY;
     memcpy(p->file_patch, updata_file_name, strlen(updata_file_name));
     if (priv) {
-        memcpy(p->parm_priv, priv, len);
+        if (support_norflash_update_en) {
+            printf("p->parm_priv:0x%x\n len:%d\n", p->parm_priv, len);
+            memcpy(p->parm_priv + 12, priv, len);
+        } else {
+            printf("p->parm_priv:0x%x priv:0x%x len:%d\n", p->parm_priv, priv, len);
+            memcpy(p->parm_priv, priv, len);
+        }
     } else {
         memset(p->parm_priv, 0x00, sizeof(p->parm_priv));
         if (up_type == BLE_TEST_UPDATA) {
@@ -213,14 +255,12 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
     p->magic = UPDATE_PARAM_MAGIC;
     p->ota_addr = loader_start_addr;
 #endif
-    p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);	//2 : crc_val
+
 #ifdef CONFIG_SD_UPDATE_ENABLE
     if ((up_type == SD0_UPDATA) || (up_type == SD1_UPDATA)) {
         int sd_start = (u32)p + sizeof(UPDATA_PARM);
         void *sd = NULL;
-#if CONFIG_FATFS_ENBALE
-        sd = sdmmc_get_update_parm();
-#endif//CONFIG_FATFS_ENBALE
+        sd = dev_update_get_parm(up_type);
         if (sd) {
             memcpy((void *)sd_start, sd, UPDATE_PRIV_PARAM_LEN);
         } else {
@@ -236,11 +276,23 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
     }
 #endif
 
+    /* #if RCSP_UPDATE_EN */
+    /*     extern u32 ex_cfg_get_start_addr(void); */
+    /*     if (support_norflash_update_en) { */
+    /*         *((u32 *)(p->parm_priv + 12)) = ex_cfg_get_start_addr();//12个字节是Norflash升级参数占用 */
+    /*     } else { */
+    /*         *((u32 *)(p->parm_priv)) = ex_cfg_get_start_addr();     //为了兼容之前的程序升级 */
+    /*     } */
+    /* #endif */
     if (support_norflash_update_en) {
         get_nor_update_param(p->parm_priv);
+        p->parm_type = NORFLASH_UPDATA;
+        *((u16 *)((u8 *)p + sizeof(UPDATA_PARM) + 32)) = up_type;         //将实际的升级类型保存到ram
     }
-    //log_info("UPDATA_PARM_ADDR = 0x%x\n", p);
+    p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);	//2 : crc_val
+    printf("UPDATA_PARM_ADDR = 0x%x\n", p);
     printf_buf((void *)p, sizeof(UPDATA_PARM));
+    printf("exif_addr:0x%x\n", *(u32 *)(p->parm_priv));
 }
 
 //reset
@@ -273,7 +325,12 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
 {
     u8 i;
     u32 addr;
-
+    dev_update_close_ui();
+#if RCSP_ADV_EN || RCSP_BTMATE_EN || SMART_BOX_EN
+    if (up_type == BLE_APP_UPDATA || up_type == SPP_APP_UPDATA) {
+        addr = ex_cfg_fill_content_api();
+    }
+#endif
     //step 1: disable irq
 #if TCFG_USER_TWS_ENABLE || TCFG_USER_BLE_ENABLE
     if (up_type == BT_UPDATA) {
@@ -282,7 +339,7 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
     }
 #endif
 
-#if CONFIG_ANC_ENABLE
+#if TCFG_AUDIO_ANC_ENABLE
     extern void audio_anc_hw_close();
     audio_anc_hw_close();
 #endif
@@ -292,20 +349,15 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
     }
     //step 2: prepare parm
 
-
-    if (support_norflash_update_en) {          //外挂flash升级
-        up_type = NORFLASH_UPDATA;
-    }
-
     printf("update_type:0x%x\n", up_type);
     switch (up_type) {
-#if CONFIG_SD_UPDATE_ENABLE
+#ifdef CONFIG_SD_UPDATE_ENABLE
     case SD0_UPDATA:
     case SD1_UPDATA:
         updata_parm_set(up_type, (u8 *)loader_file_path, sizeof(loader_file_path));
         break;
 #endif
-#if CONFIG_USB_UPDATE_ENABLE
+#ifdef CONFIG_USB_UPDATE_ENABLE
     case USB_UPDATA:
         updata_parm_set(up_type, (u8 *)loader_file_path, sizeof(loader_file_path));
         break;
@@ -344,19 +396,19 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
         //note:last func no return;
         break;
     case BLE_TEST_UPDATA:
-        ll_hci_destory();
-        updata_parm_set(up_type, NULL, 0);
+        if (BT_MODULES_IS_SUPPORT(BT_MODULE_LE)) {
+            ll_hci_destory();
+            updata_parm_set(up_type, NULL, 0);
+        }
         break;
 
 #if RCSP_UPDATE_EN
     case BLE_APP_UPDATA:
-        addr = ex_cfg_fill_content_api();
         updata_parm_set(up_type, (u8 *)&addr, sizeof(addr));
         break;
 
     case SPP_APP_UPDATA:
-        addr = ex_cfg_fill_content_api();
-        updata_parm_set(up_type, (u8 *)&addr, sizeof(addr));
+        updata_parm_set(BLE_APP_UPDATA, (u8 *)&addr, sizeof(addr)); //暂时不支持SPP
         break;
 #endif
 
@@ -368,17 +420,19 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
 
 #ifdef DEV_UPDATE_SUPPORT_JUMP
 #if TCFG_BLUETOOTH_BACK_MODE			//后台模式需要把蓝牙关掉
-    ll_hci_destory();
+    if (BT_MODULES_IS_SUPPORT(BT_MODULE_LE)) {
+        ll_hci_destory();
+    }
     hci_controller_destory();
 #endif
     switch (up_type) {
-#if CONFIG_SD_UPDATE_ENABLE
+#ifdef CONFIG_SD_UPDATE_ENABLE
     case SD0_UPDATA:
     case SD1_UPDATA:
         sd1_unmount();
         break;
 #endif      //CONFIG_SD_UPDATE_ENABLE
-#if CONFIG_USB_UPDATE_ENABLE
+#ifdef CONFIG_USB_UPDATE_ENABLE
     case USB_UPDATA:
         usb_sie_close_all();
         break;
@@ -410,28 +464,26 @@ void update_parm_set_and_get_buf(int type, u32 loader_saddr, void **buf_addr, u1
     }
 
     set_loader_start_addr(loader_saddr);
-#if 0//RCSP_UPDATE_EN
+#if RCSP_UPDATE_EN
     if ((BLE_APP_UPDATA == type) || (SPP_APP_UPDATA == type)) {
         extern u32 ex_cfg_get_start_addr(void);
         exif_addr = ex_cfg_get_start_addr();
-        updata_parm_set(type, (u8 *)exif_addr, sizeof(exif_addr));
+        printf("exif_addr:0x%x\n", exif_addr);
+        updata_parm_set(type, (u8 *)&exif_addr, sizeof(exif_addr));
     } else
 #endif
     {
-        if (support_norflash_update_en) {
-            updata_parm_set(NORFLASH_UPDATA, (u8 *)loader_file_path, sizeof(loader_file_path));
-        } else {
-            updata_parm_set(type, (u8 *)loader_file_path, sizeof(loader_file_path));
-        }
+        updata_parm_set(type, (u8 *)loader_file_path, sizeof(loader_file_path));
     }
 
     *buf_addr = UPDATA_FLAG_ADDR;
     *len = total_len;
 }
 
+#if CONFIG_UPDATA_ENABLE
 int update_check_sniff_en(void)
 {
-#if (OTA_TWS_SAME_TIME_ENABLE && RCSP_ADV_EN)
+#if (OTA_TWS_SAME_TIME_ENABLE && RCSP_ADV_EN && !OTA_TWS_SAME_TIME_NEW)
     if (tws_ota_control(OTA_STATUS_GET) != OTA_OVER) {
         return 0;
     }
@@ -443,3 +495,4 @@ int update_check_sniff_en(void)
         return 1;
     }
 }
+#endif

@@ -19,7 +19,7 @@
 
 #if TCFG_HID_HOST_ENABLE
 #define     MAX_HOST_EP_RX  4
-#define     MAX_HOST_EP_TX  4 
+#define     MAX_HOST_EP_TX  4
 #else
 #define     MAX_HOST_EP_RX  2
 #define     MAX_HOST_EP_TX  2   //ep0 & ep1(msd)
@@ -40,7 +40,7 @@ static u8 ep2_dma[USB_MAX_HW_NUM][64 * 2 + 4]  __attribute__((aligned(4)));
 static u8 ep3_dma[USB_MAX_HW_NUM][64 * 2 + 4]  __attribute__((aligned(4)));
 static u8 ep4_dma[USB_MAX_HW_NUM][64 * 2 + 4]  __attribute__((aligned(4)));
 #else
-static u8 msd_h_dma_buffer[2][64 + 4]  __attribute__((aligned(4)));// SEC(.usb_h_dma);
+static u8 msd_h_dma_buffer[2][64 + 4]  __attribute__((aligned(4))) SEC(.usb_h_dma);
 #endif
 
 void usb_h_isr(const usb_dev usb_id)

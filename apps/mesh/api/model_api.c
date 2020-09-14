@@ -13,7 +13,7 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
-#define APPS_VM_START_INDEX                     80
+#define APPS_VM_START_INDEX                     19
 
 //< max index : 128
 typedef enum _INFO_SETTING_INDEX {

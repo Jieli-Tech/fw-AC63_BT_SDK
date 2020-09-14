@@ -1,4 +1,7 @@
 
+#define     USB_MALLOC_ENABLE           0
+#define     USB_HOST_ASYNC              1
+#define     USB_H_MALLOC_ENABLE         1
 #define     USB_DEVICE_CLASS_CONFIG (SPEAKER_CLASS|MIC_CLASS|HID_CLASS|MASSSTORAGE_CLASS)
 
 ///////////MassStorage Class

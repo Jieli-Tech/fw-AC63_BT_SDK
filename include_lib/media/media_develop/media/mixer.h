@@ -51,6 +51,7 @@ struct audio_mixer {
     u16 remain_points;	// 输出剩余点数
     u32 process_len;	// 输出了多少
     u8  channel_num;	// 声道数
+    u8  sample_sync;
     u16 sample_rate;	// 当前mixer的采样率
     MIXER_SR_TYPE sr_type;	// 采样率设置类型
     void (*evt_handler)(struct audio_mixer *, int);	// 事件返回接口
@@ -70,6 +71,7 @@ struct audio_mixer_ch {
     u32 lose : 1;		// 丢数标记
     u32 src_en : 1;		// 变采样使能
     u32 src_always : 1;	// 不管采样率是否相同都做变采样
+    u32 sample_sync : 1;
     u32 sync_en : 1;	// 同步使能
     u32 sync_always : 1;// 不管采样率是否相同都做同步
     u16 offset;			// 当前通道在输出buf中的偏移位置
@@ -161,6 +163,6 @@ int audio_mixer_ch_data_len(struct audio_mixer_ch *ch);
 // 通道数据输出
 int audio_mixer_ch_write(struct audio_mixer_ch *ch, s16 *data, int len);
 
-
+void audio_mixer_ch_sample_sync_enable(struct audio_mixer_ch *ch, u8 enable);
 #endif
 

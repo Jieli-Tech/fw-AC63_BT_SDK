@@ -84,8 +84,10 @@
 
 		_os_begin = .;
 		PROVIDE(os_begin = .);
-		   *(.os_code)
+/*		
+ 	*(.os_code)
 		   *(.os_const)
+*/		
 		   *(.os_str)
 		   *(.os_data)
 		_os_end = .;

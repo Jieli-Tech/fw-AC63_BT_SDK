@@ -31,7 +31,7 @@ const struct task_info task_info_table[] = {
     {"app_core",            1,     1024,   128  },
     {"sys_event",           7,     256,   0    },
     {"btctrler",            4,     512,   256  },
-    {"btstack",             3,     1024,  512  },
+    {"btstack",             3,     1024,  1024  },
     {"systimer",		    7,	   128,   0		},
 #ifdef CONFIG_UPDATA_ENABLE
     {"update",				1,	   320,   0		},

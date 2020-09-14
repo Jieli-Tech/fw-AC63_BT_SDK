@@ -143,7 +143,7 @@ static int _usb_adb_parser(struct usb_host_device *host_dev, u8 interface_num, c
 static int _usb_aoa_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf)
 {
     log_info("find aoa @ interface %d", interface_num);
-#if TCFG_ADB_ENABLE
+#if TCFG_AOA_ENABLE
     return usb_aoa_parser(host_dev, interface_num, pBuf);
 #else
     return USB_DT_INTERFACE_SIZE;
@@ -158,7 +158,15 @@ static int _usb_hid_parser(struct usb_host_device *host_dev, u8 interface_num, c
 #else
     return USB_DT_INTERFACE_SIZE;
 #endif
-
+}
+static int _usb_adb_interface_ptp_mtp_parse(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf)
+{
+    log_info("find adbmtp @ interface %d", interface_num);
+#if TCFG_ADB_ENABLE
+    return usb_adb_interface_ptp_mtp_parse(host_dev, interface_num, pBuf);
+#else
+    return USB_DT_INTERFACE_SIZE;
+#endif
 }
 static int usb_descriptor_parser(struct usb_host_device *host_dev, const u8 *pBuf, u32 total_len, struct usb_device_descriptor *device_desc)
 {
@@ -188,8 +196,11 @@ static int usb_descriptor_parser(struct usb_host_device *host_dev, const u8 *pBu
         }
 
         struct usb_interface_descriptor *interface = (struct usb_interface_descriptor *)pBuf;
-
         if (interface->bDescriptorType == USB_DT_INTERFACE) {
+
+            printf("inf class %x subclass %x ep %d",
+                   interface->bInterfaceClass, interface->bInterfaceSubClass, interface->bNumEndpoints);
+
             if (interface->bInterfaceClass == USB_CLASS_MASS_STORAGE) {
                 i = _usb_msd_parser(host_dev, interface_num, pBuf);
                 if (i < 0) {
@@ -236,7 +247,20 @@ static int usb_descriptor_parser(struct usb_host_device *host_dev, const u8 *pBu
                     pBuf += i;
                     have_find_valid_class = true;
                 }
-            } else if ((interface->bInterfaceClass == 0xff) && (interface->bInterfaceSubClass == 0xff)) {
+            } else if ((interface->bNumEndpoints == 3) &&
+                       (interface->bInterfaceClass == 0xff || interface->bInterfaceClass == 0x06)) {
+                i = _usb_adb_interface_ptp_mtp_parse(host_dev, interface_num, pBuf);
+                if (i < 0) {
+                    log_error("---%s %d---", __func__, __LINE__);
+                    len = total_len;
+                } else {
+                    interface_num++;
+                    len += i;
+                    pBuf += i;
+                }
+                have_find_valid_class = true;
+            } else if ((interface->bInterfaceClass == 0xff) &&
+                       (interface->bInterfaceSubClass == 0xff)) {
                 i = _usb_aoa_parser(host_dev, interface_num, pBuf);
                 if (i < 0) {
                     log_error("---%s %d---", __func__, __LINE__);
@@ -258,7 +282,7 @@ static int usb_descriptor_parser(struct usb_host_device *host_dev, const u8 *pBu
                 pBuf += USB_DT_INTERFACE_SIZE;
             }
         } else {
-            log_error("unknown section %d %d", len, pBuf[0]);
+            /* log_error("unknown section %d %d", len, pBuf[0]); */
             if (pBuf[0]) {
                 len += pBuf[0];
                 pBuf += pBuf[0];
@@ -292,11 +316,13 @@ void usb_host_resume(const usb_dev usb_id)
     usb_h_resume(usb_id);
 }
 
+
 static u32 _usb_host_mount(const usb_dev usb_id, u32 retry, u32 reset_delay, u32 mount_timeout)
 {
     u32 ret = DEV_ERR_NONE;
     struct usb_host_device *host_dev = &host_devices[usb_id];
     struct usb_private_data *private_data = &host_dev->private_data;
+
 
     for (int i = 0; i < retry; i++) {
         usb_h_sie_init(usb_id);
@@ -342,8 +368,8 @@ static u32 _usb_host_mount(const usb_dev usb_id, u32 retry, u32 reset_delay, u32
         u8 *desc_buf = zalloc(cfg_desc.wTotalLength + 16);
         ASSERT(desc_buf, "desc_buf");
 #else
-        u8 desc_buf[128];
-        memset(desc_buf + cfg_desc.wTotalLength, 0x0, 16);
+        u8 desc_buf[128] = {0};
+        cfg_desc.wTotalLength = min(sizeof(desc_buf), cfg_desc.wTotalLength);
 #endif
 
         ret = get_config_descriptor(host_dev, desc_buf, cfg_desc.wTotalLength);
@@ -374,7 +400,7 @@ __exit_fail:
     usb_sie_close(usb_id);
     return ret;
 }
-static void usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
+static int usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
 {
     const usb_dev id = host_device2id(host_dev);
     struct sys_event event;
@@ -387,12 +413,14 @@ static void usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
     u8 no_send_event;
     for (u8 i = 0; i < MAX_HOST_INTERFACE; i++) {
         no_send_event = 0;
+        event.u.dev.value = 0;
         if (host_dev->interface_info[i]) {
             switch (host_dev->interface_info[i]->ctrl->interface_class) {
+#if TCFG_UDISK_ENABLE
             case USB_CLASS_MASS_STORAGE:
                 if (have_post_event & BIT(0)) {
                     no_send_event = 1;
-                }else{
+                } else {
                     have_post_event |= BIT(0);
                 }
                 if (id == 0) {
@@ -401,10 +429,13 @@ static void usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
                     event.u.dev.value = (int)"udisk1";
                 }
                 break;
+#endif
+
+#if TCFG_ADB_ENABLE
             case USB_CLASS_ADB:
                 if (have_post_event & BIT(1)) {
                     no_send_event = 1;
-                }else{
+                } else {
                     have_post_event |= BIT(1);
                 }
                 if (id == 0) {
@@ -413,10 +444,12 @@ static void usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
                     event.u.dev.value = (int)"adb1";
                 }
                 break;
+#endif
+#if TCFG_AOA_ENABLE
             case USB_CLASS_AOA:
                 if (have_post_event & BIT(2)) {
                     no_send_event = 1;
-                }else{
+                } else {
                     have_post_event |= BIT(2);
                 }
                 if (id == 0) {
@@ -425,10 +458,12 @@ static void usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
                     event.u.dev.value = (int)"aoa1";
                 }
                 break;
+#endif
+#if TCFG_HID_HOST_ENABLE
             case USB_CLASS_HID:
                 if (have_post_event & BIT(3)) {
                     no_send_event = 1;
-                }else{
+                } else {
                     have_post_event |= BIT(3);
                 }
                 if (id == 0) {
@@ -437,9 +472,10 @@ static void usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
                     event.u.dev.value = (int)"hid1";
                 }
                 break;
+#endif
             }
 
-            if (!no_send_event) {
+            if (!no_send_event && event.u.dev.value) {
                 log_info("event %x interface %x class %x %s",
                          event.u.dev.event, i,
                          host_dev->interface_info[i]->ctrl->interface_class,
@@ -452,7 +488,65 @@ static void usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
             }
         }
     }
+    if (have_post_event) {
+        return DEV_ERR_NONE;
+    } else {
+        return DEV_ERR_UNKNOW_CLASS;
+    }
+
 }
+
+const char *usb_host_valid_class_to_dev(const usb_dev id, u32 usbclass)
+{
+#if USB_MAX_HW_NUM > 1
+    const usb_dev usb_id = id;
+#else
+    const usb_dev usb_id = 0;
+#endif
+    struct usb_host_device *host_dev = &host_devices[usb_id];
+    u32 itf_class;
+
+    for (int i = 0; i < MAX_HOST_INTERFACE; i++) {
+        if (host_dev->interface_info[i] &&
+            host_dev->interface_info[i]->ctrl) {
+            itf_class = host_dev->interface_info[i]->ctrl->interface_class;
+            if (itf_class == usbclass) {
+                switch (itf_class) {
+                case USB_CLASS_MASS_STORAGE:
+                    if (usb_id == 0) {
+                        return "udisk0";
+                    } else if (usb_id == 1) {
+                        return "udisk1";
+                    }
+                    break;
+                case USB_CLASS_ADB:
+                    if (usb_id == 0) {
+                        return "adb0";
+                    } else if (usb_id == 1) {
+                        return "adb1";
+                    }
+                    break;
+                case USB_CLASS_AOA:
+                    if (usb_id == 0) {
+                        return "aoa0";
+                    } else if (usb_id == 1) {
+                        return "aoa1";
+                    }
+                    break;
+                case USB_CLASS_HID:
+                    if (usb_id == 0) {
+                        return "hid0";
+                    } else if (usb_id == 1) {
+                        return "hid1";
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
 /* --------------------------------------------------------------------------*/
 /**
  * @brief usb_host_mount
@@ -479,12 +573,12 @@ u32 usb_host_mount(const usb_dev id, u32 retry, u32 reset_delay, u32 mount_timeo
     usb_sem_init(host_dev);
     usb_h_isr_reg(usb_id, 1, 0);
 
+
     ret = _usb_host_mount(usb_id, retry, reset_delay, mount_timeout);
     if (ret) {
         goto __exit_fail;
     }
-    usb_event_notify(host_dev, 0);
-    return DEV_ERR_NONE;
+    return usb_event_notify(host_dev, 0);
 
 __exit_fail:
     usb_sie_disable(usb_id);

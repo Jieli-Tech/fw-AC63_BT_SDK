@@ -5,12 +5,12 @@
 #include "asm/usb.h"
 #include "usb/ch9.h"
 #include "usb/usb_phy.h"
-#include "usb_config.h"
+// #include "usb_config.h"
 
 
 struct usb_private_data {
     usb_dev usb_id;
-    u8 status; 
+    u8 status;
     u8 devnum;
     u8 ep0_max_packet_size;
     /*

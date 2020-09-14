@@ -51,9 +51,10 @@
 /*            common api            */
 u32 get_jiffies();
 u32 usb_host_timeout(u32 ot);
+u16 usb_read_sofframe(const usb_dev id);
 
 /*            slave api            */
-u32 usb_g_bulk_readram(const usb_dev usb_id, u32 ep, u8 *ptr, u32 len);
+u32 usb_g_bulk_read64byte_fast(const usb_dev usb_id, u32 ep, u8 *ptr, u32 len);
 u32 usb_g_bulk_read(const usb_dev usb_id, u32 ep, u8 *ptr, u32 len, u32 block);
 u32 usb_g_bulk_write(const usb_dev usb_id, u32 ep, const u8 *ptr, u32 len);
 u32 usb_g_intr_read(const usb_dev usb_id, u32 ep, u8 *ptr, u32 len, u32  block);

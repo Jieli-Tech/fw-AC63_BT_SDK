@@ -12,7 +12,7 @@ struct aoa_device_t {
 
     struct adb_device_t *adb;
 };
-void aoa_process(u32 mode, u32 id);
+u32 aoa_process(u32 mode, u32 id);
 int usb_aoa_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf);
 
 

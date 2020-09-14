@@ -7,10 +7,10 @@
 
 extern int putchar(int a);
 extern int puts(const char *out);
-//void put_u4hex(unsigned char dat);
-//void put_u8hex(unsigned char dat);
-//void put_u16hex(unsigned short dat);
-// void put_u32hex(unsigned int dat);
+void put_u4hex(unsigned char dat);
+void put_u8hex(unsigned char dat);
+void put_u16hex(unsigned short dat);
+void put_u32hex(unsigned int dat);
 void put_buf(const u8 *buf, int len);
 int printf(const char *format, ...);
 int assert_printf(const char *format, ...);

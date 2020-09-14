@@ -38,7 +38,7 @@
 #define     USB_HOST_ENABLE                 0
 #endif
 
-#if (TCFG_CHARGE_ENABLE)
+#if TCFG_CHARGE_ENABLE && TCFG_USB_PORT_CHARGE
 #define TCFG_OTG_MODE_CHARGE                (OTG_CHARGE_MODE)
 #else
 #define TCFG_OTG_MODE_CHARGE                0
@@ -58,15 +58,17 @@
 #define TCFG_OTG_MODE_HOST                  0
 #endif
 
-#define TCFG_OTG_SLAVE_ONLINE_CNT           10
-#define TCFG_OTG_SLAVE_OFFLINE_CNT          10
+#define TCFG_OTG_SLAVE_ONLINE_CNT           2
+#define TCFG_OTG_SLAVE_OFFLINE_CNT          2
 
-#define TCFG_OTG_HOST_ONLINE_CNT            4
-#define TCFG_OTG_HOST_OFFLINE_CNT           10
+#define TCFG_OTG_HOST_ONLINE_CNT            2
+#define TCFG_OTG_HOST_OFFLINE_CNT           3
 
+#ifndef TCFG_OTG_MODE
 #define TCFG_OTG_MODE                       (TCFG_OTG_MODE_HOST|TCFG_OTG_MODE_SLAVE|TCFG_OTG_MODE_CHARGE)
+#endif
 
-#define TCFG_OTG_DET_INTERVAL               10
+#define TCFG_OTG_DET_INTERVAL               50
 
 
 #endif

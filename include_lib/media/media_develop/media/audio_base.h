@@ -41,13 +41,15 @@ enum audio_channel {
     AUDIO_CH_R,           	//右声道（单声道）
     AUDIO_CH_DIFF,        	//差分（单声道）
     AUDIO_CH_DUAL_L,  		//双声道都为左
-    AUDIO_CH_DUAL_R,  		//双声道都为左右
+    AUDIO_CH_DUAL_R,  		//双声道都为右
     AUDIO_CH_DUAL_LR,  		//双声道为左右混合
+    AUDIO_CH_QUAD,  		//四声道（LRLR）
 
     AUDIO_CH_MAX = 0xff,
 };
 
 #define AUDIO_CH_IS_MONO(ch)	(((ch)==AUDIO_CH_L) || ((ch)==AUDIO_CH_R) || ((ch)==AUDIO_CH_DIFF))
+#define AUDIO_CH_IS_QUAD(ch)	(((ch)==AUDIO_CH_QUAD))
 
 
 struct audio_fmt {

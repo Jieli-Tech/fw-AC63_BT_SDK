@@ -199,7 +199,9 @@ void board_init()
 {
     board_power_init();
 
+    //封装是vbat和vddio绑一起的，要在adc初始化之前调用这个函数
     adc_set_vbat_vddio_tieup(1);
+
     adc_vbg_init();
     adc_init();
     cfg_file_parse(0);
@@ -210,13 +212,16 @@ void board_init()
 
 	power_set_mode(TCFG_LOWPOWER_POWER_SEL);
 
+#if(!TCFG_CHARGE_ENABLE)
 	/*close FAST CHARGE */
-	/* CHARGE_EN(0); */
-	/* CHGBG_EN(0); */
+	CHARGE_EN(0);
+	CHGBG_EN(0);
+#endif
 }
 enum {
     PORTA_GROUP = 0,
     PORTB_GROUP,
+    PORTC_GROUP,
 };
 
 static void port_protect(u16 *port_group, u32 port_num)
@@ -232,7 +237,8 @@ static void close_gpio(void)
 {
     u16 port_group[] = {
         [PORTA_GROUP] = 0x1ff,
-        [PORTB_GROUP] = 0x3ff &(~BIT(1)),//pb1
+        [PORTB_GROUP] = 0x3ff,//
+        [PORTC_GROUP] = 0x3ff,//
     };
 
 #if TCFG_IOKEY_ENABLE
@@ -245,6 +251,10 @@ static void close_gpio(void)
     port_protect(port_group, IO_PORTA_01);
     port_protect(port_group, IO_PORTA_02);
 #endif /* TCFG_RTC_ALARM_ENABLE */
+
+#if TCFG_PWMLED_ENABLE
+    port_protect(port_group,TCFG_PWMLED_PIN);
+#endif /*  */
 
     //< close gpio
     gpio_dir(GPIOA, 0, 9, port_group[PORTA_GROUP], GPIO_OR);

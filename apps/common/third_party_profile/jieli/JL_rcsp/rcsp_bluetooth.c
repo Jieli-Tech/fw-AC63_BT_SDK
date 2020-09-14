@@ -7,7 +7,6 @@
 #include "JL_rcsp_api.h"
 #include "JL_rcsp_protocol.h"
 #include "JL_rcsp_packet.h"
-#include "spp_user.h"
 #include "btstack/avctp_user.h"
 #include "system/timer.h"
 #include "app_core.h"
@@ -17,11 +16,9 @@
 #include "app_config.h"
 #include "app_action.h"
 #include "custom_cfg.h"
+#include "btstack_3th_protocol_user.h"
 
-#if RCSP_FILE_OPT
-#include "file_operate/file_operate.h"
-#include "rcsp_bs_api.h"
-#endif
+
 
 #if RCSP_KEY_OPT
 #include "key_event_deal.h"
@@ -136,7 +133,7 @@ struct _dev_version {
 
 #if TEMP_SHIELD_EQ_OPERATING
 #include "audio_eq.h"
-extern s8 eq_mode_get_custom_param(u8 mode, u16 index);
+extern s8 eq_mode_get_gain(u8 mode, u16 index);
 extern int eq_mode_set_custom_param(u16 index, int gain);
 extern int eq_mode_set(u8 mode);
 extern int eq_mode_get_cur(void);
@@ -182,45 +179,6 @@ u8 get_rcsp_connect_status(void)
     return 0;
 #endif
 }
-
-
-static u8 add_one_attr(u8 *buf, u16 max_len, u8 offset, u8 type, u8 *data, u8 size)
-{
-    if (offset + size + 2 > max_len) {
-        rcsp_printf("\n\nadd attr err!\n\n");
-        return 0;
-    }
-
-    buf[offset] = size + 1;
-    buf[offset + 1] = type ;
-    memcpy(&buf[offset + 2], data, size);
-    return size + 2;
-}
-
-static u8 add_one_attr_ex(u8 *buf, u16 max_len, u8 offset, u8 type, u8 *data, u8 size, u8 att_size)
-{
-    if (offset + size + 2 > max_len) {
-        rcsp_printf("\n\nadd attr err!\n\n");
-        return 0;
-    }
-
-    buf[offset] = att_size + 1;
-    buf[offset + 1] = type ;
-    memcpy(&buf[offset + 2], data, size);
-    return size + 2;
-}
-
-static u8 add_one_attr_continue(u8 *buf, u16 max_len, u8 offset, u8 type, u8 *data, u8 size)
-{
-    if ((offset + size) > max_len) {
-        rcsp_printf("\n\nadd attr err 2 !\n\n");
-        return 0;
-    }
-
-    memcpy(&buf[offset], data, size);
-    return size;
-}
-
 
 extern const int support_dual_bank_update_en;
 static u32 JL_opcode_get_target_info(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len)
@@ -426,40 +384,6 @@ static u32 JL_opcode_get_target_info(void *priv, u8 OpCode, u8 OpCode_SN, u8 *da
     return ret;
 }
 
-enum {
-    BS_UDISK = 0,
-    BS_SD0,
-    BS_SD1,
-    BS_FLASH,
-    BS_AUX,
-};
-
-
-#if RCSP_FILE_OPT
-static void fill_dev_info(struct _DEV_info *p_dev_info)
-{
-    u32 dev_status_tmp = 0;
-
-    //udisk
-    if (storage_dev_check_ex("udisk", NULL)) {
-        printf("dev [udisk] online\n");
-        p_dev_info->status |= BIT(BS_UDISK);
-        p_dev_info->usb_handle = app_htonl((u32)BS_UDISK);
-    }
-
-    if (storage_dev_check_ex("sd0", NULL)) {
-        printf("dev [sd0] online\n");
-        p_dev_info->status |= BIT(BS_SD0);
-        p_dev_info->sd0_handle = app_htonl((u32)BS_SD0);
-    }
-    if (storage_dev_check_ex("sd1", NULL)) {
-        printf("dev [sd1] online\n");
-        p_dev_info->status |= BIT(BS_SD1);
-        p_dev_info->sd1_handle = app_htonl((u32)BS_SD1);
-    }
-    printf("__dev total = %d\n", file_opr_dev_total());
-}
-#endif
 
 static u16 common_function_info(u32 mask, u8 *buf, u16 len)
 {
@@ -476,16 +400,6 @@ static u16 common_function_info(u32 mask, u8 *buf, u16 len)
         /* rcsp_printf("COMMON_INFO_ATTR_VOL\n"); */
         /* offset += add_one_attr(buf, len, offset, COMMON_INFO_ATTR_VOL, &sound.vol.sys_vol_l, 1); */
     }
-
-#if RCSP_FILE_OPT
-    if (mask & BIT(COMMON_INFO_ATTR_DEV)) {
-        rcsp_printf("COMMON_INFO_ATTR_DEV\n");
-        struct _DEV_info dev_info;
-        memset((u8 *)&dev_info, 0, sizeof(struct _DEV_info));
-        fill_dev_info(&dev_info);
-        offset += add_one_attr(buf, len, offset, COMMON_INFO_ATTR_DEV, (u8 *)&dev_info, sizeof(struct _DEV_info));
-    }
-#endif
 
     if (mask & BIT(COMMON_INFO_ATTR_ERR_REPORT)) {
         /* rcsp_printf("COMMON_INFO_ATTR_ERR_REPORT\n"); */
@@ -505,18 +419,10 @@ static u16 common_function_info(u32 mask, u8 *buf, u16 len)
 
         u16 i;
         for (i = 0; i < 10; i++) {
-            eq_info.gain_val[i] = eq_mode_get_custom_param(eq_info.mode, i);
+            eq_info.gain_val[i] = eq_mode_get_gain(eq_info.mode, i);
         }
 
         offset += add_one_attr(buf, len, offset, COMMON_INFO_ATTR_EQ, (u8 *)(&eq_info), sizeof(struct _EQ_INFO));
-    }
-#endif
-
-#if RCSP_FILE_OPT
-    if (mask & BIT(COMMON_INFO_ATTR_FILE_BROWSE_TYPE)) {
-        rcsp_printf("COMMON_INFO_ATTR_FILE_BROWSE_TYPE\n");
-        printf("%s", rcsp_bs_file_ext());
-        offset += add_one_attr(buf, len, offset, COMMON_INFO_ATTR_FILE_BROWSE_TYPE, (u8 *)rcsp_bs_file_ext(), rcsp_bs_file_ext_size());
     }
 #endif
 
@@ -932,18 +838,6 @@ static void JL_rcsp_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
         }
 #endif
         break;
-#if RCSP_FILE_OPT
-    case JL_OPCODE_FILE_BROWSE_REQUEST_START:
-        rcsp_printf("JL_OPCODE_FILE_BROWSE_REQUEST_START\n");
-        if (rcsp_bs_start_check(data, len) == false) {
-            JL_CMD_response_send(OpCode, JL_PRO_STATUS_FAIL, OpCode_SN, NULL, 0);
-        } else {
-            JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, NULL, 0);
-            rcsp_bs_start(data, len);
-        }
-        break;
-#endif
-
     case JL_OPCODE_SYS_OPEN_BT_SCAN:
         JL_rcsp_open_bt_scan(OpCode, OpCode_SN, data, len);
         break;
@@ -1043,6 +937,7 @@ static u8 JL_rcsp_wait_resp_timeout(void *priv, u8 OpCode, u8 counter)
 ///**************************************************************************************///
 ///************     rcsp ble                                                   **********///
 ///**************************************************************************************///
+void bt_ble_adv_enable(u8 enable);
 static void JL_ble_status_callback(void *priv, ble_state_e status)
 {
     rcsp_printf("JL_ble_status_callback==================== %d\n", status);
@@ -1060,6 +955,13 @@ static void JL_ble_status_callback(void *priv, ble_state_e status)
     case BLE_ST_CONNECT:
         break;
     case BLE_ST_SEND_DISCONN:
+        break;
+    case BLE_ST_DISCONN:
+#if RCSP_UPDATE_EN
+        if (get_jl_update_flag()) {
+            bt_ble_adv_enable(0);
+        }
+#endif
         break;
     case BLE_ST_NOTIFY_IDICATE:
         break;
@@ -1329,6 +1231,9 @@ void rcsp_init()
     rcsp_dev_select(RCSP_BLE);
 
     __this->rcsp_run_flag = 1;
+#if (0 != BT_CONNECTION_VERIFY)
+    JL_rcsp_set_auth_flag(1);
+#endif
 }
 
 
@@ -1448,39 +1353,6 @@ static int JL_rcsp_event_handler(RCSP_MSG msg, int argc, int *argv)
     }
 #endif
     break;
-
-#if RCSP_FILE_OPT
-    case RCSP_MSG_BS_END:
-        printf("RCSP_MSG_BS_END\n");
-        {
-            u8 reason = (u8)argv[0];
-            char *dev_logo = (char *)argv[1];
-            u32 sclust = (u32)argv[2];
-            rcsp_bs_stop();
-            printf("reason = %d, dev_logo = %s, sclust = %x\n", reason, dev_logo, sclust);
-            if (reason == 2) {
-
-#ifdef CONFIG_SOUNDBOX
-                if (true ==	app_check_curr_task(APP_MUSIC_TASK)) {
-#else
-                if (true == app_cur_task_check("music")) {
-#endif
-                    printf("is music mode \n");
-                    printf("%s, %d\n", __FUNCTION__, __LINE__);
-                    //music_play_by_dev_filesclut((int)dev_logo, sclust);
-                } else {
-                    printf("is not music mode \n");
-                    rcsp_sclust_ply.flag = 1;
-                    rcsp_sclust_ply.dev_logo = (int)dev_logo;
-                    rcsp_sclust_ply.sclust = (u32)sclust;
-                    //app_task_switch("music", ACTION_MUSIC_MAIN);
-                    app_task_switch("music", ACTION_APP_MAIN, NULL);
-                }
-            }
-            JL_CMD_send(JL_OPCODE_FILE_BROWSE_REQUEST_STOP, &reason, 1, JL_NEED_RESPOND);
-        }
-        break;
-#endif
 
     case RCSP_MSG_BT_SCAN:
         if (argc != 5) {

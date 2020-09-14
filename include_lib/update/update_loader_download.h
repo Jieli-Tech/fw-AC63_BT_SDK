@@ -3,11 +3,24 @@
 
 #include "typedef.h"
 
-struct __tws_ota_para{
+struct __tws_ota_para {
     u32 fm_size;
     u16 fm_crc16;
     u16 max_pkt_len;
 };
+
+typedef struct _update_op_api_tws {
+    //for tws ota start
+    int (*tws_ota_start)(void *priv);
+    int (*tws_ota_data_send)(u8 *buf, u16 len);
+    int (*tws_ota_err)(u8);
+    u16(*enter_verfiy_hdl)(void *priv);
+    u16(*exit_verify_hdl)(u8 *, u8 *);
+    u16(*update_boot_info_hdl)(void *priv);
+    int (*tws_ota_result_hdl)(u8);
+    int (*tws_ota_data_send_pend)(void);
+    //for tws ota end
+} update_op_tws_api_t;  //给tws同步升级用的接口
 
 typedef struct _update_op_api_t {
     void (*ch_init)(void (*resume_hdl)(void *priv), int (*sleep_hdl)(void *priv));
@@ -16,15 +29,6 @@ typedef struct _update_op_api_t {
     int (*f_seek)(void *fp, u8 type, u32 offset);
     u16(*f_stop)(u8 err);
     int (*notify_update_content_size)(void *priv, u32 size);
-
-    //for tws ota start
-    int (*tws_ota_start)(void *priv);
-    int (*tws_ota_data_send)(u8 *buf,u16 len);
-    int (*tws_ota_err)(u8);
-	u16 (*enter_verfiy_hdl)(void *priv);
-	u16 (*exit_verify_hdl)(u8 *,u8 *);
-	u16 (*update_boot_info_hdl)(void *priv);
-    //for tws ota end 
 } update_op_api_t;
 
 extern const update_op_api_t lmp_ch_update_op;
@@ -55,11 +59,12 @@ enum {
 
     UPDATE_RESULT_UBOOT_NOT_MATCH = 0x09,  //UBOOT不匹配
     UPDATE_RESULT_PRODUCT_INFO_NOT_MATCH = 0x0a, //芯片型号不匹配
-	UPDATE_RESULT_EX_DSP_UPDATE_ERR,		//外部IC升级出错;
-	UPDATE_RESULT_CFG_UPDATE_ERR,			//配置升级出错
+    UPDATE_RESULT_EX_DSP_UPDATE_ERR,		//外部IC升级出错;
+    UPDATE_RESULT_CFG_UPDATE_ERR,			//配置升级出错
 
-	UPDATE_RESULT_FLASH_ERASE_ERR = 0x0d,	//flash 擦失败(可能是写保护)
+    UPDATE_RESULT_FLASH_ERASE_ERR = 0x0d,	//flash 擦失败(可能是写保护)
     UPDATE_RESULT_REMOTE_FILE_NOT_MATCH,    //升级文件不匹配
+    UPDATE_RESULT_OTA_TWS_NO_RSP,
 };
 
 typedef struct _update_type_info_t {
@@ -96,4 +101,6 @@ void app_update_loader_downloader_init(
     void (*result_cbk)(void *priv, u8 type, u8 cmd),
     void *cbk_priv,
     update_op_api_t *p_op_api);
+
+void update_tws_api_register(const update_op_tws_api_t *op);
 #endif /*_UPDATE_LOADER_DOWNLOAD_H_*/

@@ -37,7 +37,11 @@ static const u8 user_stirng[] = {
 static u8 root2_testing;
 u32 usb_root2_testing()
 {
+#if USB_ROOT2
     return root2_testing;
+#else
+    return 0;
+#endif
 }
 u32 check_ep_vaild(u32 ep)
 {
@@ -102,9 +106,11 @@ static u32 setup_device(struct usb_device_t *usb_device, struct usb_ctrlrequest 
             }
             break;
         case USB_DT_DEVICE:
+#if USB_ROOT2
             if (req->wLength == 0xffff) {
                 root2_testing = 1;
             }
+#endif
             break;
         }
         break;

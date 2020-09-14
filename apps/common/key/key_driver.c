@@ -194,7 +194,7 @@ _notify:
     scan_para->notify_value = NO_KEY;
 
     e.arg  = (void *)DEVICE_EVENT_FROM_KEY;
-    printf("key_value: 0x%x, event: %d\n", key_value, key_event);
+    /* printf("key_value: 0x%x, event: %d\n", key_value, key_event); */
     if (key_event_remap(&e)) {
         sys_event_notify(&e);
     }
@@ -306,9 +306,10 @@ static u8 key_idle_query(void)
 {
     return !is_key_active;
 }
-
+#if !TCFG_LP_TOUCH_KEY_ENABLE
 REGISTER_LP_TARGET(key_lp_target) = {
     .name = "key",
     .is_idle = key_idle_query,
 };
+#endif /* #if !TCFG_LP_TOUCH_KEY_ENABLE */
 

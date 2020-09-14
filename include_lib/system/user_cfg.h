@@ -110,5 +110,8 @@ extern void bt_get_vm_mac_addr(u8 *addr);
 extern u8 get_max_sys_vol(void);
 extern const char *bt_get_local_name();
 extern u16 bt_get_tws_device_indicate(u8 *tws_device_indicate);
+const char *bt_get_local_name();
+extern void bt_update_mac_addr(u8 *addr);
+extern void bt_set_local_name(char *name, u8 len);
 
 #endif

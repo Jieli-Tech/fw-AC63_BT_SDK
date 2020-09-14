@@ -43,7 +43,7 @@
 
 #if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_TRANS_DATA)
 
-#define TEST_SEND_DATA_RATE          0  //测试 send_data
+#define TEST_SEND_DATA_RATE          0  //测试上行发送数据
 #define TEST_SEND_HANDLE_VAL         ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE
 /* #define TEST_SEND_HANDLE_VAL         ATT_CHARACTERISTIC_ae05_01_VALUE_HANDLE */
 #define EXT_ADV_MODE_EN              0
@@ -71,8 +71,12 @@ extern void printf_buf(u8 *buf, u32 len);
 /* #include "debug.h" */
 
 //------
-#define ATT_LOCAL_PAYLOAD_SIZE    (200)                   //note: need >= 20
-#define ATT_SEND_CBUF_SIZE        (512)                   //note: need >= 20,缓存大小，可修改
+//ATT发送的包长,    note: 20 <=need >= MTU
+#define ATT_LOCAL_PAYLOAD_SIZE    (200)                   //
+//ATT缓存的buffer大小,  note: need >= 20,可修改
+#define ATT_SEND_CBUF_SIZE        (512)                   //
+
+//共配置的RAM
 #define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_PAYLOAD_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
 static u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
 //---------------
@@ -84,6 +88,7 @@ static u8 test_data_start;
 #endif
 
 //---------------
+// 广播周期 (unit:0.625ms)
 #define ADV_INTERVAL_MIN          (160*5)
 
 #define HOLD_LATENCY_CNT_MIN  (3)  //(0~0xffff)
@@ -95,9 +100,13 @@ static volatile hci_con_handle_t con_handle;
 //加密设置
 static const uint8_t sm_min_key_size = 7;
 
-//连接参数设置
+//连接参数更新请求设置
+//是否使能参数请求更新,0--disable, 1--enable
 static const uint8_t connection_update_enable = 1; ///0--disable, 1--enable
+//当前请求的参数表index
 static uint8_t connection_update_cnt = 0; //
+
+//参数表
 static const struct conn_update_param_t connection_param_table[] = {
     {16, 24, 10, 600},//11
     {12, 28, 10, 600},//3.7
@@ -105,6 +114,8 @@ static const struct conn_update_param_t connection_param_table[] = {
     /* {12, 28, 4, 600},//3.7 */
     /* {12, 24, 30, 600},//3.05 */
 };
+
+//共可用的参数组数
 #define CONN_PARAM_TABLE_CNT      (sizeof(connection_param_table)/sizeof(struct conn_update_param_t))
 
 #if (ATT_RAM_BUFSIZE < 64)
@@ -125,10 +136,11 @@ static u8 scan_rsp_data[ADV_RSP_PACKET_MAX];//max is 31
 /* #define scan_rsp_data  &att_ram_buffer[32] */
 
 static char gap_device_name[BT_NAME_LEN_MAX] = "jl_ble_test";
-static u8 gap_device_name_len = 0;
-static u8 ble_work_state = 0;
+static u8 gap_device_name_len = 0; //名字长度，不包含结束符
+static u8 ble_work_state = 0;      //ble 状态变化
+static u8 adv_ctrl_en;             //广播控制
+
 static u8 test_read_write_buf[4];
-static u8 adv_ctrl_en;
 
 static void (*app_recieve_callback)(void *priv, void *buf, u16 len) = NULL;
 static void (*app_ble_state_callback)(void *priv, ble_state_e state) = NULL;
@@ -144,10 +156,13 @@ static int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type);
 //------------------------------------------------------
 //广播参数设置
 static void advertisements_setup_init();
-extern const char *bt_get_local_name();
 static int set_adv_enable(void *priv, u32 en);
 static int get_buffer_vaild_len(void *priv);
+extern const char *bt_get_local_name();
 extern void clr_wdt(void);
+extern void sys_auto_shut_down_disable(void);
+extern void sys_auto_shut_down_enable(void);
+extern u8 get_total_connect_dev(void);
 //------------------------------------------------------
 #if TEST_AUDIO_DATA_UPLOAD
 static const u8 test_audio_data_file[1024] = {
@@ -205,27 +220,6 @@ static void test_send_audio_data(int init_flag)
 
 #endif
 
-u8 *ble_get_scan_rsp_ptr(u16 *len)
-{
-    if (len) {
-        *len = scan_rsp_data_len;
-    }
-    return scan_rsp_data;
-}
-
-u8 *ble_get_adv_data_ptr(u16 *len)
-{
-    if (len) {
-        *len = adv_data_len;
-    }
-    return adv_data;
-}
-
-u8 *ble_get_gatt_profile_data(u16 *len)
-{
-    *len = sizeof(profile_data);
-    return (u8 *)profile_data;
-}
 
 static void send_request_connect_parameter(u8 table_index)
 {
@@ -233,7 +227,7 @@ static void send_request_connect_parameter(u8 table_index)
 
     log_info("update_request:-%d-%d-%d-%d-\n", param->interval_min, param->interval_max, param->latency, param->timeout);
     if (con_handle) {
-        ble_user_cmd_prepare(BLE_CMD_REQ_CONN_PARAM_UPDATE, 2, con_handle, param);
+        ble_op_conn_param_request(con_handle, param);
     }
 }
 
@@ -367,9 +361,6 @@ static void can_send_now_wakeup(void)
 
 }
 
-extern void sys_auto_shut_down_disable(void);
-extern void sys_auto_shut_down_enable(void);
-extern u8 get_total_connect_dev(void);
 static void ble_auto_shut_down_enable(u8 enable)
 {
 #if TCFG_AUTO_SHUT_DOWN_TIME
@@ -393,7 +384,7 @@ const char *const phy_result[] = {
 static void set_connection_data_length(u16 tx_octets, u16 tx_time)
 {
     if (con_handle) {
-        ble_user_cmd_prepare(BLE_CMD_SET_DATA_LENGTH, 3, con_handle, tx_octets, tx_time);
+        ble_op_set_data_length(con_handle, tx_octets, tx_time);
     }
 }
 
@@ -406,7 +397,7 @@ static void set_connection_data_phy(u8 tx_phy, u8 rx_phy)
     u8 all_phys = 0;
     u16 phy_options = CONN_SET_PHY_OPTIONS_S8;
 
-    ble_user_cmd_prepare(BLE_CMD_SET_PHY, 5, con_handle, all_phys, tx_phy, rx_phy, phy_options);
+    ble_op_set_ext_phy(con_handle, all_phys, tx_phy, rx_phy, phy_options);
 }
 
 static void server_profile_start(u16 con_handle)
@@ -414,7 +405,7 @@ static void server_profile_start(u16 con_handle)
 #if BT_FOR_APP_EN
     set_app_connect_type(TYPE_BLE);
 #endif
-    ble_user_cmd_prepare(BLE_CMD_ATT_SEND_INIT, 4, con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_PAYLOAD_SIZE);
+    ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_PAYLOAD_SIZE);
     set_ble_work_state(BLE_ST_CONNECT);
     ble_auto_shut_down_enable(0);
 
@@ -476,7 +467,9 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 connection_update_complete_success(packet + 8);
                 server_profile_start(con_handle);
 #if RCSP_BTMATE_EN
+#if (0 == BT_CONNECTION_VERIFY)
                 JL_rcsp_auth_reset();
+#endif
                 //rcsp_dev_select(RCSP_BLE);
                 rcsp_init();
 #endif
@@ -505,7 +498,7 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             rcsp_exit();
 #endif
             con_handle = 0;
-            ble_user_cmd_prepare(BLE_CMD_ATT_SEND_INIT, 4, con_handle, 0, 0, 0);
+            ble_op_att_send_init(con_handle, 0, 0, 0);
             set_ble_work_state(BLE_ST_DISCONN);
 
             if (!ble_update_get_ready_jump_flag()) {
@@ -521,7 +514,7 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
             mtu = att_event_mtu_exchange_complete_get_MTU(packet) - 3;
             log_info("ATT MTU = %u\n", mtu);
-            ble_user_cmd_prepare(BLE_CMD_ATT_MTU_SIZE, 1, mtu);
+            ble_op_att_set_send_mtu(mtu);
             /* set_connection_data_length(251, 2120); */
             break;
 
@@ -710,7 +703,7 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 
 #if RCSP_BTMATE_EN
     case ATT_CHARACTERISTIC_ae02_02_CLIENT_CONFIGURATION_HANDLE:
-        ble_user_cmd_prepare(BLE_CMD_LATENCY_HOLD_CNT, 2, con_handle, HOLD_LATENCY_CNT_ALL); //
+        ble_op_latency_skip(con_handle, HOLD_LATENCY_CNT_ALL); //
         set_ble_work_state(BLE_ST_NOTIFY_IDICATE);
 #endif
         /* if ((cur_conn_latency == 0) */
@@ -762,7 +755,7 @@ static int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type)
         return APP_BLE_NO_WRITE_CCC;
     }
 
-    ret = ble_user_cmd_prepare(BLE_CMD_ATT_SEND_DATA, 4, handle, data, len, handle_type);
+    ret = ble_op_att_send_data(handle, data, len, handle_type);
     if (ret == BLE_BUFFER_FULL) {
         ret = APP_BLE_BUFF_FULL;
     }
@@ -791,7 +784,7 @@ static int make_set_adv_data(void)
     log_info("adv_data(%d):", offset);
     log_info_hexdump(buf, offset);
     adv_data_len = offset;
-    ble_user_cmd_prepare(BLE_CMD_ADV_DATA, 2, offset, buf);
+    ble_op_set_adv_data(offset, buf);
     return 0;
 }
 
@@ -820,7 +813,7 @@ static int make_set_rsp_data(void)
     log_info("rsp_data(%d):", offset);
     log_info_hexdump(buf, offset);
     scan_rsp_data_len = offset;
-    ble_user_cmd_prepare(BLE_CMD_RSP_DATA, 2, offset, buf);
+    ble_op_set_rsp_data(offset, buf);
     return 0;
 }
 
@@ -831,7 +824,7 @@ static void advertisements_setup_init()
     uint8_t adv_channel = ADV_CHANNEL_ALL;
     int   ret = 0;
 
-    ble_user_cmd_prepare(BLE_CMD_ADV_PARAM, 3, ADV_INTERVAL_MIN, adv_type, adv_channel);
+    ble_op_set_adv_param(ADV_INTERVAL_MIN, adv_type, adv_channel);
 
     ret |= make_set_adv_data();
     ret |= make_set_rsp_data();
@@ -862,7 +855,6 @@ static void reset_passkey_cb(u32 *key)
 #endif
 }
 
-extern void reset_PK_cb_register(void (*reset_pk)(u32 *));
 void ble_sm_setup_init(io_capability_t io_type, u8 auth_req, uint8_t min_key_size, u8 security_en)
 {
     //setup SM: Display only
@@ -879,7 +871,6 @@ void ble_sm_setup_init(io_capability_t io_type, u8 auth_req, uint8_t min_key_siz
 }
 
 
-extern void le_device_db_init(void);
 void ble_profile_init(void)
 {
     printf("ble profile init\n");
@@ -1023,20 +1014,20 @@ static int set_adv_enable(void *priv, u32 en)
 
 #if EXT_ADV_MODE_EN
     if (en) {
-        ble_user_cmd_prepare(BLE_CMD_EXT_ADV_PARAM, 2, &ext_adv_param, sizeof(ext_adv_param));
+        ble_op_set_ext_adv_param(&ext_adv_param, sizeof(ext_adv_param));
 
         log_info_hexdump(&ext_adv_data, sizeof(ext_adv_data));
-        ble_user_cmd_prepare(BLE_CMD_EXT_ADV_DATA, 2, &ext_adv_data, sizeof(ext_adv_data));
+        ble_op_set_ext_adv_data(&ext_adv_data, sizeof(ext_adv_data));
 
-        ble_user_cmd_prepare(BLE_CMD_EXT_ADV_ENABLE, 2, &ext_adv_enable, sizeof(ext_adv_enable));
+        ble_op_set_ext_adv_enable(&ext_adv_enable, sizeof(ext_adv_enable));
     } else {
-        ble_user_cmd_prepare(BLE_CMD_EXT_ADV_ENABLE, 2, &ext_adv_disable, sizeof(ext_adv_disable));
+        ble_op_set_ext_adv_enable(&ext_adv_disable, sizeof(ext_adv_disable));
     }
 #else
     if (en) {
         advertisements_setup_init();
     }
-    ble_user_cmd_prepare(BLE_CMD_ADV_ENABLE, 1, en);
+    ble_op_adv_enable(en);
 #endif /* EXT_ADV_MODE_EN */
 
     return APP_BLE_NO_ERROR;
@@ -1048,7 +1039,7 @@ static int ble_disconnect(void *priv)
         if (BLE_ST_SEND_DISCONN != get_ble_work_state()) {
             log_info(">>>ble send disconnect\n");
             set_ble_work_state(BLE_ST_SEND_DISCONN);
-            ble_user_cmd_prepare(BLE_CMD_DISCONNECT, 1, con_handle);
+            ble_op_disconnect(con_handle);
         } else {
             log_info(">>>ble wait disconnect...\n");
         }
@@ -1062,7 +1053,7 @@ static int ble_disconnect(void *priv)
 static int get_buffer_vaild_len(void *priv)
 {
     u32 vaild_len = 0;
-    ble_user_cmd_prepare(BLE_CMD_ATT_VAILD_LEN, 1, &vaild_len);
+    ble_op_att_get_remain(&vaild_len);
     return vaild_len;
 }
 
@@ -1109,6 +1100,35 @@ static int regiest_state_cbk(void *priv, void *cbk)
     return APP_BLE_NO_ERROR;
 }
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
+
+u8 *ble_get_scan_rsp_ptr(u16 *len)
+{
+    if (len) {
+        *len = scan_rsp_data_len;
+    }
+    return scan_rsp_data;
+}
+
+u8 *ble_get_adv_data_ptr(u16 *len)
+{
+    if (len) {
+        *len = adv_data_len;
+    }
+    return adv_data;
+}
+
+u8 *ble_get_gatt_profile_data(u16 *len)
+{
+    *len = sizeof(profile_data);
+    return (u8 *)profile_data;
+}
+
+
 void bt_ble_adv_enable(u8 enable)
 {
     set_adv_enable(0, enable);
@@ -1142,7 +1162,7 @@ void bt_ble_init(void)
 {
     log_info("***** ble_init******\n");
     char *name_p;
-    u8 ext_name_len = sizeof(ble_ext_name)-1;
+    u8 ext_name_len = sizeof(ble_ext_name) - 1;
 
     name_p = bt_get_local_name();
     gap_device_name_len = strlen(name_p);
@@ -1165,20 +1185,11 @@ void bt_ble_init(void)
 #endif
 }
 
-static void stack_exit(void)
-{
-    ble_module_enable(0);
-    /* set_ble_work_state(BLE_ST_SEND_STACK_EXIT); */
-    /* ble_user_cmd_prepare(BLE_CMD_STACK_EXIT, 1, 0); */
-    /* set_ble_work_state(BLE_ST_STACK_EXIT_COMPLETE); */
-}
-
-
 void bt_ble_exit(void)
 {
     log_info("***** ble_exit******\n");
 
-    stack_exit();
+    ble_module_enable(0);
 
 #if TEST_SEND_DATA_RATE
     server_timer_stop();
@@ -1238,35 +1249,6 @@ void ble_get_server_operation_table(struct ble_server_operation_t **interface_pt
 void ble_server_send_test_key_num(u8 key_num)
 {
     ;
-}
-
-bool ble_msg_deal(u32 param)
-{
-    struct ble_server_operation_t *test_opt;
-    ble_get_server_operation_table(&test_opt);
-
-#if 0//for test key
-    switch (param) {
-    case MSG_BT_PP:
-        break;
-
-    case MSG_BT_NEXT_FILE:
-        break;
-
-    case MSG_HALF_SECOND:
-        /* putchar('H'); */
-        break;
-
-    default:
-        break;
-    }
-#endif
-
-    return FALSE;
-}
-
-void input_key_handler(u8 key_status, u8 key_number)
-{
 }
 
 #endif

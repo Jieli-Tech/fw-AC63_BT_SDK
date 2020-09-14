@@ -3,7 +3,7 @@
 
 #include "app_config.h"
 
-#if (OTA_TWS_SAME_TIME_ENABLE && RCSP_ADV_EN)
+#if (OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || TME_EN))
 
 #define SYS_BT_OTA_EVENT_TYPE_STATUS (('O' << 24) | ('T' << 16) | ('A' << 8) | '\0')
 
@@ -12,7 +12,7 @@
 
 typedef int 		  sint32_t;
 
-enum{
+enum {
     OTA_OVER = 0,
     OTA_INIT,
     OTA_START,
@@ -21,12 +21,12 @@ enum{
     OTA_SUCC,
 };
 
-enum{
+enum {
     OTA_SINGLE_EARPHONE,
     OTA_TWS,
 };
 
-enum{
+enum {
     OTA_START_UPDATE = 0,
     OTA_START_UPDATE_READY,
     OTA_START_VERIFY,
@@ -35,7 +35,7 @@ enum{
     OTA_UPDATE_SUCC,
 };
 
-enum{
+enum {
     OTA_TYPE_SET = 0,
     OTA_TYPE_GET,
     OTA_STATUS_SET,
@@ -47,7 +47,7 @@ enum{
 };
 
 
-enum{
+enum {
     OTA_STOP_APP_DISCONNECT,
     OTA_STOP_LINK_DISCONNECT,
     OTA_STOP_UPDATE_OVER_SUCC,
@@ -55,7 +55,7 @@ enum{
     OTA_STOP_PHONE,
 };
 
-enum{
+enum {
     SYNC_CMD_START_UPDATE,
     SYNC_CMD_START_VERIFY,
     SYNC_CMD_UPDATE_OVER,
@@ -69,7 +69,7 @@ int tws_ota_open(struct __tws_ota_para *para);
 void tws_ota_stop(u8 reason);
 
 u16 tws_ota_enter_verify(void *priv);
-u16 tws_ota_exit_verify(u8 *res , u8 *up_flg);
+u16 tws_ota_exit_verify(u8 *res, u8 *up_flg);
 u16 tws_ota_updata_boot_info_over(void *priv);
 
 int tws_ota_err_callback(u8 reason);

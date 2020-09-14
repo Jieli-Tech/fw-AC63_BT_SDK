@@ -103,7 +103,7 @@ int audio_encoder_task_del(struct audio_encoder_task *task);
 
 int audio_encoder_resume_all(struct audio_encoder_task *task);
 
-int audio_encoder_get_output_buff(void *_enc, void **buf);
+int audio_encoder_get_output_buff(void *_enc, s16 **buf);
 
 int audio_encoder_put_output_buff(void *_enc, void *buff, int len);
 

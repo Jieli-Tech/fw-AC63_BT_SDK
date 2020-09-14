@@ -2,10 +2,10 @@
 #define __KEY_EVENT_DEAL_H__
 
 #include "typedef.h"
-#include "event.h"
+#include "system/event.h"
 
 enum {
-    KEY_POWER_ON,
+    KEY_POWER_ON = KEY_EVENT_MAX,
     KEY_POWEROFF,
     KEY_POWEROFF_HOLD,
     KEY_MUSIC_PP,

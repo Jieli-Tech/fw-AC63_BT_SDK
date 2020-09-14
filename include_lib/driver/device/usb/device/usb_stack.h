@@ -51,7 +51,6 @@ typedef void(*usb_interrupt)(struct usb_device_t *, u32 ep);
 typedef u32(*desc_config)(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
 
 struct usb_setup_t {
-    u8 usb_setup_buffer[USB_SETUP_SIZE];
     struct usb_device_t usb_device;
     struct usb_ctrlrequest request;
     itf_hander interface_hander[MAX_INTERFACE_NUM];
@@ -71,7 +70,8 @@ void usb_reset_interface(struct usb_device_t *usb_device);
 void usb_set_setup_recv(struct usb_device_t *usb_device, void *recv);
 void usb_set_setup_hook(struct usb_device_t *usb_device, void *hook);
 int usb_device_mode(const usb_dev usb_id, const u32 class);
-void usb_setup_init(const usb_dev usb_id, void *ptr);
+void usb_otg_sof_check_init(const usb_dev id);
+void usb_setup_init(const usb_dev usb_id, void *ptr, u8 *setup_buffer);
 u32 usb_setup_release(const usb_dev usb_id);
 u8 *usb_set_data_payload(struct usb_device_t *usb_device, struct usb_ctrlrequest *req, const void *data, u32 len);
 void usb_set_setup_phase(struct usb_device_t *usb_device, u8 setup_phase);

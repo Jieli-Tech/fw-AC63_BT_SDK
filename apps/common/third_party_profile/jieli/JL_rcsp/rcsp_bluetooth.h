@@ -6,6 +6,7 @@
 #include "spp_user.h"
 #include "system/event.h"
 #include "rcsp_msg.h"
+#include "ble_user.h"
 #if RCSP_BTMATE_EN
 void rcsp_init();
 void rcsp_dev_select(u8 type);
@@ -20,10 +21,10 @@ bool rtc_msg_deal(u32 param);
 void rcsp_exit(void);
 u8 rcsp_get_asr_status(void);
 
-enum {
-    RCSP_BLE,
-    RCSP_SPP,
-};
+// enum {
+// RCSP_BLE,
+// RCSP_SPP,
+// };
 
 
 enum {
@@ -74,6 +75,24 @@ enum RCSP_MSG_T {
 };
 
 bool rcsp_msg_post(RCSP_MSG msg, int argc, ...);
+
+#define		SDK_TYPE_AC690X		0x0
+#define		SDK_TYPE_AC692X		0x1
+#define 	SDK_TYPE_AC693X		0x2
+#define 	SDK_TYPE_AC695X 	0x3
+#define		SDK_TYPE_AC697X 	0x4
+
+#if   (defined CONFIG_CPU_BR21)
+#define		RCSP_SDK_TYPE		SDK_TYPE_AC692X
+#elif (defined CONFIG_CPU_BR22)
+#define		RCSP_SDK_TYPE		SDK_TYPE_AC693X
+#elif (defined CONFIG_CPU_BR23)
+#define		RCSP_SDK_TYPE		SDK_TYPE_AC695X
+#elif (defined CONFIG_CPU_BR30)
+#define		RCSP_SDK_TYPE		SDK_TYPE_AC697X
+#else
+#define		RCSP_SDK_TYPE		SDK_TYPE_AC693X
+#endif
 #endif
 
 #endif

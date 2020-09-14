@@ -9,7 +9,7 @@
 #define ACTION_HID_MAIN    	    0x0002
 #define ACTION_IDLE_MAIN    	0x0003
 #define ACTION_KEYFOB    	    0x0004
-
+#define ACTION_KEYPAGE    	    0x0005
 
 #endif
 

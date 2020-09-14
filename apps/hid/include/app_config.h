@@ -16,10 +16,11 @@
 #define CONFIG_DEBUG_ENABLE
 
 //app case 选择,只选1,要配置对应的board_config.h
-#define CONFIG_APP_KEYBOARD                 1//hid按键
-#define CONFIG_APP_KEYFOB                   0//自拍器
-#define CONFIG_APP_MOUSE                    0//mouse
-
+#define CONFIG_APP_KEYBOARD                 1//hid按键 ,default case
+#define CONFIG_APP_KEYFOB                   0//自拍器,  board_ac6368a,board_6318
+#define CONFIG_APP_MOUSE                    0//mouse,   board_mouse
+#define CONFIG_APP_STANDARD_KEYBOARD        0//标准HID键盘,board_ac6351d
+#define CONFIG_APP_KEYPAGE                  0//翻页器
 
 
 #include "board_config.h"
@@ -27,6 +28,8 @@
 // #include "usb_common_def.h"
 
 #include "btcontroller_mode.h"
+
+#include "user_cfg_id.h"
 
 #define APP_PRIVATE_PROFILE_CFG
 
@@ -102,7 +105,7 @@
 #endif
 #if TCFG_USER_EDR_ENABLE
 #if RCSP_BTMATE_EN
-#define CONFIG_BT_RX_BUFF_SIZE  (2 * 1024 + 512)
+#define CONFIG_BT_RX_BUFF_SIZE  (2 * 1024)
 #define CONFIG_BT_TX_BUFF_SIZE  (2 * 1024)
 #else
 #define CONFIG_BT_RX_BUFF_SIZE  (3 * 1024)

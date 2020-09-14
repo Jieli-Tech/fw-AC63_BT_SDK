@@ -18,6 +18,8 @@
 
 #include "btcontroller_mode.h"
 
+#include "user_cfg_id.h"
+
 // #define APP_PRIVATE_PROFILE_CFG
 
 #if (CONFIG_BT_MODE != BT_NORMAL)
@@ -67,9 +69,6 @@
 #define TCFG_UART0_ENABLE					DISABLE_THIS_MOUDLE
 #endif
 
-//需要app升级要开一下宏定义
-#define RCSP_BTMATE_EN                    0
-#define RCSP_UPDATE_EN                    0
 
 #ifdef CONFIG_SDFILE_ENABLE
 #define SDFILE_DEV				"sdfile"

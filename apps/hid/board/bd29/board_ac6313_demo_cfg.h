@@ -34,7 +34,7 @@
 //*********************************************************************************//
 //                                 iokey 配置                                      //
 //*********************************************************************************//
-#define TCFG_IOKEY_ENABLE					ENABLE_THIS_MOUDLE //是否使能IO按键
+#define TCFG_IOKEY_ENABLE					DISABLE_THIS_MOUDLE //是否使能IO按键
 
 #define TCFG_IOKEY_POWER_CONNECT_WAY		ONE_PORT_TO_LOW    //按键一端接低电平一端接IO
 
@@ -49,7 +49,7 @@
 //*********************************************************************************//
 //                                 adkey 配置                                      //
 //*********************************************************************************//
-#define TCFG_ADKEY_ENABLE                   DISABLE_THIS_MOUDLE //是否使能AD按键
+#define TCFG_ADKEY_ENABLE                   ENABLE_THIS_MOUDLE //是否使能AD按键
 #define TCFG_ADKEY_PORT                     IO_PORTB_01         //AD按键端口(需要注意选择的IO口是否支持AD功能)
 /*AD通道选择，需要和AD按键的端口相对应:
     AD_CH_PA1    AD_CH_PA3    AD_CH_PA4    AD_CH_PA5
@@ -118,7 +118,7 @@
 //*********************************************************************************//
 //                                  充电参数配置                                   //
 //*********************************************************************************//
-#define TCFG_CHARGE_ENABLE					ENABLE_THIS_MOUDLE
+#define TCFG_CHARGE_ENABLE				    DISABLE_THIS_MOUDLE
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE
 #define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
 #define TCFG_CHARGE_FULL_V					CHARGE_FULL_V_4202
@@ -179,9 +179,9 @@
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
 #define USER_SUPPORT_PROFILE_SPP    0
-#define USER_SUPPORT_PROFILE_HFP    1
-#define USER_SUPPORT_PROFILE_A2DP   1
-#define USER_SUPPORT_PROFILE_AVCTP  1
+#define USER_SUPPORT_PROFILE_HFP    0
+#define USER_SUPPORT_PROFILE_A2DP   0
+#define USER_SUPPORT_PROFILE_AVCTP  0
 #define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    1
 #define USER_SUPPORT_PROFILE_PBAP   0

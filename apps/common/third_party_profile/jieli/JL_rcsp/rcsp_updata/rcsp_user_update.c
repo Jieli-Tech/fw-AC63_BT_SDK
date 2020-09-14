@@ -14,7 +14,10 @@
 #include "JL_rcsp_protocol.h"
 #include "rcsp_bluetooth.h"
 #include "update_loader_download.h"
+#if(TCFG_USER_TWS_ENABLE == 1)
 #include "classic/tws_api.h"
+#endif
+#include "btstack_3th_protocol_user.h"
 
 #if (RCSP_BTMATE_EN)
 

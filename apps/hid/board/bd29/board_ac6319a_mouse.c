@@ -271,6 +271,10 @@ void mouse_board_devices_init(void)
 void board_init()
 {
     board_power_init();
+
+    //封装是vbat和vddio绑一起的，要在adc初始化之前调用这个函数
+    adc_set_vbat_vddio_tieup(1);
+
     adc_vbg_init();
     adc_init();
     cfg_file_parse(0);

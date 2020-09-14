@@ -252,10 +252,10 @@ static void respond_messsage_schedule(u16 *delay, u16 *duration, void *cb_data)
      *  a random delay between 20 and 500 milliseconds.
      */
     u16 delay_ms;
-    struct bt_mesh_msg_ctx *ctx = cb_data;
+    u16 dst_addr = (u16)cb_data;
 
     pseudo_random_genrate((u8 *)&delay_ms, 2);
-    if (BT_MESH_ADDR_IS_UNICAST(ctx->recv_dst)) {
+    if (BT_MESH_ADDR_IS_UNICAST(dst_addr)) {
         delay_ms = btctler_get_rand_from_assign_range(delay_ms, 20, 50);
     } else {
         delay_ms = btctler_get_rand_from_assign_range(delay_ms, 20, 200);
@@ -282,7 +282,7 @@ static void gen_onoff_get(struct bt_mesh_model *model,
     bt_mesh_model_msg_init(&msg, BT_MESH_MODEL_OP_GEN_ONOFF_STATUS);
     buffer_add_u8_at_tail(&msg, onoff_state->current);
 
-    if (bt_mesh_model_send(model, ctx, &msg, &rsp_msg_cb, ctx)) {
+    if (bt_mesh_model_send(model, ctx, &msg, &rsp_msg_cb, (void *)ctx->recv_dst)) {
         log_info("Unable to send On Off Status response\n");
     }
 }

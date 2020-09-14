@@ -4,8 +4,9 @@ includes += \
 	-I$(ROOT)/apps/$(APP_CASE)/include \
 	-I$(ROOT)/apps/common \
 	-I$(ROOT)/apps/common/include \
-	-I$(ROOT)/apps/config/include \
+	-I$(ROOT)/apps/common/config/include \
 	-I$(ROOT)/apps/mesh/include \
+	-I$(ROOT)/apps/common/third_party_profile/common/ \
 
 # include_lib include
 includes += \

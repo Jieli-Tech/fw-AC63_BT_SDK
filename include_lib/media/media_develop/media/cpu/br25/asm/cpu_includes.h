@@ -11,5 +11,6 @@
 #include "asm/audio_src.h"
 #include "dac.h"
 #include "asm/hw_eq.h"
+#include "asm/audio_sync.h"
 
 #endif

@@ -12,13 +12,27 @@ struct __spinlock {
 
 typedef struct __spinlock spinlock_t;
 
+#if CPU_CORE_NUM > 1
 
+
+#define preempt_disable() \
+	__local_irq_disable()
+
+#define preempt_enable() \
+	__local_irq_enable()
+
+#else
 
 #define preempt_disable() \
 	local_irq_disable()
 
 #define preempt_enable() \
 	local_irq_enable()
+
+
+
+
+#endif
 
 
 #if CPU_CORE_NUM > 1
