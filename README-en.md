@@ -92,5 +92,5 @@ Disclaimer
 ------------
 
 AC630N_BT_SDK supports development with AC63 series devices.
-AC63 Series devices (which are pre-production) and Bluetooth Mesh protocols are supported for development in v0.2.0 for prototyping and evaluation.
+AC63 Series devices (which are pre-production) and Bluetooth Mesh protocols are supported for development in tag v0.4.0 for prototyping and evaluation.
 Support for production and deployment in end products is coming soon.
