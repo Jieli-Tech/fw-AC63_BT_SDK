@@ -25,7 +25,7 @@
 |AC6369C|32bit@192MHz|136KB|Yes(250mA)|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
 |AC6369F|32bit@192MHz|136KB|Yes(250mA)|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
 |AC6368A|32bit@192MHz|136KB|No|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6368B|32bit@192MHz|136KB|No|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
+|AC6368B|32bit@192MHz|136KB|No|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
 
 
 635 Series Brief
