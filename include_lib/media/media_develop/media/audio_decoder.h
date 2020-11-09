@@ -78,7 +78,6 @@ struct audio_decoder_task {
     int wakeup_timer;	// 定时唤醒
     int fmt_lock;		// 格式锁
     u32 is_add_wait;	// 正在添加res资源
-    OS_SEM sem;			// 信号量
 };
 
 
@@ -209,8 +208,6 @@ void audio_decoder_task_del_wait(struct audio_decoder_task *, struct audio_res_w
 int audio_decoder_task_wait_state(struct audio_decoder_task *task);
 
 int audio_decoder_resume_all(struct audio_decoder_task *task);
-
-int audio_decoder_resume_all_by_sem(struct audio_decoder_task *task, int time_out);
 
 int audio_decoder_fmt_lock(struct audio_decoder_task *task, int fmt);
 

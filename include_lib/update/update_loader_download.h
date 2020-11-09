@@ -3,6 +3,10 @@
 
 #include "typedef.h"
 
+extern const int config_update_mode;
+#define UPDATE_MODULE_IS_SUPPORT(x) 		(config_update_mode & x)
+#define UPDATE_SUPPORT_DEV_IS_NULL()		(config_update_mode == UPDATE_DEV_NULL)
+
 struct __tws_ota_para {
     u32 fm_size;
     u16 fm_crc16;
@@ -79,9 +83,8 @@ typedef struct _update_type_info_t {
 #define UPDATE_BT_LMP_EN		BIT(0)
 #define UPDATE_STORAGE_DEV_EN	BIT(1)
 #define UPDATE_UART_EN			BIT(2)
-#define UPDATE_RCSP_BLE_EN		BIT(3)
-#define UPDATE_RCSP_SPP_EN		BIT(4)
-#define UPDATE_BLE_TEST_EN		BIT(5)
+#define UPDATE_APP_EN	     	BIT(3)          //包括APP升级还有其他升级方式，如串口升级（非测试盒方式）
+#define UPDATE_BLE_TEST_EN		BIT(4)
 
 
 

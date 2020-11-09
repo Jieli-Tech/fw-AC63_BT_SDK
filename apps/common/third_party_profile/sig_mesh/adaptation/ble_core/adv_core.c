@@ -15,8 +15,8 @@
 #include "btstack/bluetooth.h"
 
 #define LOG_TAG             "[MESH-adv_core]"
-/* #define LOG_INFO_ENABLE */
-/* #define LOG_DEBUG_ENABLE */
+#define LOG_INFO_ENABLE
+#define LOG_DEBUG_ENABLE
 #define LOG_WARN_ENABLE
 #define LOG_ERROR_ENABLE
 #define LOG_DUMP_ENABLE
@@ -112,11 +112,8 @@ static void mesh_adv_send_end(void *param)
         cb->end(0, cb_data);
     }
 
-    if (buf->flags & NET_BUF_FRIEND_POLL_CACHE) {
-        BT_INFO("NET_BUF_FRIEND_POLL_CACHE");
-    }
-
     BT_MESH_ADV(buf)->busy = 0;
+
     net_buf_unref(buf);
 
     BT_INFO("adv_list.head=0x%x", adv_list.head);
@@ -344,16 +341,33 @@ void bt_mesh_adv_update(void)
     resume_mesh_gatt_proxy_adv_thread();
 }
 
+void newbuf_replace(struct net_buf_pool *pool)
+{
+    struct net_buf *buf;
+
+    buf = net_buf_slist_simple_get(&adv_list);
+
+    BT_MESH_ADV(buf)->busy = 0;
+
+    buf->ref = 0;
+
+    buf->flags = 0;
+
+    pool->free_count ++;
+}
+
 void bt_mesh_adv_send(struct net_buf *buf, const struct bt_mesh_send_cb *cb,
                       void *cb_data)
 {
-    BT_INFO("--func=%s", __FUNCTION__);
-    BT_DBG("type 0x%02x len %u: %s", BT_MESH_ADV(buf)->type, buf->len,
-           bt_hex(buf->data, buf->len));
+    BT_DBG("--func=%s", __FUNCTION__);
+    /* BT_DBG("type 0x%02x len %u: %s", BT_MESH_ADV(buf)->type, buf->len, */
+    /* bt_hex(buf->data, buf->len)); */
 
     BT_MESH_ADV(buf)->cb = cb;
     BT_MESH_ADV(buf)->cb_data = cb_data;
     BT_MESH_ADV(buf)->busy = 1U;
+
+    net_buf_ref(buf);
 
     BT_INFO("adv_list.head=0x%x", adv_list.head);
     BT_INFO("adv_list.tail=0x%x", adv_list.tail);

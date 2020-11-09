@@ -53,6 +53,10 @@ typedef unsigned long long      u64;
 
 extern void clr_wdt();
 
+///屏蔽的优先级
+#define IRQ_IPMASK   6
+
+
 #if CPU_CORE_NUM > 1
 static inline int current_cpu_id()
 {
@@ -78,7 +82,7 @@ static inline int cpu_irq_disabled()
 {
     int flag;
     __asm__ volatile("%0 = icfg" : "=r"(flag));
-    return (flag & 0x300) != 0x300;
+    return (flag & 0x300) != 0x300 || ((q32DSP(0)->IPMASK) == IRQ_IPMASK);
 }
 
 #if 0
@@ -241,8 +245,8 @@ extern const int config_asser;
 		do { \
 			if(config_asser){\
 				if(!(a)){ \
-					log_e("file:%s, line:%d", __FILE__, __LINE__); \
-					log_e("ASSERT-FAILD: "#a" "__VA_ARGS__); \
+					printf("file:%s, line:%d", __FILE__, __LINE__); \
+					printf("ASSERT-FAILD: "#a" "__VA_ARGS__); \
 					cpu_assert_debug(); \
 				} \
 			}else {\

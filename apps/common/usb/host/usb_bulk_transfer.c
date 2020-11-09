@@ -25,7 +25,6 @@
 /* #define LOG_DUMP_ENABLE */
 #define LOG_CLI_ENABLE
 #include "debug.h"
-#if TCFG_UDISK_ENABLE || TCFG_ADB_ENABLE ||TCFG_AOA_ENABLE
 
 struct usb_request_block {
     void *ptr;
@@ -65,13 +64,17 @@ s32 usb_bulk_only_receive_async(struct device *device, u8 host_ep, u16 rxmaxp, u
     urb.ptr = pBuf;
     urb.len = len;
     urb.target_ep = target_ep;
+#ifdef CONFIG_USB_SUPPORT_MRX_TX
+    urb.rxmap = 0x200;
+#else
     urb.rxmap = 0x40;
+#endif
     urb.msg = -DEV_ERR_OFFLINE;
 
     usb_h_set_ep_isr(host_dev, host_ep | USB_DIR_IN, usb_bulk_rx_isr, host_dev);
     usb_set_intr_rxe(usb_id, host_ep);
 
-    int ret = usb_h_ep_read_async(usb_id, host_ep, target_ep, NULL, 0, USB_ENDPOINT_XFER_BULK, 1);
+    int ret = usb_h_ep_read_async(usb_id, host_ep, target_ep, NULL, len, USB_ENDPOINT_XFER_BULK, 1);
     if (ret < 0) {
         return ret;
     }
@@ -195,4 +198,3 @@ s32 usb_bulk_only_send(struct device *device, u8 host_ep, u16 txmaxp, u8 target_
     return ret;
 
 }
-#endif

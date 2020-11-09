@@ -113,5 +113,7 @@ extern u16 bt_get_tws_device_indicate(u8 *tws_device_indicate);
 const char *bt_get_local_name();
 extern void bt_update_mac_addr(u8 *addr);
 extern void bt_set_local_name(char *name, u8 len);
+extern void bt_reset_and_get_mac_addr(u8 *addr);
+extern void bt_set_pair_code_en(u8 en);
 
 #endif

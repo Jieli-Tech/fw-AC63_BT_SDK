@@ -28,6 +28,7 @@ sdfile_vfs_ops
 #if TCFG_NORFLASH_DEV_ENABLE && VFS_ENABLE
 nor_fs_vfs_ops
 nor_sdfile_vfs_ops
+nor_rec_fs_vfs_ops
 #endif
 
 #if FLASH_INSIDE_REC_ENABLE
@@ -40,7 +41,9 @@ sbc_hwaccel
 cvsd_decoder
 pcm_decoder
 
-//mty_decoder
+#if TCFG_DEC_MTY_ENABLE
+mty_decoder
+#endif
 
 #if TCFG_DEC_MP3_ENABLE
 mp3_decoder
@@ -66,6 +69,13 @@ ape_decoder
 
 #if TCFG_DEC_M4A_ENABLE
 m4a_decoder
+#if TCFG_DEC2TWS_ENABLE
+m4apick_decoder
+#endif
+#endif
+
+#if TCFG_DEC_ALAC_ENABLE
+alac_decoder
 #endif
 
 #if TCFG_DEC_AMR_ENABLE

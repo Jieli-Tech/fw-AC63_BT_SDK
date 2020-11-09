@@ -53,8 +53,9 @@
 #define FADE_OUT_IN           1
 #define PCM_PHASE_BIT         8
 
-#define DA_LEFT         0
-#define DA_RIGHT        1
+#define DA_LEFT             0
+#define DA_RIGHT            1
+#define DA_ALL_CH           2
 #define DA_SOUND_NORMAL                 0x0
 #define DA_SOUND_RESET                  0x1
 #define DA_SOUND_WAIT_RESUME            0x2
@@ -163,6 +164,7 @@ struct audio_dac_hdl {
     u16 output_buf_len;
     u8 sound_state;
     u16 irq_timeout;
+    s16 read_offset;
     unsigned long sound_resume_time;
     struct audio_stream_entry entry;
 };
@@ -274,6 +276,16 @@ void audio_dac_ch_mute(struct audio_dac_hdl *dac, u8 ch, u8 mute);
 
 int audio_dac_set_RL_digital_vol(struct audio_dac_hdl *dac, u16 vol);
 int audio_dac_set_RR_digital_vol(struct audio_dac_hdl *dac, u16 vol);
+
+int audio_dac_fifo_set_read(struct audio_dac_hdl *dac, int offset);
+
+/*
+ *  fifo数据读取
+ *  data - 数据
+ *  len - 长度(byte)
+ *  channel - 读取DAC的channel, DA_LEFT/DA_RIGHT/DA_ALL_CH
+ */
+int audio_dac_fifo_read(struct audio_dac_hdl *dac, void *data, int len, u8 channel);
 
 /*================================我是优雅的分割线===================================*/
 /*

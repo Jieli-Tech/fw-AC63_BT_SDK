@@ -146,6 +146,18 @@ u8 *syscfg_ptr_read(u16 item_id, u16 *len);
 
 #define     VM_RTC_TRIM                 116
 
+#define     VM_BLE_REMOTE_DB_INFO       117
+#define     VM_BLE_REMOTE_DB_00         118
+#define     VM_BLE_REMOTE_DB_01         119
+#define     VM_BLE_REMOTE_DB_02         120
+#define     VM_BLE_REMOTE_DB_03         121
+#define     VM_BLE_REMOTE_DB_04         122
+#define     VM_BLE_REMOTE_DB_05         123
+#define     VM_BLE_REMOTE_DB_06         124
+#define     VM_BLE_REMOTE_DB_07         125
+#define     VM_BLE_REMOTE_DB_08         126
+#define     VM_BLE_REMOTE_DB_09         127
+
 //=================================================================================//
 //                   只存于sys_cfg.bin的配置项[512 ~ 700]                		   //
 //=================================================================================//

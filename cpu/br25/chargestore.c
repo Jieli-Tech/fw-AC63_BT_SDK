@@ -6,6 +6,7 @@
 #include "asm/clock.h"
 #include "asm/chargestore.h"
 #include "update.h"
+#include "app_config.h"
 
 struct chargestore_handle {
     const struct chargestore_platform_data *data;
@@ -33,6 +34,7 @@ enum {
 extern void charge_reset_pb5_pd_status(void);
 extern void nvram_set_boot_state(u32 state);
 extern void local_irq_disable();
+void hw_mmu_disable(void);
 void chargestore_set_update_ram(void)
 {
     int tmp;
@@ -40,7 +42,9 @@ void chargestore_set_update_ram(void)
     tmp &= ~(3 << 8);
     __asm__ volatile("icfg = %0" :: "r"(tmp));//GIE1
     local_irq_disable();
+    hw_mmu_disable();
     nvram_set_boot_state(UPGRADE_UART_SOFT_KEY);
+
 }
 
 static chargestore_get_f95_det_res(u32 equ_res)
@@ -211,6 +215,12 @@ void chargestore_init(const struct chargestore_platform_data *data)
         //不占用IO
         gpio_set_uart1(-1);
     }
+#if (!TCFG_CHARGE_ENABLE)
+    LDO5V_EN(1);
+    LDO5V_EDGE_SEL(1);
+    LDO5V_PND_CLR();
+    LDO5V_EDGE_WKUP_EN(1);
+#endif
 }
 
 static void clock_critical_enter(void)

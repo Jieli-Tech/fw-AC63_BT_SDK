@@ -5,6 +5,7 @@
 #include "system/includes.h"
 #include "device/key_driver.h"
 #include "asm/pwm_led.h"
+#include "asm/charge.h"
 #include "rtc_alarm.h"
 
 #define LOG_TAG_CONST       BOARD
@@ -48,6 +49,17 @@ UART0_PLATFORM_DATA_BEGIN(uart0_data)
 UART0_PLATFORM_DATA_END()
 #endif //TCFG_UART0_ENABLE
 
+/************************** CHARGE config****************************/
+#if TCFG_CHARGE_ENABLE
+CHARGE_PLATFORM_DATA_BEGIN(charge_data)
+    .charge_en              = TCFG_CHARGE_ENABLE,              //内置充电使能
+    .charge_full_V          = TCFG_CHARGE_FULL_V,              //充电截止电压
+    .charge_full_mA			= TCFG_CHARGE_FULL_MA,             //充电截止电流
+    .charge_mA				= TCFG_CHARGE_MA,                  //充电电流
+	.ldo5v_off_filter		= 0,
+	.ldo5v_pulldown_en		= 0,                               //ldo5v的100K下拉电阻使能,若充电舱需要更大的负载才能检测到插入时，请将该变量置1
+CHARGE_PLATFORM_DATA_END()
+#endif//TCFG_CHARGE_ENABLE
 
     /************************** AD KEY ****************************/
 #if TCFG_ADKEY_ENABLE
@@ -187,6 +199,12 @@ static void board_devices_init(void)
 	key_driver_init();
 #endif
 
+#if TCFG_CHARGE_ENABLE
+    charge_api_init(&charge_data);
+#else
+    CHGBG_EN(0);
+    CHARGE_EN(0);
+#endif
 
 #if TCFG_RTC_ALARM_ENABLE
     alarm_init(&rtc_data);
@@ -211,13 +229,8 @@ void board_init()
 	board_devices_init();
 
 	power_set_mode(TCFG_LOWPOWER_POWER_SEL);
-
-#if(!TCFG_CHARGE_ENABLE)
-	/*close FAST CHARGE */
-	CHARGE_EN(0);
-	CHGBG_EN(0);
-#endif
 }
+
 enum {
     PORTA_GROUP = 0,
     PORTB_GROUP,
@@ -312,7 +325,7 @@ struct port_wakeup port0 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORT_DM,                       //唤醒口选择
+	.iomap              = TCFG_IOKEY_NEXT_ONE_PORT,          //唤醒口选择
     .filter_enable      = ENABLE,
 };
 
@@ -320,7 +333,7 @@ struct port_wakeup port1 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORT_DP,                       //唤醒口选择
+	.iomap              = TCFG_IOKEY_PREV_ONE_PORT,          //唤醒口选择
     .filter_enable      = ENABLE,
 };
 

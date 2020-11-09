@@ -39,7 +39,7 @@ extern s32 vm_read(vm_hdl hdl, u8 *data_buf, u16 len);
 extern void pseudo_random_genrate(uint8_t *dest, unsigned size);
 extern uint32_t btctler_get_rand_from_assign_range(uint32_t rand, uint32_t min, uint32_t max);
 extern char *bd_addr_to_str(u8 addr[6]);
-extern const u8 led_use_port[1];
+extern const u8 led_use_port[2];
 
 void prov_complete(u16_t net_idx, u16_t addr)
 {

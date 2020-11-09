@@ -8,6 +8,7 @@
 #include "syscfg_id.h"
 #include "vm.h"
 #include "btcontroller_modules.h"
+#include "uart_update.h"
 
 #if TCFG_UI_ENABLE
 #include "ui/ui_api.h"
@@ -65,38 +66,41 @@ u32 g_updata_flag = 0;
 u16 update_result_get(void)
 {
     u16 ret = UPDATA_NON;
-#ifdef CONFIG_UPDATA_ENABLE
 
-    UPDATA_PARM *p = UPDATA_FLAG_ADDR;
-    u16 crc_cal;
-    crc_cal = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);	//2 : crc_val
-    if (crc_cal && crc_cal == p->parm_crc) {
-        ret =  p->parm_result;
+    if (!UPDATE_SUPPORT_DEV_IS_NULL()) {
+        UPDATA_PARM *p = UPDATA_FLAG_ADDR;
+        u16 crc_cal;
+        crc_cal = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);	//2 : crc_val
+        if (crc_cal && crc_cal == p->parm_crc) {
+            ret =  p->parm_result;
+        }
+        g_updata_flag = ret;
+        g_updata_flag |= ((u32)(p->magic)) << 16;
+
+        memset(p, 0x00, sizeof(UPDATA_PARM));
     }
-    g_updata_flag = ret;
-    g_updata_flag |= ((u32)(p->magic)) << 16;
-
-    memset(p, 0x00, sizeof(UPDATA_PARM));
-
-#endif
 
     return ret;
 }
 void update_result_set(u16 result)
 {
-    UPDATA_PARM *p = UPDATA_FLAG_ADDR;
+    if (!UPDATE_SUPPORT_DEV_IS_NULL()) {
+        UPDATA_PARM *p = UPDATA_FLAG_ADDR;
 
-    memset(p, 0x00, sizeof(UPDATA_PARM));
-    p->parm_result = result;
-    p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);
+        memset(p, 0x00, sizeof(UPDATA_PARM));
+        p->parm_result = result;
+        p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);
+    }
 }
 
 bool update_success_boot_check(void)
 {
-    u16 result = g_updata_flag & 0xffff;
-    u16 up_tpye = g_updata_flag >> 16;
-    if ((UPDATA_SUCC == result) && ((SD0_UPDATA == up_tpye) || (USB_UPDATA == up_tpye))) {
-        return true;
+    if (!UPDATE_SUPPORT_DEV_IS_NULL()) {
+        u16 result = g_updata_flag & 0xffff;
+        u16 up_tpye = g_updata_flag >> 16;
+        if ((UPDATA_SUCC == result) && ((SD0_UPDATA == up_tpye) || (USB_UPDATA == up_tpye))) {
+            return true;
+        }
     }
     return false;
 }
@@ -131,14 +135,14 @@ static inline void dev_update_close_ui()
 #if TCFG_UI_ENABLE
     u8 count = 0;
     UI_SHOW_WINDOW(ID_WINDOW_POWER_OFF);
-__try:
-        if (UI_GET_WINDOW_ID() != ID_WINDOW_POWER_OFF) {
-            os_time_dly(10);//增加延时防止没有关显示
-            if (count < 3) {
-                goto __try;
-            }
-            count++;
+__retry:
+    if (UI_GET_WINDOW_ID() != ID_WINDOW_POWER_OFF) {
+        os_time_dly(10);//增加延时防止没有关显示
+        if (count < 3) {
+            goto __retry;
         }
+        count++;
+    }
 #endif
 }
 
@@ -148,13 +152,19 @@ extern void app_audio_set_wt_volume(s16 volume);
 
 int update_result_deal()
 {
+#ifdef CONFIG_FPGA_ENABLE
+    return 0;
+#endif
+
     u8 key_voice_cnt = 0;
     u16 result = 0;
     result = (g_updata_flag & 0xffff);
     log_info("<--------update_result_deal=0x%x %x--------->\n", result, g_updata_flag >> 16);
 #ifdef  CONFIG_DEBUG_ENABLE
+#if TCFG_APP_BT_EN
     u8 check_update_param_len(void);
     ASSERT(check_update_param_len(), "UPDATE_PARAM_LEN ERROR");
+#endif
 #endif
     if (result == UPDATA_NON || 0 == result) {
         return 0;
@@ -243,7 +253,7 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
         }
     } else {
         memset(p->parm_priv, 0x00, sizeof(p->parm_priv));
-        if (up_type == BLE_TEST_UPDATA) {
+        if (up_type == BLE_TEST_UPDATA && UPDATE_MODULE_IS_SUPPORT(UPDATE_BLE_TEST_EN)) {
             extern int le_controller_get_mac(void *addr);
             le_controller_get_mac(addr);
             memcpy(p->parm_priv, addr, 6);
@@ -386,14 +396,16 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
     break;
 
     case BT_UPDATA:
-        if (__bt_updata_save_connection_info()) {
-            log_error("bt save conn info fail!\n");
-            break;
+        if (UPDATE_MODULE_IS_SUPPORT(UPDATE_BT_LMP_EN)) {
+            if (__bt_updata_save_connection_info()) {
+                log_error("bt save conn info fail!\n");
+                break;
+            }
+            updata_parm_set(up_type, (u8 *)loader_file_path, sizeof(loader_file_path));
+            ram_protect_close();
+            __bt_updata_reset_bt_bredrexm_addr();
+            //note:last func no return;
         }
-        updata_parm_set(up_type, (u8 *)loader_file_path, sizeof(loader_file_path));
-        ram_protect_close();
-        __bt_updata_reset_bt_bredrexm_addr();
-        //note:last func no return;
         break;
     case BLE_TEST_UPDATA:
         if (BT_MODULES_IS_SUPPORT(BT_MODULE_LE)) {
@@ -464,15 +476,20 @@ void update_parm_set_and_get_buf(int type, u32 loader_saddr, void **buf_addr, u1
     }
 
     set_loader_start_addr(loader_saddr);
-#if RCSP_UPDATE_EN
     if ((BLE_APP_UPDATA == type) || (SPP_APP_UPDATA == type)) {
+#if RCSP_UPDATE_EN
         extern u32 ex_cfg_get_start_addr(void);
         exif_addr = ex_cfg_get_start_addr();
         printf("exif_addr:0x%x\n", exif_addr);
         updata_parm_set(type, (u8 *)&exif_addr, sizeof(exif_addr));
-    } else
 #endif
-    {
+    } else if (UART_UPDATA == type) {
+#if(USER_UART_UPDATE_ENABLE) && (UART_UPDATE_ROLE == UART_UPDATE_SLAVE)
+        sava_uart_update_param();
+#endif
+    } else if (BLE_TEST_UPDATA == type) {
+        updata_parm_set(type, NULL, 0);
+    } else {
         updata_parm_set(type, (u8 *)loader_file_path, sizeof(loader_file_path));
     }
 
@@ -480,19 +497,20 @@ void update_parm_set_and_get_buf(int type, u32 loader_saddr, void **buf_addr, u1
     *len = total_len;
 }
 
-#if CONFIG_UPDATA_ENABLE
 int update_check_sniff_en(void)
 {
+    if (!UPDATE_SUPPORT_DEV_IS_NULL()) {
 #if (OTA_TWS_SAME_TIME_ENABLE && RCSP_ADV_EN && !OTA_TWS_SAME_TIME_NEW)
-    if (tws_ota_control(OTA_STATUS_GET) != OTA_OVER) {
-        return 0;
-    }
+        if (tws_ota_control(OTA_STATUS_GET) != OTA_OVER) {
+            return 0;
+        }
 #endif
-    if (get_ota_status()) {
-        log_info("ota ing...");
-        return 0;
-    } else {
-        return 1;
+        if (get_ota_status()) {
+            log_info("ota ing...");
+            return 0;
+        } else {
+            return 1;
+        }
     }
+    return 1;
 }
-#endif

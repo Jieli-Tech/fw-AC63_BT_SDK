@@ -6,6 +6,7 @@
 #include "vm.h"
 #include "btcontroller_config.h"
 #include "app_main.h"
+#include "app_power_manage.h"
 
 #define LOG_TAG_CONST       USER_CFG
 #define LOG_TAG             "[USER_CFG]"
@@ -136,10 +137,6 @@ extern u8 key_table[KEY_EVENT_MAX][KEY_NUM_MAX];
 #define USE_CONFIG_MIC_TYPE_SETTING          USE_CONFIG_BIN_FILE        //MIC类型设置
 #define USE_CONFIG_LOWPOWER_V_SETTING        USE_CONFIG_BIN_FILE        //低电提示设置
 #define USE_CONFIG_AUTO_OFF_SETTING          USE_CONFIG_BIN_FILE        //自动关机时间设置
-
-#define LOW_POWER_SHUTDOWN      320  //低电直接关机电压
-#define LOW_POWER_OFF_VAL   	330  //低电关机电压
-#define LOW_POWER_WARN_VAL   	340  //低电提醒电压
 
 void cfg_file_parse(u8 idx)
 {

@@ -7,8 +7,19 @@
  */
 
 /* Log debug config */
-#define MESH_CODE_LOG_DEBUG_EN                  0
+#define MESH_CODE_LOG_DEBUG_EN                  1
 #define CONFIG_BT_DEBUG                         1
+#define MESH_ADAPTATION_OPTIMIZE                1
+
+/* Net buffer config */
+#define NET_BUF_USE_MALLOC                      1
+#define CONFIG_NET_BUF_USER_DATA_SIZE 		    4
+#ifndef NET_BUF_USE_MALLOC
+#define CONFIG_BT_MESH_ADV_BUF_COUNT 		    4
+#endif /* NET_BUF_USE_MALLOC */
+
+/* Buf Replace Config */
+#define CONFIG_BUF_REPLACE_EN					0
 
 /* Compile config */
 #define ADAPTATION_COMPILE_DEBUG                0
@@ -39,6 +50,15 @@
 #define CONFIG_BT_MESH_LPN_RECV_WIN_FACTOR      config_bt_mesh_lpn_recv_win_factor // 0
 #endif /* CONFIG_BT_MESH_LOW_POWER */
 
+/* Net buffer config */
+#define NET_BUF_TEST_EN                         0
+#define NET_BUF_FREE_EN                         1
+#define NET_BUF_USE_MALLOC                      1
+#define CONFIG_NET_BUF_USER_DATA_SIZE 		    4
+#ifndef NET_BUF_USE_MALLOC
+#define CONFIG_BT_MESH_ADV_BUF_COUNT 		    4
+#endif /* NET_BUF_USE_MALLOC */
+
 /* Friend config */
 #if NET_BUF_USE_MALLOC
 #define CONFIG_BT_MESH_FRIEND_QUEUE_SIZE        config_bt_mesh_friend_queue_size
@@ -55,15 +75,6 @@
 /* Proxy config */
 #define CONFIG_BT_MAX_CONN                      1
 #define CONFIG_BT_MESH_PROXY_FILTER_SIZE        3
-
-/* Net buffer config */
-#define NET_BUF_TEST_EN                         0
-#define NET_BUF_FREE_EN                         1
-#define NET_BUF_USE_MALLOC                      1
-#define CONFIG_NET_BUF_USER_DATA_SIZE 		    4
-#ifndef NET_BUF_USE_MALLOC
-#define CONFIG_BT_MESH_ADV_BUF_COUNT 		    4
-#endif /* NET_BUF_USE_MALLOC */
 
 /* Net config */
 #define CONFIG_BT_MESH_SUBNET_COUNT             2

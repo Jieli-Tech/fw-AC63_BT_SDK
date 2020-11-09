@@ -22,4 +22,5 @@ u8 get_lrc_change_mode();	//from uboot
 
 u32 get_boot_flag();
 void set_boot_flag(u32 flag);
+u32 p33_rd_page(u8 page);
 #endif  /*EFUSE_H*/

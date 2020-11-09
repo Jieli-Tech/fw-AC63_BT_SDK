@@ -5,11 +5,17 @@ cd %~dp0
 
 ..\..\json_to_res.exe json.txt
 
+
+..\..\md5sum.exe app.bin md5.bin
+
+set /p "themd5=" < "md5.bin"
+
+
 copy ..\..\script.ver .
 copy ..\..\uboot.boot .
 copy ..\..\ota.bin .
 
-..\..\isd_download.exe -tonorflash -dev br25 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin -res tone.cfg config.dat -uboot_compress
+..\..\isd_download.exe -tonorflash -dev br25 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin -res tone.cfg config.dat md5.bin -uboot_compress
 :: -format all
 ::-reboot 2500
 
@@ -31,7 +37,7 @@ if exist *.sty del *.sty
 
 
 ..\..\ufw_maker.exe -fw_to_ufw jl_isd.fw
-copy jl_isd.ufw update.ufw
+copy jl_isd.ufw update_%themd5%.ufw
 del jl_isd.ufw
 
 

@@ -9,6 +9,7 @@
 #include "system/event.h"
 #include "asm/efuse.h"
 #include "gpio.h"
+#include "app_config.h"
 
 #define LOG_TAG_CONST   CHARGE
 #define LOG_TAG         "[CHARGE]"
@@ -68,8 +69,13 @@ static void udelay(u32 usec)
 {
     JL_TIMER0->CON = BIT(14);
     JL_TIMER0->CNT = 0;
+#if(TCFG_CLOCK_SYS_SRC==SYS_CLOCK_INPUT_PLL_RCL)//省晶振，注意时钟源
+    JL_TIMER0->PRD = clk_get("lsb") / 1000000L  * usec; //1us
+    JL_TIMER0->CON = BIT(0); // clk
+#else
     JL_TIMER0->PRD = clk_get("timer") / 1000000L  * usec; //1us
     JL_TIMER0->CON = BIT(0) | BIT(3); //sys clk
+#endif
     while ((JL_TIMER0->CON & BIT(15)) == 0);
     JL_TIMER0->CON = BIT(14);
 }
@@ -126,6 +132,7 @@ void charge_reset_pb5_pd_status(void)
 //only for br23/br25,还是负载弱问题
 bool charge_check_wakeup_is_set_ok(void)
 {
+#if TCFG_CHARGE_ENABLE
     //判断插拔检测设置是否正确
     if (LDO5V_IS_EN() && LDO5V_EDGE_WKUP_IS_EN()) {
         //设置为下降沿时(bit1 = 1),当前状态应该为插入(bit5 = 1)
@@ -134,6 +141,7 @@ bool charge_check_wakeup_is_set_ok(void)
             return FALSE;
         }
     }
+#endif
     return TRUE;
 }
 

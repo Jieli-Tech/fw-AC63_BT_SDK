@@ -16,6 +16,8 @@
 #endif
 
 
+#define AT_LED_CODE             AT(.LED_code)
+
 //#define  UI_LED7_TRUE_TABLE1
 //#define  UI_LED7_TRUE_TABLE2
 #define  UI_LED7_TRUE_TABLE3
@@ -374,6 +376,7 @@ void led7_show_number_add(u16 val)
 }
 
 
+AT_LED_CODE
 static u8 __ui_led7_get_sys_halfsec(void)
 {
     if (((jiffies_to_msecs(jiffies) - __this->flash_time) & 999) > 500) {
@@ -383,6 +386,7 @@ static u8 __ui_led7_get_sys_halfsec(void)
     }
 }
 
+AT_LED_CODE
 static void __ui_led7_update_bShowbuf1(void)
 {
     u8 k, i, j, temp;
@@ -464,6 +468,7 @@ static void __ui_led7_update_bShowbuf1(void)
    @note    void led7_clear(void)
 */
 /*----------------------------------------------------------------------------*/
+AT_LED_CODE
 static void __ui_led7_port_set_hz(u8 port)
 {
     gpio_set_pull_down(port, 0);
@@ -479,6 +484,7 @@ static void __ui_led7_port_set_hz(u8 port)
    @note    void led7_clear(void)
 */
 /*----------------------------------------------------------------------------*/
+AT_LED_CODE
 static void __ui_led7_clear_all(void)
 {
     u8 port = 0;
@@ -527,21 +533,22 @@ __attribute__((weak)) u8 led7_skip_vm_flag(void)
    @note    void led7_scan(void *param)
 */
 /*----------------------------------------------------------------------------*/
+AT_LED_CODE
 static void __led7_scan(void *param)
 {
     static u8 cnt = 0;
     u8 seg, i;
 
     if (__this->init == false) {
-        putchar('r');
+        /* putchar('r'); */
         return;
     }
 
     __ui_led7_clear_all();
 
-    if (get_vm_statu() && led7_skip_vm_flag()) {
-        return;
-    }
+    /* if (get_vm_statu() && led7_skip_vm_flag()) { */
+    /*     return; */
+    /* } */
 
     if (!cnt && !__this->lock) {
         __ui_led7_update_bShowbuf1();
@@ -656,10 +663,22 @@ void *led7_init(const struct led7_platform_data *_data)
         return NULL;
     }
 
-    __this->user_data = _data;
+    struct led7_platform_data *data = zalloc(sizeof(struct led7_platform_data));
+    if (!data) {
+        return NULL;
+    }
+
+    memcpy(data, _data, sizeof(struct led7_platform_data));
+    __this->user_data = data;
 
     __ui_led7_clear_all();
+
+#if (TCFG_LED7_RUN_RAM)
+    extern void app_timer_led_scan(void (*led_scan)(void *));
+    app_timer_led_scan(__led7_scan);
+#else
     sys_hi_timer_add(NULL, __led7_scan, 2); //2ms
+#endif
 
     __this->init = true;
     return (void *)(&LED7_HW);

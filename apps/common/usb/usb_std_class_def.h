@@ -47,11 +47,27 @@
 #define     SPK_OUTPUT_TERMINAL_ID      3
 
 /////////////Microphone Class
+
+#define     MIC_SamplingFrequency       1
+
+#if MIC_SamplingFrequency   == 1
+
 #define     MIC_AUDIO_RATE              48000
+
+#else
+
+#define     MIC_AUDIO_RATE              192000
+#define     MIC_AUDIO_RATE_1            44100
+#define     MIC_AUDIO_RATE_2            48000
+#define     MIC_AUDIO_RATE_4            96000
+
+#endif
+
 #define     MIC_AUDIO_RES               16
 
 #define     MIC_CHANNEL                 1
-#define     MIC_FRAME_LEN               (256)//((MIC_AUDIO_RATE * MIC_AUDIO_RES / 8 * MIC_CHANNEL)/1000)
+
+#define     MIC_FRAME_LEN               ((MIC_AUDIO_RATE * MIC_AUDIO_RES / 8 * MIC_CHANNEL)/1000)
 
 #define     MIC_PCM_TYPE                (MIC_AUDIO_RES >> 4)                // 0=8 ,1=16
 #define     MIC_AUDIO_TYPE              (0x02 - MIC_PCM_TYPE)
@@ -65,3 +81,4 @@
 #define     MIC_INPUT_TERMINAL_ID       4
 #define     MIC_FEATURE_UNIT_ID         5
 #define     MIC_OUTPUT_TERMINAL_ID      6
+#define     MIC_SELECTOR_UNIT_ID        7

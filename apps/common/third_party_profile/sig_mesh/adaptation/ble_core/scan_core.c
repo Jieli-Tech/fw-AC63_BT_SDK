@@ -85,7 +85,7 @@ void ble_set_scan_enable(bool en)
     SCAN_HW_START();
 
 #if CMD_DIRECT_TO_BTCTRLER_TASK_EN
-    ll_hci_scan_enable(en);
+    ll_hci_scan_enable(en, 1);
 #else
     ble_user_cmd_prepare(BLE_CMD_SCAN_ENABLE, 1, en);
 #endif /* CMD_DIRECT_TO_BTCTRLER_TASK_EN */

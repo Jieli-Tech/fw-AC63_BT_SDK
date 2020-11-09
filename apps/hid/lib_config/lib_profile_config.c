@@ -90,7 +90,7 @@ void hid_sdp_init(const u8 *hid_descriptor, u16 size)
 #endif
 }
 
-const u8 hid_conn_depend_on_dev_company = 0;
+const u8 hid_conn_depend_on_dev_company = 2;
 const u8 sdp_get_remote_pnp_info = 0;
 
 

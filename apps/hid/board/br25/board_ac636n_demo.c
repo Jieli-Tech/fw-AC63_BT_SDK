@@ -7,6 +7,7 @@
 #include "device/key_driver.h"
 #include "asm/power/p33.h"
 #include "asm/pwm_led.h"
+#include "usb/otg.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -133,6 +134,23 @@ const struct key_remap_data iokey_remap_data = {
 
 #endif
 
+/************************** otg data****************************/
+#if TCFG_OTG_MODE
+struct otg_dev_data otg_data = {
+    .usb_dev_en = TCFG_OTG_USB_DEV_EN,
+	.slave_online_cnt = TCFG_OTG_SLAVE_ONLINE_CNT,
+	.slave_offline_cnt = TCFG_OTG_SLAVE_OFFLINE_CNT,
+	.host_online_cnt = TCFG_OTG_HOST_ONLINE_CNT,
+	.host_offline_cnt = TCFG_OTG_HOST_OFFLINE_CNT,
+	.detect_mode = TCFG_OTG_MODE,
+	.detect_time_interval = TCFG_OTG_DET_INTERVAL,
+};
+#endif
+REGISTER_DEVICES(device_table) = {
+#if TCFG_OTG_MODE
+    { "otg",     &usb_dev_ops, (void *) &otg_data},
+#endif
+};
 
 void debug_uart_init(const struct uart_platform_data *data)
 {
@@ -277,7 +295,7 @@ struct port_wakeup port0 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORTB_01,                       //唤醒口选择
+	.iomap              = TCFG_ADKEY_PORT,                   //唤醒口选择
     .filter_enable      = ENABLE,
 };
 
@@ -291,7 +309,9 @@ const struct charge_wakeup charge_wkup = {
 
 const struct wakeup_param wk_param = {
     .filter     = PORT_FLT_2ms,
+#if TCFG_ADKEY_ENABLE
 	.port[1]    = &port0,
+#endif
 	.sub        = &sub_wkup,
 	.charge     = &charge_wkup,
 };

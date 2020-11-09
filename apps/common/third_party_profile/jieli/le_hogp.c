@@ -40,6 +40,7 @@
 
 #include "rcsp_bluetooth.h"
 #include "JL_rcsp_api.h"
+#include "update_loader_download.h"
 
 #if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_HOGP)
 /* #if RCSP_BTMATE_EN */
@@ -181,6 +182,7 @@ static u8 hid_battery_level = 88;
 static void (*app_recieve_callback)(void *priv, void *buf, u16 len) = NULL;
 static void (*app_ble_state_callback)(void *priv, ble_state_e state) = NULL;
 static void (*ble_resume_send_wakeup)(void) = NULL;
+static void (*le_hogp_output_callback)(u8 *buffer, u16 size) = NULL;
 static u32 channel_priv;//保留未用
 
 static int app_send_user_data_check(u16 len);
@@ -356,7 +358,7 @@ static void cbk_sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
 static const u16 change_handle_table[2] = {ATT_CHARACTERISTIC_2a4b_01_VALUE_HANDLE, ATT_CHARACTERISTIC_2a4b_01_VALUE_HANDLE};
 static void check_report_map_change(void)
 {
-    if (hid_report_change && first_pair_flag && att_get_ccc_config(ATT_CHARACTERISTIC_2a05_01_VALUE_HANDLE)) {
+    if (hid_report_change && first_pair_flag && att_get_ccc_config(ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE)) {
         log_info("###send services changed\n");
         app_send_user_data(ATT_CHARACTERISTIC_2a05_01_VALUE_HANDLE, change_handle_table, 4, ATT_OP_INDICATE);
         hid_report_change = 0;
@@ -388,6 +390,14 @@ static void can_send_now_wakeup(void)
     }
 }
 
+
+//参考识别手机系统
+static void att_check_remote_result(u16 con_handle, remote_type_e remote_type)
+{
+    log_info("le_hogp %02x:remote_type= %02x\n", con_handle, remote_type);
+
+    //to do,change report_map
+}
 /*
  * @section Packet Handler
  *
@@ -425,6 +435,7 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     connection_update_cnt = 0;
                     connection_update_waiting = 0;
                     cur_conn_latency = 0;
+                    connection_update_enable = 1;
 
                     con_handle = little_endian_read_16(packet, 4);
                     log_info("HCI_SUBEVENT_LE_CONNECTION_COMPLETE: %0x\n", con_handle);
@@ -447,6 +458,7 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     /* rcsp_dev_select(RCSP_BLE); */
                     rcsp_init();
 #endif
+                    //att_server_set_exchange_mtu(con_handle);
                     break;
 
                 case BT_ERR_ADVERTISING_TIMEOUT:
@@ -481,17 +493,17 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             ble_op_att_send_init(con_handle, 0, 0, 0);
             /* bt_ble_adv_enable(1); */
             set_ble_work_state(BLE_ST_DISCONN, packet[5]);
-#if CONFIG_UPDATA_ENABLE
-            if (!ble_update_get_ready_jump_flag()) {
-                if (packet[5] == 0x08) {
-                    //超时断开,检测是否配对广播
-                    ble_check_need_pair_adv();
+            if (UPDATE_MODULE_IS_SUPPORT(UPDATE_BLE_TEST_EN)) {
+                if (!ble_update_get_ready_jump_flag()) {
+                    if (packet[5] == 0x08) {
+                        //超时断开,检测是否配对广播
+                        ble_check_need_pair_adv();
+                    }
+                    bt_ble_adv_enable(1);
+                } else {
+                    log_info("no open adv\n");
                 }
-                bt_ble_adv_enable(1);
-            } else {
-                log_info("no open adv\n");
             }
-#endif
             break;
 
         case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
@@ -521,6 +533,8 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d\n", packet[2]);
             if (!packet[2]) {
                 if (first_pair_flag) {
+                    //只在配对时检查
+                    att_server_set_check_remote(con_handle, att_check_remote_result);
 #if PAIR_DIREDT_ADV_EN
                     conn_pair_info.pair_flag = 1;
                     conn_pair_vm_do(&conn_pair_info, 1);
@@ -776,6 +790,9 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 
     case ATT_CHARACTERISTIC_2a4d_03_VALUE_HANDLE:
         put_buf(buffer, buffer_size);           //键盘led灯状态
+        if (le_hogp_output_callback) {
+            le_hogp_output_callback(buffer, buffer_size);
+        }
         break;
 
     case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
@@ -1299,6 +1316,23 @@ void le_hogp_set_ReportMap(u8 *map, u16 size)
     hid_report_change = 1;
 }
 
+void le_hogp_set_output_callback(void *cb)
+{
+    le_hogp_output_callback = cb;
+}
+
+//配对绑定配置
+void le_hogp_set_pair_config(u8 pair_max, u8 is_allow_cover)
+{
+    ble_list_config_reset(1, 0); //开1对1配对绑定
+}
+//开可配对绑定允许
+void le_hogp_set_pair_allow(void)
+{
+    conn_pair_info.pair_flag = 0;
+    conn_pair_vm_do(&conn_pair_info, 1);
+    ble_list_clear_all();
+}
 
 int ble_hid_is_connected(void)
 {

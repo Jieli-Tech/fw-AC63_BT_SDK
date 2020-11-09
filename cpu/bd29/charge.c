@@ -29,6 +29,7 @@ typedef struct _CHARGE_VAR {
 #define __this 	(&charge_var)
 static CHARGE_VAR charge_var;
 extern void charge_set_callback(void (*wakup_callback)(void), void (*sub_callback)(void));
+static u8 charge_flag;
 
 u8 get_charge_poweron_en(void)
 {
@@ -190,22 +191,21 @@ static void ldo5v_detect(void *priv)
     static u16 ldo5v_in_normal_cnt = 0;
     static u16 ldo5v_in_err_cnt = 0;
     static u16 ldo5v_off_cnt = 0;
-    static u8 flag = 0;
 
     if (LVCMP_DET_GET()) {	//ldoin > vbat
         /* putchar('X'); */
-        ldo5v_off_cnt = 0;
-        ldo5v_in_err_cnt = 0;
         if (ldo5v_in_normal_cnt < 50) {
             ldo5v_in_normal_cnt++;
         } else {
             /* printf("ldo5V_IN\n"); */
             set_charge_online_flag(1);
+            ldo5v_off_cnt = 0;
             ldo5v_in_normal_cnt = 0;
+            ldo5v_in_err_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
-            if ((flag & BIT_LDO5V_IN) == 0) {
-                flag = BIT_LDO5V_IN;
+            if ((charge_flag & BIT_LDO5V_IN) == 0) {
+                charge_flag = BIT_LDO5V_IN;
                 charge_event_to_user(CHARGE_EVENT_LDO5V_IN);
                 LVCMP_EDGE_SEL(1);	//检测ldoin比vbat电压低的情况(充电仓给电池充满后会关断，此时电压会掉下来)
                 LDO5V_EDGE_SEL(1);
@@ -213,18 +213,18 @@ static void ldo5v_detect(void *priv)
         }
     } else if (LDO5V_DET_GET() == 0) {	//ldoin<拔出电压（0.6）
         /* putchar('Q'); */
-        ldo5v_in_normal_cnt = 0;
-        ldo5v_in_err_cnt = 0;
         if (ldo5v_off_cnt < (__this->data->ldo5v_off_filter + 20)) {
             ldo5v_off_cnt++;
         } else {
             /* printf("ldo5V_OFF\n"); */
             set_charge_online_flag(0);
             ldo5v_off_cnt = 0;
+            ldo5v_in_normal_cnt = 0;
+            ldo5v_in_err_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
-            if ((flag & BIT_LDO5V_OFF) == 0) {
-                flag = BIT_LDO5V_OFF;
+            if ((charge_flag & BIT_LDO5V_OFF) == 0) {
+                charge_flag = BIT_LDO5V_OFF;
                 LVCMP_EDGE_SEL(0);//拔出后重新检测插入
                 LDO5V_EDGE_SEL(0);
                 charge_event_to_user(CHARGE_EVENT_LDO5V_OFF);
@@ -232,18 +232,18 @@ static void ldo5v_detect(void *priv)
         }
     } else {	//拔出电压（0.6左右）< ldoin < vbat
         /* putchar('E'); */
-        ldo5v_in_normal_cnt = 0;
-        ldo5v_off_cnt = 0;
-        if (ldo5v_in_err_cnt < 50) {
+        if (ldo5v_in_err_cnt < 220) {
             ldo5v_in_err_cnt++;
         } else {
             /* printf("ldo5V_ERR\n"); */
             set_charge_online_flag(1);
+            ldo5v_off_cnt = 0;
+            ldo5v_in_normal_cnt = 0;
             ldo5v_in_err_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
-            if ((flag & BIT_LDO5V_ERR) == 0) {
-                flag = BIT_LDO5V_ERR;
+            if ((charge_flag & BIT_LDO5V_ERR) == 0) {
+                charge_flag = BIT_LDO5V_ERR;
                 LVCMP_EDGE_SEL(0);
                 LDO5V_EDGE_SEL(1);
                 if (__this->data->ldo5v_off_filter) {
@@ -329,8 +329,8 @@ static void charge_config(void)
 
     CHARGE_FULL_V_SEL(charge_full_v_val);
     CHARGE_FULL_mA_SEL(__this->data->charge_full_mA);
-    CHARGE_mA_SEL(__this->data->charge_mA);
-    /* CHARGE_mA_SEL(CHARGE_mA_20); */
+    /* CHARGE_mA_SEL(__this->data->charge_mA); */
+    CHARGE_mA_SEL(CHARGE_mA_20);
 }
 
 static int charge_init(const struct dev_node *node, void *arg)
@@ -372,6 +372,7 @@ static int charge_init(const struct dev_node *node, void *arg)
         }
     } else {
         CHARGE_WKUP_PND_CLR();
+        charge_flag = BIT_LDO5V_OFF;
     }
     charge_set_callback(charge_wakeup_isr, sub_wakeup_isr);
 

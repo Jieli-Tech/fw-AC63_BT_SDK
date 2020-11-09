@@ -34,6 +34,8 @@
 #include "usb/host/usb_hid_keys.h"
 #include "matrix_keyboard.h"
 #include "user_cfg.h"
+#include "app_charge.h"
+#include "app_power_manage.h"
 
 #if(CONFIG_APP_STANDARD_KEYBOARD)
 
@@ -48,6 +50,8 @@
 
 #define SUPPORT_KEYBOARD_NO_CONFLICT        0    //无冲按键支持
 #define SUPPORT_USER_PASSKEY                1
+#define CAP_LED_PIN                         -1
+#define CAP_LED_ON_VALUE                    1
 
 typedef enum {
     EDR_OPERATION_NULL = 0,
@@ -61,10 +65,11 @@ static edr_operation_t edr_operation = EDR_OPERATION_NULL;
 static u8 key_pass_enter  = 0;
 static u8 remote_addr[6] = {0};
 
+void hid_set_soft_poweroff(void);
 static void sys_auto_sniff_controle(u8 enable, u8 *addr);
 static void bt_sniff_ready_clean(void);
-static void hid_set_soft_poweroff(void);
 static void bt_wait_phone_connect_control(u8 enable);
+static void edr_led_status_callback(u8 *buffer, u16 len);
 
 extern void ble_module_enable(u8 en);
 extern int ble_hid_data_send(u8 report_id, u8 *data, u16 len);
@@ -72,7 +77,8 @@ extern void edr_hid_data_send(u8 report_id, u8 *data, u16 len);
 extern int edr_hid_is_connected(void);
 extern int ble_hid_is_connected(void);
 extern void delete_link_key(bd_addr_t *bd_addr, u8 id);
-void modify_ble_name(const char *name);
+extern void le_hogp_set_output_callback(void *cb);
+extern void modify_ble_name(const char *name);
 
 #define WAIT_DISCONN_TIME_MS     (300)
 
@@ -121,7 +127,7 @@ special_key fn_remap_key[13 + 4] = {
     {.row = 7, .col = 2, .is_user_key = 1},       //3
     {.row = 7, .col = 3, .is_user_key = 1},       //4
 };
-const u16 fn_remap_event[13 + 4] = {_KEY_CUSTOM_CTRL_HOME,  _KEY_CUSTOM_CTRL_SEARCH, _KEY_CUSTOM_CTRL_SEARCH, _KEY_CUSTOM_CTRL_CALCULATOR, \
+const u16 fn_remap_event[13 + 4] = {_KEY_CUSTOM_CTRL_HOME, _KEY_BRIGHTNESS_REDUCTION, _KEY_BRIGHTNESS_INCREASE, _KEY_CUSTOM_CTRL_CALCULATOR, \
                                     _KEY_CUSTOM_SELECT_ALL, _KEY_CUSTOM_COPY, _KEY_CUSTOM_PASTE, _KEY_CUSTOM_CUT, \
                                     0, 0, 0, _KEY_CUSTOM_CTRL_VOL_DOWN, _KEY_CUSTOM_CTRL_VOL_UP, \
                                     KEYBOARD_ENTER_PAIR0, KEYBOARD_ENTER_PAIR1, KEYBOARD_ENTER_PAIR2, KEYBOARD_ENTER_PAIR3,
@@ -599,6 +605,7 @@ u8  special_key_deal(u8 *map, special_key *key_tab, u8 key_tab_size, u16 *remap_
         }
         special_key_press = 0;
         remap_event = 0;
+        hid_report_send(COUSTOM_CONTROL_REPORT_ID, &remap_event, 2);
         last_user_key = 0xff;
         return 1;
     }
@@ -750,13 +757,13 @@ static void bredr_handle_register()
 #if (USER_SUPPORT_PROFILE_HID==1)
     user_hid_set_icon(BD_CLASS_KEYBOARD);
     user_hid_set_ReportMap(hid_report_map, sizeof(hid_report_map));
-    user_hid_init();
+    user_hid_init(edr_led_status_callback);
 #endif
 
     /* bt_dut_test_handle_register(bt_dut_api); */
 }
 
-static void hid_set_soft_poweroff(void)
+void hid_set_soft_poweroff(void)
 {
     log_info("hid_set_soft_poweroff\n");
     is_hid_active = 1;
@@ -1253,11 +1260,34 @@ static int bt_hci_event_handler(struct bt_event *bt)
     return 0;
 }
 
+void ble_led_status_callback(u8 *buffer, u16 len)
+{
+    put_buf(buffer, len);
+    if (buffer[0] & BIT(1)) {   //CAP灯的状态
+        gpio_set_output_value(CAP_LED_PIN, CAP_LED_ON_VALUE);
+    } else {
+        gpio_set_output_value(CAP_LED_PIN, !CAP_LED_ON_VALUE);
+    }
+}
 
+void edr_led_status_callback(u8 *buffer, u16 len)
+{
+    put_buf(buffer, len);
+    if (buffer[0] == 0xA2) {    //SET_REPORT && Output
+        if (buffer[1] ==  KEYBOARD_REPORT_ID) {
+            if (buffer[2] & BIT(1)) {   //CAP灯的状态
+                gpio_set_output_value(CAP_LED_PIN, CAP_LED_ON_VALUE);
+            } else {
+                gpio_set_output_value(CAP_LED_PIN, !CAP_LED_ON_VALUE);
+            }
+        }
+    }
+}
 static void keyboard_mode_init(u8 hid_mode)
 {
     u8 vm_hid_mode = HID_MODE_NULL;
 
+    le_hogp_set_output_callback(ble_led_status_callback);
     if ((!STACK_MODULES_IS_SUPPORT(BT_BTSTACK_LE) || !BT_MODULES_IS_SUPPORT(BT_MODULE_LE)) && (!STACK_MODULES_IS_SUPPORT(BT_BTSTACK_CLASSIC) || !BT_MODULES_IS_SUPPORT(BT_MODULE_CLASSIC))) {
         log_info("not surpport ble or edr,make sure config !!!\n");
         ASSERT(0);
@@ -1434,6 +1464,14 @@ static int event_handler(struct application *app, struct sys_event *event)
         return 0;
 
     case SYS_DEVICE_EVENT:
+        if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+            return app_power_event_handler(&event->u.dev);
+        }
+#if TCFG_CHARGE_ENABLE
+        else if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
+            app_charge_event_handler(&event->u.dev);
+        }
+#endif
         return 0;
 
 

@@ -7,7 +7,7 @@
  */
 
 /* Maximum advertising data payload for a single data type */
-#if NET_BUF_FREE_EN
+#if MESH_ADAPTATION_OPTIMIZE
 struct advertising_data_header {
     u8 Len;
     u8 Type;
@@ -17,7 +17,7 @@ struct advertising_data_header {
 #define BT_MESH_ADV_DATA_SIZE           (29 + BT_MESH_ADV_DATA_HEAD_SIZE)
 #else
 #define BT_MESH_ADV_DATA_SIZE 29
-#endif /* NET_BUF_FREE_EN */
+#endif /* MESH_ADAPTATION_OPTIMIZE */
 
 /* The user data is a pointer (4 bytes) to struct bt_mesh_adv */
 #define BT_MESH_ADV_USER_DATA_SIZE 4

@@ -52,7 +52,8 @@ int adkey_init(const struct adkey_platform_data *adkey_data)
         return KEY_NOT_SUPPORT;
     }
     adc_add_sample_ch(__this->ad_channel);          //注意：初始化AD_KEY之前，先初始化ADC
-
+#if (TCFG_ADKEY_LED_IO_REUSE || TCFG_ADKEY_IR_IO_REUSE || TCFG_ADKEY_LED_SPI_IO_REUSE)
+#else
     gpio_set_die(__this->adkey_pin, 0);
     gpio_set_direction(__this->adkey_pin, 1);
     gpio_set_pull_down(__this->adkey_pin, 0);
@@ -61,9 +62,91 @@ int adkey_init(const struct adkey_platform_data *adkey_data)
     } else {
         gpio_set_pull_up(__this->adkey_pin, 1);
     }
+#endif
 
     return 0;
 }
+
+#if (TCFG_ADKEY_LED_IO_REUSE || TCFG_ADKEY_IR_IO_REUSE || TCFG_ADKEY_LED_SPI_IO_REUSE)
+
+#if TCFG_ADKEY_IR_IO_REUSE
+static u8 ir_io_sus = 0;
+extern u8 ir_io_suspend(void);
+extern u8 ir_io_resume(void);
+#endif
+#if TCFG_ADKEY_LED_IO_REUSE
+static u8 led_io_sus = 0;
+extern u8 led_io_suspend(void);
+extern u8 led_io_resume(void);
+#endif
+#if TCFG_ADKEY_LED_SPI_IO_REUSE
+static u8 led_spi_sus = 0;
+extern u8 led_spi_suspend(void);
+extern u8 led_spi_resume(void);
+#endif
+u8 adc_io_reuse_enter(u32 ch)
+{
+    if (ch == __this->ad_channel) {
+#if TCFG_ADKEY_IR_IO_REUSE
+        if (ir_io_suspend()) {
+            return 1;
+        } else {
+            ir_io_sus = 1;
+        }
+#endif
+#if TCFG_ADKEY_LED_IO_REUSE
+        if (led_io_suspend()) {
+            return 1;
+        } else {
+            led_io_sus = 1;
+        }
+#endif
+#if TCFG_ADKEY_LED_SPI_IO_REUSE
+        if (led_spi_suspend()) {
+            return 1;
+        } else {
+            led_spi_sus = 1;
+        }
+#endif
+        gpio_set_die(__this->adkey_pin, 0);
+        gpio_set_direction(__this->adkey_pin, 1);
+        gpio_set_pull_down(__this->adkey_pin, 0);
+        if (__this->extern_up_en) {
+            gpio_set_pull_up(__this->adkey_pin, 0);
+        } else {
+            gpio_set_pull_up(__this->adkey_pin, 1);
+        }
+    }
+    return 0;
+}
+
+u8 adc_io_reuse_exit(u32 ch)
+{
+    if (ch == __this->ad_channel) {
+#if TCFG_ADKEY_IR_IO_REUSE
+        if (ir_io_sus) {
+            ir_io_sus = 0;
+            ir_io_resume();
+        }
+#endif
+#if TCFG_ADKEY_LED_IO_REUSE
+        if (led_io_sus) {
+            led_io_sus = 0;
+            led_io_resume();
+        }
+#endif
+#if TCFG_ADKEY_LED_SPI_IO_REUSE
+        if (led_spi_sus) {
+            led_spi_sus = 0;
+            led_spi_resume();
+        }
+#endif
+    }
+    return 0;
+}
+
+#endif
+
 
 
 #endif  /* #if TCFG_ADKEY_ENABLE */

@@ -1,5 +1,5 @@
-  local_irq_enable = ABSOLUTE(0x117d40);
-  local_irq_disable = ABSOLUTE(0x117d44);
+  local_irq_enable_rom = ABSOLUTE(0x117d40);
+  local_irq_disable_rom = ABSOLUTE(0x117d44);
   p33_buf = ABSOLUTE(0x117d48);
   p33_xor_1byte = ABSOLUTE(0x117d4c);
   p33_and_1byte = ABSOLUTE(0x117d50);
@@ -40,7 +40,7 @@
   os_mutex_create = ABSOLUTE(0x117ddc);
   os_mutex_del = ABSOLUTE(0x117de0);
   os_mutex_pend_rom = ABSOLUTE(0x117de4);
-  os_mutex_post = ABSOLUTE(0x117de8);
+  os_mutex_post_rom = ABSOLUTE(0x117de8);
   os_mutex_valid = ABSOLUTE(0x117dec);
   xTaskCreate = ABSOLUTE(0x117df0);
   xTaskGetCurrentTaskHandle = ABSOLUTE(0x117df4);

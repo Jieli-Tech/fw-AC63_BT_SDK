@@ -25,6 +25,8 @@
 #include "bt_common.h"
 #include "rcsp_bluetooth.h"
 #include "le_client_demo.h"
+#include "app_charge.h"
+#include "app_power_manage.h"
 
 #define LOG_TAG_CONST       AT_COM
 #define LOG_TAG             "[AT_COM]"
@@ -124,7 +126,7 @@ static void bredr_handle_register()
 
 extern void set_at_uart_wakeup(void);
 extern void ble_module_enable(u8 en);
-static void app_set_soft_poweroff(void)
+void app_set_soft_poweroff(void)
 {
     log_info("set_soft_poweroff\n");
     is_app_active = 1;
@@ -668,7 +670,14 @@ static int event_handler(struct application *app, struct sys_event *event)
     case SYS_DEVICE_EVENT:
         if ((u32)event->arg == DEVICE_EVENT_FROM_AT_UART) {
             at_cmd_rx_handler();
+        } else if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+            return app_power_event_handler(&event->u.dev);
         }
+#if TCFG_CHARGE_ENABLE
+        else if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
+            app_charge_event_handler(&event->u.dev);
+        }
+#endif
         return 0;
 
     default:

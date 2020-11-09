@@ -160,13 +160,19 @@ void setup_arch()
         mode = CLOCK_MODE_USR;
     }
 
+
 #ifdef CONFIG_BOARD_AC6963A_TWS
     clk_init_osc_cap(0x07, 0x07);
 #else
     clk_init_osc_cap(0x0a, 0x0a);
 #endif
 
+#ifdef CONFIG_BOARD_AC6082_DEMO
+    mode = CLOCK_MODE_USR;//免晶振时,用usr,并提高内核电压
+    clk_voltage_init(mode, SYSVDD_VOL_SEL_120V, VDC13_VOL_SEL_110V);
+#else
     clk_voltage_init(mode, SYSVDD_VOL_SEL_102V, VDC13_VOL_SEL_110V);
+#endif
 
 #ifdef CONFIG_BOARD_AC696X_LIGHTER
     //only for br25 lighter
@@ -174,6 +180,8 @@ void setup_arch()
 #else
     clk_early_init(TCFG_CLOCK_SYS_SRC, TCFG_CLOCK_OSC_HZ, TCFG_CLOCK_SYS_HZ);
 #endif
+
+    tick_timer_init();
 
     /*interrupt_init();*/
 
@@ -210,15 +218,8 @@ void setup_arch()
 
     sys_timer_init();
 
-#if TCFG_RTC_ENABLE
-    void app_fake_rtc_tick();
-    void set_fake_rtc_handle(void(* handle)());
-    set_fake_rtc_handle(app_fake_rtc_tick);
-#endif
-
     /* sys_timer_add(NULL, timer, 10 * 1000); */
 
-    tick_timer_init();
 
     __crc16_mutex_init();
 }

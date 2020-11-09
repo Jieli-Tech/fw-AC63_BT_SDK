@@ -2,7 +2,6 @@
 
 #include "app_config.h"
 
-#if     TCFG_PC_ENABLE
 #include "usb/device/usb_stack.h"
 #include "usb/device/hid.h"
 #include "usb_config.h"
@@ -15,6 +14,7 @@
 /* #define LOG_DUMP_ENABLE */
 #define LOG_CLI_ENABLE
 #include "debug.h"
+#if TCFG_PC_ENABLE && USB_SLAVE_USER_STACK
 
 static const u8 sHIDDescriptor[] = {
 //HID

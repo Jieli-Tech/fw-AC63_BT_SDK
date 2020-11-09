@@ -35,6 +35,10 @@ export THIRD_PARTY_PROFILE_ENABLE = y
 export CC_DEFINE += \
 -DCONFIG_CPU_BR23 \
 
+
+export CONFIG_BLUETOOTH_EN = y
+
+
 export cibuild ?= n
 ifeq ($(cibuild),y)
 CC_DEFINE += -DCONFIG_RELEASE_ENABLE
@@ -45,6 +49,7 @@ ifneq ($(cibuild), y)
 CC_DEFINE += -D__SHELL__
 endif
 endif
+
 # -DCONFIG_PRINT_IN_MASK \
 
 ifeq ($(TYPE),FPGA)
@@ -133,10 +138,6 @@ CC_DEFINE += -DCONFIG_AUDIO_ONCHIP
 endif
 
 ifeq ($(APP_CASE),soundbox)
-CC_DEFINE += -DCONFIG_LOCAL_TWS_ENABLE
-#///////////////
-
-
 #aec in_buf和ref_buf复用adc和dac
 export CONFIG_AEC_MUX ?= n
 export CONFIG_ANS_V2 ?= n
@@ -211,6 +212,11 @@ export NEED_USED_LIST = y
 # --------------Architecture & Complier Setting-----------------------
 #
 -include tools$(SLASH)compiler$(SLASH)Makefile.$(CORE)$(COMPLIE_MODE)
+
+CC_ARGS += \
+-fms-extensions \
+-DSUPPORT_MS_EXTENSIONS
+
 
 pre_make:
 	@echo "Making... Soc : br23"

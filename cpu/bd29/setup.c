@@ -115,6 +115,8 @@ void setup_arch()
 
     clk_early_init(TCFG_CLOCK_SYS_SRC, TCFG_CLOCK_OSC_HZ, TCFG_CLOCK_SYS_HZ);
 
+    tick_timer_init();
+
 #if (defined CONFIG_DEBUG_ENABLE) || (defined CONFIG_DEBUG_LITE_ENABLE)
     debug_uart_init(NULL);
 
@@ -151,7 +153,6 @@ void setup_arch()
 
     /* sys_timer_add(NULL, timer, 10 * 1000); */
 
-    tick_timer_init();
 
     __crc16_mutex_init();
 }

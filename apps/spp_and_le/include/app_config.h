@@ -21,14 +21,15 @@
 //app case 选择,只能选1个,要配置对应的board_config.h
 #define CONFIG_APP_SPP_LE                 1
 #define CONFIG_APP_AT_COM                 0
-#define CONFIG_APP_DONGLE                 0 //board_ac6368b_dongle
+#define CONFIG_APP_DONGLE                 0 //board_dongle ,TCFG_PC_ENABLE
 
 //配置对应的APP的蓝牙功能
 #if CONFIG_APP_SPP_LE
 #define TRANS_DATA_EN                     1 //蓝牙双模透传
 #define TRANS_CLIENT_EN                   0 //蓝牙(ble主机)透传
+#define XM_MMA_EN                         0
 
-#if (TRANS_DATA_EN + TRANS_CLIENT_EN > 1)
+#if (TRANS_DATA_EN + TRANS_CLIENT_EN + XM_MMA_EN> 1)
 #error "they can not enable at the same time!"
 #endif
 #endif

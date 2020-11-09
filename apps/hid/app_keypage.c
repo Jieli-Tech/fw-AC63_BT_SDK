@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include "standard_hid.h"
 #include "rcsp_bluetooth.h"
+#include "app_charge.h"
+#include "app_power_manage.h"
 
 #if(CONFIG_APP_KEYPAGE)
 
@@ -69,11 +71,47 @@ typedef enum {
     HID_MODE_INIT = 0xff
 } bt_mode_e;
 static bt_mode_e bt_hid_mode;
-static volatile u8 is_hid_active = 0;//1-临界点,系统不允许进入低功耗，0-系统可以进入低功耗
+static volatile u8 is_hid_active = 0; //1-临界点,系统不允许进入低功耗，0-系统可以进入低功耗
+static u8 ios_134_connect = 0;        //ios 13.4版本以上,发码
 
 //----------------------------------
 static const u8 hid_report_map[] = {
-    // 119 bytes
+    //ios_13.4以上使用
+    0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+    0x09, 0x06,        // Usage (Keyboard)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x02,        //   Report ID (2)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x08,        //   Report Count (8)
+    0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
+    0x19, 0xE0,        //   Usage Minimum (0xE0)
+    0x29, 0xE7,        //   Usage Maximum (0xE7)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x01,        //   Logical Maximum (1)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x08,        //   Report Size (8)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x95, 0x05,        //   Report Count (5)
+    0x75, 0x01,        //   Report Size (1)
+    0x05, 0x08,        //   Usage Page (LEDs)
+    0x19, 0x01,        //   Usage Minimum (Num Lock)
+    0x29, 0x05,        //   Usage Maximum (Kana)
+    0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x03,        //   Report Size (3)
+    0x91, 0x03,        //   Output (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x95, 0x06,        //   Report Count (6)
+    0x75, 0x08,        //   Report Size (8)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x26, 0xFF, 0x00,  //   Logical Maximum (255)
+    0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
+    0x19, 0x00,        //   Usage Minimum (0x00)
+    0x29, 0xFF,        //   Usage Maximum (0xFF)
+    0x81, 0x00,        //   Input (Data,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              // End Collection
+
+    //安卓 和 ios_13.4以下使用
     0x05, 0x0D,        // Usage Page (Digitizer)
     0x09, 0x02,        // Usage (Pen)
     0xA1, 0x01,        // Collection (Application)
@@ -234,7 +272,7 @@ extern void edr_hid_data_send(u8 report_id, u8 *data, u16 len);
 extern int ble_hid_data_send(u8 report_id, u8 *data, u16 len);
 extern int edr_hid_is_connected(void);
 extern int ble_hid_is_connected(void);
-static void hid_set_soft_poweroff(void);
+void hid_set_soft_poweroff(void);
 
 void auto_shutdown_disable(void)
 {
@@ -279,34 +317,69 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
     u8 point_len = REPROT_INFO_LEN;
 
     if (key_type == KEY_EVENT_CLICK) {
-        switch (key_value) {
-        case 0:
-            key_data = key_pp_press_table;
-            point_cnt = sizeof(key_pp_press_table) / REPROT_INFO_LEN;
-            break;
+        if (ios_134_connect) {
+            u8 send_key;
+            switch (key_value) {
+            case 0:
+                send_key = 0x1f;
+                break;
 
-        case 1:
-            key_data = key_up_table;
-            point_cnt = sizeof(key_up_table) / REPROT_INFO_LEN;
-            break;
+            case 1:
+                send_key = 0x20;
+                break;
 
-        case 2:
-            key_data = key_down_table;
-            point_cnt = sizeof(key_down_table) / REPROT_INFO_LEN;
-            break;
+            case 2:
+                send_key = 0x21;
+                break;
 
-        case 3:
-            key_data = key_left_table;
-            point_cnt = sizeof(key_left_table) / REPROT_INFO_LEN;
-            break;
+            case 3:
+                send_key = 0x22;
+                break;
 
-        case 4:
-            key_data = key_right_table;
-            point_cnt = sizeof(key_right_table) / REPROT_INFO_LEN;
-            break;
+            case 4:
+                send_key = 0x23;
+                break;
 
-        default:
-            break;
+            default:
+                break;
+            }
+            log_info("ios_send_key:%02x", send_key);
+            u8 send_buffer[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+            send_buffer[2] = send_key;
+            hid_data_send_pt(2, send_buffer, 8);
+            send_buffer[2] = 0;
+            hid_data_send_pt(2, send_buffer, 8);
+            return;
+        } else {
+            switch (key_value) {
+            case 0:
+                key_data = key_pp_press_table;
+                point_cnt = sizeof(key_pp_press_table) / REPROT_INFO_LEN;
+                break;
+
+            case 1:
+                key_data = key_up_table;
+                point_cnt = sizeof(key_up_table) / REPROT_INFO_LEN;
+                break;
+
+            case 2:
+                key_data = key_down_table;
+                point_cnt = sizeof(key_down_table) / REPROT_INFO_LEN;
+                break;
+
+            case 3:
+                key_data = key_left_table;
+                point_cnt = sizeof(key_left_table) / REPROT_INFO_LEN;
+                break;
+
+            case 4:
+                key_data = key_right_table;
+                point_cnt = sizeof(key_right_table) / REPROT_INFO_LEN;
+                break;
+
+            default:
+                break;
+            }
         }
     }
 
@@ -334,18 +407,70 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
             break;
 
         case 4:
-            key_data = key_one_press_table;
-            point_cnt = sizeof(key_one_press_table) / REPROT_INFO_LEN;
+            if (ios_134_connect) {
+                log_info("ios_send_key:1e");
+                u8 send_buffer[8] = {0, 0, 0x1e, 0, 0, 0, 0, 0};
+                hid_data_send_pt(2, send_buffer, 8);
+                send_buffer[2] = 0;
+                hid_data_send_pt(2, send_buffer, 8);
+                return;
+            } else {
+                key_data = key_one_press_table;
+                point_cnt = sizeof(key_one_press_table) / REPROT_INFO_LEN;
+            }
             break;
 
-        case 1:
         case 2:
+            ios_134_connect = !ios_134_connect;//switch mode
+            log_info("ios_134_connect:%d\n", ios_134_connect);
+            break;
+        case 1:
         case 3:
         default:
             break;
 
         }
     }
+
+    if (key_type == KEY_EVENT_LONG) {
+        if (ios_134_connect) {
+            u8 send_key;
+            switch (key_value) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+                break;
+            case 4:
+                send_key = 0x04;
+                break;
+
+            default:
+                break;
+            }
+
+            log_info("ios_send_key:%02x", send_key);
+            u8 send_buffer[3] = {0, 0, 0};
+            send_buffer[0] = send_key;
+            hid_data_send_pt(3, send_buffer, 3);
+            send_buffer[0] = 0;
+            hid_data_send_pt(3, send_buffer, 3);
+            return;
+        } else {
+            switch (key_value) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+                break;
+
+            default:
+                break;
+            }
+        }
+    }
+
 
     if (key_type == KEY_EVENT_HOLD) {
         switch (key_value) {
@@ -484,13 +609,13 @@ static void bredr_handle_register()
 #if (USER_SUPPORT_PROFILE_HID==1)
     user_hid_set_icon(BD_CLASS_KEYBOARD);
     user_hid_set_ReportMap(hid_report_map, sizeof(hid_report_map));
-    user_hid_init();
+    user_hid_init(NULL);
 #endif
 
     /* bt_dut_test_handle_register(bt_dut_api); */
 }
 
-static void hid_set_soft_poweroff(void)
+void hid_set_soft_poweroff(void)
 {
     log_info("hid_set_soft_poweroff\n");
     is_hid_active = 1;
@@ -1034,7 +1159,14 @@ static int event_handler(struct application *app, struct sys_event *event)
             bt_connction_status_event_handler(&event->u.bt);
         } else if ((u32)event->arg == SYS_BT_EVENT_TYPE_HCI_STATUS) {
             bt_hci_event_handler(&event->u.bt);
+        } else if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+            return app_power_event_handler(&event->u.dev);
         }
+#if TCFG_CHARGE_ENABLE
+        else if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
+            app_charge_event_handler(&event->u.dev);
+        }
+#endif
         return 0;
 
     case SYS_DEVICE_EVENT:

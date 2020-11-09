@@ -95,6 +95,7 @@ struct audio_encoder {
 
 enum {
     AUDIO_ENCODER_IOCTRL_CMD_GET_HEAD_INFO = 0x0,
+    AUDIO_ENCODER_IOCTRL_CMD_GET_TIME,
 };
 
 int audio_encoder_task_create(struct audio_encoder_task *task, const char *name);

@@ -154,6 +154,8 @@ enum {
 #define GPIOUSB                     (IO_MAX_NUM + USB_IO_OFFSET)
 #define GPIOP33                     (IO_MAX_NUM + P33_IO_OFFSET)
 
+#define MIC_HW_IO                   IO_PORTC_06
+
 enum {
     INPUT_CH0,
     INPUT_CH1,

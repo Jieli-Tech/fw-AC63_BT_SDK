@@ -22,8 +22,11 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
-#if TCFG_UDISK_ENABLE || TCFG_ADB_ENABLE ||TCFG_AOA_ENABLE
 
+_WEAK_
+void usb_dis_ep0_txdly(const usb_dev id)
+{
+}
 static void ep0_h_isr(struct usb_host_device *host_dev, u32 ep)
 {
     usb_dev usb_id = host_device2id(host_dev);
@@ -149,6 +152,7 @@ static int usb_ctlXfer(struct usb_host_device *host_dev, struct ctlXfer *urb)
     }
 __exit:
     usb_clr_intr_txe(usb_id, 0);
+    usb_dis_ep0_txdly(usb_id);
     return ret;
 }
 /**
@@ -540,4 +544,3 @@ int get_ms_extended_compat_id(struct usb_host_device *host_dev,  u8 *buffer)
                            buffer,
                            0x28);
 }
-#endif

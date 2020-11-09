@@ -150,7 +150,7 @@ struct port_wakeup port0 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORTB_01,                       //唤醒口选择
+	.iomap              = TCFG_ADKEY_PORT,                   //唤醒口选择
     .filter_enable      = ENABLE,
 };
 
@@ -163,7 +163,9 @@ const struct charge_wakeup charge_wkup = {
 };
 
 const struct wakeup_param wk_param = {
+#if TCFG_ADKEY_ENABLE
 	.port[1] = &port0,
+#endif
 	.sub = &sub_wkup,
 	.charge = &charge_wkup,
 };

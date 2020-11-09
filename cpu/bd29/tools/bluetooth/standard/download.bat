@@ -45,4 +45,3 @@ del jl_isd.ufw
 
 ping /n 2 127.1>null
 IF EXIST null del null
-

@@ -4,7 +4,9 @@
 
 #include "system/includes.h"
 #include "device/key_driver.h"
+#include "asm/charge.h"
 #include "rtc_alarm.h"
+#include "usb/otg.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -47,6 +49,17 @@ UART0_PLATFORM_DATA_BEGIN(uart0_data)
 UART0_PLATFORM_DATA_END()
 #endif //TCFG_UART0_ENABLE
 
+/************************** CHARGE config****************************/
+#if TCFG_CHARGE_ENABLE
+CHARGE_PLATFORM_DATA_BEGIN(charge_data)
+    .charge_en              = TCFG_CHARGE_ENABLE,              //内置充电使能
+    .charge_full_V          = TCFG_CHARGE_FULL_V,              //充电截止电压
+    .charge_full_mA			= TCFG_CHARGE_FULL_MA,             //充电截止电流
+    .charge_mA				= TCFG_CHARGE_MA,                  //充电电流
+	.ldo5v_off_filter		= 0,
+	.ldo5v_pulldown_en		= 0,                               //ldo5v的100K下拉电阻使能,若充电舱需要更大的负载才能检测到插入时，请将该变量置1
+CHARGE_PLATFORM_DATA_END()
+#endif//TCFG_CHARGE_ENABLE
 
     /************************** AD KEY ****************************/
 #if TCFG_ADKEY_ENABLE
@@ -154,6 +167,23 @@ RTC_DEV_PLATFORM_DATA_BEGIN(rtc_data)
 RTC_DEV_PLATFORM_DATA_END()
 #endif
 
+/************************** otg data****************************/
+#if TCFG_OTG_MODE
+struct otg_dev_data otg_data = {
+    .usb_dev_en = TCFG_OTG_USB_DEV_EN,
+	.slave_online_cnt = TCFG_OTG_SLAVE_ONLINE_CNT,
+	.slave_offline_cnt = TCFG_OTG_SLAVE_OFFLINE_CNT,
+	.host_online_cnt = TCFG_OTG_HOST_ONLINE_CNT,
+	.host_offline_cnt = TCFG_OTG_HOST_OFFLINE_CNT,
+	.detect_mode = TCFG_OTG_MODE,
+	.detect_time_interval = TCFG_OTG_DET_INTERVAL,
+};
+#endif
+REGISTER_DEVICES(device_table) = {
+#if TCFG_OTG_MODE
+    { "otg",     &usb_dev_ops, (void *) &otg_data},
+#endif
+};
 void debug_uart_init(const struct uart_platform_data *data)
 {
 #if TCFG_UART0_ENABLE
@@ -175,6 +205,12 @@ static void board_devices_init(void)
 	key_driver_init();
 #endif
 
+#if TCFG_CHARGE_ENABLE
+    charge_api_init(&charge_data);
+#else
+    CHGBG_EN(0);
+    CHARGE_EN(0);
+#endif
 
 #if TCFG_RTC_ALARM_ENABLE
     alarm_init(&rtc_data);
@@ -195,12 +231,6 @@ void board_init()
 	board_devices_init();
 
 	power_set_mode(TCFG_LOWPOWER_POWER_SEL);
-
-#if(!TCFG_CHARGE_ENABLE)
-	/*close FAST CHARGE */
-	CHARGE_EN(0);
-	CHGBG_EN(0);
-#endif
 }
 
 enum {
@@ -296,7 +326,7 @@ struct port_wakeup port0 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORTB_01,                       //唤醒口选择
+	.iomap              = TCFG_ADKEY_PORT,                   //唤醒口选择
     .filter_enable      = ENABLE,
 };
 
@@ -310,7 +340,9 @@ const struct charge_wakeup charge_wkup = {
 
 const struct wakeup_param wk_param = {
     .filter     = PORT_FLT_2ms,
+#if TCFG_ADKEY_ENABLE
 	.port[1]    = &port0,
+#endif
 	.sub        = &sub_wkup,
 	.charge     = &charge_wkup,
 };

@@ -5,7 +5,7 @@
 *****************************************************************/
 #ifndef _ASM_AUDIO_SYNC_H_
 #define _ASM_AUDIO_SYNC_H_
-#include "audio_stream.h"
+#include "media/audio_stream.h"
 
 #define AUDIO_SYNC_OUTPUT_IDLE                  0
 #define AUDIO_SYNC_OUTPUT_PROBE                 1 //输出前处理
@@ -22,8 +22,11 @@
 #define AUDIO_OUTPUT_STREAM                     2
 
 
-#define SAMP_STREAM_DIRECT_OUTPUT               0
+#define SAMP_STREAM_FRAME_OUTPUT                0
 #define SAMP_STREAM_CBUF_OUTPUT                 1
+
+#define SAMPLE_SYNC_DEVICE_IDLE                 0
+#define SAMPLE_SYNC_DEVICE_START                1
 
 #define BT_AHB_BASE_ADR             0x1c0000L
 
@@ -59,12 +62,12 @@ struct audio_input_position {
     u32 pcm_position;       //样点输入位置
 };
 
-struct audio_cbuf_stream {
+struct resample_output_cbuf {
     s16 *(*write_alloc)(void *buffer, int *len);
     int (*write_update)(void *buffer, int len);
 };
 
-struct audio_direct_stream {
+struct resample_output_frame {
     u8 free;
     void *addr;
     int len;
@@ -73,14 +76,19 @@ struct audio_direct_stream {
     int (*output)(void *buffer, void *data, int len);
 };
 
-struct audio_sample_stream {
+struct sample_sync_device_ops {
+    int (*data_len)(void *priv);
+    int (*state_query)(void *priv);
+};
+
+struct audio_sample_output {
     u8 mode;
     void *priv;
     union {
-        struct audio_cbuf_stream cbuf;
-        struct audio_direct_stream direct;
+        struct resample_output_cbuf cbuf;
+        struct resample_output_frame frame;
     } u;
-    int (*data_len)(void *stream);
+    struct sample_sync_device_ops device;
 };
 
 /*************************************************************************
@@ -106,7 +114,7 @@ struct audio_sample_sync {
     u32 sample_counter;
     u32 bt_clkn;
     s16 bt_clkn_phase;
-    struct audio_sample_stream stream;
+    struct audio_sample_output output;
     struct audio_bt_position *position;
     void *event_priv;
     int (*event_handler)(void *priv, void *output, u8 event);
@@ -119,24 +127,22 @@ struct audio_sample_sync {
 struct audio_sample_sync *audio_sample_sync_open(u8 stream_mode);
 
 /*AUDIO PCM样点同步初始化*/
-int audio_sample_sync_init(struct audio_sample_sync *s,
-                           int sample_rate,
-                           u8 data_channels,
-                           u8 position_num);
+int audio_sample_sync_init_resample(struct audio_sample_sync *s,
+                                    int sample_rate,
+                                    u8 data_channels,
+                                    u8 position_num);
 
 /*AUDIO 样点同步模块关闭*/
 void audio_sample_sync_close(struct audio_sample_sync *s);
 
-/*AUDIO 样点同步设置fifo的buffer输出*/
-int audio_sample_sync_set_fifo_handler(struct audio_sample_sync *s,
-                                       void *buffer,
-                                       int (*data_len)(void *priv),
-                                       s16 * (*write_alloc)(void *priv, int *len),
-                                       int (*write_update)(void *priv, int len));
+/*AUDIO 样点同步设置fifo输出*/
+int audio_sample_sync_set_fifo_output(struct audio_sample_sync *s,
+                                      void *priv,
+                                      struct resample_output_cbuf *fifo);
 
-int audio_sample_sync_set_stream_handler(struct audio_sample_sync *s,
-        void *buffer,
-        int (*data_len)(void *priv));
+int audio_sample_sync_set_device(struct audio_sample_sync *s,
+                                 void *priv,
+                                 struct sample_sync_device_ops *device);
 
 void audio_sample_sync_set_event_handler(struct audio_sample_sync *s,
         void *priv,
@@ -198,6 +204,10 @@ int audio_sample_sync_rate_control(struct audio_sample_sync *s, int in_rate, int
 int audio_irq_update_sample_sync_position(struct audio_sample_sync *s, int irq_sample_num);
 
 int audio_sample_sync_set_bt_time(struct audio_sample_sync *s, u32 bt_clkn, int phase);
+
+int audio_sample_sync_time_distance(struct audio_sample_sync *s);
+
+int audio_sample_sync_output_query(struct audio_sample_sync *s);
 
 int audio_sample_sync_is_working(struct audio_sample_sync *s);
 #endif

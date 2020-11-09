@@ -1712,3 +1712,29 @@ void pwmled_pwm_init()
     LED_PWM_CLR_PENDING;
     pwm_clock_set(PWM_LED_CLK_BTOSC_24M);
 }
+
+
+static u8 led_io_sus = 0;
+u8 led_io_suspend(void)
+{
+    if (led_io_sus) {
+        return 1;
+    }
+    led_io_sus = 1;
+    return 0;
+}
+
+u8 led_io_resume(void)
+{
+    if (!led_io_sus) {
+        return 0;
+    }
+    led_io_sus = 0;
+    gpio_set_pull_up(__this->led_pin, 1);
+    gpio_set_pull_down(__this->led_pin, 1);
+    gpio_set_die(__this->led_pin, 1);
+    gpio_set_output_value(__this->led_pin, 1);
+    gpio_set_direction(__this->led_pin, 0);
+    return 0;
+}
+

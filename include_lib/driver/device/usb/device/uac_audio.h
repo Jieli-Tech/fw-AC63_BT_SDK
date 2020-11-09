@@ -446,6 +446,8 @@ struct uac1_status_word {
     __u8 bStatusType;
     __u8 bOriginator;
 } __attribute__((packed));
+
+u32 uac_setup_endpoint(struct usb_device_t *usb_device, struct usb_ctrlrequest *req);
 u32 uac_spk_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
 void uac_speaker_stream_write(const u8 *obuf, u32 len);
 void uac_speaker_stream_open(u32 samplerate, u32 ch);

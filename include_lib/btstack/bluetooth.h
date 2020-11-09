@@ -490,6 +490,10 @@
  */
 #define HCI_SUBEVENT_LE_CHANNEL_SELECTION_ALGORITHM                 0x14
 
+/**
+ * @format
+*/
+#define HCI_EVENT_ANCS_META                                			0xEA
 
 
 /**

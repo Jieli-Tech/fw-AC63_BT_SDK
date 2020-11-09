@@ -25,12 +25,17 @@ export NICKNAME=br25_sdk
 endif
 
 
+
+
 export NEW_BREDR = n
 export RTOS = FREE_RTOS
 export SERVER_CORE = lite
 export MP3_WMA_LIB_SPECIAL = n
 export NEW_ECC ?= y
 export THIRD_PARTY_PROFILE_ENABLE = y
+
+export CONFIG_BLUETOOTH_EN = y
+export AC608N = n
 
 export CC_DEFINE += \
 -DCONFIG_CPU_BR25 \
@@ -165,9 +170,6 @@ ifeq ($(MEDIA_NEW_ENABLE),d)
 CC_DEFINE += -DCONFIG_MEDIA_DEVELOP_ENABLE
 endif
 
-ifeq ($(APP_CASE),soundbox)
-CC_DEFINE += -DCONFIG_LOCAL_TWS_ENABLE
-endif
 #///////////
 
 CC_DEFINE += -D__GCC_PI32V2__
@@ -201,13 +203,6 @@ endif
 #
 export DIR_OUTPUT = $(ROOT)/cpu/$(CPU)/tools
 ifneq ($(cibuild),y)
-export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.sh
-else
-export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.bat
-endif
-
-export DIR_OUTPUT = $(ROOT)/cpu/$(CPU)/tools
-ifneq ($(cibuild),y)
 ifeq ($(HOST_OS), linux)
 export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.sh
 else
@@ -216,6 +211,12 @@ endif
 else
 export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.bat
 endif
+
+# ifneq ($(cibuild),y)
+# export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.sh
+# else
+# export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.bat
+# endif
 
 # - output file
 export ELF= sdk
@@ -249,6 +250,14 @@ export NEED_USED_LIST = y
 # --------------Architecture & Complier Setting-----------------------
 #
 -include tools$(SLASH)compiler$(SLASH)Makefile.$(CORE)_$(COMPLIE_MODE)_r3
+
+LD_ARGS += --gc-sections
+# LD_ARGS += --print-gc-sections
+
+CC_ARGS += \
+-fms-extensions \
+-DSUPPORT_MS_EXTENSIONS
+
 
 pre_make:
 	@echo "Making... Soc : br25"

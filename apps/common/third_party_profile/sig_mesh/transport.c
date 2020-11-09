@@ -394,6 +394,7 @@ static int send_seg(struct bt_mesh_net_tx *net_tx, struct net_buf_simple *sdu,
         net_buf_add_mem(seg, sdu->data, len);
         net_buf_simple_pull(sdu, len);
 
+        BT_DBG("ref seg buf 0x%x", seg);
         tx->seg[seg_o] = net_buf_ref(seg);
 
         if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&

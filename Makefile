@@ -30,11 +30,12 @@ export TIDY_FILTER=/opt/utils/tidy-filter
 
 
 
-#配置下载目标SoC(br23/br25/bd29)
+#配置下载目标SoC(br23/br25/bd29/br30)
 #export前面不要有空格，会导致文件sync异常
-#export SoC?=br23
-export SoC?=br25
+# export SoC?=br23
+# export SoC?=br25
 #export SoC?=bd29
+export SoC?=br30
 
 
 

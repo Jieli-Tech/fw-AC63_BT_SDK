@@ -243,7 +243,7 @@
 //*********************************************************************************//
 //                                  code switch配置                                //
 //*********************************************************************************//
-#define TCFG_CODE_SWITCH_ENABLE                   ENABLE_THIS_MOUDLE //code switch使能
+#define TCFG_CODE_SWITCH_ENABLE                   DISABLE_THIS_MOUDLE //code switch使能
 #define TCFG_CODE_SWITCH_A_PHASE_PORT             IO_PORTB_06
 #define TCFG_CODE_SWITCH_B_PHASE_PORT             IO_PORTB_07
 

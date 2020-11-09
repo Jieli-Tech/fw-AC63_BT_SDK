@@ -28,6 +28,7 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_system_config.o \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_profile_config.o \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_update_config.o \
+	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_btstack_config.o \
 
 objs += \
 	$(ROOT)/apps/$(APP_CASE)/app_main.o \
@@ -37,6 +38,10 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/log_config.o \
 	$(ROOT)/apps/$(APP_CASE)/user_cfg.o \
 	$(ROOT)/apps/$(APP_CASE)/rtc_alarm.o \
+	$(ROOT)/apps/$(APP_CASE)/app_charge.o \
+	$(ROOT)/apps/$(APP_CASE)/app_power_manage.o \
+	$(ROOT)/apps/$(APP_CASE)/gamebox/gamebox.o \
+	$(ROOT)/apps/$(APP_CASE)/gamebox/key_mapping.o \
 	$(ROOT)/apps/common/third_party_profile/common/custom_cfg.o \
     $(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.o \
     $(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_user_update.o \
@@ -66,4 +71,6 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/app_keyfob.o \
 	$(ROOT)/apps/$(APP_CASE)/app_standard_keyboard.o \
 	$(ROOT)/apps/$(APP_CASE)/app_keypage.o \
+	$(ROOT)/apps/$(APP_CASE)/app_gamebox.o \
 
+-include $(ROOT)/apps/common/usb/Makefile.inc

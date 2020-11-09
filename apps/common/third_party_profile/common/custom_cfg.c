@@ -12,7 +12,7 @@
 #include "smartbox_adv_bluetooth.h"
 #endif
 
-#if RCSP_ADV_EN || RCSP_BTMATE_EN || SMART_BOX_EN
+#if RCSP_ADV_EN || RCSP_BTMATE_EN || SMART_BOX_EN || XM_MMA_EN
 #include "app_config.h"
 #include "fs.h"
 //#include "crc_api.h"
@@ -1105,7 +1105,7 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
     custom_cfg_item_write(CFG_ITEM_EDR_ADDR, bt_get_mac_addr(), sizeof(addr));
 
     //CFG_ITEM_PIN_CODE
-#if (BT_CONNECTION_VERIFY)
+#if (0 == BT_CONNECTION_VERIFY)
     u8 pin_code[] = {BT_CONNECTION_VERIFY, VER_INFO_EXT_COUNT, 0, 0};
     u16 pin_code_len = sizeof(pin_code);
 #else
@@ -1170,8 +1170,11 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
         fclose(fp);
     }
     custom_cfg_item_write(CFG_ITEM_MD5, md5, sizeof(md5));
-
+#if XM_MMA_EN
+    u8 sdk_type = 0;
+#else
     u8 sdk_type = RCSP_SDK_TYPE;
+#endif
     custom_cfg_item_write(CFG_ITEM_SDK_TYPE, &sdk_type, sizeof(sdk_type));
     return 0;
 }

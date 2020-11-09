@@ -40,9 +40,14 @@ struct usb_device_t {
 
     u8 bDeviceStates;
     u8 bDataOverFlag;    //ep0 0包标识
-    u8 bRemoteWakup: 1;
-    u8 res: 7;
     u8 wDeviceClass;    // 设备类
+    u8 bRemoteWakup: 1;
+#if USB_MAX_HW_NUM == 2
+    u8 usb_id: 1;
+    u8 res: 6;
+#else
+    u8 res: 7;
+#endif
 };
 
 typedef u32(*itf_hander)(struct usb_device_t *usb_device, struct usb_ctrlrequest *);

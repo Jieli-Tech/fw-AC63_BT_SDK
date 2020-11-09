@@ -26,6 +26,16 @@
 #define TCFG_UART0_BAUDRATE  				1000000
 
 //*********************************************************************************//
+//                                 USB 配置                                        //
+//*********************************************************************************//
+#define TCFG_PC_ENABLE						DISABLE_THIS_MOUDLE //PC模块使能
+#define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE //U盘模块使能
+#define TCFG_HID_HOST_ENABLE                0//ENABLE_THIS_MOUDLE  //游戏盒子模式
+#define TCFG_ADB_ENABLE                     0//ENABLE_THIS_MOUDLE
+#define TCFG_AOA_ENABLE                     0//ENABLE_THIS_MOUDLE
+
+#define TCFG_OTG_USB_DEV_EN                 (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
+//*********************************************************************************//
 //                                 key配置                                       //
 //*********************************************************************************//
 #define  KEY_NUM_MAX                        10
@@ -108,7 +118,7 @@
 #define TCFG_RTC_ALARM_ENABLE               DISABLE_THIS_MOUDLE
 
 //*********************************************************************************//
-//                                  充电仓配置                                     //
+//                                  充电仓配置(不支持)                             //
 //*********************************************************************************//
 #define TCFG_CHARGESTORE_ENABLE				DISABLE_THIS_MOUDLE
 #define TCFG_TEST_BOX_ENABLE			    0
@@ -119,8 +129,8 @@
 //                                  充电参数配置                                   //
 //*********************************************************************************//
 #define TCFG_CHARGE_ENABLE				    DISABLE_THIS_MOUDLE
-#define TCFG_CHARGE_POWERON_ENABLE			DISABLE
-#define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
+#define TCFG_CHARGE_POWERON_ENABLE			DISABLE//(不支持配置)
+#define TCFG_CHARGE_OFF_POWERON_NE			DISABLE//(不支持配置)
 #define TCFG_CHARGE_FULL_V					CHARGE_FULL_V_4202
 #define TCFG_CHARGE_FULL_MA					CHARGE_FULL_mA_10
 #define TCFG_CHARGE_MA						CHARGE_mA_50
@@ -153,7 +163,7 @@
 #define TCFG_LOWPOWER_BTOSC_DISABLE			0
 #define TCFG_LOWPOWER_LOWPOWER_SEL			SLEEP_EN
 #define TCFG_LOWPOWER_VDDIOM_LEVEL			VDDIOM_VOL_30V
-#define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_24V
+#define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_28V
 #define TCFG_LOWPOWER_OSC_TYPE              OSC_TYPE_LRC
 
 
@@ -208,6 +218,21 @@
 //*********************************************************************************//
 //                                 配置结束                                        //
 //*********************************************************************************//
+
+#if TCFG_HID_HOST_ENABLE
+
+#undef TCFG_LOWPOWER_LOWPOWER_SEL
+#define TCFG_LOWPOWER_LOWPOWER_SEL			0
+
+#undef TCFG_LOWPOWER_VDDIOM_LEVEL
+#define TCFG_LOWPOWER_VDDIOM_LEVEL			VDDIOM_VOL_32V
+
+#undef TCFG_LOWPOWER_VDDIOW_LEVEL
+#define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_32V
+
+#undef TCFG_USER_EDR_ENABLE
+#define     TCFG_USER_EDR_ENABLE    0
+#endif
 
 #endif
 

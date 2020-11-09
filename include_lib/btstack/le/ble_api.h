@@ -51,6 +51,9 @@ typedef enum {
     BLE_CMD_SEND_TEST_KEY_NUM,
     BLE_CMD_LATENCY_HOLD_CNT,
     BLE_CMD_SET_DATA_LENGTH,
+    BLE_CMD_SET_HCI_CFG,
+    BLE_CMD_SCAN_ENABLE2,
+    BLE_CMD_ATT_SERVER_REQ_RESUME,
 
     //< ble5
     BLE_CMD_EXT_ADV_PARAM = 0x40,
@@ -130,6 +133,21 @@ typedef struct {
     u8   data[4];
 } sm_just_event_t;
 
+//BLE_CMD_SET_HCI_CFG
+typedef enum {
+    HCI_CFG_OWN_ADDRESS_TYPE =  0, //
+    HCI_CFG_ADV_FILTER_POLICY, //
+    HCI_CFG_SCAN_FILTER_POLICY, //
+    HCI_CFG_INITIATOR_FILTER_POLICY, //
+    //add here
+} hci_cfg_par_e;
+
+typedef enum {
+    REMOTE_TYPE_UNKNOWN  = 0,//未查询or查询对方未响应
+    REMOTE_TYPE_ANDROID,
+    REMOTE_TYPE_IOS,
+} remote_type_e;
+
 //-----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------
@@ -163,18 +181,34 @@ void le_device_db_init(void);
 void reset_PK_cb_register(void (*reset_pk)(u32 *));
 
 /**********************************************************************************
-   @function 初始化ble的蓝牙地址
+   @function 设置ble的蓝牙public地址
    @param [in] addr
    @return 0--success ,非0--fail
+   note:可以结合接口 ble_op_set_own_address_type 配置选择地址类型
  *********************************************************************************/
 int le_controller_set_mac(void *addr);
 
 /**********************************************************************************
-   @function 获取ble的蓝牙地址
+   @function 获取ble的蓝牙public地址
    @param [out] addr
    @return 0--success ,非0--fail
  *********************************************************************************/
 int le_controller_get_mac(void *addr);
+
+/**********************************************************************************
+   @function 初始化ble的蓝牙random地址
+   @param [in] addr
+   @return 0--success ,非0--fail
+   note:可以结合接口 ble_op_set_own_address_type 配置选择地址类型
+ *********************************************************************************/
+int le_controller_set_random_mac(void *addr);
+
+/**********************************************************************************
+   @function 获取ble的蓝牙random地址
+   @param [out] addr
+   @return 0--success ,非0--fail
+ *********************************************************************************/
+int le_controller_get_random_mac(void *addr);
 
 /**********************************************************************************
    @function 配置GATT 角色,default server
@@ -207,6 +241,35 @@ s8 ble_vendor_get_peer_rssi(u16 conn_handle);
 void user_client_set_search_complete(void);
 
 /**********************************************************************************
+   @function 提供生成 ble对应的类型地址
+   @param [out] address
+   @param [in] type
+   1--STATIC_DEVICE_ADDR
+   2--NON_RESOLVABLE_PRIVATE_ADDR
+   3--RESOLVABLE_PRIVATE_ADDR
+   @return
+ *********************************************************************************/
+void ble_vendor_address_generate(u8 *address, u8 type);
+
+/**********************************************************************************
+   @function 根据提供的edr地址生成对应ble地址
+   @param [out] ble_address
+   @param [in]  edr_address
+   @return
+ *********************************************************************************/
+void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
+
+/**********************************************************************************
+   @function 配置设备的地址类型，默认为 0--public address
+   @param [in] address_type   Range: 0x00 to 0x03
+   @return  see ble_cmd_ret_e
+   !!!注意：设置的时候必须在 设置广播参数 或者扫描参数 或者创建连接参数 前配置好
+ *********************************************************************************/
+/* ble_cmd_ret_e ble_op_set_own_address_type(u8 address_type) */
+#define ble_op_set_own_address_type(address_type)     \
+	ble_user_cmd_prepare(BLE_CMD_SET_HCI_CFG, 2,HCI_CFG_OWN_ADDRESS_TYPE,(int)address_type)
+
+/**********************************************************************************
    @function 开关BLE广播， !!!注意：开广播前必现先配置好广播的参数
    @param [in] enable   0 or 1
    @return  see ble_cmd_ret_e
@@ -215,6 +278,15 @@ void user_client_set_search_complete(void);
 #define ble_op_adv_enable(enable)     \
 	ble_user_cmd_prepare(BLE_CMD_ADV_ENABLE, 1, (int)enable)
 
+/**********************************************************************************
+   @function 配置adv filter policy, default 0
+   @param [in] type   Range: 0x00 to 0x03
+   @return  see ble_cmd_ret_e
+   !!!注意：设置的时候必须在 设置广播参数 前配置好
+ *********************************************************************************/
+/* ble_cmd_ret_e ble_op_set_adv_filter_policy(u8 type) */
+#define ble_op_set_adv_filter_policy(type)     \
+	ble_user_cmd_prepare(BLE_CMD_SET_HCI_CFG, 2,HCI_CFG_ADV_FILTER_POLICY,type)
 
 /**********************************************************************************
 
@@ -299,7 +371,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_att_set_send_mtu(u16 mtu) */
 #define ble_op_att_set_send_mtu(mtu)     \
 	ble_user_cmd_prepare(BLE_CMD_ATT_MTU_SIZE, 1, mtu);
@@ -338,7 +410,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_conn_param_request(u16 con_handle,const struct conn_update_param_t *con_param) */
 #define ble_op_conn_param_request(con_handle,con_param)     \
 	ble_user_cmd_prepare(BLE_CMD_REQ_CONN_PARAM_UPDATE, 2, con_handle, (void*)con_param)
@@ -351,7 +423,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_set_data_length(u16 con_handle,u16 tx_octets,u16 tx_time) */
 #define ble_op_set_data_length(con_handle,tx_octets,tx_time)     \
 	ble_user_cmd_prepare(BLE_CMD_SET_DATA_LENGTH, 3, con_handle, tx_octets, tx_time)
@@ -365,7 +437,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_set_ext_adv_param(u8 *param,u16 param_len) */
 #define ble_op_set_ext_adv_param(param,param_len)     \
 	ble_user_cmd_prepare(BLE_CMD_EXT_ADV_PARAM, 2, param, param_len)
@@ -378,7 +450,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_set_ext_adv_data(u8 *data,u16 data_len) */
 #define ble_op_set_ext_adv_data(data,data_len)     \
 	ble_user_cmd_prepare(BLE_CMD_EXT_ADV_DATA, 2, data, data_len)
@@ -393,7 +465,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_set_ext_rsp_data(u8 *data,u16 data_len) */
 #define ble_op_set_ext_rsp_data(data,data_len)     \
 	ble_user_cmd_prepare(BLE_CMD_EXT_RSP_DATA, 2, data, data_len)
@@ -408,7 +480,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_set_ext_adv_enable(u8 *cmd,u16 cmd_le) */
 #define ble_op_set_ext_adv_enable(cmd,len)     \
 	ble_user_cmd_prepare(BLE_CMD_EXT_ADV_ENABLE, 2, cmd, cmd_len)
@@ -423,7 +495,7 @@ void user_client_set_search_complete(void);
    @param [in]rx_phy
    @param [in]phy_options
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_set_ext_phy(u16 con_handle,u16 all_phys,u16 tx_phy,u16 rx_phy,u16 phy_options) */
 #define ble_op_set_ext_phy(con_handle,all_phys,tx_phy,rx_phy,phy_options)     \
     ble_user_cmd_prepare(BLE_CMD_SET_PHY, 5, con_handle, all_phys, tx_phy, rx_phy, phy_options)
@@ -437,7 +509,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_set_ext_scan_param(u8 *param,u16 param_le) */
 #define ble_op_set_ext_scan_param(param,param_len)     \
         ble_user_cmd_prepare(BLE_CMD_EXT_SCAN_PARAM, 2, param, param_len)
@@ -451,7 +523,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_ext_scan_enable(u8 *cmd,u16 cmd_le) */
 #define ble_op_ext_scan_enable(cmd,cmd_len)     \
         ble_user_cmd_prepare(BLE_CMD_EXT_SCAN_ENABLE, 2, cmd, cmd_len)
@@ -465,7 +537,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_ext_create_conn(u8 *conn_param,u16 param_len_len) */
 #define ble_op_ext_create_conn(conn_param,param_len)     \
     ble_user_cmd_prepare(BLE_CMD_EXT_CREATE_CONN, 2, conn_param, param_len)
@@ -479,7 +551,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_latency_skip(u16 con_handle,u16 skip_interval) */
 #define ble_op_latency_skip(con_handle,skip_interval)     \
 	ble_user_cmd_prepare(BLE_CMD_LATENCY_HOLD_CNT, 2, con_handle, skip_interval)
@@ -492,7 +564,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_test_key_num(u16 con_handle,u8 key_num) */
 #define ble_op_test_key_num(con_handle,key_num)     \
 	ble_user_cmd_prepare(BLE_CMD_SEND_TEST_KEY_NUM, 2, con_handle, key_num)
@@ -505,7 +577,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_stack_exit(u8 control) */
 #define ble_op_stack_exit(control)     \
 	ble_user_cmd_prepare(BLE_CMD_STACK_EXIT, 1, control)
@@ -518,7 +590,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_regist_thread_call(void (*thread_callback)(void)) */
 #define ble_op_regist_thread_call(thread_callback)     \
 	ble_user_cmd_prepare(BLE_CMD_REGIEST_THREAD, 1, thread_callback)
@@ -531,7 +603,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 
 
 
@@ -543,10 +615,35 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+   note:filter_duplicate 默认 为 1
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_scan_enable(u8 enable) */
 #define ble_op_scan_enable(enable)     \
 	ble_user_cmd_prepare(BLE_CMD_SCAN_ENABLE, 1, enable)
+
+/**********************************************************************************
+
+   @function  开关BLE搜索扫描，!!!注意：开搜索前必现先配置好搜索的参数
+   @param [in] enable   0 or 1
+   @param [in] filter_duplicate  0 or 1
+   @param [in]
+   @param [in]
+   @return    see ble_cmd_ret_e
+   note:filter_duplicate 默认 为 1
+ *********************************************************************************/
+/* ble_cmd_ret_e ble_op_scan_enable2(u8 enable,u8 filter_duplicate) */
+#define ble_op_scan_enable2(enable,filter_duplicate)     \
+	ble_user_cmd_prepare(BLE_CMD_SCAN_ENABLE2, 2, enable,filter_duplicate)
+
+/**********************************************************************************
+   @function 配置scan filter policy,default 0
+   @param [in] type   Range: 0x00 to 0x03
+   @return  see ble_cmd_ret_e
+   !!!注意：设置的时候必须在 设置扫描参数 前配置好
+ *********************************************************************************/
+/* ble_cmd_ret_e ble_op_set_scan_filter_policy(u8 type) */
+#define ble_op_set_scan_filter_policy(type)     \
+	ble_user_cmd_prepare(BLE_CMD_SET_HCI_CFG, 2,HCI_CFG_SCAN_FILTER_POLICY,type)
 
 /**********************************************************************************
 
@@ -556,10 +653,20 @@ void user_client_set_search_complete(void);
    @param [in] scan_window     搜索窗口 Range: 0x0004 to 0x4000 (unit: 0.625ms),  <= scan_interval
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_set_scan_param(u8 scan_type,u16 scan_interval,u16 scan_window) */
 #define ble_op_set_scan_param(scan_type,scan_interval,scan_window)     \
 	ble_user_cmd_prepare(BLE_CMD_SCAN_PARAM, 3, scan_type, scan_interval, scan_window)
+
+/**********************************************************************************
+   @function 配置creat filter policy,default 0
+   @param [in] type   Range: 0x00 to 0x03
+   @return  see ble_cmd_ret_e
+   !!!注意：设置的时候必须在 设置创建连接参数 前配置好
+ *********************************************************************************/
+/* ble_cmd_ret_e ble_op_set_create_filter_policy(u8 type) */
+#define ble_op_set_create_filter_policy(type)     \
+	ble_user_cmd_prepare(BLE_CMD_SET_HCI_CFG, 2,HCI_CFG_INITIATOR_FILTER_POLICY,type)
 
 /**********************************************************************************
 
@@ -569,7 +676,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_create_connection(struct create_conn_param_t * create_conn_param) */
 #define ble_op_create_connection(create_conn_param)     \
 	ble_user_cmd_prepare(BLE_CMD_CREATE_CONN, 1, create_conn_param)
@@ -582,7 +689,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_create_connection_cancel(void) */
 #define ble_op_create_connection_cancel()     \
 	ble_user_cmd_prepare(BLE_CMD_CREATE_CONN_CANCEL,0)
@@ -595,7 +702,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_search_profile_all(void) */
 #define ble_op_search_profile_all()     \
 	ble_user_cmd_prepare(BLE_CMD_SEARCH_PROFILE, 2, PFL_SERVER_ALL, 0)
@@ -608,7 +715,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_search_profile_uuid16(u16 uuid16) */
 #define ble_op_search_profile_uuid16(uuid16)     \
 	ble_user_cmd_prepare(BLE_CMD_SEARCH_PROFILE, 2, PFL_SERVER_UUID16, uuid16)
@@ -621,7 +728,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_search_profile_uuid128(const u8 *uuid128_pt) */
 #define ble_op_search_profile_uuid128(uuid128_pt)     \
 	ble_user_cmd_prepare(BLE_CMD_SEARCH_PROFILE, 2, PFL_SERVER_UUID128, uuid128_pt)
@@ -634,7 +741,7 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 /* ble_cmd_ret_e ble_op_conn_param_update(u16 con_handle,struct conn_update_param_t *con_param) */
 #define ble_op_conn_param_update(con_handle,con_param)     \
 	ble_user_cmd_prepare(BLE_CMD_ONNN_PARAM_UPDATA, 2, con_handle, con_param)
@@ -648,11 +755,133 @@ void user_client_set_search_complete(void);
    @param [in]
    @param [in]
    @return    see ble_cmd_ret_e
- *********************************************************************************/\
+ *********************************************************************************/
 
 
+/**********************************************************************************
+
+   @function   ble 从机 配置配对表(可以不设置使用sdk默认值)
+   @param [in] pair_devices_count 记录配对设备  range: 0~10,默认10 ,若配置为0,不支持配对
+   @param [in] is_allow_cover  是否允许循环覆盖记录  1 or 0,默认1
+   @param [in]
+   @param [in]
+   @return    true or false
+	note: 上电调用配置,若配置的个数跟之前不一样，默认清楚所有的配对表数据
+ *********************************************************************************/
+void ble_list_config_reset(u8 pair_devices_count, u8 is_allow_cover);
+
+/**********************************************************************************
+
+   @function   ble 从机 清空配对表
+   @param [in]
+   @param [in]
+   @return    true or false
+	note:
+ *********************************************************************************/
+bool ble_list_clear_all(void);
+
+/**********************************************************************************
+
+   @function   ble 从机 检测连接地址是否在已配对表中
+   @param [in] conn_addr        对方地址6bytes
+   @param [in] conn_addr_type   对方地址类型range: 0~1
+   @param [in]
+   @param [in]
+   @return    true or false
+	note:
+ *********************************************************************************/
+bool ble_list_check_addr_is_exist(u8 *conn_addr, u8 conn_addr_type);
 
 
+/**********************************************************************************
+
+   @function   ble 从机 把设备从配对表中删除
+   @param [in] conn_addr        对方连接地址6bytes
+   @param [in] conn_addr_type   对方连接地址类型range: 0~1
+   @param [in]
+   @param [in]
+   @return    true or false
+	note:
+ *********************************************************************************/
+bool ble_list_delete_device(u8 *conn_addr, u8 conn_addr_type);
+
+
+/**********************************************************************************
+
+   @function   ble 从机 获取配对表中最后连接设备的 id_address (public address)
+   @param [out] id_addr
+   @param [in]
+   @param [in]
+   @return    true or false
+	note:
+ *********************************************************************************/
+bool ble_list_get_last_id_addr(u8 *id_addr);
+
+
+/**********************************************************************************
+
+   @function   ble 从机 获取已配对设备连接地址对应的 id_address (public address)
+   @param [in] conn_addr        对方连接地址6bytes
+   @param [in] conn_addr_type   对方连接地址类型range: 0~1
+   @param [out] id_addr
+   @param [in]
+   @param [in]
+   @return    true or false
+	note:
+ *********************************************************************************/
+bool ble_list_get_id_addr(u8 *conn_addr, u8 conn_addr_type, u8 *id_addr);
+
+/**********************************************************************************
+
+   @function   ble 从机 获取已配对设备的系统类型
+   @param [in] conn_addr        对方连接地址6bytes
+   @param [in] conn_addr_type   对方连接地址类型range: 0~1
+   @param [out] remote_type_e
+   @param [in]
+   @param [in]
+   @return    true or false
+	note:
+ *********************************************************************************/
+bool ble_list_get_remote_type(u8 *conn_addr, u8 conn_addr_type, u8 *output_type);
+
+/**********************************************************************************
+   @function ble slave: att server 连接后主动请求MTU交换
+   @param [in] handle  连接 con_handle,range：>0
+   @param [in]
+   @param [in]
+   @return
+ *********************************************************************************/
+void att_server_set_exchange_mtu(u16 con_handle);
+
+/**********************************************************************************
+   @function ble slave: att server 使能流控功能
+   @param [in] handle  连接 con_handle,range：>0
+   @param [in] enable: 1 or 0
+   @param [in]
+   @return
+	note: 蓝牙初始化后可调用
+ *********************************************************************************/
+void att_server_flow_enable(u8 enable);
+
+/**********************************************************************************
+   @function ble slave: att server 控制收数流控
+   @param [in] handle  连接 con_handle,range：>0
+   @param [in] hold_flag:1--停止收发数据，0--开始正常收发数
+   @param [in]
+   @return
+	note: 必现调用 att_server_flow_enable 使能流控控制
+ *********************************************************************************/
+void att_server_flow_hold(hci_con_handle_t con_handle, u8 hold_flag);
+
+/**********************************************************************************
+   @function ble slave: server 配对连接时，检查对方操作系统
+   @param [in] handle   连接 con_handle,range：>0
+   @param [in] callback 检查完回调
+   @param [in]
+   @return
+	note: 在第一次配对连接时调用，HCI_EVENT_ENCRYPTION_CHANGE 事件后
+ *********************************************************************************/
+void att_server_set_check_remote(u16 con_handle, void (*callback)(u16 con_handle, remote_type_e remote_type));
 
 
 

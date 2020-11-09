@@ -366,31 +366,31 @@ SECTIONS
 		. = ALIGN(4);
     	_audio_decoder_begin = .;
     	PROVIDE(audio_decoder_begin = .);
-    	    *(.audio_decoder)
+    	    KEEP(*(.audio_decoder))
     	_audio_decoder_end = .;
     	PROVIDE(audio_decoder_end = .);
 
     	_audio_encoder_begin = .;
     	PROVIDE(audio_encoder_begin = .);
-    	    *(.audio_encoder)
+    	    KEEP(*(.audio_encoder))
     	_audio_encoder_end = .;
     	PROVIDE(audio_encoder_end = .);
 
     	_audio_package_begin = .;
     	PROVIDE(audio_package_begin = .);
-    	    *(.audio_package)
+    	    KEEP(*(.audio_package))
     	_audio_package_end = .;
     	PROVIDE(audio_package_end = .);
 
     	_audio_dev_begin = .;
     	PROVIDE(audio_dev_begin = .);
-    	    *(.audio_device)
+    	    KEEP(*(.audio_device))
     	_audio_dev_end = .;
     	PROVIDE(audio_dev_end = .);
 
     	_audio_hwaccel_begin = .;
     	PROVIDE(audio_hwaccel_begin = .);
-    	    *(.audio_hwaccel)
+    	    KEEP(*(.audio_hwaccel))
     	_audio_hwaccel_end = .;
     	PROVIDE(audio_hwaccel_end = .);
 
@@ -419,7 +419,9 @@ SECTIONS
 		*(.lib_pitchshift_code)
 		*(.lib_pitchshift_const)
 		. = ALIGN(4);
-
+		*(.sur_cal_const)
+		*(.sur_cal_code)
+		. = ALIGN(4);
 
     	media_code_end = .;
 		. = ALIGN(4);

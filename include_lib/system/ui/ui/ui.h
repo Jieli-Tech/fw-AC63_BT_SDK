@@ -14,6 +14,7 @@
 #include "ui_number.h"
 #include "ui_watch.h"
 #include "ui_progress.h"
+#include "ui_progress_multi.h"
 #include <stdarg.h>
 
 struct uimsg_handl {
@@ -26,6 +27,8 @@ int ui_framework_init(void *);
 int ui_set_style_file(struct ui_style *style);
 
 int ui_style_file_version_compare(int version);
+
+int ui_redraw(int id);
 
 int ui_show(int id);
 

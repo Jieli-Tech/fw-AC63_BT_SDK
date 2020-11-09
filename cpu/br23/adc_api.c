@@ -22,7 +22,7 @@ struct adc_info_t {
 static struct adc_info_t adc_queue[ADC_MAX_CH + ENABLE_OCCUPY_MODE];
 
 static u16 vbg_adc_value;
-static u16 vbat_adc_value;
+/* static u16 vbat_adc_value; */
 
 #define     ADC_SRC_CLK clk_get("adc")
 
@@ -74,10 +74,29 @@ static u32 adc_get_next_ch(u32 cur_ch)
     }
     return 0;
 }
+#define vbat_value_array_size   16
+static u16 vbat_value_array[vbat_value_array_size];
+static void vbat_value_push(u16 vbat_value)
+{
+    static u32 pos = 0;
+    vbat_value_array[pos] = vbat_value;
+    pos++;
+    if (pos == vbat_value_array_size) {
+        pos = 0;
+    }
+}
+static u16 vbat_value_avg(void)
+{
+    u32 i, sum = 0;
+    for (i = 0; i < vbat_value_array_size; i++) {
+        sum += vbat_value_array[i];
+    }
+    return sum / vbat_value_array_size;
+}
 u32 adc_get_value(u32 ch)
 {
     if (ch == AD_CH_VBAT) {
-        return vbat_adc_value;
+        return vbat_value_avg();
     }
 
     if (ch == AD_CH_LDOREF) {
@@ -294,7 +313,7 @@ void adc_scan(void *priv)
             return;
         } else if (vbg_vbat_step == 2) {
             vbg_vbat_step = 0;
-            vbat_adc_value = _adc_res;
+            vbat_value_push(_adc_res);
             vbg_adc_value = tmp_vbg_adc_value;
             //printf("vbg = %d  vbat = %d\n", vbg_adc_value, vbat_adc_value);
             _adc_res = old_adc_res;
@@ -337,15 +356,13 @@ void _adc_init(u32 sys_lvd_en)
     adc_pmu_detect_en(1);
 
     u32 i;
-    vbat_adc_value = 0;
     adc_sample(AD_CH_VBAT);
-    for (i = 0; i < 10; i++) {
+    for (i = 0; i < vbat_value_array_size; i++) {
         while (!(JL_ADC->CON & BIT(7)));
-        vbat_adc_value += JL_ADC->RES;
+        vbat_value_array[i] = JL_ADC->RES;
         JL_ADC->CON |= BIT(6);
     }
-    vbat_adc_value /= 10;
-    printf("vbat_adc_value = %d\n", vbat_adc_value);
+    printf("vbat_adc_value = %d\n", vbat_value_avg());
 
     vbg_adc_value = 0;
     adc_sample(AD_CH_LDOREF);

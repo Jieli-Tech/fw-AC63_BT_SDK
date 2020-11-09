@@ -11,18 +11,18 @@
 #include "adv.h"
 
 #define LOG_TAG             "[MESH-buf]"
-/* #define LOG_INFO_ENABLE */
-#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+/* #define LOG_DEBUG_ENABLE */
 #define LOG_WARN_ENABLE
 #define LOG_ERROR_ENABLE
 #define LOG_DUMP_ENABLE
 #include "mesh_log.h"
 
-#define NET_BUF_DBG(fmt, ...)
-#define NET_BUF_ERR(fmt, ...)
-#define NET_BUF_WARN(fmt, ...)
-#define NET_BUF_INFO(fmt, ...)
-#define NET_BUF_ASSERT(cond)
+#define NET_BUF_DBG             BT_DBG
+#define NET_BUF_ERR             BT_ERR
+#define NET_BUF_WARN            BT_WARN
+#define NET_BUF_INFO            BT_INFO
+#define NET_BUF_ASSERT          ASSERT
 
 #if MESH_RAM_AND_CODE_MAP_DETAIL
 #ifdef SUPPORT_MS_EXTENSIONS
@@ -136,27 +136,20 @@ static void data_unref(struct net_buf *buf, u8_t *data)
 struct net_buf *net_buf_alloc_len(struct net_buf_pool *pool, size_t size,
                                   s32_t timeout)
 {
-    BT_INFO("--func=%s", __FUNCTION__);
     struct net_buf *buf;
     unsigned int key;
     u16_t uninit_count;
 
     NET_BUF_ASSERT(pool);
 
-    NET_BUF_DBG("%s():%d: pool 0x%x size %u timeout %d", func, line, pool,
-                size, timeout);
+    NET_BUF_INFO("--func=%s, pool_id=%d", __FUNCTION__, pool_id(pool));
 
-    /* We need to lock interrupts temporarily to prevent race conditions
-     * when accessing pool->uninit_count.
-     */
     key = irq_lock();
 
-    /* ASSERT(pool->free_count, "---> pool->free_count 0"); */
-#if NET_BUF_FREE_EN
     if (pool->free_count) {
 
         pool->free_count--;
-        BT_INFO("free_count=%d", pool->free_count);
+
         do {
             uninit_count = pool->uninit_count--;
 
@@ -166,21 +159,8 @@ struct net_buf *net_buf_alloc_len(struct net_buf_pool *pool, size_t size,
 
             buf = pool_get_uninit(pool, uninit_count);
 
-        } while (buf->flags || (BT_MESH_ADV(buf) && BT_MESH_ADV(buf)->busy));
-#else
-    /* If there are uninitialized buffers we're guaranteed to succeed
-     * with the allocation one way or another.
-     */
-    if (pool->uninit_count) {
-        uninit_count = pool->uninit_count--;
+        } while (buf->flags | buf->ref);
 
-        if (0 == pool->uninit_count) {
-            pool->uninit_count = pool->buf_count;
-        }
-
-        buf = pool_get_uninit(pool, uninit_count);
-
-#endif /* NET_BUF_FREE_EN */
         irq_unlock(key);
 
         goto success;
@@ -188,30 +168,30 @@ struct net_buf *net_buf_alloc_len(struct net_buf_pool *pool, size_t size,
 
     irq_unlock(key);
 
-    NET_BUF_ERR("%s():%d: Failed to get free buffer", func, line);
-    BT_ERR("%s():%d: Failed to get free buffer", __FUNCTION__, __LINE__);
+    NET_BUF_ERR("%s():%d: Failed to get free buffer", __FUNCTION__, __LINE__);
 
     return NULL;
 
 success:
     NET_BUF_DBG("allocated buf 0x%x", buf);
 
-    memset((u8 *)buf, 0, sizeof(*buf));
     if (size) {
         buf->__buf = data_alloc(buf, &size, timeout);
         if (!buf->__buf) {
-            NET_BUF_ERR("%s():%d: Failed to allocate data",
-                        func, line);
+            NET_BUF_ERR("%s():%d: Failed to allocate data", __FUNCTION__, __LINE__);
             return NULL;
         }
     } else {
         buf->__buf = NULL;
     }
 
+    NET_BUF_INFO("alloc free_count=%d, addr=0x%x", pool->free_count, buf);
+
     buf->ref   = 1;
     buf->flags = 0;
     buf->frags = NULL;
     buf->size  = size;
+
     net_buf_reset(buf);
 
     return buf;
@@ -224,30 +204,63 @@ struct net_buf *net_buf_alloc_fixed(struct net_buf_pool *pool, s32_t timeout)
     return net_buf_alloc_len(pool, fixed->data_size, timeout);
 }
 
-#if NET_BUF_FREE_EN
-
-int net_buf_free(struct net_buf *buf)
+static void net_buf_free(struct net_buf *buf)
 {
-    unsigned int key;
     struct net_buf_pool *pool;
 
-    BT_INFO("--func=%s", __FUNCTION__);
+    while (buf) {
+        struct net_buf *frags = buf->frags;
+
+        buf->frags = NULL;
+
+        pool = net_buf_pool_get(buf->pool_id);
+
+        if (pool->destroy) {
+            pool->destroy(buf);
+        }
+
+        pool = net_buf_pool_get(buf->pool_id);
+
+        if (pool->free_count < pool->buf_count) {
+            pool->free_count++;
+            NET_BUF_INFO("free free_count=%d, pool_id=%d", pool->free_count, buf->pool_id);
+        } else {
+            NET_BUF_ERR("free free_count=%d, pool_id=%d", pool->free_count, buf->pool_id);
+        }
+
+        buf = frags;
+    }
+}
+
+void net_buf_unref(struct net_buf *buf)
+{
+    NET_BUF_INFO("--func=%s, buf=0x%x, ref=%d", __FUNCTION__, buf, buf->ref);
+
+    NET_BUF_ASSERT(buf);
+
+    unsigned int key;
 
     key = irq_lock();
 
-    buf->flags = 0;
-
-    pool = net_buf_pool_get(buf->pool_id);
-
-    if (pool->free_count < pool->buf_count) {
-        pool->free_count++;
+    if (--buf->ref) {
+        irq_unlock(key);
+        return;
     }
 
+    net_buf_free(buf);
+
     irq_unlock(key);
+}
 
-    BT_INFO("free_count=%d, addr=0x%x", pool->free_count, buf);
+struct net_buf *net_buf_ref(struct net_buf *buf)
+{
+    NET_BUF_INFO("--func=%s, buf=0x%x, ref=%d", __FUNCTION__, buf, buf->ref);
 
-    return 0;
+    NET_BUF_ASSERT(buf);
+
+    buf->ref++;
+
+    return buf;
 }
 
 struct net_buf *net_buf_get_next(struct net_buf *buf)
@@ -270,8 +283,6 @@ struct net_buf *net_buf_get_next(struct net_buf *buf)
     return buf;
 }
 
-#endif /* NET_BUF_FREE_EN */
-
 void net_buf_simple_reserve(struct net_buf_simple *buf, size_t reserve)
 {
     NET_BUF_ASSERT(buf);
@@ -279,80 +290,6 @@ void net_buf_simple_reserve(struct net_buf_simple *buf, size_t reserve)
     NET_BUF_DBG("buf 0x%x reserve %u", buf, reserve);
 
     buf->data = buf->__buf + reserve;
-}
-
-void net_buf_unref(struct net_buf *buf)
-{
-    BT_INFO("--func=%s", __FUNCTION__);
-    NET_BUF_ASSERT(buf);
-
-#if NET_BUF_FREE_EN
-    BT_INFO("buf=0x%x", buf);
-    BT_INFO("BT_MESH_ADV(buf)=0x%x", BT_MESH_ADV(buf));
-    BT_INFO("BT_MESH_ADV(buf)->busy=0x%x", BT_MESH_ADV(buf)->busy);
-    if (buf && BT_MESH_ADV(buf) && BT_MESH_ADV(buf)->busy) {
-        return;
-    }
-    if (buf && (buf->flags & NET_BUF_FRIEND_POLL_CACHE)) {
-        return;
-    }
-    if (buf && (buf->flags & NET_BUF_FRIEND_QUEUE_CACHE)) {
-        return;
-    }
-    if (buf && (buf->flags & NET_BUF_PBADV_CACHE)) {
-        return;
-    }
-#endif /* NET_BUF_FREE_EN */
-
-    while (buf) {
-        struct net_buf *frags = buf->frags;
-        struct net_buf_pool *pool;
-
-        NET_BUF_DBG("buf 0x%x ref %u pool_id %u frags 0x%x", buf, buf->ref,
-                    buf->pool_id, buf->frags);
-
-#if !NET_BUF_FREE_EN
-        if (--buf->ref > 0) {
-            return;
-        }
-
-        if (buf->__buf) {
-            data_unref(buf, buf->__buf);
-            buf->__buf = NULL;
-        }
-
-        buf->data = NULL;
-#endif /* NET_BUF_FREE_EN */
-
-        buf->frags = NULL;
-
-        pool = net_buf_pool_get(buf->pool_id);
-
-#if defined(CONFIG_NET_BUF_POOL_USAGE)
-        pool->avail_count++;
-        NET_BUF_ASSERT(pool->avail_count <= pool->buf_count);
-#endif
-
-        if (pool->destroy) {
-            pool->destroy(buf);
-        }
-
-#if NET_BUF_FREE_EN
-        net_buf_free(buf);
-#endif /* NET_BUF_FREE_EN */
-
-        buf = frags;
-    }
-}
-
-struct net_buf *net_buf_ref(struct net_buf *buf)
-{
-    NET_BUF_ASSERT(buf);
-
-    NET_BUF_DBG("buf 0x%x (old) ref %u pool_id %u",
-                buf, buf->ref, buf->pool_id);
-    buf->ref++;
-    return buf;
 }
 
 #if defined(CONFIG_NET_BUF_SIMPLE_LOG)
@@ -539,15 +476,15 @@ size_t net_buf_simple_tailroom(struct net_buf_simple *buf)
 
 static void log_dump_slist(sys_slist_t *list)
 {
-    BT_INFO("list->head=0x%x", list->head);
+    NET_BUF_INFO("list->head=0x%x", list->head);
 
     sys_snode_t *node = list->head;
     while (node) {
-        BT_INFO("node next=0x%x", node);
+        NET_BUF_INFO("node next=0x%x", node);
         node = node->next;
     }
 
-    BT_INFO("list->tail=0x%x", list->tail);
+    NET_BUF_INFO("list->tail=0x%x", list->tail);
 }
 
 void net_buf_slist_put(sys_slist_t *list, struct net_buf *buf)
@@ -555,7 +492,7 @@ void net_buf_slist_put(sys_slist_t *list, struct net_buf *buf)
     struct net_buf *tail;
     unsigned int key;
 
-    BT_INFO("--func=%s", __FUNCTION__);
+    NET_BUF_INFO("--func=%s", __FUNCTION__);
 
     log_dump_slist(list);
 
@@ -564,7 +501,7 @@ void net_buf_slist_put(sys_slist_t *list, struct net_buf *buf)
 
     for (tail = buf; tail->frags; tail = tail->frags) {
         tail->flags |= NET_BUF_FRAGS;
-        BT_INFO("net_buf_slist_put NET_BUF_FRAGS");
+        NET_BUF_INFO("net_buf_slist_put NET_BUF_FRAGS");
     }
 
     key = irq_lock();
@@ -609,7 +546,7 @@ struct net_buf *net_buf_slist_get(sys_slist_t *list)
     struct net_buf *buf, *frag;
     unsigned int key;
 
-    BT_INFO("--func=%s", __FUNCTION__);
+    NET_BUF_INFO("--func=%s", __FUNCTION__);
 
     log_dump_slist(list);
 
@@ -626,7 +563,7 @@ struct net_buf *net_buf_slist_get(sys_slist_t *list)
 
     /* Get any fragments belonging to this buffer */
     for (frag = buf; (frag->flags & NET_BUF_FRAGS); frag = frag->frags) {
-        BT_INFO("NET_BUF_FRAGS");
+        NET_BUF_INFO("NET_BUF_FRAGS");
         key = irq_lock();
         frag->frags = (void *)sys_slist_get(list);
         irq_unlock(key);

@@ -87,8 +87,14 @@ cp soundbox/ai_single_bank/isd_config.ini ./
 
 #else
 
+#ifdef CONFIG_SOUNDBOX_FLASH_256K
+NICKNAME="br25_standard_2m_flash"
+cp soundbox/standard_2m_flash/isd_config.ini ./
+#else
 NICKNAME="br25_standard"
 cp soundbox/standard/isd_config.ini ./
+#endif
+
 #endif
 #endif
 
@@ -170,10 +176,17 @@ copy br25loader.bin soundbox\ai_single_bank\br25loader.bin
 soundbox\ai_single_bank\download.bat
 #endif      //CONFIG_DOUBLE_BANK_ENABLE
 #else
+#ifdef CONFIG_SOUNDBOX_FLASH_256K
+copy app.bin soundbox\standard_2m_flash\app.bin
+copy br25loader.bin soundbox\standard_2m_flash\br25loader.bin
+
+soundbox\standard_2m_flash\download.bat
+#else
 copy app.bin soundbox\standard\app.bin
 copy br25loader.bin soundbox\standard\br25loader.bin
 
 soundbox\standard\download.bat
+#endif
 #endif
 
 #endif      //endif CONFIG_SOUNDBOX_CASE_ENABLE

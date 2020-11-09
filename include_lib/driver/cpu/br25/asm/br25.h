@@ -171,6 +171,7 @@ typedef struct {
     __RW __u32 PLL_DMAX;
     __RW __u32 PLL_DMIN;
     __RW __u32 PLL_DSTP;
+    __RW __u32 PLL_CON2;
 } JL_CLOCK_TypeDef;
 
 #define JL_CLOCK_BASE                   (ls_base + map_adr(0x00, 0x00))

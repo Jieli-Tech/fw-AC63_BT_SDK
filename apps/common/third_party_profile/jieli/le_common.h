@@ -51,9 +51,7 @@ struct conn_param_t {
 // #define INDICATION_TYPE       2
 // Minimum/default MTU
 
-#define ATT_CTRL_BLOCK_SIZE       (88)                    //note: fixed,libs use
-
-
+#define ATT_CTRL_BLOCK_SIZE       (120)                    //note: fixed,libs use
 
 
 enum {

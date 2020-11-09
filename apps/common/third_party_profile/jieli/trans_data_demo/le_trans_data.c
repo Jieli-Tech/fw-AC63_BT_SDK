@@ -41,7 +41,14 @@
 #include "rcsp_bluetooth.h"
 #include "JL_rcsp_api.h"
 
+
 #if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_TRANS_DATA)
+
+//TRANS ANCS
+#define TRANS_ANCS_EN  			  	 0
+#if TRANS_ANCS_EN
+#include "btstack/btstack_event.h"
+#endif
 
 #define TEST_SEND_DATA_RATE          0  //测试上行发送数据
 #define TEST_SEND_HANDLE_VAL         ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE
@@ -163,6 +170,21 @@ extern void clr_wdt(void);
 extern void sys_auto_shut_down_disable(void);
 extern void sys_auto_shut_down_enable(void);
 extern u8 get_total_connect_dev(void);
+
+//------------------------------------------------------
+//NACS
+#if TRANS_ANCS_EN
+#define ANCS_SUBEVENT_CLIENT_NOTIFICATION                           0xF1
+void ancs_client_init(void);
+void ancs_client_register_callback(btstack_packet_handler_t callback);
+const char *ancs_client_attribute_name_for_id(int id);
+void ancs_set_notification_buffer(u8 *buffer, u16 buffer_size);
+
+//ancs info buffer
+#define ANCS_INFO_BUFFER_SIZE  (1024)
+static u8 ancs_info_buffer[ANCS_INFO_BUFFER_SIZE];
+#endif
+
 //------------------------------------------------------
 #if TEST_AUDIO_DATA_UPLOAD
 static const u8 test_audio_data_file[1024] = {
@@ -431,6 +453,7 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     int mtu;
     u32 tmp;
     u8 status;
+    const char *attribute_name;
 
     switch (packet_type) {
     case HCI_EVENT_PACKET:
@@ -537,6 +560,29 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         case HCI_EVENT_ENCRYPTION_CHANGE:
             log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d\n", packet[2]);
             break;
+
+#if TRANS_ANCS_EN
+        case HCI_EVENT_ANCS_META:
+            switch (hci_event_ancs_meta_get_subevent_code(packet)) {
+            case ANCS_SUBEVENT_CLIENT_NOTIFICATION:
+                printf("ANCS_SUBEVENT_CLIENT_NOTIFICATION \n");
+                attribute_name = ancs_client_attribute_name_for_id(ancs_subevent_client_notification_get_attribute_id(packet));
+                if (!attribute_name) {
+                    printf("ancs unknow attribute_id :%d \n", ancs_subevent_client_notification_get_attribute_id(packet));
+                    break;
+                } else {
+                    u16 attribute_strlen = little_endian_read_16(packet, 7);
+                    u8 *attribute_str = (void *)little_endian_read_32(packet, 9);
+                    printf("Notification: %s - %s \n", attribute_name, attribute_str);
+                }
+                break;
+            default:
+                break;
+            }
+
+            break;
+#endif
+
         }
         break;
     }
@@ -772,6 +818,7 @@ static int make_set_adv_data(void)
     u8 offset = 0;
     u8 *buf = adv_data;
 
+
     /* offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x18, 1); */
     /* offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x1A, 1); */
     offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x06, 1);
@@ -892,6 +939,17 @@ void ble_profile_init(void)
     /* ble_l2cap_register_packet_handler(packet_cbk); */
     /* sm_event_packet_handler_register(packet_cbk); */
     le_l2cap_register_packet_handler(&cbk_packet_handler);
+
+#if TRANS_ANCS_EN
+    //setup GATT client
+    gatt_client_init();
+
+    //setup ANCS clent
+    ancs_client_init();
+    ancs_set_notification_buffer(ancs_info_buffer, sizeof(ancs_info_buffer));
+    ancs_client_register_callback(&cbk_packet_handler);
+#endif
+
 }
 
 #if EXT_ADV_MODE_EN

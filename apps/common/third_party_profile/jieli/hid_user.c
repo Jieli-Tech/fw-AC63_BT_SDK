@@ -51,13 +51,14 @@ int edr_hid_timer_handle = 0;
 /* static u8  edr_hid_one_packet[HID_SEND_MAX_SIZE]; */
 /* static volatile u16 edr_send_packet_len = 0; */
 static volatile u8  bt_send_busy = 0;
+void (*user_led_status_callback)(u8 *buffer, u16 size) = NULL;
 
 #define HID_TMP_BUFSIZE  (64*2)
 #define cbuf_get_space(a) (a)->total_len
 static cbuffer_t user_send_cbuf;
 static u8 hid_tmp_buffer[HID_TMP_BUFSIZE];
 
-extern void hid_diy_regiest_callback(void *cb);
+extern void hid_diy_regiest_callback(void *cb, void *interrupt_cb);
 extern void hid_sdp_init(const u8 *hid_descriptor, u16 size);
 extern uint16_t little_endian_read_16(const uint8_t *buffer, int pos);
 
@@ -77,6 +78,20 @@ typedef struct {
     u8 report_id;
     u8 data[HID_SEND_MAX_SIZE - 2];
 } hid_data_info_t;
+
+//-----------------------------------------------------
+/* enum { */
+/* REMOTE_DEV_UNKNOWN  = 0, */
+/* REMOTE_DEV_ANDROID		, */
+/* REMOTE_DEV_IOS			, */
+/* }; */
+//参考识别手机系统
+void sdp_callback_remote_type(u8 remote_type)
+{
+    log_info("edr_hid:remote_type= %d\n", remote_type);
+    //to do,change report_map
+    /* user_hid_descriptor_init(); */
+}
 
 //-----------------------------------------------------
 static u16 user_data_read_sub(u8 *buf, u16 buf_size)
@@ -283,13 +298,12 @@ static void user_hid_msg_handler(u32 msg, u8 *packet, u32 packet_size)
     }
 }
 
-
-
-void user_hid_init(void)
+void user_hid_init(void (*user_hid_interrupt_handler)(u8 *packet, u16 size))
 {
     log_info("%s\n", __FUNCTION__);
     hid_channel = 0;
-    hid_diy_regiest_callback(user_hid_msg_handler);
+    hid_diy_regiest_callback(user_hid_msg_handler, user_hid_interrupt_handler);
+
 #if !HID_CHANGE_DESCRIPTOR
     hid_sdp_init(HID_REPORT_MAP_DATA, HID_REPORT_MAP_SIZE);
 #endif

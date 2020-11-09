@@ -473,7 +473,60 @@ enum {
 #define LSB_CLK_DIV(x)			SFR(JL_CLOCK->SYS_DIV,  8,  3,  x)
 #define SFC_CLK_DIV(x)			SFR(JL_CLOCK->SYS_DIV,  12, 3,  x)
 
+
 /********************************************************************************/
+
+#define lrc_con1_init                                 \
+    /*                               */     (0 << 7) |\
+    /*                               */     (0 << 6) |\
+    /*                               */     (0 << 5) |\
+    /*RC32K_CAP_S2_33v               */     (1 << 4) |\
+    /*RC32K_CAP_S1_33v               */     (0 << 3) |\
+    /*RC32K_CAP_S0_33v               */     (0 << 2) |\
+    /*                               */     (0 << 1) |\
+    /*RC32K_RNPS_S1_33v              */     (0 << 0)
+
+#define lrc_con0_init                                 \
+    /*RC32K_RNPS_S0_33v              */     (1 << 7) |\
+    /*                               */     (0 << 6) |\
+    /*RC32K_RPPS_S1_33v              */     (0 << 5) |\
+    /*RC32K_RPPS_S0_33v              */     (1 << 4) |\
+    /*                               */     (0 << 3) |\
+    /*                               */     (0 << 2) |\
+    /*RC32K_RN_TRIM_33v              */     (0 << 1) |\
+    /*RC32K_EN_33v                   */     (1 << 0)
+
+
+#define lrc_pll_con2                                \
+    /*PLL_LDO12D_S(2-0)         3 bit*/     (   0b100 << 0  )
+
+#define lrc_pll_con1                                \
+    /*ref_sel                   2 bit*/     (    0b00 << 30 ) |\
+    /*PLL_LDO12A_S2_11v         1 bit*/     (       1 << 29 ) |\
+    /*SYSPLL_CKOUT_D4P5_OE      1 bit*/     (       1 << 28 ) |\
+    /*SYSPLL_CKOUT_D3P5_OE      1 bit*/     (       1 << 27 ) |\
+    /*SYSPLL_CKOUT_D2P5_OE      1 bit*/     (       1 << 26 ) |\
+    /*SYSPLL_CKOUT_D1P5_OE      1 bit*/     (       1 << 25 ) |\
+    /*SYSPLL_CKOUT_D1_OE        1 bit*/     (       1 << 24 ) |\
+    /*SYSPLL_REFDSEN(1-0        2 bit*/     (    0b01 << 22 ) |\
+    /*SYSPLL_LDO12A_S(1-0)      2 bit*/     (    0b00 << 20 ) |\
+    /*reserved                  1 bit*/     (       0 << 19 ) |\
+    /*SYSPLL_TEST_EN            1 bit*/     (       0 << 18 ) |\
+    /*SYSPLL_TEST_S(1-0)        2 bit*/     (       0 << 16 ) |\
+    /*SYSPLL_LDO_BYPASS         1 bit*/     (       0 << 15 ) |\
+    /*SYSPLL_IVCOS(2-0)         3 bit*/     (   0b011 << 12 ) |\
+    /*SYSPLL_DS(11-0)           12 bit*/    (((480000000/(32000*8))-2)<< 0)
+
+#define lrc_pll_con                                 \
+    /*SYSPLL_LPFR2S(1-0)        3 bit*/     (   0b111 << 27 ) |\
+    /*SYSPLL_ICPS(1-0)          3 bit*/     (       0 << 24 ) |\
+    /*SYSPLL_PFDS(1-0)          2 bit*/     (       1 << 22 ) |\
+    /*SYSPLL_DIVS(1-0)          2 bit*/     (       0 << 20 ) |\
+    /*SYSPLL_TSCK480M_OE        1 bit*/     (       0 << 10 ) |\
+    /*SYSPLL_REFSEL             1 bit*/     (       1 << 9  ) |\
+    /*SYSPLL_REFDS(6-0)         7 bit*/     (       0 << 2  ) |\
+    /*SYSPLL_RN                 1 bit*/     (       0 << 1  ) |\
+    /*SYSPLL_EN                 1 bit*/     (       0 << 0  )
 
 
 #endif

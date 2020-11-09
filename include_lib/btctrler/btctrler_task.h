@@ -62,4 +62,5 @@ int btctrler_task_exit();
 int btctrler_task_close_bredr();
 void  btctrler_task_init_bredr();
 
+void set_idle_period_slot(u16 slot);
 #endif

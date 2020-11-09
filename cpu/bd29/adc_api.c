@@ -171,8 +171,12 @@ u32 adc_get_voltage(u32 ch)
 
 u32 adc_check_vbat_lowpower()
 {
-    u32 vbat = adc_get_value(AD_CH_VBAT);
-    return __builtin_abs(vbat - 255) < 5;
+    if (vbat_vddio_tieup) {
+        return 0;
+    } else {
+        u32 vbat = adc_get_value(AD_CH_VBAT);
+        return __builtin_abs(vbat - 255) < 5;
+    }
 }
 
 void adc_close()
@@ -329,7 +333,7 @@ void adc_scan(void *priv)
         if (time_before(adc_queue[next_ch].jiffies, jiffies)) {
             adc_sample(adc_queue[next_ch].ch);
             adc_sample_flag = 1;
-            adc_queue[next_ch].jiffies = adc_queue[next_ch].sample_period + jiffies;
+            adc_queue[next_ch].jiffies += adc_queue[next_ch].sample_period;
         }
     } else {
         adc_sample(adc_queue[next_ch].ch);

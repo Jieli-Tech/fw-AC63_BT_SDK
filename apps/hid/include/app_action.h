@@ -10,6 +10,7 @@
 #define ACTION_IDLE_MAIN    	0x0003
 #define ACTION_KEYFOB    	    0x0004
 #define ACTION_KEYPAGE    	    0x0005
+#define ACTION_GAMEBOX    	    0x0006
 
 #endif
 

@@ -125,7 +125,7 @@
 #define TCFG_RTC_ALARM_ENABLE               DISABLE_THIS_MOUDLE
 
 //*********************************************************************************//
-//                                  充电仓配置                                     //
+//                                  充电仓配置(不支持)                             //
 //*********************************************************************************//
 #define TCFG_CHARGESTORE_ENABLE				DISABLE_THIS_MOUDLE
 #define TCFG_TEST_BOX_ENABLE			    0
@@ -136,8 +136,8 @@
 //                                  充电参数配置                                   //
 //*********************************************************************************//
 #define TCFG_CHARGE_ENABLE					DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
-#define TCFG_CHARGE_POWERON_ENABLE			DISABLE
-#define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
+#define TCFG_CHARGE_POWERON_ENABLE			DISABLE//(不支持配置)
+#define TCFG_CHARGE_OFF_POWERON_NE			DISABLE//(不支持配置)
 #define TCFG_CHARGE_FULL_V					CHARGE_FULL_V_4202
 #define TCFG_CHARGE_FULL_MA					CHARGE_FULL_mA_10
 #define TCFG_CHARGE_MA						CHARGE_mA_50
@@ -211,7 +211,7 @@
 //                                  系统配置                                         //
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
-#define TCFG_SYS_LVD_EN						      1   //电量检测使能
+#define TCFG_SYS_LVD_EN						      0   //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
 #define TCFG_HID_AUTO_SHUTDOWN_TIME              (1 * 60)  //鼠标无操作自动关机(单位：秒)
 

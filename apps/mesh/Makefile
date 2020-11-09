@@ -32,6 +32,7 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_system_config.o \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_profile_config.o \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_update_config.o \
+	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_btstack_config.o \
 
 objs += \
 	$(ROOT)/apps/$(APP_CASE)/app_mesh.o \
@@ -47,25 +48,27 @@ objs += \
 	$(ROOT)/apps/common/key/adkey.o \
     $(ROOT)/apps/common/key/key_driver.o \
 
+mesh_dir = sig_mesh
+
 # SIG Mesh source code
 MESH_C = \
-	$(wildcard common/third_party_profile/sig_mesh/net/*.c) \
-	$(wildcard common/third_party_profile/sig_mesh/*.c) \
-	$(wildcard common/third_party_profile/sig_mesh/kernel/*.c) \
-	$(wildcard common/third_party_profile/sig_mesh/api/*.c) \
-	$(wildcard common/third_party_profile/sig_mesh/adaptation/*.c) \
-	$(wildcard common/third_party_profile/sig_mesh/adaptation/kernel/*.c) \
-	$(wildcard common/third_party_profile/sig_mesh/adaptation/ble_core/*.c) \
-	common/third_party_profile/sig_mesh/tinycrypt/source/cmac_mode.c \
-	common/third_party_profile/sig_mesh/tinycrypt/source/aes_encrypt.c \
-	common/third_party_profile/sig_mesh/tinycrypt/source/utils.c \
+	$(wildcard common/third_party_profile/$(mesh_dir)/net/*.c) \
+	$(wildcard common/third_party_profile/$(mesh_dir)/*.c) \
+	$(wildcard common/third_party_profile/$(mesh_dir)/kernel/*.c) \
+	$(wildcard common/third_party_profile/$(mesh_dir)/api/*.c) \
+	$(wildcard common/third_party_profile/$(mesh_dir)/adaptation/*.c) \
+	$(wildcard common/third_party_profile/$(mesh_dir)/adaptation/kernel/*.c) \
+	$(wildcard common/third_party_profile/$(mesh_dir)/adaptation/ble_core/*.c) \
+	common/third_party_profile/$(mesh_dir)/tinycrypt/source/cmac_mode.c \
+	common/third_party_profile/$(mesh_dir)/tinycrypt/source/aes_encrypt.c \
+	common/third_party_profile/$(mesh_dir)/tinycrypt/source/utils.c \
 
 # SIG Mesh source include
 MESH_H = \
 	-I$(abspath common/third_party_profile) \
-	-I$(abspath common/third_party_profile/sig_mesh) \
-	-I$(abspath common/third_party_profile/sig_mesh/tinycrypt/include) \
-	-I$(abspath common/third_party_profile/sig_mesh/adaptation) \
+	-I$(abspath common/third_party_profile/$(mesh_dir)) \
+	-I$(abspath common/third_party_profile/$(mesh_dir)/tinycrypt/include) \
+	-I$(abspath common/third_party_profile/$(mesh_dir)/adaptation) \
 
 # Mesh examples
 MESH_C += \

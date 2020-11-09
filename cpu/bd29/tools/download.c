@@ -15,7 +15,7 @@ cat text.bin data.bin  > app.bin
 
 files="app.bin bd29loader.bin uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
 
-#if CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_GAMEBOX_CASE || CONFIG_HID_CASE_ENABLE
+#if CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_GAMEBOX_CASE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE
 #if RCSP_UPDATE_EN
 NICKNAME="bd29_app_ota"
 cp bluetooth/app_ota/isd_config.ini ./

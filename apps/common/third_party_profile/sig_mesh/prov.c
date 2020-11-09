@@ -307,9 +307,6 @@ static void free_segments(void)
         link.tx.buf[i] = NULL;
         /* Mark as canceled */
         BT_MESH_ADV(buf)->busy = 0U;
-#if NET_BUF_FREE_EN
-        buf->flags &= ~NET_BUF_PBADV_CACHE;
-#endif /* NET_BUF_FREE_EN */
         net_buf_unref(buf);
     }
 }
@@ -345,10 +342,6 @@ static struct net_buf *adv_buf_create(void)
         return NULL;
     }
 
-#if NET_BUF_FREE_EN
-    buf->flags |= NET_BUF_PBADV_CACHE;
-#endif /* NET_BUF_FREE_EN */
-
     return buf;
 }
 
@@ -381,9 +374,6 @@ static void gen_prov_ack_send(u8_t xact_id)
     if (!buf) {
         return;
     }
-#if NET_BUF_FREE_EN
-    buf->flags &= ~NET_BUF_PBADV_CACHE;
-#endif /* NET_BUF_FREE_EN */
 
     if (pending_ack == XACT_NVAL) {
         pending_ack = xact_id;
@@ -440,6 +430,7 @@ static int bearer_ctl_send(u8_t op, const void *data, u8_t data_len)
     net_buf_add_u8(buf, GPC_CTL(op));
     net_buf_add_mem(buf, data, data_len);
 
+    BT_DBG("cache ctl tx buf 0x%x", buf);
     link.tx.buf[0] = buf;
     send_reliable();
 
@@ -499,6 +490,7 @@ static int prov_send_adv(struct net_buf_simple *msg)
     net_buf_add_be16(start, msg->len);
     net_buf_add_u8(start, bt_mesh_fcs_calc(msg->data, msg->len));
 
+    BT_DBG("cache prov_send_adv tx buf 0x%x", start);
     link.tx.buf[0] = start;
 
     seg_len = MIN(msg->len, START_PAYLOAD_MAX);
@@ -520,6 +512,7 @@ static int prov_send_adv(struct net_buf_simple *msg)
             return -ENOBUFS;
         }
 
+        BT_DBG("cache prov_send_adv seg tx buf 0x%x", buf);
         link.tx.buf[seg_id] = buf;
 
         seg_len = MIN(msg->len, CONT_PAYLOAD_MAX);
@@ -599,6 +592,8 @@ static void prov_invite(const u8_t *data)
     }
 
     link.conf_inputs[0] = data[0];
+
+    BT_DBG("send PROV_CAPABILITIES");
 
     prov_buf_init(&buf, PROV_CAPABILITIES);
 
@@ -1563,6 +1558,7 @@ static void link_open(struct prov_rx *rx, struct net_buf_simple *buf)
     atomic_set_bit(link.flags, LINK_ACTIVE);
     net_buf_simple_reset(link.rx.buf);
 
+    BT_DBG("send LINK_ACK");
     bearer_ctl_send(LINK_ACK, NULL, 0);
 
     link.expect = PROV_INVITE;
@@ -1653,6 +1649,7 @@ static void prov_msg_recv(void)
         return;
     }
 
+    BT_DBG("send prov_msg_recv ACK");
     gen_prov_ack_send(link.rx.id);
     link.rx.prev_id = link.rx.id;
     link.rx.id = 0U;

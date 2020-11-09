@@ -220,11 +220,8 @@ void board_init()
 	board_devices_init();
 
 	power_set_mode(TCFG_LOWPOWER_POWER_SEL);
-
-	/*close FAST CHARGE */
-	/* CHARGE_EN(0); */
-	/* CHGBG_EN(0); */
 }
+
 enum {
     PORTA_GROUP = 0,
     PORTB_GROUP,

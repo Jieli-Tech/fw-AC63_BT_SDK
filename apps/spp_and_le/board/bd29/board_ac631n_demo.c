@@ -213,11 +213,8 @@ void board_init()
 	board_devices_init();
 
 	power_set_mode(TCFG_LOWPOWER_POWER_SEL);
-
-	/*close FAST CHARGE */
-	/* CHARGE_EN(0); */
-	/* CHGBG_EN(0); */
 }
+
 enum {
     PORTA_GROUP = 0,
     PORTB_GROUP,
@@ -318,7 +315,7 @@ struct port_wakeup port1 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORTB_05,                       //AT_UART RX
+	.iomap              = TCFG_ADKEY_PORT,                   //AT_UART RX
     .filter_enable      = DISABLE,
 };
 
@@ -333,7 +330,10 @@ const struct charge_wakeup charge_wkup = {
 
 const struct wakeup_param wk_param = {
     .filter     = PORT_FLT_2ms,
+#if TCFG_ADKEY_ENABLE
 	.port[1]    = &port0,
+#endif
+
 #if CONFIG_APP_AT_COM
 	.port[2]    = &port1,
 #endif

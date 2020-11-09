@@ -30,7 +30,7 @@ extern void prov_complete(u16_t net_idx, u16_t addr);
 extern void prov_reset(void);
 extern uint32_t btctler_get_rand_from_assign_range(uint32_t rand, uint32_t min, uint32_t max);
 extern void pseudo_random_genrate(uint8_t *dest, unsigned size);
-
+extern void ble_bqb_test_thread_init(void);
 /**
  * @brief Config current node features(Relay/Proxy/Friend/Low Power)
  */
@@ -410,6 +410,9 @@ void bt_ble_init(void)
     bt_mac_addr_set(bt_addr);
 
     mesh_setup(mesh_init);
+    if (BT_MODE_IS(BT_BQB)) {
+        ble_bqb_test_thread_init();
+    }
 }
 
 #endif /* (CONFIG_MESH_MODEL == SIG_MESH_GENERIC_ONOFF_SERVER) */

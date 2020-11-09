@@ -49,7 +49,7 @@
 #define IRQ_RDEC1_IDX      47		//1
 #define IRQ_RDEC2_IDX      48		//1
 #define IRQ_USB1_SOF_IDX   49   	//1
-#define IRQ_USB1_CTRL_IDX  50  	//1
+#define IRQ_USB1_CTRL_IDX  50  	    //1
 #define IRQ_PWM_LED_IDX    52		//1
 #define IRQ_SOFT0_IDX      60
 #define IRQ_SOFT1_IDX      61

@@ -1,6 +1,11 @@
 #include "system/includes.h"
 #include "generic/log.h"
 
+int lib_media_version(void)
+{
+    return 0;
+}
+
 int app_version_check()
 {
     lib_version_check();

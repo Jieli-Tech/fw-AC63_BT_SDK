@@ -20,6 +20,7 @@ extern const int config_stack_modules;
 #define DEF_BLE_DEMO_CLIENT               3 //
 #define DEF_BLE_DEMO_AT_COM               4 //
 #define DEF_BLE_DEMO_AT_CLIENT            5 //
+#define DEF_BLE_DEMO_MI					  9
 
 //配置选择的demo
 #if TCFG_USER_BLE_ENABLE
@@ -35,6 +36,9 @@ extern const int config_stack_modules;
 
 #elif TRANS_AT_CLIENT
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_AT_CLIENT
+
+#elif XM_MMA_EN
+#define TCFG_BLE_DEMO_SELECT		  DEF_BLE_DEMO_MI
 
 #else
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_NULL//ble is closed

@@ -68,20 +68,16 @@ CODE_BEG   = 0X1E000C0;
 UPDATA_BREDR_BASE_BEG = 0xF9000;
 
 #if (EQ_SECTION_MAX > 10)
-EQ_SECTION_NUM = EQ_SECTION_MAX;
+EQ_SECTION_NUM = EQ_SECTION_MAX+3;
 #else
-EQ_SECTION_NUM = 10;
+EQ_SECTION_NUM = 10+3;
 #endif
 
 MEMORY
 {
     psram(rwx)        : ORIGIN =  PSRAM_BEG , LENGTH = PSRAM_SIZE
 #if (USE_SDFILE_NEW)
-#if (RCSP_UPDATE_EN)
-	code0(rx)    	  : ORIGIN =  0x1E000E0, LENGTH = CONFIG_FLASH_SIZE
-#else
-	code0(rx)    	  : ORIGIN =  0x1E000C0,    LENGTH = CONFIG_FLASH_SIZE
-#endif
+	code0(rx)    	  : ORIGIN =  0x1E00120,    LENGTH = CONFIG_FLASH_SIZE
 #else
 	code0(rx)    	  : ORIGIN =  0x1E00020,    LENGTH = CONFIG_FLASH_SIZE
 #endif
@@ -139,6 +135,9 @@ SECTIONS
 		*(.aac_const)
 		*(.aac_code)
 
+		*(.alac_data)
+		*(.alac_const)
+		*(.alac_code)
 		*(.alac_dec_code)
 
 		*(.bt_aac_dec_eng_const)
@@ -147,6 +146,7 @@ SECTIONS
 		*(.bt_aac_dec_core_sparse_code)
 
 		*(.dts_dec_const)
+
 
 		. = ALIGN(4);
         gsensor_dev_begin = .;
@@ -191,13 +191,11 @@ SECTIONS
         *(.bfilt_code)
         *(.bfilt_const)
 
-#if TCFG_APP_BT_EN
 		. = ALIGN(4);
 		#include "btctrler/btctler_lib_text.ld"
 		. = ALIGN(4);
 		#include "btstack/btstack_lib_text.ld"
 		. = ALIGN(4);
-#endif
 		#include "system/system_lib_text.ld"
         . = ALIGN(4);
         #include "ui/ui/ui.ld"
@@ -279,8 +277,9 @@ SECTIONS
 	    *(.os_const)
 
 
-        *(.gpio_ram)
         *(.ui_ram)
+
+        *(.gpio_ram)
         *(.LED_code)
         *(.LED_const)
 
@@ -298,12 +297,10 @@ SECTIONS
 		dec_board_param_mem_end = .;
 
 
-#if TCFG_APP_BT_EN
         . = ALIGN(32);
 		#include "btstack/btstack_lib_data.ld"
         . = ALIGN(4);
 		#include "btctrler/btctler_lib_data.ld"
-#endif
         . = ALIGN(4);
 		#include "system/system_lib_data.ld"
 		. = ALIGN(4);
@@ -339,10 +336,8 @@ SECTIONS
         *(COMMON)
 
         *(.volatile_ram)
-#if TCFG_APP_BT_EN
 		#include "btctrler/btctler_lib_bss.ld"
 		#include "btstack/btstack_lib_bss.ld"
-#endif
 		#include "system/system_lib_bss.ld"
 
 		. = (( . + 31) / 32 * 32);
@@ -396,18 +391,6 @@ SECTIONS
 			*(.aec_mem)
             *(.msbc_enc)
 			*(.cvsd_bss)
-
-            *(.usb_audio_play_dma)
-            *(.usb_audio_rec_dma)
-            *(.uac_rx)
-            *(.mass_storage)
-
-
-            *(.usb_msd_dma)
-            *(.usb_hid_dma)
-            *(.usb_iso_dma)
-            *(.uac_var)
-            *(.usb_config_var)
 		}
 		.overlay_mp3
 		{
@@ -533,6 +516,8 @@ SECTIONS
 			*(.m4a_data)
 			*(.m4a_const)
 			*(.m4a_code)
+			*(.m4apick_mem)
+			*(.m4apick_ctrl_mem)
 
 			*(.m4a_bss_id)
 
@@ -543,6 +528,8 @@ SECTIONS
 			*(.aac_ctrl_mem)
 			*(.aac_bss)
 
+			*(.alac_ctrl_mem)
+			*(.alac_bss)
 		}
 
 
@@ -592,17 +579,18 @@ SECTIONS
 		}
         .overlay_pc
 		{
-            /* *(.usb_audio_play_dma) */
-            /* *(.usb_audio_rec_dma) */
-            /* *(.uac_rx) */
-            /* *(.mass_storage) */
+#if TCFG_VIR_UDISK_ENABLE == 0
+            *(.usb_audio_play_dma)
+            *(.usb_audio_rec_dma)
+            *(.uac_rx)
+            *(.mass_storage)
 
-            /* *(.usb_ep0) */
-            /* *(.usb_msd_dma) */
-            /* *(.usb_hid_dma) */
-            /* *(.usb_iso_dma) */
-            /* *(.uac_var) */
-            /* *(.usb_config_var) */
+            *(.usb_msd_dma)
+            *(.usb_hid_dma)
+            *(.usb_iso_dma)
+            *(.uac_var)
+            *(.usb_config_var)
+#endif
 		}
     } > ram0
 

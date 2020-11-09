@@ -15,7 +15,14 @@ export CONFIG_UI_ENABLE ?= n
 export CONFIG_MEDIA_ENABLE = y
 export APP_OTA_EN = n
 
-export USB_HOST_SUPPORT_MSD ?= y
+
+export CONFIG_USB_ENABLE ?= n
+export USB_SLAVE_SUPPORT_MSD ?= n
+export USB_SLAVE_SUPPORT_AUDIO ?= n
+export USB_SLAVE_SUPPORT_HID ?= n
+export USB_SLAVE_USER_STACK ?= n
+
+export USB_HOST_SUPPORT_MSD ?= n
 export USB_HOST_SUPPORT_AOA ?= n
 export USB_HOST_SUPPORT_ADB ?= n
 export USB_HOST_SUPPORT_HID ?= n
@@ -27,10 +34,10 @@ ifeq ($(FLASH_256K),y)
 
 export PROJECT_SUFFIX = _2M_flash
 export DOWNLOAD_SUFFIX = _2M_flash
-#export LIB_SUFFIX = _2M_flash
+export LIB_SUFFIX = _2M_flash
 
 OTA_UPDATE = n
-BANK_ENABLE = n
+BANK_ENABLE = y
 
 #AUDIO_CFG_DEFINE += \
 #-DCONFIG_LITE_DECODER=1 \
@@ -62,7 +69,7 @@ endif #ifeq ($(FLASH_256K),y)
 
 ifeq ($(CPU),br30)
 CC_DEFINE += \
--DCONFIG_OPUS_STATIC
+#-DCONFIG_OPUS_STATIC
 
 endif
 

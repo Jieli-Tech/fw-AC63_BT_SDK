@@ -272,6 +272,7 @@ typedef enum {
 
     USER_CTRL_KEYPRESS,
     USER_CTRL_PAIR,
+    USER_CTRL_AFH_CHANNEL,
     USER_CTRL_HALF_SEC_LOOP_CREATE,
     USER_CTRL_HALF_SEC_LOOP_DEL,
 
@@ -500,6 +501,7 @@ extern void __set_emitter_enable_flag(u8 flag);
 extern void hci_cancel_inquiry();
 extern u8 hci_standard_connect_check(void);
 extern void __emitter_send_media_toggle(u8 toggle);
+extern u8 is_a2dp_source_dev_null();
 extern u8 get_total_connect_dev(void);
 extern u8 get_remote_dev_info_index();
 extern u8 check_tws_le_aa(void);
@@ -508,6 +510,7 @@ extern void tws_api_set_connect_aa(int);
 extern void tws_le_acc_generation_init(void);
 extern void tws_api_clear_connect_aa();
 extern void clear_sniff_cnt(void);
+extern u8 delete_last_device_from_vm();
 
 #define BD_CLASS_WEARABLE_HEADSET	0x240404/*ios10.2 display headset icon*/
 #define BD_CLASS_HANDS_FREE			0x240408/*ios10.2 display bluetooth icon*/
@@ -606,11 +609,14 @@ void set_start_search_spp_device(u8 spp);
 
 u8 restore_remote_device_info_opt(bd_addr_t *mac_addr, u8 conn_device_num, u8 id);
 /*remote dev type*/
+/*0:unknow,1-android,2:apple_inc,0x03-xiaomi*/
 enum {
     REMOTE_DEV_UNKNOWN  = 0,
     REMOTE_DEV_ANDROID		,
     REMOTE_DEV_IOS			,
+    REMOTE_DEV_XIAOMI   	,
 };
 u8 remote_dev_company_ioctrl(bd_addr_t dev_addr, u8 op_flag, u8 value);
-
+u8 hci_standard_link_check(void);
+extern void XM_status_update(u8 status);
 #endif

@@ -26,6 +26,7 @@
 #include "rcsp_bluetooth.h"
 #include "rcsp_user_update.h"
 #include "app_charge.h"
+#include "app_power_manage.h"
 #include "le_client_demo.h"
 
 #define LOG_TAG_CONST       SPP_AND_LE
@@ -284,7 +285,7 @@ static void bredr_handle_register()
 }
 
 extern void ble_module_enable(u8 en);
-static void app_set_soft_poweroff(void)
+void app_set_soft_poweroff(void)
 {
     log_info("set_soft_poweroff\n");
     is_app_active = 1;
@@ -843,7 +844,12 @@ static void app_key_event_handler(struct sys_event *event)
         key_value = event->u.key.value;
         printf("app_key_evnet: %d,%d\n", event_type, key_value);
         /* app_key_deal_test(event_type,key_value); */
-
+#if (XM_MMA_EN)
+        if (event_type == KEY_EVENT_CLICK) {
+            extern void send_xm_anbei_key(u8 key_type);
+            send_xm_anbei_key(event_type);
+        }
+#endif
         if (event_type == KEY_EVENT_LONG && key_value == TCFG_ADKEY_VALUE6) {
             app_set_soft_poweroff();
         }
@@ -866,8 +872,11 @@ static int event_handler(struct application *app, struct sys_event *event)
         return 0;
 
     case SYS_DEVICE_EVENT:
+        if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+            return app_power_event_handler(&event->u.dev);
+        }
 #if TCFG_CHARGE_ENABLE
-        if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
+        else if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
             app_charge_event_handler(&event->u.dev);
         }
 #endif

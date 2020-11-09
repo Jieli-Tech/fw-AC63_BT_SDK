@@ -19,8 +19,7 @@ struct adc_info_t {
     u32 sample_period;
 };
 
-void (*adkeyio_reuse_enter)(u32 ch);
-void (*adkeyio_reuse_exit)(u32 ch);
+void set_change_vbg_value_flag(void);
 
 #define     ENABLE_OCCUPY_MODE 1
 
@@ -147,10 +146,28 @@ u32 adc_get_voltage(u32 ch)
     return adc_value_to_voltage(adc_vbg, adc_res);
 }
 
+static u8 check_vbat_cnt = 0;
+static u8 check_vbat_flag = 0;
 u32 adc_check_vbat_lowpower()
 {
-    u32 vbat = adc_get_value(AD_CH_VBAT);
-    return __builtin_abs(vbat - 255) < 5;
+    if (!vbat_vddio_tieup) {
+        u32 vbat = adc_get_value(AD_CH_VBAT);
+        //printf("vbat_adc = %d vbg = %d\n", vbat, vbg_adc_value);
+        if ((!check_vbat_flag) && (__builtin_abs(vbat - 255) < 15)) {
+            //printf("&1\n");
+            set_change_vbg_value_flag();
+            check_vbat_flag = 1;
+        }
+        if (check_vbat_flag) {
+            check_vbat_cnt ++;
+            if (check_vbat_cnt > 18) {
+                //printf("&2\n");
+                check_vbat_flag = 0;
+                check_vbat_cnt = 0;
+            }
+        }
+    }
+    return 0;
 }
 
 void adc_audio_ch_select(u32 ch)
@@ -268,17 +285,24 @@ static void adc_ch_mux_select(u32 mux_ch)
     }
 }
 
+u8 __attribute__((weak)) adc_io_reuse_enter(u32 ch)
+{
+    return 0;
+}
+
+u8 __attribute__((weak)) adc_io_reuse_exit(u32 ch)
+{
+    return 0;
+}
+
 ___interrupt
 static void adc_isr()
 {
     u32 ch;
     ch = (JL_ADC->CON & 0xf00) >> 8;
 
-    if (adkeyio_reuse_exit) {
+    adc_io_reuse_exit(ch);
 
-        adkeyio_reuse_exit(ch);
-
-    }
     _adc_res = JL_ADC->RES;
 
     adc_pmu_detect_en(AD_CH_WVDD >> 20);
@@ -294,11 +318,9 @@ u32 adc_sample(u32 ch)
     const u32 tmp_adc_res = _adc_res;
     _adc_res = (u16) - 1;
 
-
-    if (adkeyio_reuse_enter) {
-
-        adkeyio_reuse_enter(ch);
-
+    if (adc_io_reuse_enter(ch)) {
+        _adc_res = adc_get_value(ch);
+        return _adc_res;
     }
 
     u32 adc_con = 0;
@@ -346,6 +368,9 @@ void adc_scan(void *priv)
             vbg_adc_value = _adc_res;
         } else {
             adc_queue[cur_ch].value = _adc_res;
+            if (adc_queue[cur_ch].ch == AD_CH_LDOREF) {
+                vbg_adc_value = _adc_res;
+            }
         }
         adc_sample_flag = 0;
     }
@@ -363,7 +388,7 @@ void adc_scan(void *priv)
         if (time_before(adc_queue[next_ch].jiffies, jiffies)) {
             adc_sample(adc_queue[next_ch].ch);
             adc_sample_flag = 1;
-            adc_queue[next_ch].jiffies = adc_queue[next_ch].sample_period + jiffies;
+            adc_queue[next_ch].jiffies += adc_queue[next_ch].sample_period;
         }
     } else {
         adc_sample(adc_queue[next_ch].ch);
@@ -504,11 +529,6 @@ void adc_init()
 
 }
 //late_initcall(adc_init);
-void adkey_reuse_set_callback(void (*adkey_reuse_enter)(u32 ch), void (*adkey_reuse_exit)(u32 ch))
-{
-    adkeyio_reuse_enter = adkey_reuse_enter;
-    adkeyio_reuse_exit  = adkey_reuse_exit;
-}
 void adc_test()
 {
 

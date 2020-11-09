@@ -16,6 +16,9 @@
 #include "app_action.h"
 #include "app_main.h"
 #include "update.h"
+#include "update_loader_download.h"
+#include "app_charge.h"
+#include "app_power_manage.h"
 
 #define LOG_TAG_CONST       APP
 #define LOG_TAG             "[APP]"
@@ -33,8 +36,9 @@ const struct task_info task_info_table[] = {
     {"btctrler",            4,     512,   256  },
     {"btstack",             3,     768,  256  },
     {"systimer",		    7,	   128,   0		},
-#ifdef CONFIG_UPDATA_ENABLE
     {"update",				1,	   320,   0		},
+#if CONFIG_APP_GAMEBOX
+    {"gamebox",             3,     1024,   128  },
 #endif
 #if (RCSP_BTMATE_EN)
     {"rcsp_task",		2,		640,	128	},
@@ -53,18 +57,32 @@ void app_var_init(void)
     app_var.poweroff_tone_v = 330;
 }
 
+__attribute__((weak))
+u8 get_charge_online_flag(void)
+{
+    return 0;
+}
+
 void app_main()
 {
     struct intent it;
 
-#ifdef CONFIG_UPDATA_ENABLE
-    int update = 0;
-    update = update_result_deal();
-#endif
+    if (!UPDATE_SUPPORT_DEV_IS_NULL()) {
+        int update = 0;
+        update = update_result_deal();
+    }
 
     printf(">>>>>>>>>>>>>>>>>app_main...\n");
-    init_intent(&it);
 
+    if (get_charge_online_flag()) {
+#if(TCFG_SYS_LVD_EN == 1)
+        vbat_check_init();
+#endif
+    } else {
+        check_power_on_voltage();
+    }
+
+    init_intent(&it);
 #if (CONFIG_APP_MOUSE)
     it.name = "mouse";
     it.action = ACTION_MOUSE_MAIN;
@@ -80,6 +98,9 @@ void app_main()
 #elif(CONFIG_APP_KEYPAGE)
     it.name = "keypage";
     it.action = ACTION_KEYPAGE;
+#elif(CONFIG_APP_GAMEBOX)
+    it.name = "gamebox";
+    it.action = ACTION_GAMEBOX;
 #else
     ASSERT(0, "no app!!!");
 #endif

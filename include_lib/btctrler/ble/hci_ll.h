@@ -26,6 +26,13 @@ enum {
     LL_EVENT_ACL_TX_POST,
 };
 
+typedef struct {
+    u8 Own_Address_Type: 2;
+    u8 Adv_Filter_Policy: 2;
+    u8 Scan_Filter_Policy: 2;
+    u8 initiator_filter_policy: 2;
+} hci_ll_param_t;
+
 //Adjust Host part API
 void ll_hci_init(void);
 
@@ -49,7 +56,7 @@ int ll_hci_adv_enable(bool enable);
 
 void ll_hci_scan_set_params(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
 
-int ll_hci_scan_enable(bool enable);
+int ll_hci_scan_enable(bool enable, u8 filter_duplicates);
 
 int ll_hci_create_conn(u8 *conn_param, u8 *addr_param);
 
@@ -94,6 +101,9 @@ void ll_event_handler(int *msg);
 void ll_hci_private_free_dma_rx(u8 *rx_head);
 
 void ll_hci_set_data_length(u16 conn_handle, u16 tx_octets, u16 tx_time);
+
+hci_ll_param_t *ll_hci_param_config_get(void);
+void hci_ll_get_device_address(uint8_t *addr_type, u8 *addr);
 
 // ble5
 void ll_hci_set_ext_adv_params(u8 *data, u32 size);

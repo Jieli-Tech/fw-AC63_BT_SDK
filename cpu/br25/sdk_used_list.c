@@ -19,6 +19,7 @@ tws_link_sync
 
 #if CONFIG_FATFS_ENABLE
 fat_vfs_ops
+fat_sdfile_fat_ops
 #endif
 
 #if VFS_ENABLE
@@ -28,19 +29,36 @@ sdfile_vfs_ops
 #if TCFG_NORFLASH_DEV_ENABLE && VFS_ENABLE
 nor_fs_vfs_ops
 nor_sdfile_vfs_ops
+nor_rec_fs_vfs_ops
 #endif
 
 #if FLASH_INSIDE_REC_ENABLE
 inside_nor_fs_vfs_ops
 #endif
 
+#ifndef TCFG_DEC_SBC_CLOSE
 sbc_decoder
-msbc_decoder
-sbc_hwaccel
-cvsd_decoder
-pcm_decoder
+#endif
 
-//mty_decoder
+#ifndef TCFG_DEC_MSBC_CLOSE
+msbc_decoder
+#endif
+
+#ifndef TCFG_DEC_SBC_HWACCEL_CLOSE
+sbc_hwaccel
+#endif
+
+#ifndef TCFG_DEC_CVSD_CLOSE
+cvsd_decoder
+#endif
+
+#ifndef TCFG_DEC_PCM_CLOSE
+pcm_decoder
+#endif
+
+#if TCFG_DEC_MTY_ENABLE
+mty_decoder
+#endif
 
 #if TCFG_DEC_MP3_ENABLE
 mp3_decoder
@@ -66,6 +84,13 @@ ape_decoder
 
 #if TCFG_DEC_M4A_ENABLE
 m4a_decoder
+#if TCFG_DEC2TWS_ENABLE
+m4apick_decoder
+#endif
+#endif
+
+#if TCFG_DEC_ALAC_ENABLE
+alac_decoder
 #endif
 
 #if TCFG_DEC_AMR_ENABLE

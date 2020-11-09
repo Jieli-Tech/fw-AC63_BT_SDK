@@ -4,7 +4,9 @@
 #include "typedef.h"
 
 #include "clock_hw.h"
+#include "asm/clock_define.h"
 
+/*
 typedef enum {
     ///原生时钟源作系统时钟源
     SYS_CLOCK_INPUT_RC,
@@ -14,10 +16,13 @@ typedef enum {
     SYS_CLOCK_INPUT_PAT,
 
     ///衍生时钟源作系统时钟源
+    SYS_CLOCK_INPUT_PLL_RCL,
+    SYS_CLOCK_INPUT_PLL_RCH,
     SYS_CLOCK_INPUT_PLL_BT_OSC,
     SYS_CLOCK_INPUT_PLL_RTOSCH,
     SYS_CLOCK_INPUT_PLL_PAT,
 } SYS_CLOCK_INPUT;
+*/
 
 typedef enum {
     SYS_ICLOCK_INPUT_BTOSC,          //BTOSC 双脚(12-26M)

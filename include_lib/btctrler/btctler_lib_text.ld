@@ -23,8 +23,6 @@
 	    *(.ble_ll_code)
 		*(.ble_hci_const)
 		*(.ble_hci_code)
-		*(.classic_hci_const)
-		*(.classic_hci_code)
         BTCTLER_LE_CONTROLLER_CODE_SIZE = ABSOLUTE(. - BTCTLER_LE_CONTROLLER_CODE_START);
 
         BTCTLER_CL_CODE_START = .;
@@ -36,6 +34,8 @@
         *(.classic_lmp_linkbulk_const)
         *(.classic_lmp_code)
         *(.classic_lmp_linkbulk_code)
+		*(.classic_hci_const)
+		*(.classic_hci_code)
 
         LMP_ENC_CODE_START = .;
         *(.classic_lmp_auth_const)

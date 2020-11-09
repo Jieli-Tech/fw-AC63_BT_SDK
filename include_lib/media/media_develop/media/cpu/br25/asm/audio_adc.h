@@ -204,6 +204,9 @@ int audio_adc_linein_close(struct audio_adc_ch *ch);
 
 void audio_mic_0dB_en(bool en);
 
+/*[ExtAPI]用来查询是否支持多linine输入到单audio_adc*/
+int audio_adc_support_linein_combined(void);
+
 
 
 

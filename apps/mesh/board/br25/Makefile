@@ -9,11 +9,9 @@ LIBS = \
    $(AR_DIR)/rcsp_stack.a \
 --end-group
 
-ifeq ($(OTA_UPDATE),y)
 LIBS += \
    $(AR_DIR)/update.a \
 
-endif
 
 
 objs += \

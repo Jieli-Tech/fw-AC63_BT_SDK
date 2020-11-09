@@ -253,7 +253,7 @@ union audio_dec_req {
 
 
 #define REGISTER_AUDIO_DECODER(ops) \
-        const struct audio_decoder_ops ops sec(.audio_decoder)
+        const struct audio_decoder_ops ops SEC(.audio_decoder)
 
 
 extern const struct audio_decoder_ops audio_decoder_begin[];

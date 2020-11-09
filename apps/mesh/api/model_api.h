@@ -10,7 +10,7 @@
 // more...
 
 //< Config whick example will use in <examples>
-#define CONFIG_MESH_MODEL                   SIG_MESH_VENDOR_SERVER
+#define CONFIG_MESH_MODEL                   SIG_MESH_ALIGENIE_SOCKET
 
 
 #define BYTE_LEN(x...)                      sizeof((u8 []) {x})

@@ -61,6 +61,8 @@ const int config_btctler_mode        = CONFIG_BT_MODE;
 
 //固定使用正常发射功率的等级:0-使用不同模式的各自等级;1~10-固定发射功率等级
 const int config_force_bt_pwr_tab_using_normal_level  = 0;
+const int CONFIG_BLE_SYNC_WORD_BIT = 30;
+const int CONFIG_DUT_POWER                  = 10;
 
 const int CONFIG_TWS_POWER_BALANCE_ENABLE   = 0;
 
@@ -97,6 +99,13 @@ const int CONFIG_TEST_DUT_CODE            = 1;
 const int CONFIG_TEST_FCC_CODE            = 1;
 const int CONFIG_TEST_DUT_ONLY_BOX_CODE   = 0;
 
+const int CONFIG_BREDR_INQUIRY   =  0;
+const int CONFIG_INQUIRY_PAGE_OFFSET_ADJUST =  0;
+
+const int CONFIG_LMP_NAME_REQ_ENABLE  =  1;
+const int CONFIG_LMP_PASSKEY_ENABLE  =  1;
+const int CONFIG_LMP_MASTER_ESCO_ENABLE  =  1;
+
 #if CONFIG_APP_STANDARD_KEYBOARD
 const int config_delete_link_key          = 0;           //配置是否连接失败返回PIN or Link Key Missing时删除linkKey
 #else
@@ -131,6 +140,8 @@ const int config_btctler_le_afh_en = 0;
 
 #endif
 
+// Master multi-link
+const int config_btctler_le_master_multilink = 0;
 // LE RAM Control
 const int config_btctler_le_hw_nums = 1;
 const int config_btctler_le_rx_nums = 5;
@@ -143,7 +154,12 @@ const int config_btctler_le_slave_conn_update_winden = 2500;//range:100 to 2500
  * @brief Bluetooth Analog setting
  */
 /*-----------------------------------------------------------*/
-const int config_btctler_single_carrier_en = 1;
+#if ((!TCFG_USER_BT_CLASSIC_ENABLE) && TCFG_USER_BLE_ENABLE)
+const int config_btctler_single_carrier_en = 1;   ////单模ble才设置
+#else
+const int config_btctler_single_carrier_en = 0;
+#endif
+
 
 
 /**

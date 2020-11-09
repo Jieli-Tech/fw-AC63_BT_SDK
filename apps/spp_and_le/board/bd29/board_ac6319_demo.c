@@ -60,7 +60,6 @@ CHARGE_PLATFORM_DATA_BEGIN(charge_data)
 CHARGE_PLATFORM_DATA_END()
 #endif//TCFG_CHARGE_ENABLE
 
-
     /************************** AD KEY ****************************/
 #if TCFG_ADKEY_ENABLE
 const struct adkey_platform_data adkey_data = {

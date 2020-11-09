@@ -14,8 +14,9 @@
 #include "app_task.h"
 #include "os/os_api.h"
 #include "device/sdmmc.h"
+#include "app_charge.h"
+#include "asm/charge.h"
 
-#if TCFG_PC_ENABLE
 #include "usb/usb_config.h"
 #include "usb/device/usb_stack.h"
 
@@ -25,15 +26,6 @@
 
 #if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
 #include "usb/device/msd.h"
-#endif
-
-#if USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS
-#include "audio_config.h"
-#include "app_charge.h"
-#include "media/audio_base.h"
-
-#include "asm/charge.h"
-
 #endif
 
 #if (TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0)
@@ -60,9 +52,8 @@
 
 extern int usb_audio_demo_init(void);
 extern void usb_audio_demo_exit(void);
-extern void charge_event_to_user(u8 event);
 
-static usb_dev usbfd ;//SEC(.usb_g_bss);
+static usb_dev usbfd = 0;//SEC(.usb_g_bss);
 static OS_MUTEX msd_mutex ;//SEC(.usb_g_bss);
 
 
@@ -150,7 +141,10 @@ void usb_start()
     usb_audio_demo_init();
 #endif
 
+#ifdef USB_DEVICE_CLASS_CONFIG
     usb_device_mode(usbfd, USB_DEVICE_CLASS_CONFIG);
+#endif
+
 
 #if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
     //没有复用时候判断 sd开关
@@ -167,6 +161,10 @@ void usb_start()
 
 #if TCFG_NOR_FAT
     msd_register_disk("fat_nor", NULL);
+#endif
+
+#if TCFG_VIR_UDISK_ENABLE
+    msd_register_disk("vir_udisk0", NULL);
 #endif
 
     msd_set_wakeup_handle(usb_msd_wakeup);
@@ -288,5 +286,4 @@ void usbstack_exit()
         sys_event_id = 0;
     }
 }
-#endif
 #endif

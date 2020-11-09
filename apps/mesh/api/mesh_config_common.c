@@ -48,8 +48,12 @@ const u8 config_bt_mesh_friend_queue_size = 2;
  * @brief Config adv cache buffer
  */
 /*-----------------------------------------------------------*/
+#define MESH_ADV_BUFFER_COUNT           3
 _WEAK_
-const u8 config_bt_mesh_adv_buf_count = 5;
+const u8 config_bt_mesh_adv_buf_count = MESH_ADV_BUFFER_COUNT; // must >= 3
+#if (MESH_ADV_BUFFER_COUNT < 3)
+#error " MESH_ADV_BUFFER_COUNT must >= 3 "
+#endif
 
 /**
  * @brief Config PB-ADV param

@@ -129,6 +129,11 @@ export CBP_POSITION ?= .
 #
 -include tools$(SLASH)compiler$(SLASH)Makefile.$(CORE)$(COMPLIE_MODE)
 
+CC_ARGS += \
+-fms-extensions \
+-DSUPPORT_MS_EXTENSIONS
+
+
 pre_make:
 	@echo "Making... Soc : bd29"
 

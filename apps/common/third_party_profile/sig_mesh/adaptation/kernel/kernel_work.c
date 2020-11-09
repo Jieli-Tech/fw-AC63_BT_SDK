@@ -95,7 +95,6 @@ void k_delayed_work_submit(struct k_delayed_work *timer, u32 timeout)
     timer->end_time = k_uptime_get_32() + timeout;
 
     ASSERT(timer->work.systimer);
-
 }
 
 void k_work_submit(struct k_work *work)

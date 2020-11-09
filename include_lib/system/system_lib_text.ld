@@ -4,107 +4,107 @@
 
 		 _device_node_begin = .;
    		PROVIDE(device_node_begin = .);
-   		     *(.device)
+   		KEEP(*(.device))
    		_device_node_end = .;
    		PROVIDE(device_node_end = .);
 
 		config_target_begin = .;
    		PROVIDE(config_target_begin = .);
-   		     *(.config_target)
+   		KEEP(*(.config_target))
 		config_target_end = .;
    		PROVIDE(config_target_end = .);
 
 	    system_code_begin = .;
-	        *(.system.*.text)
+	    KEEP(*(.system.*.text))
 	    system_code_end = .;
 		. = ALIGN(4);
 		system_code_size = system_code_end - system_code_begin;
 
 		vfs_ops_begin = .;
-			*(.vfs_operations)
+		KEEP(*(.vfs_operations))
 		vfs_ops_end = .;
 
 	    _lib_version_begin = .;
 	    PROVIDE(lib_version_begin = .);
-	        *(.lib_version)
+	    KEEP(*(.lib_version))
 	    _lib_version_end = .;
 	    PROVIDE(lib_version_end = .);
 
 		_initcall_begin = .;
 		PROVIDE(initcall_begin = .);
-			*(.initcall)
+	    KEEP(*(.initcall))
 		_initcall_end = .;
 		PROVIDE(initcall_end = .);
 
 		_early_initcall_begin = .;
 		PROVIDE(early_initcall_begin = .);
-			*(.early.initcall)
+		KEEP(*(.early.initcall))
 		_early_initcall_end = .;
 		PROVIDE(early_initcall_end = .);
 
 		_late_initcall_begin = .;
 		PROVIDE(late_initcall_begin = .);
-		   *(.late.initcall)
+		KEEP(*(.late.initcall))
 		_late_initcall_end = .;
 		PROVIDE(late_initcall_end = .);
 
 		_platform_initcall_begin = .;
 		PROVIDE(platform_initcall_begin = .);
-		   *(.platform.initcall)
+		KEEP(*(.platform.initcall))
 		_platform_initcall_end = .;
 		PROVIDE(platform_initcall_end = .);
 
 		_module_initcall_begin = .;
 		PROVIDE(module_initcall_begin = .);
-		   *(.module.initcall)
+		KEEP(*(.module.initcall))
 		_module_initcall_end = .;
 		PROVIDE(module_initcall_end = .);
 
 		_sys_event_handler_begin = .;
 		PROVIDE(sys_event_handler_begin = .);
-		   *(.sys_event.4.handler)
-		   *(.sys_event.3.handler)
-		   *(.sys_event.2.handler)
-		   *(.sys_event.1.handler)
-		   *(.sys_event.0.handler)
+		KEEP(*(.sys_event.4.handler))
+		KEEP(*(.sys_event.3.handler))
+		KEEP(*(.sys_event.2.handler))
+		KEEP(*(.sys_event.1.handler))
+		KEEP(*(.sys_event.0.handler))
 		_sys_event_handler_end = .;
 		PROVIDE(sys_event_handler_end = .);
 
 		_syscfg_arg_begin = .;
 		PROVIDE(syscfg_arg_begin = .);
-		   *(.syscfg.arg)
+		KEEP(*(.syscfg.arg))
 		_syscfg_arg_end = .;
 		PROVIDE(syscfg_arg_end = .);
 
 		_syscfg_handler_begin = .;
 		PROVIDE(syscfg_handler_begin = .);
-		   *(.syscfg.handler)
+		KEEP(*(.syscfg.handler))
 		_syscfg_handler_end = .;
 		PROVIDE(syscfg_handler_end = .);
 
 		_syscfg_ops_begin = .;
 		PROVIDE(syscfg_ops_begin = .);
-		   *(.syscfg.2.ops)
-		   *(.syscfg.1.ops)
-		   *(.syscfg.0.ops)
+		KEEP(*(.syscfg.2.ops))
+		KEEP(*(.syscfg.1.ops))
+		KEEP(*(.syscfg.0.ops))
 		_syscfg_ops_end = .;
 		PROVIDE(syscfg_ops_end = .);
 
 		_server_info_begin = .;
 		PROVIDE(server_info_begin = .);
-		   *(.server_info)
+		KEEP(*(.server_info))
 		_server_info_end = .;
 		PROVIDE(server_info_end = .);
 
 		_bus_device_begin = .;
 		PROVIDE(bus_device_begin = .);
-		   *(.bus_device)
+		KEEP(*(.bus_device))
 		_bus_device_end = .;
 		PROVIDE(bus_device_end = .);
 
 	    _sys_power_hal_ops_begin = .;
 	    PROVIDE(sys_power_hal_ops_begin = .);
-	        *(.sys_power_hal_ops)
+	    KEEP(*(.sys_power_hal_ops))
 	    _sys_power_hal_ops_end = .;
 	    PROVIDE(sys_power_hal_ops_end = .);
 
@@ -112,14 +112,14 @@
 		. = ALIGN(4);
 	    lp_target_begin = .;
 	    PROVIDE(lp_target_begin = .);
-	        *(.lp_target)
+	    KEEP(*(.lp_target))
 	    lp_target_end = .;
 	    PROVIDE(lp_target_end = .);
 
 		. = ALIGN(4);
         deepsleep_target_begin = .;
         PROVIDE(deepsleep_target_begin = .);
-            *(.deepsleep_target)
+        KEEP(*(.deepsleep_target))
         deepsleep_target_end = .;
         PROVIDE(deepsleep_target_end = .);
 

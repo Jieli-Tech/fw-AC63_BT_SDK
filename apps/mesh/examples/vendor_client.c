@@ -59,7 +59,11 @@ const u16 config_bt_mesh_proxy_node_adv_interval = ADV_SCAN_UNIT(300); // unit: 
  * @brief Config adv cache buffer
  */
 /*-----------------------------------------------------------*/
-const u8 config_bt_mesh_adv_buf_count = 15;
+#define MESH_ADV_BUFFER_COUNT           6
+const u8 config_bt_mesh_adv_buf_count = MESH_ADV_BUFFER_COUNT;
+#if (MESH_ADV_BUFFER_COUNT < 6) // base on "config_bt_mesh_node_msg_adv_duration = 100"
+#error " current MESH_ADV_BUFFER_COUNT must >= 6 "
+#endif
 
 /**
  * @brief Conifg complete local name

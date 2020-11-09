@@ -5,7 +5,7 @@
 *****************************************************************/
 #ifndef _AUDIO_SRC_H_
 #define _AUDIO_SRC_H_
-#include "audio_stream.h"
+#include "media/audio_stream.h"
 #include "audio_resample.h"
 
 
@@ -26,6 +26,7 @@ enum audio_src_event {
     SRC_EVENT_GET_OUTPUT_BUF,
     SRC_EVENT_RATE_UPDATE,
     SRC_EVENT_RISE_IRQ,
+    SRC_EVENT_RISE_IRQ_NEEDRUN,
 };
 
 enum audio_src_error_code {
@@ -57,6 +58,7 @@ struct audio_src_base_handle {
     u8 channels;
     u8 state;
     volatile u8 active;
+    volatile u8 needrun;
     u8 start;
     u8 input_malloc;
     u8 rate_update;

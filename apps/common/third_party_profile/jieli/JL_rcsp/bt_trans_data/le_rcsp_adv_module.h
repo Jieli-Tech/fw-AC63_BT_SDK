@@ -109,10 +109,12 @@ static const uint8_t profile_data[] = {
 #define RCSP_ADV_EQ_SET_ENABLE          1
 #define RCSP_ADV_MUSIC_INFO_ENABLE      1
 #define RCSP_ADV_HIGH_LOW_SET			1
+#define RCSP_ADV_FIND_DEVICE_ENABLE     1
 #else
 #define RCSP_ADV_EQ_SET_ENABLE          0
 #define RCSP_ADV_MUSIC_INFO_ENABLE      0
 #define RCSP_ADV_HIGH_LOW_SET			0
+#define RCSP_ADV_FIND_DEVICE_ENABLE     0
 #endif
 #define RCSP_ADV_PRODUCT_MSG_ENABLE     1
 

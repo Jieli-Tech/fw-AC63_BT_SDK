@@ -7,6 +7,10 @@
 #define FILE_TYPE_JPEG 	5
 #define AT_UI_RAM             AT(.ui_ram)
 
+#define EXTERN_PATH "storage/nor_ui/C/res/"
+#define INTERN_PATH "mnt/sdfile/res/"
+#define RES_PATH   EXTERN_PATH
+
 struct image_file {
     u8 format;
     u8 compress;
@@ -43,6 +47,7 @@ int ui_language_get();
 FILE *res_fopen(const char *path, const char *mode);
 int res_fread(FILE *_file, void *buf, u32 len);
 int res_fseek(FILE *_file, int offset, int fromwhere);
+int res_flen(FILE *file);
 int res_fclose(FILE *file);
 
 #endif

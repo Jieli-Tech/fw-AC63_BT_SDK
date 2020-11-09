@@ -74,6 +74,8 @@ include $(ROOT)/cpu/$(CPU)/audio_common/Makefile
 include $(ROOT)/cpu/$(CPU)/audio_dec/Makefile
 include $(ROOT)/cpu/$(CPU)/audio_enc/Makefile
 include $(ROOT)/cpu/$(CPU)/audio_effect/Makefile
+include $(ROOT)/cpu/$(CPU)/audio_mic/Makefile
+include $(ROOT)/cpu/$(CPU)/localtws/Makefile
 endif
 endif
 endif

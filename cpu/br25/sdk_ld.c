@@ -115,6 +115,10 @@ SECTIONS
         *(.bt_aac_dec_core_code)
         *(.bt_aac_dec_core_sparse_code)
 
+        . = ALIGN(4);
+        *(.alac_const)
+        *(.alac_code)
+
 		. = ALIGN(4); // must at tail, make rom_code size align 4
 
         clock_critical_handler_begin = .;
@@ -145,12 +149,16 @@ SECTIONS
         /* storage_device_begin = .; */
         /* KEEP(*(.storage_device)) */
         /* storage_device_end = .; */
+#if  (!TCFG_LED7_RUN_RAM)
+		. = ALIGN(4);
+        *(.gpio_ram)
+		. = ALIGN(4);
+        *(.LED_code)
+		. = ALIGN(4);
+        *(.LED_const)
+#endif
+		. = ALIGN(4);
 
-		. = ALIGN(4);
-		ui_main_begin = .;
-		KEEP(*(.ui_main))
-		ui_main_end = .;
-		. = ALIGN(4);
 
 		/********maskrom arithmetic ****/
         *(.bfilt_code)
@@ -165,6 +173,10 @@ SECTIONS
 		#include "btstack/btstack_lib_text.ld"
 		. = ALIGN(4);
 		#include "system/system_lib_text.ld"
+        . = ALIGN(4);
+		*(.ui_ram)
+		. = ALIGN(4);
+        #include "ui/ui/ui.ld"
 		. = ALIGN(4);
 		*(.mp2_encode_code)
 		*(.mp2_encode_const)
@@ -299,6 +311,19 @@ SECTIONS
         . = ALIGN(4);
 		*(.non_volatile_ram)
 		. = ALIGN(32);
+#if TCFG_VIR_UDISK_ENABLE == 1
+        *(.usb_audio_play_dma)
+        *(.usb_audio_rec_dma)
+        *(.uac_rx)
+        *(.mass_storage)
+        *(.usb_msd_dma)
+        *(.usb_hid_dma)
+        *(.usb_iso_dma)
+        *(.uac_var)
+        *(.usb_config_var)
+        . = ALIGN(32);
+#endif
+
     } > ram0
 
 
@@ -326,6 +351,15 @@ SECTIONS
 		. = ALIGN(4);
         _SPI_CODE_END = . ;
 
+#if  (TCFG_LED7_RUN_RAM)
+		. = ALIGN(4);
+        *(.gpio_ram)
+		. = ALIGN(4);
+        *(.LED_code)
+		. = ALIGN(4);
+        *(.LED_const)
+#endif
+		. = ALIGN(4);
     	data_code_end = .;
 	} > ram0
 
@@ -340,13 +374,16 @@ SECTIONS
 			*(.cvsd_const)
 			*(.cvsd_code)
 
-			*(.aec_bss_id)
+			KEEP(*(.aec_bss_id))
 			o_aec_end = .;
 
             *(.cvsd_codec)
 			*(.aec_mem)
             *(.msbc_enc)
 			*(.cvsd_bss)
+#if (RECORDER_MIX_EN)
+			*(.enc_file_mem)
+#endif/*RECORDER_MIX_EN*/
 
 #if TCFG_BLUETOOTH_BACK_MODE == 0
             . = ALIGN(4);
@@ -474,10 +511,16 @@ SECTIONS
             *(.m4a_ctrl_mem)
 			*(.m4a_dec_data)
 			*(.m4a_data)
+			*(.m4apick_mem)
+			*(.m4apick_ctrl_mem)
 
 			*(.aac_ctrl_mem)
 			*(.aac_bss)
 			*(.aac_data)
+
+			*(.alac_ctrl_mem)
+			*(.alac_bss)
+			*(.alac_data)
 		}
 
 		.overlay_amr
@@ -496,13 +539,14 @@ SECTIONS
 		.overlay_fm
 		{
 			*(.fm_code)
-			*(.fm_bss_id)
+			KEEP(*(.fm_bss_id))
 			o_fm_end = .;
 			*(.fm_mem)
 			*(.linein_pcm_mem)
 		}
         .overlay_pc
 		{
+#if TCFG_VIR_UDISK_ENABLE == 0
             *(.usb_audio_play_dma)
             *(.usb_audio_rec_dma)
             *(.uac_rx)
@@ -513,6 +557,7 @@ SECTIONS
             *(.usb_iso_dma)
             *(.uac_var)
             *(.usb_config_var)
+#endif
 		}
 
     } > ram0
@@ -590,8 +635,9 @@ SECTIONS
 
 	_HEAP_BEGIN = .;
 	_HEAP_END = RAM_END;
-}
 
+
+}
 
 #include "update/update.ld"
 #include "media/media.ld"

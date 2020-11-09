@@ -25,6 +25,12 @@ const int config_asser         = 0;
 #else
 const int config_asser         = 1;
 #endif
+
+//================================================//
+//                  SDFILE 精简使能               //
+//================================================//
+const int SDFILE_VFS_REDUCE_ENABLE = 1;
+
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)
  */

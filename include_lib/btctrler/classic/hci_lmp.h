@@ -144,21 +144,19 @@ void lmp_hci_write_link_policy_settings(u16 handle, u16 policy);
 
 void lmp_hci_remote_name_request(u8 *addr, u8 page_scan_repetition_mode, u16 clk_offset);
 
+void lmp_set_sniff_establish_by_remote(u8 enable);
+
 void lmp_set_sniff_disable(void);
 
-
-
-
 u8 lmp_standard_connect_check(void);
-
-
-
 
 void lmp_hci_send_keypress_notification(u8 *addr, u8 key);
 void lmp_hci_user_keypress_request_reply(u8 *addr, u32 key);
 void lmp_hci_user_keypress_request_negative_reply(u8 *addr, u8 key);
 
 
+void lmp_hci_set_role_switch_supported(bool enable);
+void lmp_hci_tx_channel_chassification(u8 *map);
 
 
 

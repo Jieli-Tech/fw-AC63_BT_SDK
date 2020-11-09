@@ -26,6 +26,7 @@
 #include "rcsp_bluetooth.h"
 #include "rcsp_user_update.h"
 #include "app_charge.h"
+#include "app_power_manage.h"
 #include "le_client_demo.h"
 #include "usb/device/hid.h"
 
@@ -44,6 +45,12 @@
 #define CFG_RF_24G_CODE_ID       (0) //<=24bits
 /* #define CFG_RF_24G_CODE_ID       (0x23) //<=24bits */
 
+//dongle 上电开配对管理,若配对失败，没有配对设备，停止搜索
+#define POWER_ON_PAIR_START      (1)//
+#define POWER_ON_PAIR_TIME       (10000)//unit ms,持续配对搜索时间
+#define DEVICE_RSSI_LEVEL        (-50)
+#define POWER_ON_KEEP_SCAN       (0)//配对失败，保持一直搜索配对
+
 //等待连接断开时间
 #define WAIT_DISCONN_TIME_MS     (300)
 
@@ -51,8 +58,7 @@ void sys_auto_sniff_controle(u8 enable, u8 *addr);
 void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 
 static u8 is_app_active = 0;
-
-//描述符定义,匹配hogp profile定义,input的report id 可用范围 1~3
+static u8 bt_connected = 0;
 //---------------------------------------------------------------------
 static const u8 sHIDReportDesc[] = {
     0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
@@ -167,7 +173,6 @@ static const target_uuid_t  dongle_search_ble_uuid_table[] = {
 
 };
 
-//report id 1~3 对应的notify handle
 static const u16 mouse_notify_handle[3] = {0x0027, 0x002b, 0x002f};
 /* static u8 get_report_map[256]; */
 /* static u8 get_report_map_size = 0; */
@@ -187,9 +192,9 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
     case GATT_EVENT_NOTIFICATION: { //notify
         u8 packet[4];
         if (report_data->value_handle == mouse_notify_handle[0]) {
-            packet[0] = 1;//传入report id
+            packet[0] = 1;
         } else if (report_data->value_handle == mouse_notify_handle[1]) {
-            packet[0] = 2;//传入report id
+            packet[0] = 2;
         }
         memcpy(&packet[1], report_data->blob, report_data->blob_length);
         hid_send_data(packet, sizeof(packet));
@@ -220,7 +225,7 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
 static struct ble_client_operation_t *ble_client_api;
 /* static const u8 dongle_remoter_name1[] = "AC630N_HIDTEST(BLE)";// */
 static const u8 dongle_remoter_name1[] = "AC696X_1mx(BLE)";//
-static const u8 dongle_remoter_name2[] = "AC630N_HID123(BLE)";//
+static const u8 dongle_remoter_name2[] = "JL_MOUSE(BLE)";//
 
 static const client_match_cfg_t match_dev01 = {
     .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
@@ -258,7 +263,15 @@ static void dongle_event_callback(le_client_event_e event, u8 *packet, int size)
         break;
 
     case CLI_EVENT_CONNECTED:
+        log_info("bt connected");
+        bt_connected = 1;
+        break;
+
     case CLI_EVENT_DISCONNECT:
+        bt_connected = 0;
+        log_info("bt disconnec");
+        break;
+
     default:
         break;
     }
@@ -276,6 +289,29 @@ static const client_conn_cfg_t dongle_conn_config = {
     .security_en = 1,
     .event_callback = dongle_event_callback,
 };
+
+void power_on_pair_timeout(void *priv)
+{
+#if TCFG_USER_BLE_ENABLE && POWER_ON_PAIR_START
+    //关强制搜索
+    ble_client_api->scan_enable(0, 0);
+    ble_client_api->set_force_search(0, 0);
+
+    if (!bt_connected) {
+        log_info("pair-new-timeout");
+        //开scan，若有pair，直接创建连接监听
+        if (ble_client_api->create_connect(0, 0, 1)) {
+#if POWER_ON_KEEP_SCAN
+            //pair fail,open scan
+            ble_client_api->scan_enable(0, 1);
+#endif
+        }
+
+    } else {
+        log_info("pair-new-sucess");
+    }
+#endif
+}
 
 static void dongle_ble_config_init(void)
 {
@@ -319,7 +355,6 @@ static void bt_function_select_init()
         printf("\n-----edr + ble 's address-----");
         printf_buf((void *)bt_get_mac_addr(), 6);
         printf_buf((void *)tmp_ble_addr, 6);
-        /* bt_set_tx_power(9);//0~9 */
         dongle_ble_config_init();
     }
 #endif
@@ -344,7 +379,7 @@ static void bredr_handle_register()
     /* bt_dut_test_handle_register(bt_dut_api); */
 }
 
-static void app_set_soft_poweroff(void)
+void app_set_soft_poweroff(void)
 {
     log_info("set_soft_poweroff\n");
     is_app_active = 1;
@@ -769,6 +804,13 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         /* bt_wait_phone_connect_control_ext(1, 1); */
 
 #if TCFG_USER_BLE_ENABLE
+#if POWER_ON_PAIR_START
+        //蓝牙初始化后,才可调用
+        log_info("power pair start");
+        ble_client_api->set_force_search(1, DEVICE_RSSI_LEVEL);
+        sys_timeout_add(NULL, power_on_pair_timeout, POWER_ON_PAIR_TIME);
+#endif
+
         rf_set_24g_hackable_coded(CFG_RF_24G_CODE_ID);
         bt_ble_init();
 #endif
@@ -876,8 +918,11 @@ static int event_handler(struct application *app, struct sys_event *event)
         return 0;
 
     case SYS_DEVICE_EVENT:
+        if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+            return app_power_event_handler(&event->u.dev);
+        }
 #if TCFG_CHARGE_ENABLE
-        if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
+        else if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
             app_charge_event_handler(&event->u.dev);
         }
 #endif

@@ -60,7 +60,6 @@
 
 
 extern void adc_init();
-extern void adkey_reuse_set_callback(void (*adkey_reuse_enter)(u32 ch), void (*adkey_reuse_exit)(u32 ch));
 
 extern void adc_vbg_init();
 //p33 define
@@ -82,6 +81,7 @@ u32 adc_value_to_voltage(u32 adc_vbg, u32 adc_ch_val);
 
 void adc_set_vbat_vddio_tieup(u8 en);
 
+u32 adc_set_sample_freq(u32 ch, u32 ms);
 
 u8 get_wvdd_aims_level(u16 aims_mv);
 

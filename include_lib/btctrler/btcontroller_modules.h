@@ -50,7 +50,13 @@ extern const int config_btctler_hci_standard;
 extern const int CONFIG_TEST_DUT_CODE;
 extern const int CONFIG_TEST_FCC_CODE;
 extern const int CONFIG_TEST_DUT_ONLY_BOX_CODE;
+extern const int CONFIG_BREDR_INQUIRY;
 
+extern const int CONFIG_INQUIRY_PAGE_OFFSET_ADJUST ;
+
+extern const int CONFIG_LMP_NAME_REQ_ENABLE ;
+extern const int CONFIG_LMP_PASSKEY_ENABLE ;
+extern const int CONFIG_LMP_MASTER_ESCO_ENABLE ;
 /********************************************************************************/
 /*
  *                   API

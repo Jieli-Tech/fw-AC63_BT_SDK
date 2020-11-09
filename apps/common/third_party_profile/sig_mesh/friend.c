@@ -113,31 +113,13 @@ static void discard_buffer(void)
         }
     }
 
-#if NET_BUF_FREE_EN
-    struct net_buf *head_buf = sys_slist_peek_head(&frnd->queue);
-    if (head_buf && (head_buf->flags & NET_BUF_FRIEND_POLL_CACHE)) {
-        buf = sys_slist_peek_next(head_buf);
-        __ASSERT_NO_MSG(buf != NULL);
-        BT_WARN("Discarding none cahce buffer 0x%x for LPN 0x%04x", buf, frnd->lpn);
-        sys_slist_remove(&frnd->queue, head_buf, buf);
-        frnd->queue_size--;
-        buf->flags &= ~NET_BUF_FRIEND_QUEUE_CACHE;
-        net_buf_unref(buf);
-        return;
-    }
-
-    frnd->queue_size--;
-#endif /* NET_BUF_FREE_EN */
-
     buf = net_buf_slist_get(&frnd->queue);
     __ASSERT_NO_MSG(buf != NULL);
     BT_WARN("Discarding buffer 0x%x for LPN 0x%04x", buf, frnd->lpn);
 
-#if NET_BUF_FREE_EN
-    buf->flags &= ~NET_BUF_FRIEND_QUEUE_CACHE;
-#endif /* NET_BUF_FREE_EN */
-
     net_buf_unref(buf);
+
+    frnd->queue_size--;
 }
 
 static struct net_buf *friend_buf_alloc(u16_t src)
@@ -221,13 +203,9 @@ static void friend_clear(struct bt_mesh_friend *frnd)
 
     if (frnd->last) {
         /* Cancel the sending if necessary */
-#if NET_BUF_FREE_EN
-        frnd->last->flags &= ~NET_BUF_FRIEND_POLL_CACHE;
-#else
         if (frnd->pending_buf) {
-            BT_MESH_ADV(frnd->last)->busy = 0;
+            BT_MESH_ADV(frnd->last)->busy = 0U;
         }
-#endif
 
         net_buf_unref(frnd->last);
 
@@ -235,15 +213,7 @@ static void friend_clear(struct bt_mesh_friend *frnd)
     }
 
     while (!sys_slist_is_empty(&frnd->queue)) {
-#if NET_BUF_FREE_EN
-        struct net_buf *buf = net_buf_slist_get(&frnd->queue);
-        if (buf) {
-            buf->flags &= ~NET_BUF_FRIEND_QUEUE_CACHE;
-            net_buf_unref(buf);
-        }
-#else
         net_buf_unref(net_buf_slist_get(&frnd->queue));
-#endif /* NET_BUF_FREE_EN */
     }
 
     for (i = 0; i < FRIEND_SEG_RX; i++) {
@@ -473,15 +443,7 @@ static struct net_buf *encode_friend_ctl(struct bt_mesh_friend *frnd,
 
     info.iv_index = BT_MESH_NET_IVI_TX;
 
-#if NET_BUF_FREE_EN
-    struct net_buf *buf = create_friend_pdu(frnd, &info, sdu);
-
-    buf->flags |= NET_BUF_FRIEND_POLL_CACHE;
-
-    return buf;
-#else
     return create_friend_pdu(frnd, &info, sdu);
-#endif /* NET_BUF_FREE_EN */
 }
 
 static struct net_buf *encode_update(struct bt_mesh_friend *frnd, u8_t md)
@@ -489,6 +451,8 @@ static struct net_buf *encode_update(struct bt_mesh_friend *frnd, u8_t md)
     struct bt_mesh_ctl_friend_update *upd;
     NET_BUF_SIMPLE_DEFINE(sdu, 1 + sizeof(*upd));
     struct bt_mesh_subnet *sub = bt_mesh_subnet_get(frnd->net_idx);
+
+    BT_INFO("--ready tx FRIEND UPDATE\n");
 
     __ASSERT_NO_MSG(sub != NULL);
 
@@ -510,6 +474,8 @@ static void enqueue_sub_cfm(struct bt_mesh_friend *frnd, u8_t xact)
     NET_BUF_SIMPLE_DEFINE(sdu, 1 + sizeof(*cfm));
     struct net_buf *buf;
 
+    BT_INFO("--ready tx FRIEND sub_cfm\n");
+
     BT_DBG("lpn 0x%04x xact 0x%02x", frnd->lpn, xact);
 
     net_buf_simple_reserve(&sdu, 1);
@@ -525,12 +491,10 @@ static void enqueue_sub_cfm(struct bt_mesh_friend *frnd, u8_t xact)
 
     if (frnd->last) {
         BT_DBG("Discarding last PDU");
-#if NET_BUF_FREE_EN
-        frnd->last->flags &= ~NET_BUF_FRIEND_POLL_CACHE;
-#endif /* NET_BUF_FREE_EN */
         net_buf_unref(frnd->last);
     }
 
+    BT_INFO("cache tx friend sub_cfm buf 0x%x", buf);
     frnd->last = buf;
     frnd->send_last = 1;
 }
@@ -572,6 +536,7 @@ int bt_mesh_friend_sub_add(struct bt_mesh_net_rx *rx,
 
     while (buf->len >= 2) {
         friend_sub_add(frnd, net_buf_simple_pull_be16(buf));
+        BT_INFO("new subscribe addr add");
     }
 
     enqueue_sub_cfm(frnd, xact);
@@ -618,7 +583,7 @@ int bt_mesh_friend_sub_rem(struct bt_mesh_net_rx *rx,
 
 static void enqueue_buf(struct bt_mesh_friend *frnd, struct net_buf *buf)
 {
-    BT_INFO("--func=%s", __FUNCTION__);
+    BT_INFO("push buf to friend queue");
 
     net_buf_slist_put(&frnd->queue, buf);
 
@@ -684,12 +649,11 @@ int bt_mesh_friend_poll(struct bt_mesh_net_rx *rx, struct net_buf_simple *buf)
         frnd->send_last = 1;
     } else {
         if (frnd->last) {
-#if NET_BUF_FREE_EN
-            frnd->last->flags &= ~NET_BUF_FRIEND_POLL_CACHE;
-#endif /* NET_BUF_FREE_EN */
             net_buf_unref(frnd->last);
 
             frnd->last = NULL;
+
+            BT_INFO("Discarding last PDU");
         }
 
         frnd->fsn = msg->fsn;
@@ -701,6 +665,8 @@ int bt_mesh_friend_poll(struct bt_mesh_net_rx *rx, struct net_buf_simple *buf)
             FRIEND_POLL_IO_1();
         }
     }
+
+    BT_INFO("ready to send queue buf");
 
     return 0;
 }
@@ -836,7 +802,7 @@ static void enqueue_offer(struct bt_mesh_friend *frnd, s8_t rssi)
     NET_BUF_SIMPLE_DEFINE(sdu, 1 + sizeof(*off));
     struct net_buf *buf;
 
-    BT_DBG("");
+    BT_INFO("--ready tx FRIEND OFFER\n");
 
     net_buf_simple_reserve(&sdu, 1);
 
@@ -857,12 +823,11 @@ static void enqueue_offer(struct bt_mesh_friend *frnd, s8_t rssi)
     frnd->counter++;
 
     if (frnd->last) {
-#if NET_BUF_FREE_EN
-        frnd->last->flags &= ~NET_BUF_FRIEND_POLL_CACHE;
-#endif /* NET_BUF_FREE_EN */
         net_buf_unref(frnd->last);
+        BT_INFO("Discarding last PDU");
     }
 
+    BT_INFO("cache tx friend offer buf 0x%x", buf);
     frnd->last = buf;
     frnd->send_last = 1;
 }
@@ -1076,15 +1041,13 @@ static void buf_send_start(u16_t duration, int err, void *user_data)
 {
     struct bt_mesh_friend *frnd = user_data;
 
-    BT_DBG("err %d", err);
+    BT_INFO("buf_send_start");
 
     frnd->pending_buf = 0;
 
     /* Friend Offer doesn't follow the re-sending semantics */
     if (!frnd->established) {
-#if NET_BUF_FREE_EN
-        frnd->last->flags &= ~NET_BUF_FRIEND_POLL_CACHE;
-#endif /* NET_BUF_FREE_EN */
+        BT_INFO("free tx friend offer buf");
         net_buf_unref(frnd->last);
         frnd->last = NULL;
         FRIEND_REQ_IO_1();
@@ -1095,7 +1058,7 @@ static void buf_send_end(int err, void *user_data)
 {
     struct bt_mesh_friend *frnd = user_data;
 
-    BT_DBG("err %d", err);
+    BT_INFO("buf_send_end");
 
     if (frnd->pending_req) {
         BT_WARN("Another request before previous completed sending");
@@ -1146,17 +1109,13 @@ static void friend_timeout(struct k_work *work)
         return;
     }
 
+    BT_INFO("pop buf from friend queue, still cache");
     frnd->last = net_buf_slist_get(&frnd->queue);
     if (!frnd->last) {
         BT_WARN("Friendship not established with 0x%04x", frnd->lpn);
         friend_clear(frnd);
         return;
     }
-
-#if NET_BUF_FREE_EN
-    frnd->last->flags &= ~NET_BUF_FRIEND_QUEUE_CACHE;
-    frnd->last->flags |= NET_BUF_FRIEND_POLL_CACHE;
-#endif /* NET_BUF_FREE_EN */
 
     frnd->queue_size--;
     BT_DBG("Sending buf 0x%x from Friend Queue of LPN 0x%04x, queue_size %u",
@@ -1227,6 +1186,7 @@ static void friend_lpn_enqueue_rx(struct bt_mesh_friend *frnd,
     struct friend_pdu_info info;
     struct net_buf *buf;
 
+    BT_INFO("--func=%s", __FUNCTION__);
     BT_DBG("LPN 0x%04x queue_size %u", frnd->lpn, frnd->queue_size);
 
     if (type == BT_MESH_FRIEND_PDU_SINGLE && seq_auth) {
@@ -1262,10 +1222,6 @@ static void friend_lpn_enqueue_rx(struct bt_mesh_friend *frnd,
 
     enqueue_friend_pdu(frnd, type, buf);
 
-#if NET_BUF_FREE_EN
-    buf->flags |= NET_BUF_FRIEND_QUEUE_CACHE;
-#endif /* NET_BUF_FREE_EN */
-
     BT_DBG("Queued message for LPN 0x%04x, queue_size %u",
            frnd->lpn, frnd->queue_size);
 }
@@ -1279,6 +1235,7 @@ static void friend_lpn_enqueue_tx(struct bt_mesh_friend *frnd,
     struct net_buf *buf;
     u32_t seq;
 
+    BT_INFO("--func=%s", __FUNCTION__);
     BT_DBG("LPN 0x%04x", frnd->lpn);
 
     if (type == BT_MESH_FRIEND_PDU_SINGLE && seq_auth) {
@@ -1467,7 +1424,7 @@ extern void bt_mesh_friend_cred_malloc(void *frnd_cred);
 
 void bt_mesh_friend_buf_alloc(void)
 {
-    BT_DBG("--func=%s", __FUNCTION__);
+    BT_DBG("--func=%s, adv buffer cnt = %d", __FUNCTION__, FRIEND_BUF_COUNT);
 
     u32 buf_size;
     u32 net_buf_p, net_buf_data_p, adv_pool_p;

@@ -7,6 +7,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/iic_soft.o \
 	  $(ROOT)/cpu/$(CPU)/uart_dev.o \
 	  $(ROOT)/cpu/$(CPU)/spi.o \
+	  $(ROOT)/cpu/$(CPU)/led_spi.o \
 	  $(ROOT)/cpu/$(CPU)/mcpwm.o \
 	  $(ROOT)/cpu/$(CPU)/charge.o \
 	  $(ROOT)/cpu/$(CPU)/chargestore.o \
@@ -41,6 +42,21 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/clock_manager.o \
 
 else ifeq ($(APP_CASE),dongle)
+
+else ifeq ($(APP_CASE),bt_udisk)
+objs += \
+      $(ROOT)/cpu/$(CPU)/overlay_code.o \
+	  $(ROOT)/cpu/$(CPU)/irflt.o \
+	  $(ROOT)/cpu/$(CPU)/plcnt.o \
+
+objs += \
+	  $(ROOT)/cpu/$(CPU)/uart_test.o \
+	  $(ROOT)/cpu/$(CPU)/uart_bt_product.o \
+	  $(ROOT)/cpu/$(CPU)/spi_test.o \
+	  $(ROOT)/cpu/$(CPU)/iic_eeprom_test.o \
+	  $(ROOT)/cpu/$(CPU)/iic_slave_test.o \
+	  $(ROOT)/cpu/$(CPU)/clock_manager.o \
+
 
 endif
 

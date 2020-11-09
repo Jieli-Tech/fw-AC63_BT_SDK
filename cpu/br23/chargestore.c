@@ -6,6 +6,7 @@
 #include "asm/clock.h"
 #include "asm/chargestore.h"
 #include "update.h"
+#include "app_config.h"
 
 struct chargestore_handle {
     const struct chargestore_platform_data *data;
@@ -212,6 +213,12 @@ void chargestore_init(const struct chargestore_platform_data *data)
         //不占用IO
         gpio_set_uart1(-1);
     }
+#if (!TCFG_CHARGE_ENABLE)
+    LDO5V_EN(1);
+    LDO5V_EDGE_SEL(1);
+    LDO5V_PND_CLR();
+    LDO5V_EDGE_WKUP_EN(1);
+#endif
 }
 
 static void clock_critical_enter(void)

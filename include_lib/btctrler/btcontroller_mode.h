@@ -40,10 +40,11 @@ phone: 1 可以被手机连接，0  不可以被手机连接上
     user_send_cmd_prepare(USER_CTRL_WRITE_CONN_ENABLE, 0, NULL);
 
 
-5、可以调用 void bt_fix_fre_api() 函数实现定频测试，频点2402，发射功率最大，
+5、可以调用 void bt_fix_fre_api() 函数实现经典蓝牙定频测试，频点2402，发射功率最大，
 调用后不可恢复之前状态，只是用来量产测试，测试完需要复位或重新上电开机！
 
-6、测试BQB profile的程序要在手动配置 config_btctler_mode = BT_NORMAL | BT_BQB_PROFILE).会多编译一些代码的
+6、可以调用 void ble_fix_fre_api()函数实现ble定频测试,发射功率最大,
+
 */
 
 #define BT_NORMAL      0x01
@@ -51,7 +52,6 @@ phone: 1 可以被手机连接，0  不可以被手机连接上
 #define BT_FCC         0x04
 #define BT_FRE         0x10
 #define BT_PER         0x20
-#define BT_BQB_PROFILE 0x40
 
 
 #define CONFIG_BT_MODE             BT_NORMAL

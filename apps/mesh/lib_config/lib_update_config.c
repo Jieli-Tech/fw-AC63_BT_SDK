@@ -3,7 +3,11 @@
 #include "system/includes.h"
 #include "update_loader_download.h"
 
-const int config_update_mode = UPDATE_BT_LMP_EN | UPDATE_BLE_TEST_EN | UPDATE_RCSP_BLE_EN;
+#ifdef CONFIG_256K_FLASH
+const int config_update_mode = UPDATE_UART_EN;
+#else
+const int config_update_mode = UPDATE_BT_LMP_EN | UPDATE_BLE_TEST_EN | UPDATE_APP_EN |  UPDATE_UART_EN;
+#endif
 
 //是否采用双备份升级方案:0-单备份;1-双备份
 const int support_dual_bank_update_en = 0;

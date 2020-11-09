@@ -9,11 +9,8 @@ LIBS = \
    $(AR_DIR)/agreement.a \
 --end-group
 
-ifeq ($(OTA_UPDATE),y)
 LIBS += \
    $(AR_DIR)/update.a \
-
-endif
 
 
 objs += \

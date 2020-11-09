@@ -982,6 +982,7 @@ int bt_mesh_net_send(struct bt_mesh_net_tx *tx, struct net_buf *buf,
     }
 
 done:
+    BT_DBG("bt_mesh_net_send end");
     net_buf_unref(buf);
     return err;
 }
@@ -1500,11 +1501,6 @@ void bt_mesh_net_init(void)
     // ivu refresh
     // ... to do
 
-#if NET_BUF_TEST_EN
-    extern void net_buf_test(void);
-    net_buf_test();
-#endif /* NET_BUF_TEST_EN */
-
 #if NET_BUF_USE_MALLOC
     extern void bt_mesh_friend_buf_alloc(void);
     if (IS_ENABLED(CONFIG_BT_MESH_FRIEND) &&
@@ -1512,5 +1508,4 @@ void bt_mesh_net_init(void)
         bt_mesh_friend_buf_alloc();
     }
 #endif /* NET_BUF_USE_MALLOC */
-
 }

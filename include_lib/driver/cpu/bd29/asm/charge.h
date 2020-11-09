@@ -105,6 +105,7 @@ extern u8 get_ldo5v_pulldown_en(void);
 extern u8 get_ldo5v_online_hw(void);
 extern u8 get_lvcmp_det(void);
 extern void charge_check_and_set_pinr(u8 mode);
+extern u16 get_charge_full_value(void);
 extern const struct device_operations charge_dev_ops;
 extern int charge_api_init(void *arg);
 

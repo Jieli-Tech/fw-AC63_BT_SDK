@@ -110,9 +110,10 @@ typedef struct {
 static target_hdl_t target_handle;
 static opt_handle_t opt_handle_table[OPT_HANDLE_MAX];
 static u8 opt_handle_used_cnt;
+static u8 force_seach_onoff = 0;
+static s8 force_seach_rssi = -127;
 
 static  client_conn_cfg_t *client_config = NULL ;
-
 //----------------------------------------------------------------------------
 static void bt_ble_create_connection(u8 *conn_addr, u8 addr_type);
 static int bt_ble_scan_enable(void *priv, u32 en);
@@ -127,6 +128,9 @@ static const struct conn_update_param_t connection_param_table[] = {
 };
 
 static u8 send_param_index = 3;
+
+static int client_create_connect_api(u8 *addr, u8 addr_type, u8 mode);
+static int client_create_cannel_api(void);
 //----------------------------------------------------------------------------
 
 static void client_event_report(le_client_event_e event, u8 *packet, int size)
@@ -588,12 +592,18 @@ static void client_report_adv_data(adv_report_t *report_pt, u16 len)
     find_remoter = resolve_adv_report(report_pt->address, report_pt->length, report_pt->data, report_pt->rssi);
 
     if (find_remoter) {
+        if (force_seach_onoff && force_seach_rssi > report_pt->rssi) {
+            log_info("match but rssi fail!!!:%d,%d\n", force_seach_rssi, report_pt->rssi);
+            return;
+        }
+
         log_info("rssi:%d\n", report_pt->rssi);
         log_info("\n*********create_connection***********\n");
         log_info("***remote type %d,addr:", report_pt->address_type);
         log_info_hexdump(report_pt->address, 6);
         bt_ble_scan_enable(0, 0);
-        bt_ble_create_connection(report_pt->address, report_pt->address_type);
+        client_create_connect_api(report_pt->address, report_pt->address_type, 0);
+        log_info("*create_finish\n");
     }
 }
 
@@ -638,11 +648,17 @@ static void client_report_ext_adv_data(u8 *report_pt, u16 len)
                                      );
 
     if (find_remoter) {
+        if (force_seach_onoff && force_seach_rssi > report_pt->rssi) {
+            log_info("match but rssi fail!!!:%d,%d\n", force_seach_rssi, report_pt->rssi);
+            return;
+        }
+
         log_info("\n*********ext create_connection***********\n");
         log_info("***remote type %d, addr:", address_type);
         log_info_hexdump(address, 6);
         bt_ble_scan_enable(0, 0);
-        bt_ble_create_connection(address, address_type);
+        client_create_connect_api(address, address_type, 0);
+        log_info("*create_finish\n");
     }
 }
 
@@ -718,8 +734,10 @@ static void bt_ble_create_connection(u8 *conn_addr, u8 addr_type)
 
 static void client_create_connection_cannel(void)
 {
-    set_ble_work_state(BLE_ST_SEND_CREATE_CONN_CANNEL);
-    ble_op_create_connection_cancel();
+    if (get_ble_work_state() == BLE_ST_CREATE_CONN) {
+        set_ble_work_state(BLE_ST_SEND_CREATE_CONN_CANNEL);
+        ble_op_create_connection_cancel();
+    }
 }
 
 static int client_disconnect(void *priv)
@@ -904,7 +922,13 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             ble_op_att_send_init(con_handle, 0, 0, 0);
             set_ble_work_state(BLE_ST_DISCONN);
             client_event_report(CLI_EVENT_DISCONNECT, packet, size);
-            bt_ble_scan_enable(0, 1);
+
+            //auto to do
+            if (conn_pair_info.pair_flag) {
+                client_create_connect_api(0, 0, 1);
+            } else {
+                bt_ble_scan_enable(0, 1);
+            }
             break;
 
         case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
@@ -1077,16 +1101,6 @@ static int bt_ble_scan_enable(void *priv, u32 en)
         return APP_BLE_NO_ERROR;
     }
 
-    if (conn_pair_info.pair_flag) {
-        //有配对,跳过搜索,直接创建init_creat
-        if (en) {
-            log_info("init_creat_en:%d\n", en);
-            log_info_hexdump(conn_pair_info.peer_address_info, 7);
-            bt_ble_create_connection(&conn_pair_info.peer_address_info[1], conn_pair_info.peer_address_info[0]);
-            set_ble_work_state(BLE_ST_CREATE_CONN);
-        }
-        return APP_BLE_NO_ERROR;
-    }
 
     log_info("scan_en:%d\n", en);
     set_ble_work_state(next_state);
@@ -1102,7 +1116,7 @@ static int bt_ble_scan_enable(void *priv, u32 en)
     if (en) {
         scanning_setup_init();
     }
-    ble_op_scan_enable(en);
+    ble_op_scan_enable2(en, 0);
 #endif /* EXT_ADV_MODE_EN */
 
     return APP_BLE_NO_ERROR;
@@ -1136,6 +1150,76 @@ static int client_init_config(void *priv, const client_conn_cfg_t *cfg)
     return APP_BLE_NO_ERROR;
 }
 
+//可配置进入强制搜索方式连接，更加信号强度过滤设备
+static int client_force_search(u8 onoff, s8 rssi)
+{
+    force_seach_rssi = rssi;
+    if (force_seach_onoff != onoff) {
+
+        force_seach_onoff = onoff;
+        //强制搜索前后，关创建监听
+        if (get_ble_work_state() == BLE_ST_CREATE_CONN) {
+            client_create_connection_cannel();
+        }
+    }
+    return 0;
+}
+
+static int client_create_connect_api(u8 *addr, u8 addr_type, u8 mode)
+{
+    u8 cur_state =  get_ble_work_state();
+
+    switch (cur_state) {
+    case BLE_ST_SCAN:
+    case BLE_ST_IDLE:
+    case BLE_ST_INIT_OK:
+    case BLE_ST_NULL:
+    case BLE_ST_DISCONN:
+    case BLE_ST_CONNECT_FAIL:
+    case BLE_ST_SEND_CREATE_CONN_CANNEL:
+        break;
+    default:
+        return APP_BLE_OPERATION_ERROR;
+        break;
+    }
+
+    if (cur_state == BLE_ST_SCAN) {
+        log_info("stop scan\n");
+        bt_ble_scan_enable(0, 0);
+    }
+
+    //pair mode
+    if (mode == 1) {
+        if (conn_pair_info.pair_flag) {
+            if (conn_pair_info.pair_flag) {
+                //有配对,跳过搜索,直接创建init_creat
+                log_info("pair to creat!\n");
+                log_info_hexdump(conn_pair_info.peer_address_info, 7);
+                bt_ble_create_connection(&conn_pair_info.peer_address_info[1], conn_pair_info.peer_address_info[0]);
+                return 0;
+            }
+
+        } else {
+            log_info("no pair to creat!\n");
+            return APP_BLE_OPERATION_ERROR;
+        }
+    } else {
+        log_info("addr to creat!\n");
+        log_info_hexdump(addr, 7);
+        bt_ble_create_connection(addr, addr_type);
+    }
+    return 0;
+}
+
+static int client_create_cannel_api(void)
+{
+    if (get_ble_work_state() == BLE_ST_CREATE_CONN) {
+        client_create_connection_cannel();
+        return 0;
+    }
+    return 1;
+}
+
 static const struct ble_client_operation_t client_operation = {
     .scan_enable = bt_ble_scan_enable,
     .disconnect = client_disconnect,
@@ -1147,6 +1231,9 @@ static const struct ble_client_operation_t client_operation = {
     .regist_state_cbk = client_regiest_state_cbk,
     .init_config = client_init_config,
     .opt_comm_send = client_operation_send,
+    .set_force_search = client_force_search,
+    .create_connect = client_create_connect_api,
+    .create_connect_cannel = client_create_cannel_api,
 };
 
 struct ble_client_operation_t *ble_get_client_operation_table(void)

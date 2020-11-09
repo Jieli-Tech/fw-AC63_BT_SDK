@@ -11,8 +11,8 @@
 
 
 
-#define SPDIF_IN_PORT_A      BIT(0)    //PA9
-#define SPDIF_IN_PORT_B      BIT(1)    //PA10
+#define SPDIF_IN_PORT_A      BIT(0)    //PA5
+#define SPDIF_IN_PORT_B      BIT(1)    //PA6
 #define SPDIF_IN_PORT_C      BIT(2)    //PB0
 #define SPDIF_IN_PORT_D      BIT(3)    //PB1
 #define SPDIF_IN_IOMAP_A     ( BIT(4) | BIT(0))  //input_ch 11
@@ -20,7 +20,7 @@
 #define SPDIF_IN_IOMAP_C     ( BIT(4) | BIT(2))  //input_ch 8
 #define SPDIF_IN_IOMAP_D     ( BIT(4) | BIT(3))  //input_ch 9
 
-#define SPDIF_OUT_PORT_A      BIT(0)    //PB11
+#define SPDIF_OUT_PORT_A      BIT(0)    //PA0
 #define SPDIF_OUT_PORT_B      BIT(1)    // ??
 #define SPDIF_OUT_PORT_C      BIT(2)   //?
 #define SPDIF_OUT_PORT_D      BIT(3)   //?
@@ -88,10 +88,11 @@ struct audio_spdif_hdl {
     OS_SEM sem;
     u8 channel;
     u32 sample_rate;
-    u8  validity_bit_flag;
-    u8 error_flag;
-    s32(*p_info_buf)[SPDIF_INFO_LEN];
-    s16(*p_spdif_data_buf)[SPDIF_DATA_DAM_LEN * SPDIF_CHANNEL_NUMBER];
+    volatile u8  validity_bit_flag;
+    volatile u8 error_flag;
+    // s32(*p_info_buf)[SPDIF_INFO_LEN];
+    void *p_spdif_info_buf[2];
+    void *p_spdif_data_buf[2];
     // u16 output_buf_len;
     u8 input_port;
     u8 output_port;

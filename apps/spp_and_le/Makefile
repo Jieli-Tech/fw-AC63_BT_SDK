@@ -6,6 +6,7 @@ includes += \
 	-I$(ROOT)/apps/common/include/ \
 	-I$(ROOT)/apps/common/power_manage/ \
 	-I$(ROOT)/apps/$(APP_CASE)/board/$(CPU)/ \
+	-I$(ROOT)/cpu/$(CPU)/ \
 	-I$(ROOT)/apps/common/third_party_profile/jieli/ \
 	-I$(ROOT)/apps/common/third_party_profile/jieli/trans_data_demo/ \
 	-I$(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp \
@@ -20,9 +21,11 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_driver_config.o \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_system_config.o \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_profile_config.o \
+	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_btstack_config.o \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_update_config.o \
 
 objs += \
+	$(ROOT)/apps/common/device/norflash/norflash.o \
 	$(ROOT)/apps/$(APP_CASE)/app_main.o \
 	$(ROOT)/apps/$(APP_CASE)/app_idle.o \
 	$(ROOT)/apps/$(APP_CASE)/app_spp_and_le.o \
@@ -35,6 +38,7 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/log_config.o \
 	$(ROOT)/apps/$(APP_CASE)/user_cfg.o \
 	$(ROOT)/apps/$(APP_CASE)/app_charge.o \
+	$(ROOT)/apps/$(APP_CASE)/app_power_manage.o \
 	$(ROOT)/apps/$(APP_CASE)/rtc_alarm.o \
 	$(ROOT)/apps/$(APP_CASE)/usb_hid_devices.o \
 	$(ROOT)/apps/common/update/update.o \

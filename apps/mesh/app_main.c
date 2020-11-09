@@ -16,6 +16,7 @@
 #include "app_action.h"
 #include "app_main.h"
 #include "update.h"
+#include "update_loader_download.h"
 
 #define LOG_TAG_CONST       APP
 #define LOG_TAG             "[APP]"
@@ -33,9 +34,7 @@ const struct task_info task_info_table[] = {
     {"btctrler",            4,     512,   256  },
     {"btstack",             3,     1024,  1024  },
     {"systimer",		    7,	   128,   0		},
-#ifdef CONFIG_UPDATA_ENABLE
     {"update",				1,	   320,   0		},
-#endif
 #if (RCSP_BTMATE_EN)
     {"rcsp_task",		    2,		640,	128	},
 #endif
@@ -57,10 +56,10 @@ void app_main()
 {
     struct intent it;
 
-#ifdef CONFIG_UPDATA_ENABLE
-    int update = 0;
-    update = update_result_deal();
-#endif
+    if (!UPDATE_SUPPORT_DEV_IS_NULL()) {
+        int update = 0;
+        update = update_result_deal();
+    }
     init_intent(&it);
 
     it.name = "mesh";

@@ -41,6 +41,8 @@
 NET_BUF_POOL_DEFINE(adv_buf_pool, CONFIG_BT_MESH_ADV_BUF_COUNT,
                     BT_MESH_ADV_DATA_SIZE, BT_MESH_ADV_USER_DATA_SIZE, NULL);
 
+extern void newbuf_replace(struct net_buf_pool *pool);
+
 #if NET_BUF_USE_MALLOC
 static struct bt_mesh_adv *adv_pool;
 #else
@@ -90,10 +92,10 @@ struct net_buf *bt_mesh_adv_create_from_pool(struct net_buf_pool *pool,
     adv->type         = type;
     adv->xmit         = xmit;
 
-#if NET_BUF_FREE_EN
+#if MESH_ADAPTATION_OPTIMIZE
     buf->__buf += BT_MESH_ADV_DATA_HEAD_SIZE;
     buf->data = buf->__buf;
-#endif /* NET_BUF_FREE_EN */
+#endif /* MESH_ADAPTATION_OPTIMIZE */
 
     BT_INFO("alloc buf addr=0x%x", buf);
 
@@ -103,6 +105,12 @@ struct net_buf *bt_mesh_adv_create_from_pool(struct net_buf_pool *pool,
 struct net_buf *bt_mesh_adv_create(enum bt_mesh_adv_type type, u8_t xmit,
                                    s32_t timeout)
 {
+#if CONFIG_BUF_REPLACE_EN
+    if (0 == adv_buf_pool.free_count) {
+        newbuf_replace(&adv_buf_pool);
+    }
+#endif /* CONFIG_BUF_REPLACE_EN */
+
     return bt_mesh_adv_create_from_pool(&adv_buf_pool, adv_alloc, type,
                                         xmit, timeout);
 }
@@ -181,7 +189,7 @@ int bt_mesh_scan_disable(void)
 
 void bt_mesh_adv_buf_alloc(void)
 {
-    BT_DBG("--func=%s", __FUNCTION__);
+    BT_DBG("--func=%s, adv buffer cnt = %d", __FUNCTION__, config_bt_mesh_adv_buf_count);
 
     u32 buf_size;
     u32 net_buf_p, net_buf_data_p, adv_pool_p;

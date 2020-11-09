@@ -30,6 +30,8 @@
 /* #include <stdlib.h>  */
 #include "rcsp_bluetooth.h"
 #include "rcsp_user_update.h"
+#include "app_charge.h"
+#include "app_power_manage.h"
 #include "app_config.h"
 
 #if(CONFIG_APP_MOUSE)
@@ -49,10 +51,18 @@
 #define CFG_RF_24G_CODE_ID       (0) //<=24bits
 /* #define CFG_RF_24G_CODE_ID       (0x23) //<=24bits */
 
+//切换控制,可自己修改按键方式
+#define SWITCH_MODE_BLE_24G_EDR    1   //BLE,2.4G,EDR ; 3个模式切换, 要使能 EDR BLE 模块
+#define MIDDLE_KEY_SWITCH          1   //中键长按数秒切换 edr & ble , or 2.4g & ble, or ble & 2.4g & edr
+#define MIDDLE_KEY_HOLD_CNT       (4)  //长按中键计算次数 >= 4s
 
-#define MIDDLE_KEY_SWITCH       1   //中键长按1秒切换 edr & ble
-#define MIDDLE_KEY_HOLD_CNT    (3)
+
+//使能开配对管理，BLE & 2.4g 鼠标只绑定1个主机,可自己修改按键方式
+#define DOUBLE_KEY_HOLD_PAIR      (0 & CFG_RF_24G_CODE_ID)  //中键+右键 长按数秒,进入2.4G配对模式
+#define DOUBLE_KEY_HOLD_CNT       (4)  //长按中键计算次数 >= 4s
+
 static u8 switch_key_long_cnt = 0;
+static u8 double_key_long_cnt = 0;
 
 static u16 g_auto_shutdown_timer = 0;
 
@@ -74,6 +84,9 @@ extern int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type);
 
 extern int edr_hid_is_connected(void);
 extern int ble_hid_is_connected(void);
+void ble_set_fix_pwr(u8 fix);//set tx power
+void le_hogp_set_pair_config(u8 pair_max, u8 is_allow_cover);
+void le_hogp_set_pair_allow(void);
 
 #define WAIT_DISCONN_TIME_MS     (300)
 
@@ -313,20 +326,44 @@ static void mode_switch_handler(void)
 
 static void mode_switch_24g(void)
 {
-    log_info("mode_switch_24g");
+    /* log_info("mode_switch_24g"); */
+
 #if TCFG_USER_BLE_ENABLE
     ble_module_enable(0);
     if (ble_24g_code) {
         ble_24g_code = 0;
+        log_info("##switch to ble_mode: %04x", ble_24g_code);
     } else {
         ble_24g_code = CFG_RF_24G_CODE_ID;
+        log_info("##switch to 24g_mode: %04x", ble_24g_code);
     }
-    log_info("switch_24g_code: %04x", ble_24g_code);
     rf_set_24g_hackable_coded(ble_24g_code);
     hid_vm_deal(1);
     ble_module_enable(1);
 #endif
 }
+
+static void mode_switch_ble_24g_edr(void)
+{
+    /* log_info("mode_switch_ble_24g_edr"); */
+
+    if (bt_hid_mode == HID_MODE_EDR) {
+        ble_24g_code = 0;
+        rf_set_24g_hackable_coded(ble_24g_code);
+        hid_vm_deal(1);
+        log_info("##switch to ble_mode\n");
+        mode_switch_handler();//switch to ble
+    } else {
+        if (CFG_RF_24G_CODE_ID && ble_24g_code == 0) {
+            log_info("##switch to 24g_mode\n");
+            mode_switch_24g();//switch to 2.4g
+        } else {
+            log_info("##switch to edr_mode\n");
+            mode_switch_handler();//switch to edr
+        }
+    }
+}
+
 
 
 static void app_code_sw_event_handler(struct sys_event *event)
@@ -516,13 +553,13 @@ static void bredr_handle_register()
 #if (USER_SUPPORT_PROFILE_HID==1)
     user_hid_set_icon(BD_CLASS_MOUSE);
     user_hid_set_ReportMap(hid_report_map, sizeof(hid_report_map));
-    user_hid_init();
+    user_hid_init(NULL);
 #endif
 
     /* bt_dut_test_handle_register(bt_dut_api); */
 }
 
-static void hid_set_soft_poweroff(void)
+void hid_set_soft_poweroff(void)
 {
     log_info("hid_set_soft_poweroff\n");
     is_hid_active = 1;
@@ -965,10 +1002,17 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         hid_vm_deal(0);//bt_hid_mode read for VM
 
 #if TCFG_USER_BLE_ENABLE
+
+#if DOUBLE_KEY_HOLD_PAIR
+        //2.4g 配对管理，默认只绑定1个配对设备
+        le_hogp_set_pair_config(1, 0);
+#endif
+
+        ble_set_fix_pwr(9);//range:0~9
         le_hogp_set_icon(BLE_APPEARANCE_HID_MOUSE);//mouse
         le_hogp_set_ReportMap(hid_report_map, sizeof(hid_report_map));
 
-        log_info("init_24g_code: %04x", ble_24g_code);
+        log_info("##init_24g_code: %04x", ble_24g_code);
         rf_set_24g_hackable_coded(ble_24g_code);
 
         bt_ble_init();
@@ -1067,7 +1111,7 @@ static void app_key_event_handler(struct sys_event *event)
     u8 event_type = 0;
 
     if (event->arg == (void *)DEVICE_EVENT_FROM_KEY) {
-        /* log_info("key_value = %d.\tevent_type = %d.\n", event->u.key.value, event->u.key.event);  */
+        log_info("key_value = %d.\tevent_type = %d.\n", event->u.key.value, event->u.key.event);
         event_type = event->u.key.event;
 
         first_packet.data[BUTTONS_IDX] = 0;
@@ -1078,13 +1122,75 @@ static void app_key_event_handler(struct sys_event *event)
             first_packet.data[BUTTONS_IDX] |= event->u.key.value;
         }
 
+//中键+右键 长按数秒进入
+#if (TCFG_USER_BLE_ENABLE && DOUBLE_KEY_HOLD_PAIR)
+        if (bt_hid_mode == HID_MODE_BLE && 2 == event->u.key.value && event_type == KEY_EVENT_LONG) {
+            if (ONE_PORT_TO_LOW == gpio_read(TCFG_IOKEY_MOUSE_HK_PORT)) {
+                log_info("double key hold1:%d", double_key_long_cnt);
+                if (++double_key_long_cnt >= DOUBLE_KEY_HOLD_CNT) {
+                    if (ble_hid_is_connected()) {
+                        log_info("device disconnect firstly!!!");
+                        return;
+                    }
+
+                    if (ble_24g_code) {
+                        log_info("#2.4g enter wait pair....");
+                    } else {
+                        log_info("#ble enter wait pair....");
+                    }
+
+                    ble_module_enable(0);
+                    ble_set_fix_pwr(6);//range:0~9
+                    le_hogp_set_pair_allow();
+                    ble_module_enable(1);
+                    double_key_long_cnt = 0;
+                }
+                return;
+            }
+        } else {
+            if (bt_hid_mode == HID_MODE_BLE && 1 == event->u.key.value && event_type == KEY_EVENT_LONG) {
+                if (ONE_PORT_TO_LOW == gpio_read(TCFG_IOKEY_MOUSE_RK_PORT)) {
+                    log_info("double key hold2:%d", double_key_long_cnt);
+                    if (++double_key_long_cnt >= DOUBLE_KEY_HOLD_CNT) {
+                        if (ble_hid_is_connected()) {
+                            log_info("device disconnect firstly!!!");
+                            return;
+                        }
+
+                        if (ble_24g_code) {
+                            log_info("#2.4g enter wait pair....");
+                        } else {
+                            log_info("#ble enter wait pair....");
+                        }
+
+                        ble_module_enable(0);
+                        ble_set_fix_pwr(6);//range:0~9
+                        le_hogp_set_pair_allow();
+                        ble_module_enable(1);
+                        double_key_long_cnt = 0;
+                    }
+                    return;
+                }
+            }
+        }
+        double_key_long_cnt = 0;
+#endif
+
+
+//中键长按数秒切换 edr & ble , or 2.4g & ble, or ble & 2.4g & edr
 #if MIDDLE_KEY_SWITCH
         if (4 == event->u.key.value && event_type == KEY_EVENT_LONG) {
             log_info("key_value4 long hold:%d", switch_key_long_cnt);
-            if (++switch_key_long_cnt > MIDDLE_KEY_HOLD_CNT) {
+            if (++switch_key_long_cnt >= MIDDLE_KEY_HOLD_CNT) {
                 if (TCFG_USER_BLE_ENABLE && CFG_RF_24G_CODE_ID) {
+
+#if SWITCH_MODE_BLE_24G_EDR && TCFG_USER_EDR_ENABLE
+                    //定义2.4g,ble 2.4g和ble切换
+                    mode_switch_ble_24g_edr();
+#else
                     //定义2.4g,默认2.4g和ble切换
                     mode_switch_24g();
+#endif
                 } else {
                     //edr和ble切换
                     mode_switch_handler();
@@ -1135,8 +1241,14 @@ static int event_handler(struct application *app, struct sys_event *event)
             app_code_sw_event_handler(event);
         } else if (event->arg == "omsensor_axis") {
             app_optical_sensor_event_handler(event);
+        } else if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+            return app_power_event_handler(&event->u.dev);
         }
-
+#if TCFG_CHARGE_ENABLE
+        else if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
+            app_charge_event_handler(&event->u.dev);
+        }
+#endif
         return 0;
 
     default:

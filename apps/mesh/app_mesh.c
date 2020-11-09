@@ -153,7 +153,14 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
          */
         log_info("BT_STATUS_INIT_OK\n");
 
-        bt_ble_init();
+        if (BT_MODE_IS(BT_BQB)) {
+            void ble_bqb_test_thread_init(void);
+            ble_bqb_test_thread_init();
+        } else {
+            extern void bt_ble_init(void);
+            bt_ble_init();
+        }
+        /* bt_ble_init(); */
         is_app_active = 0;
 
         break;

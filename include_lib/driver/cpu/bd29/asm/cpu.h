@@ -237,8 +237,8 @@ extern const int config_asser;
 		do { \
 			if(config_asser){\
 				if(!(a)){ \
-					log_e("file:%s, line:%d", __FILE__, __LINE__); \
-					log_e("ASSERT-FAILD: "#a" "__VA_ARGS__); \
+					printf("file:%s, line:%d", __FILE__, __LINE__); \
+					printf("ASSERT-FAILD: "#a" "__VA_ARGS__); \
 					cpu_assert_debug(); \
 				} \
 			}else {\

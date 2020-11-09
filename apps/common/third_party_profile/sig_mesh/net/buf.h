@@ -385,12 +385,6 @@ static inline void net_buf_simple_restore(struct net_buf_simple *buf,
  */
 #define NET_BUF_EXTERNAL_DATA       BIT(1)
 
-#define NET_BUF_FRIEND_POLL_CACHE   BIT(2)
-
-#define NET_BUF_FRIEND_QUEUE_CACHE  BIT(3)
-
-#define NET_BUF_PBADV_CACHE         BIT(4)
-
 /** @brief Network buffer representation.
   *
   * This struct is used to represent network buffers. Such buffers are
@@ -443,9 +437,9 @@ struct net_buf {
     /** System metadata for this buffer. */
     u8_t user_data[CONFIG_NET_BUF_USER_DATA_SIZE] __net_buf_align;
 
-#if NET_BUF_FREE_EN
+#if MESH_ADAPTATION_OPTIMIZE
     sys_snode_t entry_node;
-#endif /* NET_BUF_FREE_EN */
+#endif /* MESH_ADAPTATION_OPTIMIZE */
 };
 
 struct net_buf_data_cb {
@@ -470,11 +464,11 @@ struct net_buf_pool {
     /** Number of uninitialized buffers */
     u16_t uninit_count;
 
-#if NET_BUF_FREE_EN
+#if MESH_ADAPTATION_OPTIMIZE
 
     u16_t free_count;
 
-#endif /* NET_BUF_FREE_EN */
+#endif /* MESH_ADAPTATION_OPTIMIZE */
 
 #if defined(CONFIG_NET_BUF_POOL_USAGE)
     /** Amount of available buffers in the pool. */
@@ -514,7 +508,7 @@ struct net_buf_pool {
 	}
 #else
 
-#if NET_BUF_FREE_EN
+#if MESH_ADAPTATION_OPTIMIZE
 #define NET_BUF_POOL_INITIALIZER(_pool, _alloc, _bufs, _count, _destroy)     \
 	{                                                                    \
 		.alloc = _alloc,                                             \
@@ -533,7 +527,7 @@ struct net_buf_pool {
 		.uninit_count = _count,                                      \
 		.destroy = _destroy,                                         \
 	}
-#endif /* NET_BUF_FREE_EN */
+#endif /* MESH_ADAPTATION_OPTIMIZE */
 
 #endif /* CONFIG_NET_BUF_POOL_USAGE */
 
@@ -1336,17 +1330,13 @@ void net_buf_slist_put(sys_slist_t *list, struct net_buf *buf);
  */
 struct net_buf *net_buf_slist_get(sys_slist_t *list);
 
-#if NET_BUF_FREE_EN
+#if MESH_ADAPTATION_OPTIMIZE
 
 void net_buf_slist_simple_put(sys_slist_t *head_list, sys_snode_t *dst_node);
 
 struct net_buf *net_buf_slist_simple_get(sys_slist_t *list);
 
-int net_buf_free(struct net_buf *buf);
-
-struct net_buf *net_buf_get_next(struct net_buf *buf);
-
-#endif /* NET_BUF_FREE_EN */
+#endif /* MESH_ADAPTATION_OPTIMIZE */
 
 #ifdef __cplusplus
 }

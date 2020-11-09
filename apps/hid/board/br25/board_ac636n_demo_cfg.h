@@ -26,6 +26,16 @@
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
 //*********************************************************************************//
+//                                 USB 配置                                        //
+//*********************************************************************************//
+#define TCFG_PC_ENABLE						DISABLE_THIS_MOUDLE //PC模块使能
+#define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE //U盘模块使能
+#define TCFG_HID_HOST_ENABLE                0//ENABLE_THIS_MOUDLE  //游戏盒子模式
+#define TCFG_ADB_ENABLE                     0//ENABLE_THIS_MOUDLE
+#define TCFG_AOA_ENABLE                     0//ENABLE_THIS_MOUDLE
+
+#define TCFG_OTG_USB_DEV_EN                 (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
+//*********************************************************************************//
 //                                 IIC配置                                        //
 //*********************************************************************************//
 /*软件IIC设置*/
@@ -230,7 +240,7 @@
 //*********************************************************************************//
 //                                  code switch配置                                //
 //*********************************************************************************//
-#define TCFG_CODE_SWITCH_ENABLE                   ENABLE_THIS_MOUDLE //code switch使能
+#define TCFG_CODE_SWITCH_ENABLE                   DISABLE_THIS_MOUDLE //code switch使能
 #define TCFG_CODE_SWITCH_A_PHASE_PORT             IO_PORTB_06
 #define TCFG_CODE_SWITCH_B_PHASE_PORT             IO_PORTB_07
 
@@ -279,6 +289,21 @@
 //                                 时钟配置                                    //
 //*********************************************************************************//
 #define CONFIG_BT_NORMAL_HZ	            (24 * 1000000L)
+
+#if TCFG_HID_HOST_ENABLE
+
+#undef TCFG_LOWPOWER_LOWPOWER_SEL
+#define TCFG_LOWPOWER_LOWPOWER_SEL			0
+
+#undef TCFG_LOWPOWER_VDDIOM_LEVEL
+#define TCFG_LOWPOWER_VDDIOM_LEVEL			VDDIOM_VOL_34V
+
+#undef TCFG_LOWPOWER_VDDIOW_LEVEL
+#define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_28V
+
+#undef TCFG_USER_EDR_ENABLE
+#define     TCFG_USER_EDR_ENABLE    0
+#endif
 
 //*********************************************************************************//
 //                                 配置结束                                        //

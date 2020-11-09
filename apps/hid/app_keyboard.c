@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include "standard_hid.h"
 #include "rcsp_bluetooth.h"
+#include "app_charge.h"
+#include "app_power_manage.h"
 
 #if(CONFIG_APP_KEYBOARD)
 
@@ -127,10 +129,56 @@ static const u16 hid_key_hold_table[8] = {
     0,
 };
 
+#define  HID_TEST_KEEP_SEND_EN        0//just for test keep data
+
+#if HID_TEST_KEEP_SEND_EN
+static u8 test_keep_send_start = 0;
+extern int ble_hid_timer_handle;
+extern int edr_hid_timer_handle;
+extern void edr_hid_data_send(u8 report_id, u8 *data, u16 len);
+extern int ble_hid_data_send(u8 report_id, u8 *data, u16 len);
+void hid_test_keep_send_data(void)
+{
+    static const u8 test_data_000[8] = {0, 0, 0, 0};
+    void (*hid_data_send_pt)(u8 report_id, u8 * data, u16 len) = NULL;
+
+    if (!test_keep_send_start) {
+        return;
+    }
+
+    if (bt_hid_mode == HID_MODE_EDR) {
+#if TCFG_USER_EDR_ENABLE
+        hid_data_send_pt = edr_hid_data_send;
+        bt_sniff_ready_clean();
+#endif
+    } else {
+#if TCFG_USER_BLE_ENABLE
+        hid_data_send_pt = ble_hid_data_send;
+#endif
+    }
+    hid_data_send_pt(1, test_data_000, sizeof(test_data_000));
+}
+
+void hid_test_keep_send_init(void)
+{
+    if (bt_hid_mode == HID_MODE_BLE) {
+#if TCFG_USER_BLE_ENABLE
+        log_info("###keep test ble\n");
+        ble_hid_timer_handle = sys_s_hi_timer_add((void *)0, hid_test_keep_send_data, 10);
+#endif
+    } else {
+#if TCFG_USER_EDR_ENABLE
+        log_info("###keep test edr\n");
+        edr_hid_timer_handle = sys_s_hi_timer_add((void *)0, hid_test_keep_send_data, 10);
+#endif
+    }
+}
+#endif
+
 extern void p33_soft_reset(void);
 extern void edr_hid_key_deal_test(u16 key_msg);
 extern void ble_hid_key_deal_test(u16 key_msg);
-static void hid_set_soft_poweroff(void);
+void hid_set_soft_poweroff(void);
 
 void auto_shutdown_disable(void)
 {
@@ -143,6 +191,15 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
 {
     u16 key_msg = 0;
 
+#if HID_TEST_KEEP_SEND_EN
+    if (key_type == KEY_EVENT_LONG && key_value == TCFG_ADKEY_VALUE0) {
+        test_keep_send_start = !test_keep_send_start;
+        log_info("test_keep_send_start=%d\n", test_keep_send_start);
+        return;
+    }
+#endif
+
+
     if (key_type == KEY_EVENT_CLICK) {
         key_msg = hid_key_click_table[key_value];
     } else if (key_type == KEY_EVENT_HOLD) {
@@ -151,7 +208,7 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
 
 
     if (key_msg) {
-        printf("key_msg = %02x\n", key_msg);
+        log_info("key_msg = %02x\n", key_msg);
         if (bt_hid_mode == HID_MODE_EDR) {
             edr_hid_key_deal_test(key_msg);
             bt_sniff_ready_clean();
@@ -273,7 +330,7 @@ static void bt_function_select_init()
         lib_make_ble_address(tmp_ble_addr, (void *)bt_get_mac_addr());
         le_controller_set_mac((void *)tmp_ble_addr);
 
-        printf("\n-----edr + ble 's address-----");
+        log_info("-----edr + ble 's address-----");
         printf_buf((void *)bt_get_mac_addr(), 6);
         printf_buf((void *)tmp_ble_addr, 6);
     }
@@ -285,14 +342,14 @@ static void bredr_handle_register()
 #if (USER_SUPPORT_PROFILE_HID==1)
     user_hid_set_icon(BD_CLASS_KEYBOARD);
     user_hid_set_ReportMap(hid_report_map, sizeof(hid_report_map));
-    user_hid_init();
+    user_hid_init(NULL);
 #endif
 
     /* bt_dut_test_handle_register(bt_dut_api); */
 }
 
 extern void ble_module_enable(u8 en);
-static void hid_set_soft_poweroff(void)
+void hid_set_soft_poweroff(void)
 {
     log_info("hid_set_soft_poweroff\n");
     is_hid_active = 1;
@@ -739,6 +796,10 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 
         hid_vm_deal(0);//bt_hid_mode read for VM
         app_select_btmode(HID_MODE_INIT);//
+
+#if HID_TEST_KEEP_SEND_EN
+        hid_test_keep_send_init();
+#endif
         break;
 
     case BT_STATUS_SECOND_CONNECTED:
@@ -810,7 +871,7 @@ static void app_key_event_handler(struct sys_event *event)
     if (event->arg == (void *)DEVICE_EVENT_FROM_KEY) {
         event_type = event->u.key.event;
         key_value = event->u.key.value;
-        printf("app_key_evnet: %d,%d\n", event_type, key_value);
+        log_info("app_key_evnet: %d,%d\n", event_type, key_value);
         app_key_deal_test(event_type, key_value);
     }
 }
@@ -841,6 +902,14 @@ static int event_handler(struct application *app, struct sys_event *event)
         return 0;
 
     case SYS_DEVICE_EVENT:
+        if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+            return app_power_event_handler(&event->u.dev);
+        }
+#if TCFG_CHARGE_ENABLE
+        else if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
+            app_charge_event_handler(&event->u.dev);
+        }
+#endif
         return 0;
 
     default:
@@ -893,7 +962,7 @@ static void app_select_btmode(u8 mode)
 #if TCFG_USER_EDR_ENABLE
         //close edr
 
-#ifndef CONFIG_CPU_BR30
+#ifndef CONFIG_NEW_BREDR_ENABLE
         radio_set_eninv(0);
 #endif
         bredr_power_put();

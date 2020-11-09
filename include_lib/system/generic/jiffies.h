@@ -14,7 +14,8 @@
 
 #ifndef __ASSEMBLY__
 extern volatile unsigned long jiffies;
-extern volatile unsigned long usr_jiffies;
+extern unsigned long jiffies_msec();
+extern unsigned long jiffies_half_msec();
 #endif
 
 

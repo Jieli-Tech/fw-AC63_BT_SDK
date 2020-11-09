@@ -6,7 +6,7 @@
 #ifndef _AUDIO_RESAMPLE_H_
 #define _AUDIO_RESAMPLE_H_
 #include "typedef.h"
-#include "audio_stream.h"
+#include "media/audio_stream.h"
 
 #define AUDIO_HARDWARE_RESAMPLER    0
 #define AUDIO_SOFTWARE_RESAMPLER    1

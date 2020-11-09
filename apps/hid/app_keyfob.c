@@ -31,6 +31,8 @@
 #include "standard_hid.h"
 #include "rcsp_bluetooth.h"
 #include "asm/pwm_led.h"
+#include "app_charge.h"
+#include "app_power_manage.h"
 
 #if(CONFIG_APP_KEYFOB)
 
@@ -149,7 +151,7 @@ static const u8 hid_report_map[] = {
 
 //----------------------------------
 extern void p33_soft_reset(void);
-static void hid_set_soft_poweroff(void);
+void hid_set_soft_poweroff(void);
 int bt_connect_phone_back_start(u8 mode);
 
 enum {
@@ -678,14 +680,14 @@ static void bredr_handle_register()
 #if (USER_SUPPORT_PROFILE_HID==1)
     user_hid_set_icon(BD_CLASS_KEYBOARD);
     user_hid_set_ReportMap(hid_report_map, sizeof(hid_report_map));
-    user_hid_init();
+    user_hid_init(NULL);
 #endif
 
     /* bt_dut_test_handle_register(bt_dut_api); */
 }
 
 extern void ble_module_enable(u8 en);
-static void hid_set_soft_poweroff(void)
+void hid_set_soft_poweroff(void)
 {
     log_info("hid_set_soft_poweroff\n");
     is_hid_active = 1;
@@ -1291,7 +1293,14 @@ static int event_handler(struct application *app, struct sys_event *event)
             bt_connction_status_event_handler(&event->u.bt);
         } else if ((u32)event->arg == SYS_BT_EVENT_TYPE_HCI_STATUS) {
             bt_hci_event_handler(&event->u.bt);
+        } else if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+            return app_power_event_handler(&event->u.dev);
         }
+#if TCFG_CHARGE_ENABLE
+        else if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
+            app_charge_event_handler(&event->u.dev);
+        }
+#endif
         return 0;
 
     case SYS_DEVICE_EVENT:

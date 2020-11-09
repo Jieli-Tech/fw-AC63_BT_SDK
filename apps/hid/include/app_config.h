@@ -17,15 +17,16 @@
 
 //app case 选择,只选1,要配置对应的board_config.h
 #define CONFIG_APP_KEYBOARD                 1//hid按键 ,default case
-#define CONFIG_APP_KEYFOB                   0//自拍器,  board_ac6368a,board_6318
+#define CONFIG_APP_KEYFOB                   0//自拍器,  board_ac6368a,board_6318,board_6379b
 #define CONFIG_APP_MOUSE                    0//mouse,   board_mouse
 #define CONFIG_APP_STANDARD_KEYBOARD        0//标准HID键盘,board_ac6351d
 #define CONFIG_APP_KEYPAGE                  0//翻页器
+#define CONFIG_APP_GAMEBOX                  0//吃鸡王座
 
 
 #include "board_config.h"
 
-// #include "usb_common_def.h"
+#include "usb_common_def.h"
 
 #include "btcontroller_mode.h"
 
