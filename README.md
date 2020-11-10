@@ -33,6 +33,8 @@ AC63 系列通用蓝牙SDK 固件程序
 
 * SDK 介绍文档 : [SDK 快速开始简介](./doc/AC630N_bt_data_transfer_sdk介绍.pdf)
 
+* SDK 结构文档 : [SDK 模块结构](./doc/architure)
+
 编译工程
 -------------
 请选择以下一个工程进行编译，下列目录包含了便于开发的工程文件：

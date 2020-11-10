@@ -35,6 +35,8 @@ Documentation
 
 * SDK introduction : [SDK quick start guide](./doc/AC630N_bt_data_transfer_sdk介绍.pdf)
 
+* SDK architure : [SDK module architure ](./doc/architure)
+
 Build
 -------------
 Select a project to build. The following folders contains buildable projects:
@@ -92,5 +94,5 @@ Disclaimer
 ------------
 
 AC630N_BT_SDK supports development with AC63 series devices.
-AC63 Series devices (which are pre-production) and Bluetooth Mesh protocols are supported for development in tag v0.4.0 for prototyping and evaluation.
+AC63 Series devices (which are pre-production) and Bluetooth Mesh protocols are supported for development in tag v0.5.0 for prototyping and evaluation.
 Support for production and deployment in end products is coming soon.
