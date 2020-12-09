@@ -65,6 +65,8 @@ SDK support Codeblock & Make to build to project,make sure you already setup the
 
   `before build the project make sure the USB updater is connect and enter the update mode correctly`
 
+* Bluetooth OTA : [OTA](./doc/固件升级介绍.md) , usage: Single/Double bank bluetooth update.
+
 Certification
 -------------
 
