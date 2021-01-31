@@ -106,10 +106,14 @@ void clk_set_default_osc_cap();
 u32 clk_get_osc_cap();
 
 void clk_init_osc_cap(u8 sel_l, u8 sel_r);
+
 /**
- * @brief sfc_enable_high_performance
+ * @brief clock_set_sfc_max_freq
  * 使用前需要保证所使用的flash支持4bit 100Mhz 模式
+ *
+ * @param dual_max_freq for cmd 3BH BBH
+ * @param quad_max_freq for cmd 6BH EBH
  */
-void sfc_enable_high_performance();
+void clock_set_sfc_max_freq(u32 dual_max_freq, u32 quad_max_freq);
 #endif
 

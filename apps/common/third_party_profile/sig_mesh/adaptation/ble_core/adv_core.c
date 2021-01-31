@@ -40,8 +40,8 @@ void bt_mesh_adv_init(void) {}
 #define sys_timer_change_period     sys_hi_timer_modify
 #define sys_timer_remove            sys_hi_timer_del
 
-#undef BT_INFO
-#define BT_INFO
+/* #undef BT_INFO */
+/* #define BT_INFO */
 
 #endif /* MESH_ADV_SEND_USE_HI_TIMER */
 
@@ -353,7 +353,7 @@ void newbuf_replace(struct net_buf_pool *pool)
 
     buf->flags = 0;
 
-    pool->free_count ++;
+    pool->free_count++;
 }
 
 void bt_mesh_adv_send(struct net_buf *buf, const struct bt_mesh_send_cb *cb,

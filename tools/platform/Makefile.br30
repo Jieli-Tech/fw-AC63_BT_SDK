@@ -128,9 +128,6 @@ ifeq ($(CONFIG_MSBC_CODEC_HW),y)
 CC_DEFINE += -DCONFIG_MSBC_CODEC_HW
 endif
 
-ifeq ($(CONFIG_ANC_ENABLE),y)
-CC_DEFINE += -DCONFIG_ANC_ENABLE
-endif
 
 #AEC config begin------------------------------------
 ifeq ($(CONFIG_AEC_VER),VER_PI32)
@@ -194,7 +191,16 @@ export LINKER = \
 #
 # --------------CBP Setting-----------------------
 #
+ifeq ($(APP_CASE), mesh)
+export CBP_TITLE = AC637N_$(APP_CASE)$(PROJECT_SUFFIX)
+else ifeq ($(APP_CASE),hid)
+export CBP_TITLE = AC637N_$(APP_CASE)$(PROJECT_SUFFIX)
+else ifeq ($(APP_CASE),spp_and_le)
+export CBP_TITLE = AC6367_$(APP_CASE)$(PROJECT_SUFFIX)
+else
 export CBP_TITLE = AC897N_AD697N_$(APP_CASE)$(PROJECT_SUFFIX)
+endif
+
 export CBP_COMPILER = pi32v2_r3_lto_compiler
 export CBP_ADD_OPT =
 export CBP_POSITION ?= .

@@ -18,6 +18,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_mic_codec.o \
 	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_dongle_codec.o \
 	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_recorder_mix.o \
+	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_adc_demo.o \
 
 else ifeq ($(APP_CASE),dongle)
 objs += \

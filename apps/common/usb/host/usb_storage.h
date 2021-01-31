@@ -7,6 +7,7 @@
 #include "usb_bulk_transfer.h"
 #include "usb/host/usb_host.h"
 
+
 //设备状态：
 typedef enum usb_sta {
     DEV_IDLE = 0,
@@ -36,15 +37,10 @@ struct mass_storage {
     struct usb_scsi_csw csw;
     struct request_sense_data sense;
 
-#if MULTI_DISK
     char *name;
     struct read_capacity_data capacity[2];
     u8 lun;
     u8 curlun;
-#else
-    u8 cur_available_lun;
-    struct read_capacity_data capacity[1];
-#endif
 
     u8 dev_status;
     u8 suspend_cnt;

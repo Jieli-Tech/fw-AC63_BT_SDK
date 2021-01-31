@@ -63,4 +63,12 @@ int btctrler_task_close_bredr();
 void  btctrler_task_init_bredr();
 
 void set_idle_period_slot(u16 slot);
+enum {
+    TESTBOX_INFO_VBAT_VALUE = 0,	//(u16 (*handle)(void))
+    TESTBOX_INFO_VBAT_PERCENT,		//(u8 (*handle)(void))
+    TESTBOX_INFO_BURN_CODE,			//(u8 *(*handle)(u8 *len))
+    TESTBOX_INFO_SDK_VERSION,		//(u8 *(*handle)(u8 *len))
+};
+
+void bt_testbox_ex_info_get_handle_register(u8 info_type, void *handle);
 #endif

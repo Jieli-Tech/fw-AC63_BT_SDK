@@ -2331,3 +2331,72 @@ static void led_io_group_test(void)
 
 #endif /* #ifdef PWM_LED_TEST_MODE */
 
+
+
+
+
+/**
+ * @param JL_TIMERx : JL_TIMER0/1/2/3/4/5
+ * @param pwm_io : JL_PORTA_01, JL_PORTB_02,,,等等，br30支持任意普通IO
+ * @param fre : 频率，单位Hz
+ * @param duty : 初始占空比，0~10000对应0~100%
+ */
+void timer_pwm_init(JL_TIMER_TypeDef *JL_TIMERx, u32 pwm_io, u32 fre, u32 duty)
+{
+    u32 io_clk = 0;
+    gpio_set_die(pwm_io, 1);
+    gpio_set_pull_up(pwm_io, 0);
+    gpio_set_pull_down(pwm_io, 0);
+    gpio_set_direction(pwm_io, 0);
+    switch ((u32)JL_TIMERx) {
+    case (u32)JL_TIMER0 :
+        JL_IOMAP->CON0 |= BIT(0);
+        io_clk = 24000000;
+        gpio_set_fun_output_port(pwm_io, FO_TMR0_PWM, 0, 1);
+        break;
+    case (u32)JL_TIMER1 :
+        JL_IOMAP->CON0 |= BIT(1);
+        io_clk = 12000000;
+        gpio_set_fun_output_port(pwm_io, FO_TMR1_PWM, 0, 1);
+        break;
+    case (u32)JL_TIMER2 :
+        JL_IOMAP->CON0 |= BIT(2);
+        io_clk = 24000000;
+        gpio_set_fun_output_port(pwm_io, FO_TMR2_PWM, 0, 1);
+        break;
+    case (u32)JL_TIMER3 :
+        bit_clr_ie(IRQ_TIME3_IDX);
+        JL_IOMAP->CON0 |= BIT(3);
+        io_clk = 12000000;
+        gpio_set_fun_output_port(pwm_io, FO_TMR3_PWM, 0, 1);
+        break;
+    case (u32)JL_TIMER4 :
+        JL_IOMAP->CON0 |= BIT(4);
+        io_clk = 24000000;
+        gpio_set_fun_output_port(pwm_io, FO_TMR4_PWM, 0, 1);
+        break;
+    case (u32)JL_TIMER5 :
+        JL_IOMAP->CON0 |= BIT(5);
+        io_clk = 12000000;
+        gpio_set_fun_output_port(pwm_io, FO_TMR5_PWM, 0, 1);
+        break;
+    default:
+        return;
+    }
+    //初始化timer
+    JL_TIMERx->CON = 0;
+    JL_TIMERx->CON |= (0b01 << 2);						//时钟源选择IO_CLK
+    JL_TIMERx->CON |= (0b0001 << 4);					//时钟源再4分频
+    JL_TIMERx->CNT = 0;									//清计数值
+    JL_TIMERx->PRD = io_clk / (4 * fre);				//设置周期
+    JL_TIMERx->CON |= (0b01 << 0);						//计数模式
+    JL_TIMERx->CON |= BIT(8);							//PWM使能
+    //设置初始占空比
+    JL_TIMERx->PWM = (JL_TIMERx->PRD * duty) / 10000;	//0~10000对应0~100%
+}
+
+void set_timer_pwm_duty(JL_TIMER_TypeDef *JL_TIMERx, u32 duty)
+{
+    JL_TIMERx->PWM = (JL_TIMERx->PRD * duty) / 10000;	//0~10000对应0~100%
+}
+

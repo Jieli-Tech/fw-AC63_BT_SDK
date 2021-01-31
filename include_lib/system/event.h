@@ -51,6 +51,7 @@
 #define SYS_AI_EVENT 		    0x0100
 #define SYS_MATRIX_KEY_EVENT    0x0200
 #define SYS_TOUCHPAD_EVENT      0x0400
+#define SYS_ADT_EVENT      0x0800
 
 
 
@@ -197,6 +198,10 @@ struct pbg_event {
     u8 args[3];
 };
 
+struct adt_event {
+    u8 event;
+    u8 args[3];
+};
 
 struct uart_event {
     void *ut_bus;
@@ -263,6 +268,7 @@ struct sys_event {
         struct ancbox_event ancbox;
         struct matrix_key_event  matrix_key;
         struct touchpad_event touchpad;
+        struct adt_event    adt;
     } u;
 };
 
@@ -289,11 +295,11 @@ extern struct static_event_handler sys_event_handler_end[];
 
 
 
-u16 register_sys_event_handler(int event_type, u8 priority, void *priv,
-                               void (*handler)(struct sys_event *, void *));
+int register_sys_event_handler(int event_type, int from, u8 priority,
+                               void (*handler)(struct sys_event *));
 
 
-void unregister_sys_event_handler(u16 id);
+void unregister_sys_event_handler(void (*handler)(struct sys_event *));
 
 
 /*

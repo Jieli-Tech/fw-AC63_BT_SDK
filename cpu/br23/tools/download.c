@@ -32,23 +32,42 @@ ${OBJDUMP} -section-headers -address-mask=0x1ffffff $1.elf
 ${OBJSIZEDUMP} -lite -skip-zero -enable-dbg-info $1.elf | sort -k 1 >  symbol_tbl.txt
 
 
-files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
+files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe packres.exe"
 
 #if(CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE)
 #if RCSP_UPDATE_EN
 
 NICKNAME="br23_app_ota"
+
+#ifdef CONFIG_WATCH_APP
+cp bluetooth/watch/isd_config.ini ./
+#else
 cp bluetooth/app_ota/isd_config.ini ./
+#endif
+
 #else
 
 NICKNAME="br23_sdk"
+
+#ifdef CONFIG_WATCH_APP
+cp bluetooth/watch/isd_config.ini ./
+#else
 cp bluetooth/standard/isd_config.ini ./
+#endif
+
 #endif
 
 cat text.bin data.bin data_code.bin \
 	> app.bin
 
 #else
+
+#ifdef CONFIG_WATCH_APP
+cp bluetooth/watch/isd_config.ini ./
+#else
+cp bluetooth/standard/isd_config.ini ./
+#endif
+
 cat text.bin data.bin data_code.bin \
 	aec.bin \
 	wav.bin \
@@ -65,7 +84,7 @@ cat text.bin data.bin data_code.bin \
 
 #endif
 
-host-client -project ${NICKNAME}$2 -f ${files} $1.elf
+host-client -project ${NICKNAME}$2_${APP_CASE} -f ${files} $1.elf
 
 #else
 

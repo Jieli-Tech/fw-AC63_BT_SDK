@@ -10,6 +10,9 @@
 #include "asm/power_interface.h"
 #include "app_config.h"
 #include "rdec_key.h"
+#if TCFG_KEY_TONE_EN
+#include "tone_player.h"
+#endif
 
 #if(TCFG_IRSENSOR_ENABLE == 1)
 #include "irSensor/ir_manage.h"
@@ -197,6 +200,9 @@ _notify:
     /* printf("key_value: 0x%x, event: %d\n", key_value, key_event); */
     if (key_event_remap(&e)) {
         sys_event_notify(&e);
+#if TCFG_KEY_TONE_EN
+        audio_key_tone_play();
+#endif
     }
 _scan_end:
     scan_para->last_key = cur_key_value;
@@ -292,11 +298,9 @@ int key_driver_init(void)
 
 #if TCFG_SLIDE_KEY_ENABLE
     extern const struct slidekey_platform_data slidekey_data;
-    extern struct key_driver_para slidekey_scan_para;
     extern int slidekey_init(const struct slidekey_platform_data * slidekey_data);
     err = slidekey_init(&slidekey_data);
     if (err == 0) {
-        sys_s_hi_timer_add((void *)&slidekey_scan_para, key_driver_scan, slidekey_scan_para.scan_time); //注册按键扫描定时器
     }
 #endif//TCFG_SLIDE_KEY_ENABLE
     return 0;

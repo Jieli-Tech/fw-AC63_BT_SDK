@@ -53,10 +53,15 @@ RAM_BEGIN       = RAM_LIMIT_L;
 RAM_END         = RAM_LIMIT_H;
 RAM_SIZE        = RAM_END - RAM_BEGIN;
 
-#if (EQ_SECTION_MAX > 10)
-EQ_SECTION_NUM = EQ_SECTION_MAX + 3;
+#if MIC_EFFECT_EQ_EN
+MIC_EFFECT_EQ_SECTION = 8;
 #else
-EQ_SECTION_NUM = 10 + 3;
+MIC_EFFECT_EQ_SECTION = 3;
+#endif
+#if (EQ_SECTION_MAX > 10)
+EQ_SECTION_NUM = EQ_SECTION_MAX+MIC_EFFECT_EQ_SECTION;
+#else
+EQ_SECTION_NUM = 10+MIC_EFFECT_EQ_SECTION;
 #endif
 
 //=============== About BT RAM ===================
@@ -344,7 +349,9 @@ SECTIONS
         *(.os_critical_code)
         *(.os_rewrite_code)
         *(.volatile_ram_code)
+        *(.chargebox_code)
 
+        *(.fat_data_code)
 		. = ALIGN(4);
         _SPI_CODE_START = . ;
         *(.spi_code)
@@ -440,7 +447,7 @@ SECTIONS
 			*(.mp3_const)
 			*(.mp3_code)
 #endif
-			*(.mp3_bss_id)
+			KEEP(*(.mp3_bss_id))
 			o_mp3_end = .;
 
 			*(.mp3_mem)
@@ -461,7 +468,7 @@ SECTIONS
 			*(.wma_const)
 			*(.wma_code)
 #endif
-			*(.wma_bss_id)
+			KEEP(*(.wma_bss_id))
 			o_wma_end = .;
 
 			*(.wma_mem)
@@ -472,11 +479,13 @@ SECTIONS
 		.overlay_wav
 		{
 
+			KEEP(*(.wav_bss_id))
+			o_wav_end = .;
+
 			*(.wav_dec_data)
 
 			*(.wav_data)
 
-			*(.wav_bss_id)
 
 			*(.wav_bss)
 			*(.wav_dec_bss)
@@ -486,17 +495,21 @@ SECTIONS
 		}
 		.overlay_ape
         {
+			KEEP(*(.ape_bss_id))
+			o_ape_end = .;
+
             *(.ape_mem)
             *(.ape_ctrl_mem)
 			*(.ape_dec_data)
 			*(.ape_dec_bss)
 
-			*(.ape_bss_id)
-
 			*(.ape_data)
 		}
 		.overlay_flac
         {
+			KEEP(*(.flac_bss_id))
+			o_flac_end = .;
+
             *(.flac_mem)
             *(.flac_ctrl_mem)
 			*(.flac_dec_data)
@@ -507,6 +520,9 @@ SECTIONS
 		}
 		.overlay_m4a
         {
+			KEEP(*(.m4a_bss_id))
+			o_m4a_end = .;
+
             *(.m4a_mem)
             *(.m4a_ctrl_mem)
 			*(.m4a_dec_data)
@@ -525,11 +541,17 @@ SECTIONS
 
 		.overlay_amr
         {
+			KEEP(*(.amr_bss_id))
+			o_amr_end = .;
+
             *(.amr_mem)
             *(.amr_ctrl_mem)
 		}
 		.overlay_dts
         {
+			KEEP(*(.dts_bss_id))
+			o_dts_end = .;
+
             *(.dts_mem)
             *(.dts_ctrl_mem)
 			*(.dts_dec_data)
@@ -671,27 +693,27 @@ aec_size =  o_aec_end - aec_addr;
 
 wav_addr = ADDR(.overlay_wav);
 wav_begin = aec_begin + aec_size;
-wav_size =  SIZEOF(.overlay_wav);
+wav_size = o_wav_end - wav_addr;
 
 ape_addr = ADDR(.overlay_ape);
 ape_begin = wav_begin + wav_size;
-ape_size =  SIZEOF(.overlay_ape);
+ape_size =  o_ape_end - ape_addr;
 
 flac_addr = ADDR(.overlay_flac);
 flac_begin = ape_begin + ape_size;
-flac_size =  SIZEOF(.overlay_flac);
+flac_size = o_flac_end - flac_addr;
 
 m4a_addr = ADDR(.overlay_m4a);
 m4a_begin = flac_begin + flac_size;
-m4a_size =  SIZEOF(.overlay_m4a);
+m4a_size = o_m4a_end - m4a_addr;
 
 amr_addr = ADDR(.overlay_amr);
 amr_begin = m4a_begin + m4a_size;
-amr_size =  SIZEOF(.overlay_amr);
+amr_size = o_amr_end - amr_addr;
 
 dts_addr = ADDR(.overlay_dts);
 dts_begin = amr_begin + amr_size;
-dts_size =  SIZEOF(.overlay_dts);
+dts_size = o_dts_end - dts_addr;
 
 fm_addr = ADDR(.overlay_fm);
 fm_begin = dts_begin + dts_size;

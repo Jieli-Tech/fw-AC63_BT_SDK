@@ -1,6 +1,6 @@
 
 CONFIG_USB_ENABLE = y
-CONFIG_MEDIA_ENABLE = n
+CONFIG_SD_ENABLE = n
 #------------------------ event config --------------------------#
 SYS_EVENT_CFG_DEFINE += \
 -DEVENT_HANDLER_NUM_CONFIG=2 \
@@ -23,10 +23,33 @@ SYS_VM_CFG_DEFINE += \
 
 #------------------------- vfs config ---------------------------#
 SYS_VFS_CFG_DEFINE += \
--DVFS_ENABLE=0 \
+-DVFS_ENABLE=1 \
 -DUSE_SDFILE_NEW=1 \
 -DVFS_FILE_POOL_NUM_CONFIG=0 \
 -DSDFILE_VERSION=0x020000 
+
+#------------------------- Audio config ---------------------------#
+#CONFIG_MEDIA_ENABLE:media模块总开关
+#AUDIO_LITE_VERSION:轻量级audio模块开关(依赖media模块总开关)
+CONFIG_MEDIA_ENABLE = n
+
+ifeq ($(CPU),br23)
+CONFIG_MEDIA_ENABLE = y
+endif
+
+ifeq ($(CPU),br25)
+CONFIG_MEDIA_ENABLE = y
+endif
+
+
+ifeq ($(CONFIG_MEDIA_ENABLE),y)
+export AUDIO_LITE_VERSION = y
+ifeq ($(AUDIO_LITE_VERSION),y)
+AUDIO_CFG_DEFINE += \
+-DCONFIG_LITE_AUDIO \
+
+endif
+endif
 
 APP_FEATURE_DEFINE += \
 -DCONFIG_TWS_ENABLE \
@@ -47,4 +70,28 @@ export USB_SLAVE_USER_STACK = y
 CC_DEFINE += \
 -DTCFG_APP_BT_EN=1 \
 -DUSB_PC_NO_APP_MODE
+
+ifeq ($(CPU),br23)
+OMIT_FILES = $(ROOT)/cpu/br23/tools/bluetooth/watch \
+			 $(ROOT)/cpu/br23/tools/提示音 \
+			 $(ROOT)/cpu/br23/tools/tool_resource \
+			 $(ROOT)/cpu/br23/tools/AC695X_config_tool \
+
+endif
+
+ifeq ($(CPU),br25)
+OMIT_FILES = $(ROOT)/cpu/br25/tools/soundbox \
+			 $(ROOT)/cpu/br25/tools/提示音 \
+
+endif
+
+ifeq ($(CPU),br30)
+OMIT_FILES = $(ROOT)/cpu/br30/tools/QCY \
+			 $(ROOT)/cpu/br30/tools/earphone \
+			 $(ROOT)/cpu/br30/tools/提示音 \
+			 $(ROOT)/cpu/br30/tools/jtag \
+
+endif
+
+
 

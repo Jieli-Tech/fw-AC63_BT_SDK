@@ -10,7 +10,6 @@ export BANK_ENABLE ?= n
 export PROJECT_SUFFIX =
 export DOWNLOAD_SUFFIX =
 export LIB_SUFFIX =
-export CONFIG_USB_ENABLE ?= n
 export CONFIG_UI_ENABLE ?= n
 export CONFIG_MEDIA_ENABLE = y
 export APP_OTA_EN = n

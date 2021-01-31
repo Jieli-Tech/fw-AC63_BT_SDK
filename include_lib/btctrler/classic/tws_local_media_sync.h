@@ -31,5 +31,16 @@ int tws_api_local_media_packet_cnt(u8 *rx_packet_cnt, u8 *wait_send_pcaket_cnt);
 // 填数超过了一定值才可以发送
 void tws_api_local_media_set_limit_size(int size);
 
+int tws_api_local_media_trans_bulk_push(u8 *buf, int len);
+
+int tws_api_local_media_push_with_sequence(u8 *buf, int len, u16 seqn);
+
+int tws_api_local_media_trans_open(u16 buf_size);
+
+int tws_api_local_media_dec_start(u8 *arg, u8 len);
+
+int tws_api_local_media_dec_stop();
+
+void tws_api_auto_drop_frame_enable(int enable);
 #endif
 

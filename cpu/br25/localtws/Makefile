@@ -12,9 +12,4 @@ objs += \
 else ifeq ($(APP_CASE),dongle)
 objs += \
 
-else ifeq ($(APP_CASE),soundbox)
-objs += \
-	  $(ROOT)/cpu/$(CPU)/localtws/localtws.o \
-	  $(ROOT)/cpu/$(CPU)/localtws/localtws_dec.o \
-
 endif

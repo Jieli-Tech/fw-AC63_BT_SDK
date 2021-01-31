@@ -26,11 +26,13 @@ cp br30_p11_code.bin p11_code.bin
 
 #ifdef CONFIG_BR30_C_VERSION
 cp br30c_ota.bin ota.bin
+cp br30c_ota_debug.bin ota_debug.bin
 #else
 cp br30_ota.bin ota.bin
+cp br30_ota_debug.bin ota_debug.bin
 #endif /* #ifdef CONFIG_BR30_C_VERSION */
 
-files="app.bin br30loader.bin br30loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug p11_code.bin ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
+files="app.bin br30loader.bin br30loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug p11_code.bin ota.bin ota_debug.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
 
 #ifdef CONFIG_EARPHONE_CASE_ENABLE
 
@@ -47,7 +49,7 @@ cp earphone/ai_single_bank/isd_config_AC897N.ini ./isd_config.ini
 #elif TCFG_AUDIO_ANC_ENABLE
 NICKNAME="br30_ANC"
 #ifdef CONFIG_ANC_30C_ENABLE
-cp earphone/ANC/isd_config_AC897N_30C.ini ./isd_config.ini
+cp earphone/ANC/isd_config_AC699N.ini ./isd_config.ini
 #else
 cp earphone/ANC/isd_config_AC897N.ini ./isd_config.ini
 #endif

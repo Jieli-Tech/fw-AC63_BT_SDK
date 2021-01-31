@@ -21,7 +21,7 @@ export ADDITION_DEP=
 endif
 
 
-## 默认注释编译信息(None/@)
+# 默认注释编译信息(None/@)
 export V=@
 export jtag ?=n
 export TIDY_CHECK ?= n
@@ -30,20 +30,37 @@ export TIDY_FILTER=/opt/utils/tidy-filter
 
 
 
-#配置下载目标SoC(br23/br25/bd29/br30)
+#配置下载目标SoC(br18/br21/br22/br23/br25/br26/bd29)
 #export前面不要有空格，会导致文件sync异常
-# export SoC?=br23
-# export SoC?=br25
+#export SoC?=br18
+#export SoC?=br21
+#export SoC?=br22
+#export SoC?=br23
+#export SoC?=br25
+#export SoC?=br25_r
+#export SoC?=br26
 #export SoC?=bd29
 export SoC?=br30
-
+#export SoC?=br30c
+#export SoC?=br34
+#export SoC?=br28
+#export SoC?=bd19
+#export SoC?=br36
 
 
 #配置App
+#export APP_CASE?=earphone
+#export APP_CASE?=qcy_case
+#export APP_CASE?=soundbox
+#export APP_CASE?=dongle
 #export APP_CASE?=spp_and_le
 export APP_CASE?=hid
+#export APP_CASE?=gamebox
 #export APP_CASE?=mesh
-
+# export APP_CASE?=watch
+#export APP_CASE?=iot
+#export APP_CASE?=bt_udisk
+#export APP_CASE?=multi_link
 
 
 # --------------common var begin-----------------------

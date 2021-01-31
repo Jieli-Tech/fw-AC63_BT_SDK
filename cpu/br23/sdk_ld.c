@@ -67,10 +67,16 @@ CODE_BEG   = 0X1E000C0;
 
 UPDATA_BREDR_BASE_BEG = 0xF9000;
 
-#if (EQ_SECTION_MAX > 10)
-EQ_SECTION_NUM = EQ_SECTION_MAX+3;
+#if MIC_EFFECT_EQ_EN
+MIC_EFFECT_EQ_SECTION = 8;
 #else
-EQ_SECTION_NUM = 10+3;
+MIC_EFFECT_EQ_SECTION = 3;
+#endif
+
+#if (EQ_SECTION_MAX > 10)
+EQ_SECTION_NUM = EQ_SECTION_MAX+MIC_EFFECT_EQ_SECTION;
+#else
+EQ_SECTION_NUM = 10+MIC_EFFECT_EQ_SECTION;
 #endif
 
 MEMORY
@@ -147,6 +153,11 @@ SECTIONS
 
 		*(.dts_dec_const)
 
+#ifndef TCFG_GPIO_RAM_ENABLE
+        *(.gpio_ram)
+        *(.LED_code)
+        *(.LED_const)
+#endif
 
 		. = ALIGN(4);
         gsensor_dev_begin = .;
@@ -279,9 +290,14 @@ SECTIONS
 
         *(.ui_ram)
 
+        *(.fat_data_code)
+#ifdef TCFG_GPIO_RAM_ENABLE
         *(.gpio_ram)
         *(.LED_code)
         *(.LED_const)
+#endif
+
+        *(.fm_code)
 
         . = ALIGN(4);
 
@@ -380,10 +396,11 @@ SECTIONS
 
 		.overlay_aec
 		{
+#if (SOUNDCARD_ENABLE == 0)
 			*(.cvsd_data)
 			*(.cvsd_const)
 			*(.cvsd_code)
-
+#endif
 			*(.aec_bss_id)
 			o_aec_end = .;
 
@@ -569,8 +586,6 @@ SECTIONS
 
 		.overlay_fm
 		{
-			*(.fm_code)
-
 			*(.fm_bss_id)
 			o_fm_end = .;
 

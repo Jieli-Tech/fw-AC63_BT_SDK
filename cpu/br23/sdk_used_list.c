@@ -29,17 +29,26 @@ sdfile_vfs_ops
 nor_fs_vfs_ops
 nor_sdfile_vfs_ops
 nor_rec_fs_vfs_ops
+fat_sdfile_fat_ops
 #endif
 
 #if FLASH_INSIDE_REC_ENABLE
 inside_nor_fs_vfs_ops
 #endif
 
+#if TCFG_DEC_SBC_ENABLE
 sbc_decoder
 msbc_decoder
 sbc_hwaccel
+#endif
+
+#if TCFG_DEC_CVSD_ENABLE
 cvsd_decoder
+#endif
+
+#if TCFG_DEC_PCM_ENABLE
 pcm_decoder
+#endif
 
 #if TCFG_DEC_MTY_ENABLE
 mty_decoder
@@ -90,7 +99,7 @@ dts_decoder
 g729_decoder
 #endif
 
-#if TCFG_DEC_AAC_ENABLE
+#if (TCFG_DEC_AAC_ENABLE || TCFG_BT_SUPPORT_AAC)
 aac_decoder
 #endif
 

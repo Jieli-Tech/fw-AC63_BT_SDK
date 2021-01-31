@@ -53,6 +53,10 @@ MEMORY
 #include "maskrom_stubs.ld"
 #include "maskrom_stubs_os.ld"
 
+EXTERN(
+#include "sdk_used_list.c"
+);
+
 ENTRY(_start)
 
 SECTIONS
@@ -121,6 +125,7 @@ SECTIONS
 		_os_end = .;
 		PROVIDE(os_end = .);
 
+        *(.fat_data_code)
         *(reboot.rodata)
         *(.non_volatile_ram_code)
 

@@ -175,8 +175,11 @@ u32 adc_get_voltage(u32 ch)
 
 u32 adc_check_vbat_lowpower()
 {
-    u32 vbat = adc_get_value(AD_CH_VBAT);
-    return __builtin_abs(vbat - 255) < 5;
+    if (!vbat_vddio_tieup) {
+        s32 vbat = adc_get_value(AD_CH_VBAT);
+        return __builtin_abs(vbat - 255) < 5;
+    }
+    return 0;
 }
 void adc_audio_ch_select(u32 ch)
 {
@@ -484,8 +487,10 @@ static void pvdd_trim()
     if (v < PVDD_TRIM_VALUE_L) {
         lev++;
     }
-    printf("pvdd_lev: %d %d\n", lev, v);
 
+    P33_CON_SET(P3_PVDD0_AUTO, 0, 8, (7 << 4) | (lev - 3));
+
+    printf("pvdd_lev: %d %d, pvdd_lev_l: %d\n", lev, v, lev - 3);
 }
 
 void adc_init()

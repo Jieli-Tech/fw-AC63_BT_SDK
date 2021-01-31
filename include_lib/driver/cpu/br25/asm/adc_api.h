@@ -97,6 +97,7 @@ void pmu_voltage_dump(void);
 
 void check_pmu_voltage(u8 tieup);
 
+u8 get_cur_total_ad_ch(void);
 
 
 u32 adc_get_voltage(u32 ch);

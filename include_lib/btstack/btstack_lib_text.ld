@@ -50,3 +50,8 @@
         btstack_code_end = .;
 		. = ALIGN(4);
 
+
+        BTSTACK_CODE_TOTAL_SIZE = btstack_code_end -  btstack_code_start;
+
+
+

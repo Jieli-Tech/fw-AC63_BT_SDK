@@ -159,3 +159,9 @@
         system_text_end = .;
 
 
+
+        system_code_total_size = system_text_end - system_text_start;
+
+
+
+

@@ -5,7 +5,6 @@ cd %~dp0
 set /p "themd5=" < "md5.bin"
 
 
-copy ..\..\script.ver .
 copy ..\..\uboot.boot .
 copy ..\..\ota.bin .
 

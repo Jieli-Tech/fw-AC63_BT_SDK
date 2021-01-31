@@ -2,7 +2,6 @@
 
 cd %~dp0
 
-copy ..\..\script.ver .
 copy ..\..\uboot.boot .
 copy ..\..\ota.bin .
 

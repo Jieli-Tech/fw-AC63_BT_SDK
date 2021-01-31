@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 <FileVersion major="1" minor="6" />
 <Project>
-<Option title="AC897N_AD697N_hid" />
+<Option title="AC637N_hid" />
 <Option compiler="pi32v2_r3_lto_compiler" />
 <Build>
 <Target title="Release">
@@ -36,7 +36,7 @@
 <Add option="-DCONFIG_EVENT_KEY_MAP_ENABLE=0" />
 <Add option="-DTIMER_POOL_NUM_CONFIG=10" />
 <Add option="-DAPP_ASYNC_POOL_NUM_CONFIG=0" />
-<Add option="-DVFS_ENABLE=0" />
+<Add option="-DVFS_ENABLE=1" />
 <Add option="-DUSE_SDFILE_NEW=1" />
 <Add option="-DVFS_FILE_POOL_NUM_CONFIG=0" />
 <Add option="-DSDFILE_VERSION=0x020000" />
@@ -54,7 +54,6 @@
 <Add option="-DCONFIG_MMU_ENABLE" />
 <Add option="-DCONFIG_SBC_CODEC_HW" />
 <Add option="-DCONFIG_MSBC_CODEC_HW" />
-<Add option="-DCONFIG_ANC_ENABLE" />
 <Add option="-DCONFIG_AEC_M=256" />
 <Add option="-DCONFIG_AUDIO_ONCHIP" />
 <Add option="-DCONFIG_MEDIA_NEW_ENABLE" />
@@ -92,6 +91,7 @@
 <Add directory="../../../../apps/common/usb" />
 <Add directory="../../../../include_lib/ai_stack/JL_rcsp" />
 <Add directory="../../../../include_lib/btstack" />
+<Add directory="../../../../cpu/br30" />
 <Add directory="../../../../apps/common/code_switch/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include/hal3205" />
@@ -164,6 +164,7 @@
 <Unit filename="../../../../apps/common/include/standard_hid.h" />
 <Unit filename="../../../../apps/common/include/update_tws.h" />
 <Unit filename="../../../../apps/common/key/adkey.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/key/ctmu_touch_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/iokey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/key_driver.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/matrix_keyboard.c"><Option compilerVer="CC"/></Unit>
@@ -253,8 +254,14 @@
 <Unit filename="../../../../cpu/br30/adc_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/charge.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/chargestore.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/clock_cfg.h" />
+<Unit filename="../../../../cpu/br30/clock_manager.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/ctmu.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/iic_soft.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/lp_touch_key.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/lp_touch_key_epd.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/lp_touch_key_epd.h" />
 <Unit filename="../../../../cpu/br30/power_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/power_api.h" />
 <Unit filename="../../../../cpu/br30/pwm_led.c"><Option compilerVer="CC"/></Unit>
@@ -309,6 +316,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/cpu.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/crc16.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/csfr.h" />
+<Unit filename="../../../../include_lib/driver/cpu/br30/asm/ctmu.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/debug.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/efuse.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/gpio.h" />
@@ -319,6 +327,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/io_imap.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/io_omap.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/irq.h" />
+<Unit filename="../../../../include_lib/driver/cpu/br30/asm/lp_touch_key.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/plcnt.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/power/p11.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/power/p33.h" />

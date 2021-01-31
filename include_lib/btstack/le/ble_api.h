@@ -766,9 +766,35 @@ void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
    @param [in]
    @param [in]
    @return    true or false
-	note: 上电调用配置,若配置的个数跟之前不一样，默认清楚所有的配对表数据
+	note: 上电调用配置,若配置的个数跟之前不一样，默认清所有的配对表数据
+	note: VM 掉电记录保护
  *********************************************************************************/
 void ble_list_config_reset(u8 pair_devices_count, u8 is_allow_cover);
+
+
+/**********************************************************************************
+
+   @function   配置是否接受新设备请求配对,记录在VM,(可以不设置使用sdk默认值)
+   @param [in] enable  是否允许循环覆盖记录  1 or 0,默认1
+   @param [in]
+   @param [in]
+   @param [in]
+   @return    true or false
+	note:VM 掉电记录保护
+ *********************************************************************************/
+bool ble_list_pair_accept(u8 enable);
+
+/**********************************************************************************
+   @function   绑定已配对的指定设备,清除其他配对设备
+   @param [in] conn_addr        对方地址6bytes
+   @param [in] conn_addr_type   对方地址类型range: 0~1
+   @param [in]
+   @param [in]
+   @return    true or false
+	note:VM 掉电记录保护
+ *********************************************************************************/
+bool ble_list_bonding_remote(u8 *conn_addr, u8 conn_addr_type);
+
 
 /**********************************************************************************
 

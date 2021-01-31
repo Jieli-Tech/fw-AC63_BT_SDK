@@ -16,7 +16,6 @@
 
 #define     FUSB_MODE               1
 #define     EP0_SETUP_LEN           0x40
-
 #define USB_MAX_HW_EPNUM    5
 
 
@@ -61,10 +60,10 @@
 
 enum {
     USB0,
-    USB_MAX_HW_NUM,
 };
 
 #define USB_MAX_HW_NUM      1
+
 
 struct usb_ep_addr_t {
     u32 ep0_addr;

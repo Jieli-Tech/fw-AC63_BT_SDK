@@ -15,6 +15,7 @@
 #include "foundation.h"
 #include "proxy.h"
 #include "prov.h"
+#include "settings.h"
 
 #define LOG_TAG             "[MESH-prov]"
 #define LOG_INFO_ENABLE

@@ -27,7 +27,7 @@ void *lmp_private_fetch_sbc_packet(void *_conn, int *len, void *_prev, int);
 int lmp_private_get_sbc_packet_num(void *_conn);
 void lmp_private_close_sbc_channel(void *_conn);
 
-int lmp_private_get_sbc_packet(void *_conn, u8 **frame);
+int lmp_private_get_sbc_packet(void *_conn, u8 **frame, int block);
 
 u8 *lmp_private_get_tx_packet_buffer(int size);
 
@@ -148,6 +148,12 @@ void lmp_set_sniff_establish_by_remote(u8 enable);
 
 void lmp_set_sniff_disable(void);
 
+
+u8 lmp_hci_read_local_supported_features(int octet);
+
+void lmp_hci_write_local_supported_features(u8 features, int octet);
+
+
 u8 lmp_standard_connect_check(void);
 
 void lmp_hci_send_keypress_notification(u8 *addr, u8 key);
@@ -182,8 +188,9 @@ extern void tws_remote_state_clear(void);
 extern void user_set_tws_box_mode(u8 mode);
 
 
-extern void bredr_fcc_init(u8 mode);
+extern void bredr_fcc_init(u8 mode, u8 fre);
 extern void bredr_set_dut_enble(u8 en, u8 phone);
 
+extern int a2dp_media_clear_packet_before_seqn(u16 seqn_number);
 
 #endif

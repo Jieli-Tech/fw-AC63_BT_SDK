@@ -320,7 +320,7 @@ u32 adc_sample(u32 ch)
 
     if (adc_io_reuse_enter(ch)) {
         _adc_res = adc_get_value(ch);
-        return _adc_res;
+        return tmp_adc_res;
     }
 
     u32 adc_con = 0;
@@ -396,6 +396,20 @@ void adc_scan(void *priv)
     }
 
     cur_ch = next_ch;
+}
+
+//获取当前采集ad的通道总数
+u8 get_cur_total_ad_ch(void)
+{
+    u8 total_ch = 0;
+    u8 i = 0;
+    while (i < ADC_MAX_CH) {
+        if (adc_queue[i].ch != -1) {
+            total_ch++;
+        }
+        i++;
+    }
+    return total_ch;
 }
 
 void _adc_init(u32 sys_lvd_en)

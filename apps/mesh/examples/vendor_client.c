@@ -34,6 +34,8 @@ static void vendor_status(struct bt_mesh_model *model,
                           struct bt_mesh_msg_ctx *ctx,
                           struct net_buf_simple *buf);
 
+#define CLIENT_SUBSCRIBE_EN     0
+
 /**
  * @brief Config current node features(Relay/Proxy/Friend/Low Power)
  */
@@ -183,6 +185,9 @@ static const struct bt_mesh_model_op vendor_srv_op[] = {
 
 static const struct bt_mesh_model_op vendor_cli_op[] = {
     { BT_MESH_VENDOR_MODEL_OP_STATUS, ACCESS_OP_SIZE, vendor_status },
+#if CLIENT_SUBSCRIBE_EN
+    { BT_MESH_VENDOR_MODEL_OP_SET, ACCESS_OP_SIZE, vendor_set },
+#endif /* CLIENT_SUBSCRIBE_EN */
     BT_MESH_MODEL_OP_END,
 };
 
@@ -254,7 +259,7 @@ static void vendor_set(struct bt_mesh_model *model,
                        struct bt_mesh_msg_ctx *ctx,
                        struct net_buf_simple *buf)
 {
-    log_info("receive vendor client message len except opcode =0x%x", buf->len);
+    log_info("receive message len except opcode =0x%x", buf->len);
     log_info_hexdump(buf->data, buf->len);
 
     struct net_buf_simple *msg = model->pub->msg;
@@ -393,6 +398,15 @@ static void configure(void)
                                 BT_MESH_VENDOR_MODEL_ID_CLI,
                                 BT_COMP_ID_LF,
                                 &pub, NULL);
+
+#if CLIENT_SUBSCRIBE_EN
+    /* Add model subscription */
+    log_info("bt_mesh_cfg_mod_sub_add_vnd server");
+    bt_mesh_cfg_mod_sub_add_vnd(net_idx, node_addr, elem_addr, dst_addr,
+                                BT_MESH_VENDOR_MODEL_ID_CLI,
+                                BT_COMP_ID_LF,
+                                NULL);
+#endif /* CLIENT_SUBSCRIBE_EN */
 
     log_info("Configuration complete");
 }

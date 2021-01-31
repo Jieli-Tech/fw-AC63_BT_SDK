@@ -187,9 +187,25 @@ void auto_shutdown_disable(void)
     }
 }
 
+#if TCFG_AUDIO_ENABLE
+#include "tone_player.h"
+#endif/*TCFG_AUDIO_ENABLE*/
 static void app_key_deal_test(u8 key_type, u8 key_value)
 {
     u16 key_msg = 0;
+
+    /*Audio Test Demo*/
+#if TCFG_AUDIO_ENABLE
+    if (key_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE0) {
+        printf(">>>key0:open mic\n");
+        extern int audio_adc_open_demo(void);
+        audio_adc_open_demo();
+    }
+    if (key_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE1) {
+        printf(">>>key1:tone_play_test\n");
+        //tone_play_by_path(TONE_NORMAL, 1);
+    }
+#endif/*TCFG_AUDIO_ENABLE*/
 
 #if HID_TEST_KEEP_SEND_EN
     if (key_type == KEY_EVENT_LONG && key_value == TCFG_ADKEY_VALUE0) {
@@ -198,6 +214,28 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
         return;
     }
 #endif
+
+    //for test
+    /* extern void ble_set_pair_list_control(u8 mode); */
+    /* if (key_type == KEY_EVENT_CLICK) { */
+    /* if (key_value == 4) { */
+    /* ble_set_pair_list_control(1); */
+    /* } */
+    /* if (key_value == 6) { */
+    /* ble_set_pair_list_control(0); */
+    /* } */
+    /* return; */
+    /* } */
+
+    /* if (key_type == KEY_EVENT_LONG) { */
+    /* if (key_value == 4) { */
+    /* ble_set_pair_list_control(2); */
+    /* } */
+    /* if (key_value == 6) { */
+    /* ble_set_pair_list_control(3); */
+    /* } */
+    /* return; */
+    /* } */
 
 
     if (key_type == KEY_EVENT_CLICK) {

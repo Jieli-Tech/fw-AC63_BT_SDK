@@ -84,10 +84,17 @@ struct sample_sync_device_ops {
 struct audio_sample_output {
     u8 mode;
     void *priv;
+    /*
     union {
         struct resample_output_cbuf cbuf;
         struct resample_output_frame frame;
     } u;
+    */
+    u8 free;
+    void *addr;
+    int len;
+    void *remain_addr;
+    int remain_len;
     struct sample_sync_device_ops device;
 };
 
@@ -99,7 +106,8 @@ struct audio_sample_output {
  *=======================================================================*/
 struct audio_sample_sync {
     u8 start;
-    u8 sync_to_start;
+    u8 bt_time_enable;
+    u8 fixed_sample_rate;
     u8 channels;
     u8 quick_align;
     u8 position_num;
@@ -107,11 +115,13 @@ struct audio_sample_sync {
     s8 index;
     int quick_output_count;
     int sample_rate;
+    int input_sample_rate;
     u16 in_rate;
     u16 out_rate;
     u32 pcm_position;
     u32 input_num;
     u32 sample_counter;
+    u32 output_counter;
     u32 bt_clkn;
     s16 bt_clkn_phase;
     struct audio_sample_output output;
@@ -128,6 +138,7 @@ struct audio_sample_sync *audio_sample_sync_open(u8 stream_mode);
 
 /*AUDIO PCM样点同步初始化*/
 int audio_sample_sync_init_resample(struct audio_sample_sync *s,
+                                    int input_sample_rate,
                                     int sample_rate,
                                     u8 data_channels,
                                     u8 position_num);
@@ -171,6 +182,9 @@ int audio_sample_sync_write(struct audio_sample_sync *s, void *buf, int len);
 /*AUDIO 使用同步的时间开始采样*/
 int audio_sample_start_by_sync_time(struct audio_sample_sync *s, void *priv, void (*callback)(void *));
 
+int audio_sample_sync_us_time_distance(struct audio_sample_sync *s);
+
+int audio_sample_sync_bt_time_disable(struct audio_sample_sync *s);
 /*AUDIO 输出设备更新样点缓冲计数*/
 int audio_sample_sync_update_count(struct audio_sample_sync *s, int points);
 
@@ -184,7 +198,7 @@ int audio_sample_sync_get_out_position(struct audio_sample_sync *s, struct audio
 int audio_sample_sync_out_remain_len(struct audio_sample_sync *s);
 
 /*AUDIO 设备采样开始设置起始函数*/
-int audio_sample_sync_output_begin(struct audio_sample_sync *s, int samples);
+int audio_sample_sync_output_begin(struct audio_sample_sync *s, int samples, int sample_rate);
 
 int audio_sample_sync_output_rate(struct audio_sample_sync *s);
 
@@ -210,4 +224,6 @@ int audio_sample_sync_time_distance(struct audio_sample_sync *s);
 int audio_sample_sync_output_query(struct audio_sample_sync *s);
 
 int audio_sample_sync_is_working(struct audio_sample_sync *s);
+
+u32 audio_sample_sync_input_pcm_num(struct audio_sample_sync *s);
 #endif

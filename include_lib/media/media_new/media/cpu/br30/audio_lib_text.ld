@@ -37,12 +37,19 @@
 		. = ALIGN(4);
         *(.pcm_code)
         *(.pcm_const)
-		/* *(.cvsd_code) */
-		/* *(.cvsd_const) */
-		/* *(.g729_code) */
-		/* *(.g729_const) */
-		/* *(.mp3_code) */
-		/* *(.mp3_const) */
+        *(.cvsd_code)
+        *(.cvsd_const)
+        *(.g729_code)
+        *(.g729_const)
+        *(.mp3_code)
+        *(.mp3_const)
+        *(.mp3_dec_code)
+        *(.mp3_dec_const)
+        *(.mp3_dec_sparse_code)
+
+        *(.mp3_decstream_code)
+        *(.mp3_decstream_const)
+        *(.mp3_decstream_sparse_code)
         /**(.bfilt_code)*/
 		*(.msbc_code)
 		*(.msbc_const)
@@ -52,10 +59,22 @@
 		*(.sbc_const)
 		*(.sine_code)
 		*(.sine_const)
-		/* *(.wav_code) */
-		/* *(.wav_const) */
-		/* *(.wma_code) */
-		/* *(.wma_const) */
+        *(.wav_code)
+        *(.wav_const)
+		*(.wav_dec_code)
+		*(.wav_dec_const)
+		*(.wav_dec_sparse_code)
+		*(.wav_dec_sparse_const)
+        *(.wma_code)
+        *(.wma_const)
+		*(.wma_dec_code)
+		*(.wma_dec_const)
+		*(.wma_dec_sparse_code)
+		*(.wma_dec_sparse_const)
+        *(.wma_decstream_code)
+        *(.wma_decstream_const)
+        *(.wma_decstream_sparse_code)
+
         *(.aac_code)
         *(.aac_const)
 		*(.amr_code)

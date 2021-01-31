@@ -150,17 +150,7 @@ SECTIONS
 
 		. = ALIGN(4);
 		#include "media/cpu/br30/audio_lib_text.ld"
-        *(.g729_code)
-        *(.g729_const)
-		*(.cvsd_code)
-		*(.cvsd_const)
 
-		*(.wav_code)
-		*(.wav_const)
-		*(.wav_dec_code)
-		*(.wav_dec_const)
-		*(.wav_dec_sparse_code)
-		*(.wav_dec_sparse_const)
 
 		. = ALIGN(4);
         __VERSION_BEGIN = .;
@@ -263,6 +253,8 @@ SECTIONS
         *(.volatile_ram)
 		*(.btstack_pool)
 
+            *(.usb_ep0)
+            *(.usb_msd_dma)
 		*(.audio_buf)
         *(.src_filt)
         *(.src_dma)
@@ -286,6 +278,8 @@ SECTIONS
 	  	 *(.media.aec.text)
 		*(.os_code)
 		*(.os_str)
+
+        *(.fat_data_code)
 
     	audio_sync_code_begin = .;
         *(.audio_sync_code)
@@ -479,8 +473,6 @@ SECTIONS
             *(.uac_rx)
             *(.mass_storage)
 
-            *(.usb_ep0)
-            *(.usb_msd_dma)
             *(.usb_hid_dma)
             *(.usb_iso_dma)
             *(.uac_var)

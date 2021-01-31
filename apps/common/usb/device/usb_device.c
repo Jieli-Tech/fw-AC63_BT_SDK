@@ -22,6 +22,8 @@ static void usb_device_init(const usb_dev usb_id)
     usb_set_dma_raddr(usb_id, 4, usb_get_ep_buffer(usb_id, 0));
 
     usb_write_intr_usbe(usb_id, INTRUSB_RESET_BABBLE | INTRUSB_SUSPEND);
+    usb_clr_intr_txe(usb_id, -1);
+    usb_clr_intr_rxe(usb_id, -1);
     usb_set_intr_txe(usb_id, 0);
     usb_set_intr_rxe(usb_id, 0);
     usb_g_isr_reg(usb_id, 3, 0);
@@ -31,8 +33,6 @@ static void usb_device_init(const usb_dev usb_id)
 }
 static void usb_device_hold(const usb_dev usb_id)
 {
-    usb_clr_intr_txe(usb_id, -1);
-    usb_clr_intr_rxe(usb_id, -1);
 
     usb_g_hold(usb_id);
     usb_release(usb_id);

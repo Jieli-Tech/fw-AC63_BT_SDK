@@ -33,3 +33,4 @@ const int CONFIG_BTSTACK_SUPPORT_AAC    = 1;
 const int CONFIG_BTSTACK_SUPPORT_AAC    = 0;
 #endif
 
+const u8 adt_profile_support = 0;

@@ -5,11 +5,11 @@
 #include "system/task.h"
 #include "anc_btspp.h"
 
-#define ANC_COEFF_NUM	(488 + 100)
-#define ANC_COEFF_SIZE	(ANC_COEFF_NUM << 2)
 enum {
     ANCDB_ERR_CRC = 1,
     ANCDB_ERR_TAG,
+    ANCDB_ERR_PARAM,
+    ANCDB_ERR_STATE,
 };
 
 typedef enum {
@@ -43,6 +43,17 @@ typedef enum {
     TRANS_ERR_FORCE_EXIT	//强制退出训练
 } ANC_trans_errmsg_t;
 
+typedef struct {
+    int fb0sz_dly[10];
+    // int sz_dly[10];
+    // int fz_dly[10];
+    // int ffwz_dly[10];
+    int fflms_dly[10];
+    // int fb1sz_dly[10];
+    // int fbwz_dly[10];
+    // int fblms_dly[10];
+} audio_anc_dly_t;
+
 #define ANC_MANA_UART  	   0
 #define ANC_AUTO_UART 	   1
 #define ANC_AUTO_BT_SPP    2
@@ -59,16 +70,26 @@ typedef struct {
     u8 trans_lpf_en; //通透模式低通使能
     u8 fz_fir_en; //FZ补偿滤波器使能
     u8 anc_fade_en;//ANC淡入淡出使能
-    u8 filter_order;//ANC滤波器阶数
-    u8 anc_sr;	//ANC采样率
+    u8 mic_swap_en;//交换MIC0 与MIC1 的数据
+    u8 filter_order;
+    u8 anc_sr;
+    u8 mic_type;//ANC 硬件MIC类型
     u16 anc_fade_gain;//ANC淡入淡出增益
     s16 fz_gain;  //FZ补偿增益
     int train_err;//训练结果 0:成功 other:失败
-    int anc_gain;//ANC增益
+    int anc_gain;//ANCFF增益
+    int anc_fbgain;//ANCFB增益
     s32 *fz_coeff;//FZ补偿滤波器表
     s32 *coeff;//降噪模式滤波器表
     s16 *ffwz_nch_coeff;//通透模式低通滤波器表
     s16 *ffwz_lpf_coeff;//通透模式高通滤波器表
+#ifdef CONFIG_ANC_30C_ENABLE
+    u8 trans_filter_order;//ANC滤波器阶数
+    u8 trans_sr;	//ANC采样率
+    s32 *sz_coeff;//FZ补偿滤波器表
+    s32 *trans_coeff;//通透模式训练滤波器表
+    audio_anc_dly_t anc_dly;
+#endif
     anc_train_para_t train_para;//训练参数结构体
     void (*train_callback)(u8, u8);
     void (*pow_callback)(u8, u8);
@@ -91,20 +112,33 @@ typedef struct {
 
 /*ANCIF配置区滤波器系数coeff*/
 #ifdef CONFIG_ANC_30C_ENABLE
+
 #define ANC_DB_LEN_MAX		(1024 * 8)
-#define ANC_FILT_ORDER_MAX	3
+#define ANC_FILT_ORDER_MAX			2
+#define ANC_TRANS_FILT_ORDER_MAX	1
 #define ANC_WZ_COEFF_SIZE	(488 * ANC_FILT_ORDER_MAX)
+#define ANC_TRANS_WZ_COEFF_SIZE	(488 * ANC_TRANS_FILT_ORDER_MAX)
+#define ANC_SZ_COEFF_SIZE	100
 #define ANC_FZ_COEFF_SIZE	100
+typedef struct {
+    int wz_coeff[ANC_WZ_COEFF_SIZE];
+    int fz_coeff[ANC_FZ_COEFF_SIZE];
+    int trans_wz_coeff[ANC_TRANS_WZ_COEFF_SIZE];
+    int sz_coeff[ANC_SZ_COEFF_SIZE];
+} anc_coeff_t;
+
 #else
+
 #define ANC_DB_LEN_MAX		(1024 * 4)
 #define ANC_FILT_ORDER_MAX	1
 #define ANC_WZ_COEFF_SIZE	(488 * ANC_FILT_ORDER_MAX)
 #define ANC_FZ_COEFF_SIZE	100
-#endif/*CONFIG_ANC_30C_ENABLE*/
 typedef struct {
     int wz_coeff[ANC_WZ_COEFF_SIZE];
     int fz_coeff[ANC_FZ_COEFF_SIZE];
 } anc_coeff_t;
+
+#endif/*CONFIG_ANC_30C_ENABLE*/
 
 /*ANCIF配置区增益gain*/
 typedef struct {
@@ -130,7 +164,7 @@ int audio_anc_open(audio_anc_t *param);
 
 int audio_anc_close();
 
-void audio_anc_gain(int gain);
+void audio_anc_gain(int ffwz_gain, int fbwz_gain);
 
 void audio_anc_fade(int gain, u8 en);
 
@@ -148,6 +182,14 @@ enum {
     ANC_DB_GAIN,	//ANC增益
     ANC_DB_MAX,
 };
+
+typedef struct {
+    u8 state;		//ANC配置区状态
+    u16 total_size;	//ANC配置区总大小
+} anc_db_t;
+
+/*anc配置区初始化*/
+int anc_db_init(anc_db_t *db);
 /*根据配置id获取不同的anc配置*/
 int *anc_db_get(u8 id, u32 len);
 /*

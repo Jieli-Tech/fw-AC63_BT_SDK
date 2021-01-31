@@ -132,7 +132,8 @@ void led_update_finish(void)
 
 static inline void dev_update_close_ui()
 {
-#if TCFG_UI_ENABLE
+
+#if (TCFG_UI_ENABLE&&(CONFIG_UI_STYLE == STYLE_JL_LED7))
     u8 count = 0;
     UI_SHOW_WINDOW(ID_WINDOW_POWER_OFF);
 __retry:

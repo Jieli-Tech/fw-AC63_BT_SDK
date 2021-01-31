@@ -15,9 +15,11 @@
 #define SRC_CHI                     2
 #define SRC_FILT_POINTS             24
 
-#define SRC_TYPE_DEFAULT            0
-#define SRC_TYPE_RESAMPLE           1
-#define SRC_TYPE_AUDIO_SYNC         2
+#define SRC_MODE_DEFAULT            0
+#define SRC_MODE_FULL_INPUT         1
+#define SRC_MODE_FULL_OUTPUT        2
+
+#define SRC_TYPE_RESAMPLE           SRC_MODE_DEFAULT
 
 enum audio_src_event {
     SRC_EVENT_INPUT_DONE = 0x0,
@@ -58,8 +60,8 @@ struct audio_src_base_handle {
     u8 channels;
     u8 state;
     volatile u8 active;
-    volatile u8 needrun;
-    u8 start;
+    u8 mode;
+    u8 wait_irq;
     u8 input_malloc;
     u8 rate_update;
 	//u8 filt_index;
@@ -111,6 +113,7 @@ int audio_src_base_resample(struct audio_src_base_handle *s,
 void audio_src_base_close(struct audio_src_base_handle *src);
 
 //int audio_src_is_running(struct audio_src_base_handle *src);
+int audio_src_ch_is_running(struct audio_src_base_handle *src);
 
 // *INDENT-OFF*
 struct audio_src_handle {
@@ -155,5 +158,7 @@ void audio_hw_src_close(struct audio_src_handle *src);
 
 // 检测到硬件正在运行时不等待其完成，直接返回
 int audio_hw_src_set_check_running(struct audio_src_handle *src, u8 check_hw_running);
+
+int audio_hw_src_active(struct audio_src_handle *src);
 
 #endif

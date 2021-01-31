@@ -130,6 +130,7 @@ struct audio_adc_hdl {
 
 #if SUPPORT_MIC_CAPLESS
     struct capless_low_pass lp;
+    int last_dacr32;
 #endif/*SUPPORT_MIC_CAPLESS*/
 };
 

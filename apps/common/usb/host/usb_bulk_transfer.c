@@ -35,6 +35,7 @@ struct usb_request_block {
     u32 msg;
 };
 static struct usb_request_block urb;
+
 static void usb_bulk_rx_isr(struct usb_host_device *host_dev, u32 ep)
 {
     usb_dev usb_id = host_device2id(host_dev);
@@ -53,7 +54,7 @@ static void usb_bulk_rx_isr(struct usb_host_device *host_dev, u32 ep)
     if (urb.len == 0) {
         usb_sem_post(host_dev);
     } else {
-        usb_h_ep_read_async(usb_id, ep,  urb.target_ep, NULL, 0, USB_ENDPOINT_XFER_BULK, 1);
+        usb_h_ep_read_async(usb_id, ep,  urb.target_ep, urb.ptr, urb.len, USB_ENDPOINT_XFER_BULK, 1);
     }
 }
 s32 usb_bulk_only_receive_async(struct device *device, u8 host_ep, u16 rxmaxp, u8 target_ep, u8 *pBuf, u32 len)
@@ -64,21 +65,24 @@ s32 usb_bulk_only_receive_async(struct device *device, u8 host_ep, u16 rxmaxp, u
     urb.ptr = pBuf;
     urb.len = len;
     urb.target_ep = target_ep;
+
 #ifdef CONFIG_USB_SUPPORT_MRX_TX
-    urb.rxmap = 0x200;
+    urb.rxmap = 1 * 1024;
 #else
     urb.rxmap = 0x40;
 #endif
+
     urb.msg = -DEV_ERR_OFFLINE;
 
     usb_h_set_ep_isr(host_dev, host_ep | USB_DIR_IN, usb_bulk_rx_isr, host_dev);
     usb_set_intr_rxe(usb_id, host_ep);
 
-    int ret = usb_h_ep_read_async(usb_id, host_ep, target_ep, NULL, len, USB_ENDPOINT_XFER_BULK, 1);
+    int ret = usb_h_ep_read_async(usb_id, host_ep, target_ep, urb.ptr, len, USB_ENDPOINT_XFER_BULK, 1);
     if (ret < 0) {
         return ret;
     }
     ret = usb_sem_pend(host_dev, 250);
+
     usb_clr_intr_rxe(usb_id, host_ep);
     usb_h_set_ep_isr(host_dev, host_ep | USB_DIR_IN, NULL, host_dev);
     if (ret) {
@@ -133,10 +137,17 @@ s32 usb_bulk_only_send_async(struct device *device, u8 host_ep, u16 txmaxp, u8 t
     const usb_dev usb_id = host_device2id(host_dev);
 
     urb.target_ep = target_ep;
+#ifdef CONFIG_USB_SUPPORT_MRX_TX
+    urb.txmap = 8 * 1024;
+#else
     urb.txmap = 0x40;
+#endif
+
+
     urb.msg = -DEV_ERR_OFFLINE;
     urb.len = len - min(len, urb.txmap);
     urb.ptr = (u8 *)pBuf + min(len, urb.txmap);
+
 
     usb_h_set_ep_isr(host_dev, host_ep, usb_bulk_tx_isr, host_dev);
     usb_set_intr_txe(usb_id, host_ep);

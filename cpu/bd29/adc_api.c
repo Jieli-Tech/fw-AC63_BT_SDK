@@ -174,7 +174,7 @@ u32 adc_check_vbat_lowpower()
     if (vbat_vddio_tieup) {
         return 0;
     } else {
-        u32 vbat = adc_get_value(AD_CH_VBAT);
+        int vbat = adc_get_value(AD_CH_VBAT);
         return __builtin_abs(vbat - 255) < 5;
     }
 }

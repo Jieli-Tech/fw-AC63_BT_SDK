@@ -248,6 +248,10 @@ int audio_dac_set_L_digital_vol(struct audio_dac_hdl *dac, u16 vol);
 
 int audio_dac_set_R_digital_vol(struct audio_dac_hdl *dac, u16 vol);
 
+void audio_dac_ch_mute(struct audio_dac_hdl *dac, u8 ch, u8 mute);
+
+void audio_dac_zero_detect_onoff(struct audio_dac_hdl *dac, u8 onoff);
+
 void audio_dac_set_fade_handler(struct audio_dac_hdl *dac, void *priv, void (*fade_handler)(u8, u8));
 
 int audio_dac_sound_reset(struct audio_dac_hdl *dac, u32 msecs);

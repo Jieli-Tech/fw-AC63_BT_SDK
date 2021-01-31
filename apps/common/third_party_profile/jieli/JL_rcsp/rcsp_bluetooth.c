@@ -775,10 +775,10 @@ static void JL_rcsp_stop_bt_scan(u8 OpCode, u8 OpCode_SN, u8 *data, u16 len)
 {
     rcsp_printf("JL_rcsp_stop_bt_scan\n");
 #if TCFG_USER_EMITTER_ENABLE
-    extern void emitter_search_stop();
+    extern void emitter_search_stop(u8 result);
     if (bt_addr_idx) {
         bt_addr_idx = 0;
-        emitter_search_stop();
+        emitter_search_stop(0);
     }
     u8 result = 0x00;
 #else

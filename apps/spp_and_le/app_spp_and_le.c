@@ -833,6 +833,9 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
     return 0;
 }
 
+#if TCFG_AUDIO_ENABLE
+#include "tone_player.h"
+#endif/*TCFG_AUDIO_ENABLE*/
 static void app_key_event_handler(struct sys_event *event)
 {
     /* u16 cpi = 0; */
@@ -853,6 +856,19 @@ static void app_key_event_handler(struct sys_event *event)
         if (event_type == KEY_EVENT_LONG && key_value == TCFG_ADKEY_VALUE6) {
             app_set_soft_poweroff();
         }
+
+        /*Audio Test Demo*/
+#if TCFG_AUDIO_ENABLE
+        if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE0) {
+            printf(">>>key0:open mic\n");
+            extern int audio_adc_open_demo(void);
+            audio_adc_open_demo();
+        }
+        if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE1) {
+            /* printf(">>>key1:tone_play_test\n");
+            tone_play_by_path(TONE_NORMAL, 1); */
+        }
+#endif/*TCFG_AUDIO_ENABLE*/
     }
 }
 

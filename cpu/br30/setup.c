@@ -31,7 +31,7 @@ extern void tick_timer_init(void);
 
 extern void vPortSysSleepInit(void);
 
-extern void reset_source_dump(void);
+extern u32 reset_source_dump(void);
 
 extern u8 power_reset_source_dump(void);
 

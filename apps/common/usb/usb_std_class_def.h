@@ -13,6 +13,7 @@
 #define     MAXP_SIZE_BULKOUT           64
 #define     MAXP_SIZE_BULKIN            64
 
+#define     MSD_STR_INDEX               7
 
 ///////////HID class
 #define     HID_EP_IN                   2
@@ -32,7 +33,7 @@
 #define     SPK_AUDIO_RES               16
 
 #define     SPK_CHANNEL                 2
-#define     SPK_FRAME_LEN               (((SPK_AUDIO_RATE) * SPK_AUDIO_RES / 8 * SPK_CHANNEL)/1000)
+#define     SPK_FRAME_LEN               (((SPK_AUDIO_RATE) * SPK_AUDIO_RES / 8 * SPK_CHANNEL)/1000+4)
 
 #define     SPK_PCM_Type                (SPK_AUDIO_RES >> 4)                // 0=8 ,1=16
 #define     SPK_AUDIO_TYPE              (0x02 - SPK_PCM_Type)           // TYPE1_PCM16

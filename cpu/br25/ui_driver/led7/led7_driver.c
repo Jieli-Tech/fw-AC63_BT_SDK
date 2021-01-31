@@ -558,30 +558,42 @@ static void __led7_scan(void *param)
 
     if (__this->user_data->pin_type == LED7_PIN7) {
         //pin cnt output H
+        gpio_set_hd0(__this->user_data->pin_cfg.pin7.pin[cnt], 1);
+        gpio_set_hd(__this->user_data->pin_cfg.pin7.pin[cnt], 1);
         gpio_direction_output(__this->user_data->pin_cfg.pin7.pin[cnt], 1);
         for (i = 0; i < 7; i++) {
             if (seg & BIT(i)) {
                 //pin i output L
+                gpio_set_hd0(__this->user_data->pin_cfg.pin7.pin[i], 0);
+                gpio_set_hd(__this->user_data->pin_cfg.pin7.pin[i], 0);
                 gpio_direction_output(__this->user_data->pin_cfg.pin7.pin[i], 0);
             }
         }
         cnt = (cnt >= 6) ? 0 : cnt + 1;
     } else if (__this->user_data->pin_type == LED7_PIN13) {
         //pin_comh  cnt output L
+        gpio_set_hd0(__this->user_data->pin_cfg.pin13.pin_com[cnt], 1);
+        gpio_set_hd(__this->user_data->pin_cfg.pin13.pin_com[cnt], 1);
         gpio_direction_output(__this->user_data->pin_cfg.pin13.pin_com[cnt], 0);
         for (i = 0; i < 7; i++) {
             if (seg & BIT(i)) {
                 //pin_segl i output H
+                gpio_set_hd0(__this->user_data->pin_cfg.pin13.pin_seg[i], 0);
+                gpio_set_hd(__this->user_data->pin_cfg.pin13.pin_seg[i], 0);
                 gpio_direction_output(__this->user_data->pin_cfg.pin13.pin_seg[i], 1);
             }
         }
         cnt = (cnt >= 5) ? 0 : cnt + 1;
     } else {
         //pin_comh  cnt output H
+        gpio_set_hd0(__this->user_data->pin_cfg.pin12.pin_comh[cnt], 1);
+        gpio_set_hd(__this->user_data->pin_cfg.pin12.pin_comh[cnt], 1);
         gpio_direction_output(__this->user_data->pin_cfg.pin12.pin_comh[cnt], 1);
         for (i = 0; i < 7; i++) {
             if (seg & BIT(i)) {
                 //pin_segl i output L
+                gpio_set_hd0(__this->user_data->pin_cfg.pin12.pin_segl[i], 0);
+                gpio_set_hd(__this->user_data->pin_cfg.pin12.pin_segl[i], 0);
                 gpio_direction_output(__this->user_data->pin_cfg.pin12.pin_segl[i], 0);
             }
         }

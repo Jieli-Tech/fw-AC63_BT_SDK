@@ -14,6 +14,7 @@ includes += \
 	-I$(ROOT)/apps/common/usb/ \
     -I$(ROOT)/include_lib/ai_stack/JL_rcsp/ \
     -I$(ROOT)/include_lib/btstack/ \
+	-I$(ROOT)/cpu/$(CPU)/ \
 
 # 添加外设
 includes += \
@@ -56,6 +57,7 @@ objs += \
 	$(ROOT)/apps/common/key/matrix_keyboard.o \
 	$(ROOT)/apps/common/key/iokey.o \
 	$(ROOT)/apps/common/key/adkey.o \
+	$(ROOT)/apps/common/key/ctmu_touch_key.o \
     $(ROOT)/apps/common/key/key_driver.o \
     $(ROOT)/apps/common/touch_pad/SYD9557M.o \
 
@@ -72,5 +74,19 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/app_standard_keyboard.o \
 	$(ROOT)/apps/$(APP_CASE)/app_keypage.o \
 	$(ROOT)/apps/$(APP_CASE)/app_gamebox.o \
+
+#audio
+ifeq ($(AUDIO_LITE_VERSION),y)
+includes += \
+	-I$(ROOT)/apps/common/audio/  \
+	-I$(ROOT)/cpu/$(CPU)/audio_dec \
+	-I$(ROOT)/cpu/$(CPU)/audio_enc \
+
+objs += \
+	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_media_config.o \
+	$(ROOT)/apps/common/audio/sine_make.o \
+	$(ROOT)/apps/common/audio/decode/decode.o \
+
+endif
 
 -include $(ROOT)/apps/common/usb/Makefile.inc

@@ -14,7 +14,7 @@
 #include "key_event_deal.h"
 #include "user_cfg.h"
 #include "asm/power/p33.h"
-/* #include "asm/lp_touch_key.h" */
+#include "asm/lp_touch_key.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -145,6 +145,49 @@ const struct adkey_platform_data adkey_data = {
 };
 #endif
 
+/************************** LP TOUCH KEY ****************************/
+#if TCFG_LP_TOUCH_KEY_ENABLE
+const struct lp_touch_key_platform_data lp_touch_key_config = {
+	//CH0: POWER KEY
+	.ch0.enable = 1,
+	.ch0.port = IO_PORTB_01,
+	.ch0.sensitivity = TCFG_LP_TOUCH_KEY_SENSITIVITY, //cap检测灵敏度级数5
+	.ch0.key_value = 0,
+
+#if TCFG_LP_EARTCH_KEY_ENABLE
+	.ch1.enable = 1,
+	.ch1.port = IO_PORTB_02,
+	.ch1.sensitivity = TCFG_EARIN_TOUCH_KEY_SENSITIVITY, //cap检测灵敏度级数
+	.ch1.key_value = 3, //非0xFF, 使用标准入耳检测流程; 0xFF, 使用用户自定义入耳检测流程
+#endif /* #if TCFG_LP_EARTCH_KEY_ENABLE */
+};
+#endif /* #if TCFG_LP_TOUCH_KEY_ENABLE */
+
+
+
+/**************************CTMU_TOUCH_KEY ****************************/
+#if TCFG_CTMU_TOUCH_KEY_ENABLE
+#include "asm/ctmu.h"
+static const struct ctmu_key_port touch_ctmu_port[] = {
+    {
+        .port = TCFG_CTMU_TOUCH_KEY0_PORT,
+        .key_value = TCFG_CTMU_TOUCH_KEY0_VALUE,
+    },
+    {
+	    .port = TCFG_CTMU_TOUCH_KEY1_PORT,
+        .key_value = TCFG_CTMU_TOUCH_KEY1_VALUE,
+     },
+};
+
+const struct ctmu_touch_key_platform_data ctmu_touch_key_data = {
+    .num = ARRAY_SIZE(touch_ctmu_port),
+	.press_cfg		= TCFG_CTMU_TOUCH_KEY_PRESS_CFG,
+	.release_cfg0 	= TCFG_CTMU_TOUCH_KEY_RELEASE_CFG0,
+	.release_cfg1 	= TCFG_CTMU_TOUCH_KEY_RELEASE_CFG1,
+    .port_list = touch_ctmu_port,
+};
+#endif  /* #if TCFG_CTMU_TOUCH_KEY_ENABLE */
+
 /************************** PWM_LED ****************************/
 #if TCFG_PWMLED_ENABLE
 LED_PLATFORM_DATA_BEGIN(pwm_led_data)
@@ -213,7 +256,7 @@ const struct low_power_param power_param = {
     .vddiom_lev     = TCFG_LOWPOWER_VDDIOM_LEVEL,          //强VDDIO等级,可选：2.0V  2.2V  2.4V  2.6V  2.8V  3.0V  3.2V  3.6V
     .vddiow_lev     = TCFG_LOWPOWER_VDDIOW_LEVEL,          //弱VDDIO等级,可选：2.1V  2.4V  2.8V  3.2V
     .osc_type       = TCFG_LOWPOWER_OSC_TYPE,
-	.lpctmu_en 		= 0,
+	.lpctmu_en 		= TCFG_LP_TOUCH_KEY_ENABLE,
 	.vddio_keep     = 0,
 };
 
@@ -331,6 +374,9 @@ u8 get_power_on_status(void)
     }
 #endif
 
+#if TCFG_LP_TOUCH_KEY_ENABLE
+	return lp_touch_key_power_on_status();
+#endif
     return 0;
 }
 
@@ -342,7 +388,7 @@ static void board_devices_init(void)
     pwm_led_init(&pwm_led_data);
 #endif
 
-#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE)
+#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE||TCFG_CTMU_TOUCH_KEY_ENABLE)
 	key_driver_init();
 #endif
 
@@ -351,6 +397,9 @@ static void board_devices_init(void)
 	uart_key_init();
 #endif /* #if TCFG_UART_KEY_ENABLE */
 
+#if TCFG_LP_TOUCH_KEY_ENABLE
+	lp_touch_key_init(&lp_touch_key_config);
+#endif /* #if TCFG_LP_TOUCH_KEY_ENABLE */
 }
 
 extern void cfg_file_parse(u8 idx);
@@ -549,8 +598,12 @@ void board_set_soft_poweroff(void)
 {
     u32 porta_value = 0xffff;
 
-	//保留长按Reset Pin - PB1
+#if TCFG_LP_TOUCH_KEY_ENABLE
+    u32 portb_value = 0xffff;
+#else
+    //保留长按Reset Pin - PB1
     u32 portb_value = 0xffff & (~BIT(1));
+#endif /* #if TCFG_LP_TOUCH_KEY_ENABLE */
     u32 portc_value = 0xffff;
 
 	mask_io_cfg();

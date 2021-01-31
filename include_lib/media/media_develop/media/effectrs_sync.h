@@ -188,6 +188,7 @@ struct audio_wireless_sync_info {
 
 struct audio_wireless_sync {
     struct audio_stream_entry *entry;
+    struct audio_stream_entry *resample_entry;
     void *context;
     void *sample_sync;
 };

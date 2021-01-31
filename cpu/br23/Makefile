@@ -79,3 +79,18 @@ include $(ROOT)/cpu/$(CPU)/localtws/Makefile
 endif
 endif
 endif
+
+ifeq ($(AUDIO_LITE_VERSION),y)
+#include $(ROOT)/cpu/$(CPU)/audio_common/Makefile
+#include $(ROOT)/cpu/$(CPU)/audio_dec/Makefile
+#include $(ROOT)/cpu/$(CPU)/audio_enc/Makefile
+objs += \
+	  $(ROOT)/cpu/$(CPU)/clock_manager.o \
+	  $(ROOT)/cpu/$(CPU)/audio_common/app_audio.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dec/tone_player.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_tone.o \
+	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_enc.o \
+	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_adc_demo.o \
+
+endif

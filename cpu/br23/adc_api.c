@@ -115,7 +115,6 @@ u32 adc_get_value(u32 ch)
 #define 	TRIM_MV	3.2f
 u32 adc_value_to_voltage(u32 adc_vbg, u32 adc_ch_val)
 {
-
     u32 adc_res = adc_ch_val;
     u32 adc_trim = get_vbg_trim();
     u32 tmp, tmp1;
@@ -154,8 +153,9 @@ u32 adc_get_voltage(u32 ch)
 
 u32 adc_check_vbat_lowpower()
 {
-    u32 vbat = adc_get_value(AD_CH_VBAT);
-    return __builtin_abs(vbat - 255) < 5;
+    return 0;
+    /* u32 vbat = adc_get_value(AD_CH_VBAT); */
+    /* return __builtin_abs(vbat - 255) < 5; */
 }
 
 void adc_audio_ch_select(u32 ch)
@@ -235,11 +235,24 @@ u32 get_adc_div(u32 src_clk)
     return adc_clk_idx;
 }
 
+u8 __attribute__((weak)) adc_io_reuse_enter(u32 ch)
+{
+    return 0;
+}
+
+u8 __attribute__((weak)) adc_io_reuse_exit(u32 ch)
+{
+    return 0;
+}
 
 ___interrupt
 static void adc_isr()
 {
     _adc_res = JL_ADC->RES;
+
+    u32 ch;
+    ch = (JL_ADC->CON & 0xf00) >> 8;
+    adc_io_reuse_exit(ch);
 
     adc_pmu_ch_select(AD_CH_WVDD >> 16);
     local_irq_disable();
@@ -252,6 +265,11 @@ u32 adc_sample(u32 ch)
 {
     const u32 tmp_adc_res = _adc_res;
     _adc_res = (u16) - 1;
+
+    if (adc_io_reuse_enter(ch)) {
+        _adc_res = adc_get_value(ch);
+        return tmp_adc_res;
+    }
 
     u32 adc_con = 0;
     SFR(adc_con, 0, 3, 0b110);//div 96
@@ -444,7 +462,33 @@ static void wvdd_trim()
 
     power_set_wvdd(wvdd_lev);
 }
+void vddiom_trim()
+{
+    u32 vbg_value = 0;
 
+    adc_pmu_detect_en(1);
+    adc_sample(AD_CH_LDOREF);
+    for (int i = 0; i < 10; i++) {
+        while (!(JL_ADC->CON & BIT(7))) { //wait pending
+        }
+
+        vbg_value += JL_ADC->RES;
+        JL_ADC->CON |= BIT(6);
+    }
+
+    vbg_value /= 10;
+
+    u32 vbg_trim = get_vbg_trim();
+    u32 vbg_vol;
+
+    u32 tmp1 = vbg_trim & 0x1f;
+    vbg_vol = (vbg_trim & BIT(5)) ? CENTER - tmp1 * 3.2 : CENTER + tmp1 * 3.2;
+    u32 vddio_vol = vbg_vol * 1023 / vbg_value;
+    printf("vddio_vol %d (mv) %d %x\n", vddio_vol, vbg_value, vbg_trim);
+    if (vddio_vol < 3400) {
+        VDDIOM_VOL_SEL(VDDIOM_VOL_36V);
+    }
+}
 void adc_init()
 {
     JL_ANA->WLA_CON25 &= ~(BIT(19)); //fm
@@ -462,6 +506,9 @@ void adc_init()
     JL_CLOCK->PLL_CON1 &= ~BIT(18); //pll
 
     //trim wvdd
+#if TCFG_LOWPOWER_VDDIOM_LEVEL == VDDIOM_VOL_34V
+    vddiom_trim();
+#endif
     wvdd_trim();
     _adc_init(1);
 

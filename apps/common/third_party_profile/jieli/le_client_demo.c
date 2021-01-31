@@ -113,12 +113,167 @@ static u8 opt_handle_used_cnt;
 static u8 force_seach_onoff = 0;
 static s8 force_seach_rssi = -127;
 
-static  client_conn_cfg_t *client_config = NULL ;
-//----------------------------------------------------------------------------
 static void bt_ble_create_connection(u8 *conn_addr, u8 addr_type);
 static int bt_ble_scan_enable(void *priv, u32 en);
 static int client_write_send(void *priv, u8 *data, u16 len);
 static int client_operation_send(u16 handle, u8 *data, u16 len, u8 att_op_type);
+//---------------------------------------------------------------------------
+#if 1//default
+//指定搜索uuid
+//指定搜索uuid
+static const target_uuid_t  default_search_uuid_table[] = {
+
+    // for uuid16
+    // PRIMARY_SERVICE, ae30
+    // CHARACTERISTIC,  ae01, WRITE_WITHOUT_RESPONSE | DYNAMIC,
+    // CHARACTERISTIC,  ae02, NOTIFY,
+
+    {
+        .services_uuid16 = 0xae30,
+        .characteristic_uuid16 = 0xae01,
+        .opt_type = ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
+    },
+
+    {
+        .services_uuid16 = 0xae30,
+        .characteristic_uuid16 = 0xae02,
+        .opt_type = ATT_PROPERTY_NOTIFY,
+    },
+
+    //for uuid128,sample
+    //	PRIMARY_SERVICE, 0000F530-1212-EFDE-1523-785FEABCD123
+    //	CHARACTERISTIC,  0000F531-1212-EFDE-1523-785FEABCD123, NOTIFY,
+    //	CHARACTERISTIC,  0000F532-1212-EFDE-1523-785FEABCD123, WRITE_WITHOUT_RESPONSE | DYNAMIC,
+    /*
+    	{
+    		.services_uuid16 = 0,
+    		.services_uuid128 =       {0x00,0x00,0xF5,0x30 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23} ,
+    		.characteristic_uuid16 = 0,
+    		.characteristic_uuid128 = {0x00,0x00,0xF5,0x31 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23},
+    		.opt_type = ATT_PROPERTY_NOTIFY,
+    	},
+
+    	{
+    		.services_uuid16 = 0,
+    		.services_uuid128 =       {0x00,0x00,0xF5,0x30 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23} ,
+    		.characteristic_uuid16 = 0,
+    		.characteristic_uuid128 = {0x00,0x00,0xF5,0x32 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23},
+    		.opt_type = ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
+    	},
+    */
+
+};
+
+
+static void default_report_data_deal(att_data_report_t *report_data, target_uuid_t *search_uuid)
+{
+    log_info("report_data:%02x,%02x,%d,len(%d)", report_data->packet_type,
+             report_data->value_handle, report_data->value_offset, report_data->blob_length);
+
+    log_info_hexdump(report_data->blob, report_data->blob_length);
+
+    switch (report_data->packet_type) {
+    case GATT_EVENT_NOTIFICATION:  //notify
+        break;
+    case GATT_EVENT_INDICATION://indicate
+    case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT://read
+        break;
+    case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT://read long
+        break;
+
+    default:
+        break;
+    }
+}
+
+static const u8 test_remoter_name1[] = "AC637N_MX(BLE)";//
+/* static const u8 test_remoter_name2[] = "AC630N_HID567(BLE)";// */
+static u16 default_client_write_handle;
+static u16 test_client_timer = 0;
+
+static const client_match_cfg_t match_dev01 = {
+    .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
+    .compare_data_len = sizeof(test_remoter_name1) - 1, //去结束符
+    .compare_data = test_remoter_name1,
+    .bonding_flag = 0,
+};
+
+/* static const client_match_cfg_t match_dev02 = { */
+/* .create_conn_mode = BIT(CLI_CREAT_BY_NAME), */
+/* .compare_data_len = sizeof(test_remoter_name2) - 1, //去结束符 */
+/* .compare_data = test_remoter_name2, */
+/* .bonding_flag = 1, */
+/* }; */
+
+static void default_test_write(void)
+{
+    static u32 count = 0;
+    count++;
+    int ret = client_operation_send(default_client_write_handle, &count, 16, ATT_OP_WRITE_WITHOUT_RESPOND);
+    log_info("test_write:%x", ret);
+}
+
+static void default_event_callback(le_client_event_e event, u8 *packet, int size)
+{
+    switch (event) {
+    case CLI_EVENT_MATCH_DEV: {
+        client_match_cfg_t *match_dev = packet;
+        log_info("match_name:%s\n", match_dev->compare_data);
+    }
+    break;
+
+    case CLI_EVENT_MATCH_UUID: {
+        opt_handle_t *opt_hdl = packet;
+        if (opt_hdl->search_uuid == &default_search_uuid_table[0]) {
+            default_client_write_handle = opt_hdl->value_handle;
+            log_info("match_uuid22\n");
+        }
+    }
+    break;
+
+    case CLI_EVENT_SEARCH_PROFILE_COMPLETE:
+        log_info("CLI_EVENT_SEARCH_PROFILE_COMPLETE\n");
+        if ((!test_client_timer) && default_client_write_handle) {
+            log_info("test timer_add\n");
+            test_client_timer = sys_timer_add(0, default_test_write, 500);
+        }
+        break;
+
+    case CLI_EVENT_CONNECTED:
+        break;
+
+    case CLI_EVENT_DISCONNECT:
+        if (test_client_timer) {
+            sys_timeout_del(test_client_timer);
+            test_client_timer = 0;
+        }
+        default_client_write_handle = 0;
+        break;
+
+    default:
+        break;
+    }
+}
+
+
+static const client_conn_cfg_t client_conn_config_default = {
+    .match_dev_cfg[0] = &match_dev01,
+    .match_dev_cfg[1] = NULL,
+    .match_dev_cfg[2] = NULL,
+    /* .match_dev_cfg[1] = &match_dev02, */
+    .report_data_callback = default_report_data_deal,
+    .search_uuid_cnt = (sizeof(default_search_uuid_table) / sizeof(target_uuid_t)),
+    .search_uuid_table = default_search_uuid_table,
+    .security_en = 0,
+    .event_callback = default_event_callback,
+};
+
+#endif
+
+//---------------------------------------------------------------------------
+static  client_conn_cfg_t *client_config = (void *) &client_conn_config_default ;
+//----------------------------------------------------------------------------
+
 
 static const struct conn_update_param_t connection_param_table[] = {
     {16, 24, 0, 600},//11

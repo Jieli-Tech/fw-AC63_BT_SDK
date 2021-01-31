@@ -433,4 +433,9 @@ SECTIONS
     } > code0
 }
 
+        media_code_total_size = media_text_end - media_text_start;
+
+
+
+
 

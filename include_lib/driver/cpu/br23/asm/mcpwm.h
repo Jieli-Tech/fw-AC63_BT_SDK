@@ -71,5 +71,8 @@ typedef enum {
 typedef void (*IO_ISR_FUNC)(void);
 
 
+int timer_pwm_init(JL_TIMER_TypeDef *JL_TIMERx, u32 fre, u32 duty, u32 port, int output_ch);
+void set_timer_pwm_duty(JL_TIMER_TypeDef *JL_TIMERx, u32 duty);
+
 #endif
 

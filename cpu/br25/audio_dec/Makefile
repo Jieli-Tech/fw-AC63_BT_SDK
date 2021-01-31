@@ -28,6 +28,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/tone_player.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_tone.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_record.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_spectrum.o \
 
 else ifeq ($(APP_CASE),dongle)
 objs += \
@@ -47,6 +48,6 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/tone_player.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_tone.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_record.o \
-
+	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_spectrum.o \
 
 endif

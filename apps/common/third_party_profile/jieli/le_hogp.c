@@ -41,6 +41,7 @@
 #include "rcsp_bluetooth.h"
 #include "JL_rcsp_api.h"
 #include "update_loader_download.h"
+#include "custom_cfg.h"
 
 #if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_HOGP)
 /* #if RCSP_BTMATE_EN */
@@ -358,11 +359,13 @@ static void cbk_sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
 static const u16 change_handle_table[2] = {ATT_CHARACTERISTIC_2a4b_01_VALUE_HANDLE, ATT_CHARACTERISTIC_2a4b_01_VALUE_HANDLE};
 static void check_report_map_change(void)
 {
+#if 0 //部分手机不支持
     if (hid_report_change && first_pair_flag && att_get_ccc_config(ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE)) {
         log_info("###send services changed\n");
         app_send_user_data(ATT_CHARACTERISTIC_2a05_01_VALUE_HANDLE, change_handle_table, 4, ATT_OP_INDICATE);
         hid_report_change = 0;
     }
+#endif
 }
 
 //回连状态，主动使能通知
@@ -1376,6 +1379,37 @@ void __attribute__((weak)) ble_hid_transfer_channel_recieve(u8 *packet, u16 size
     log_info("transfer_rx(%d):", size);
     log_info_hexdump(packet, size);
     //ble_hid_transfer_channel_send(packet,size);//for test
+}
+
+//控制配对模式
+void ble_set_pair_list_control(u8 mode)
+{
+    bool ret = 0;
+    u8 connect_address[6];
+    switch (mode) {
+    case 0:
+        //close pair,关配对
+        ret = ble_list_pair_accept(0);
+        break;
+
+    case 1:
+        //open pair,开配对
+        ret = ble_list_pair_accept(1);
+        break;
+
+    case 2:
+        //绑定已配对设备，不再接受新的配对
+        swapX(&cur_peer_addr_info[1], connect_address, 6);
+        //bond current's device
+        ret = ble_list_bonding_remote(connect_address, cur_peer_addr_info[0]);
+        //close pair
+        ble_list_pair_accept(0);
+        break;
+
+    default:
+        break;
+    }
+    log_info("%s: %02x,ret=%02x\n", __FUNCTION__, mode, ret);
 }
 
 

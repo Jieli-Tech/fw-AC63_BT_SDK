@@ -47,6 +47,12 @@ extern const int config_btctler_hci_standard;
 #define BT_HCI_STANDARD_IS_SUPPORT(x)        (config_btctler_hci_standard)
 
 
+extern const int config_bt_function ;
+#define BT_ENCTRY_TASK              BIT(0)
+
+#define BT_FUNCTION_IS(x)           (config_bt_function & (x))
+
+
 extern const int CONFIG_TEST_DUT_CODE;
 extern const int CONFIG_TEST_FCC_CODE;
 extern const int CONFIG_TEST_DUT_ONLY_BOX_CODE;
@@ -57,6 +63,8 @@ extern const int CONFIG_INQUIRY_PAGE_OFFSET_ADJUST ;
 extern const int CONFIG_LMP_NAME_REQ_ENABLE ;
 extern const int CONFIG_LMP_PASSKEY_ENABLE ;
 extern const int CONFIG_LMP_MASTER_ESCO_ENABLE ;
+extern const int config_btctler_bredr_master ;
+extern const int config_bredr_afh_user ;
 /********************************************************************************/
 /*
  *                   API
@@ -149,5 +157,39 @@ void bt_osc_offset_ext_updata(s32 offset);
 /* ----------------------------------------------------------------------------*/
 void bt_set_ldos(u8 mode);
 
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief ble_set_fix_pwr
+ *
+ * @param fix (0~max)
+ * 动态调整BLE的发射功率
+ */
+/* ----------------------------------------------------------------------------*/
+void ble_set_fix_pwr(u8 fix);
+
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief bredr_set_fix_pwr
+ *
+ * @param fix (0~max)
+ * 动态调整EDR的发射功率
+ */
+/* ----------------------------------------------------------------------------*/
+void bredr_set_fix_pwr(u8 fix);
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief ble_rf_vendor_fixed_channel
+ *
+ * @param channel_index: range 0~39 fixed freq, or 0xff --close fixed
+ * @param pktcnt:        range 1~3
+ * 配置ble 的 adv、scan、init 状态定频
+ */
+/* ----------------------------------------------------------------------------*/
+bool ble_rf_vendor_fixed_channel(u8 channel_index, u8 pktcnt);
+
+void set_bt_afh_classs_enc(u8 afh_class);
+void set_bt_enhanced_power_control(u8 en);
 
 #endif

@@ -25,10 +25,10 @@
 #define ANC_TRAIN_STEP_1			0x08		//ANC训练步进1
 #define ANC_TRAIN_STEP_2			0x09		//ANC训练步进2
 
-#define ANC_MIC_GAIN_SET			0x11		//设置主MIC的增益
-#define ANC_TRIM_MIC_GAIN_SET		0x12		//设置误差MIC的增益
-#define ANC_DAC_ANA_GAIN_SET		0x13		//设置DAC的模拟增益
-#define ANC_DIG_GAIN_SET			0x14		//设置ANC的数字增益
+#define ANC_REF_MIC_GAIN_SET		0x11		//设置参考MIC的增益
+#define ANC_ERR_MIC_GAIN_SET		0x12		//设置误差MIC的增益
+#define ANC_DAC_GAIN_SET			0x13		//设置DAC的模拟增益
+#define ANC_FFGAIN_SET				0x14		//设置ANC的数字增益
 
 #define ANC_TRAIN_STEP_SET          0x15		//设置ANC训练步进
 #define ANC_SZ_LOW_THR_SET          0x16        //设置SZ MIC下限能量阈值
@@ -42,6 +42,8 @@
 #define ANC_FZ_ADAP_TIME_SET		0x1d		//设置FZ自适应收敛时间
 #define ANC_WZ_TRAIN_TIME_SET		0x1e		//设置WZ训练时间
 
+#define ANC_FBGAIN_SET				0x1f		//设置ANC的FBGAIN增益
+
 //以下为开发者测试指令
 #define ANC_DEVELOPER_MODE			0x20		//开发者模式
 #define ANC_TEST_NADAP				0x21		//关闭ANC自适应收敛
@@ -51,7 +53,6 @@
 
 #define ANC_TRAIN_STEP_CONNUTE      0x30        //继续找步进
 
-//
 //----------------耳机反馈子命令1---------------------//
 #define	ANC_EXEC_SUCC				0x01		//执行成功
 #define ANC_EXEC_FAIL				0x02		//执行失败
@@ -64,7 +65,16 @@
 //多种错误信息组合为|的形式,如MIC0/MIC1工作都不正常，则返回0x80|BIT(0)|BIT(1)
 
 
+#define ANC_TRANS_EN				BIT(0)      //通透训练使能
+#define ANC_FF_EN					BIT(1)		//FF训练使能
+#define ANC_FB_EN					BIT(2)		//FB训练使能
+#define ANC_HYBRID_EN  			 	BIT(3)		//Hybrid 训练使能
+//注意FF/FB/Hybrid/只能选择一种
 
+#define A_MIC0					BIT(0)		//模拟MIC0
+#define A_MIC1        			BIT(1)		//模拟MIC1
+#define D_MIC0       			BIT(2)		//数字MIC0
+#define D_MIC1       		 	BIT(3)		//数字MIC1
 
 #define ANC_SPP_PACK_NUM		10		//数据包长度
 
@@ -79,6 +89,12 @@ enum {
     ANC_FZ_ADAP_STATUS,						//FZ自适应状态
     ANC_WZ_NADAP_STATUS,					//WZ非自适应状态
     ANC_WZ_ADAP_STATUS,						//WZ自适应状态
+    ANC_WZ_END_STATUS,						//WZ训练结束
+};
+
+enum {
+    ANC_TRAIN_SZ = 0,
+    ANC_TRAIN_FZ
 };
 
 typedef struct {
@@ -100,7 +116,11 @@ typedef struct {
      10< DAC GAIN <12    noise_level 2;
          DAC GAIN >12    noise_level 3;
      */
+    u8  enablebit; 			//训练模式使能标志位 前馈|混合馈|通透
     u16 timerout_id;		//训练超时定时器ID
+    s16 fb0_gain;
+    s16 fb0sz_dly_en;
+    u16 fb0sz_dly_num;
     int sz_gain;			//静音训练sz 增益
     u32 sz_lower_thr;		//误差MIC下限能量阈值
     u32 fz_lower_thr;   	//参考MIC下限能量阈值
@@ -123,17 +143,27 @@ typedef struct {
     u8 status;
     u8 train_step_num;
     int anc_gain;
+    int anc_fbgain;
     anc_spp_data_t rx_buf;
     anc_spp_data_t tx_buf;
 
 } anc_spp_t;
 
+typedef struct {
+    u8 mode;
+    u8 ff_en;
+    u8 fb_en;
+    u16 fb0_gain;
+    u16 fb1_gain;
+} anc_train_reg_t;
 
 typedef struct {
     u8 mic_errmsg;
     u8 status;
+    u32 dat[4];  //ff_num/ff_dat/fb_num/fb_dat
     u32 pow;
     u32 temp_pow;
+    u32 mute_pow;
 } anc_ack_msg_t;
 
 void anc_spp_init(anc_train_para_t *para);
@@ -141,9 +171,11 @@ void anc_spp_uninit(void);
 int anc_spp_event_deal(u8 *dat);
 void anc_train_api_set(u8 cmd, u32 data, anc_train_para_t *para);
 int anc_spp_rx_packet(u8 *dat, u8 len);
-int anc_spp_tx_packet(u8 mode, u8 command);
+int anc_spp_tx_packet(u8 mode, u8 command, u16 command_dat);
+u8 anc_powdat_analysis(u32 pow);
+void anc_coeff_max_get(s32 *coeff, s32 *dat, u16 len, u8 type);
 
-void anc_btspp_display_pow(u32 pow, u8 status);
+void anc_btspp_display_pow(anc_ack_msg_t *anc_ack);
 void anc_btspp_status_set(u8 status);
 
 #endif/*_ANC_BTSPP_H_*/

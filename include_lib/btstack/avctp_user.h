@@ -251,6 +251,14 @@ typedef enum {
     USER_CTRL_PBG_TRY_SEND_DATA,//
     USER_CTRL_PBG_CMD_END,
 
+///adt 发送命令
+    USER_CTRL_ADT_CMD_BEGIN,
+    USER_CTRL_ADT_CONNECT,
+    USER_CTRL_ADT_KEY_MIC_OPEN,
+    USER_CTRL_ADT_SEND_DATA,//len <= 512
+    USER_CTRL_ADT_TRY_SEND_DATA,//
+    USER_CTRL_ADT_CMD_END,
+
     ///蓝牙电话本功能发送命令
     USER_CTRL_PBAP_CMD_BEGIN,
     //电话本功能读取通话记录的前n条
@@ -373,6 +381,9 @@ typedef enum {
 
 
 
+#define    REMOTE_DEFAULT    0x00
+#define    REMOTE_SINK       0x01
+#define    REMOTE_SOURCE     0x02
 
 
 #define    SPP_CH       0x01
@@ -382,7 +393,8 @@ typedef enum {
 #define    HID_CH       0x10
 #define    AVDTP_CH     0x20
 #define    PBAP_CH      0x40
-
+#define    HFP_AG_CH    0x80
+#define    A2DP_SRC_CH  0x2000
 struct sniff_ctrl_config_t {
     u16 sniff_max_interval;
     u16 sniff_mix_interval;
@@ -391,6 +403,10 @@ struct sniff_ctrl_config_t {
     u8	sniff_addr[6];
 };
 extern u32 user_send_cmd_prepare(USER_CMD_TYPE cmd, u16 param_len, u8 *param);
+extern u32 user_emitter_cmd_prepare(USER_CMD_TYPE cmd, u16 param_len, u8 *param);
+u8 get_emitter_connect_status(void);
+u16 get_emitter_curr_channel_state();
+u8 get_emitter_a2dp_status(void);
 
 
 /*
@@ -486,9 +502,6 @@ extern u8 hci_standard_connect_check(void);
 extern void set_stack_exiting(u8 exit);
 extern int a2dp_media_packet_codec_type(u8 *data);
 extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
-void a2dp_media_free_packet(void *_packet);
-int a2dp_media_get_packet(u8 **frame);
-extern int a2dp_media_get_packet_num();
 extern u8 connect_last_device_from_vm();
 extern u8 hci_standard_connect_check(void);
 extern void __bt_set_hid_independent_flag(bool flag);
@@ -608,6 +621,7 @@ void set_start_search_spp_device(u8 spp);
 
 
 u8 restore_remote_device_info_opt(bd_addr_t *mac_addr, u8 conn_device_num, u8 id);
+u8 restore_remote_device_info_profile(bd_addr_t *mac_addr, u8 device_num, u8 id, u8 profile);
 /*remote dev type*/
 /*0:unknow,1-android,2:apple_inc,0x03-xiaomi*/
 enum {
@@ -618,5 +632,7 @@ enum {
 };
 u8 remote_dev_company_ioctrl(bd_addr_t dev_addr, u8 op_flag, u8 value);
 u8 hci_standard_link_check(void);
+u8 remote_support_sink_profile(void);
+u8 get_role_type_for_addr(bd_addr_t addr);
 extern void XM_status_update(u8 status);
 #endif

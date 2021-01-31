@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 <FileVersion major="1" minor="6" />
 <Project>
-<Option title="AC696X_mesh" />
+<Option title="AC636N_mesh" />
 <Option compiler="pi32v2_r3_lto_compiler" />
 <Build>
 <Target title="Release">
@@ -27,6 +27,7 @@
 <Add option="-DCONFIG_PRINT_IN_MASK" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
 <Add option="-DCONFIG_EQ_SUPPORT_ASYNC" />
+<Add option="-DCONFIG_MIXER_CYCLIC" />
 <Add option="-DCONFIG_FREE_RTOS_ENABLE" />
 <Add option="-DTCFG_APP_BT_EN=1" />
 <Add option="-DUSB_PC_NO_APP_MODE" />
@@ -36,7 +37,7 @@
 <Add option="-DCONFIG_EVENT_KEY_MAP_ENABLE=0" />
 <Add option="-DTIMER_POOL_NUM_CONFIG=10" />
 <Add option="-DAPP_ASYNC_POOL_NUM_CONFIG=0" />
-<Add option="-DVFS_ENABLE=0" />
+<Add option="-DVFS_ENABLE=1" />
 <Add option="-DUSE_SDFILE_NEW=1" />
 <Add option="-DVFS_FILE_POOL_NUM_CONFIG=0" />
 <Add option="-DSDFILE_VERSION=0x020000" />
@@ -160,6 +161,7 @@
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/adv.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/access.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/basic_depend.h" />
+<Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/cdb.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/cfg_cli.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/cfg_srv.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/health_cli.h" />
@@ -171,6 +173,7 @@
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/sig_mesh_api.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/beacon.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/beacon.h" />
+<Unit filename="../../../../apps/common/third_party_profile/sig_mesh/cdb.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/cfg_cli.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/cfg_srv.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/crypto.c"><Option compilerVer="CC"/></Unit>
@@ -237,6 +240,7 @@
 <Unit filename="../../../../apps/mesh/version.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/adc_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/charge.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/chargebox_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/chargestore.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/iic_soft.c"><Option compilerVer="CC"/></Unit>
@@ -252,6 +256,7 @@
 <Unit filename="../../../../cpu/br25/ui_driver/led7/led7_driver.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/ui_driver/led7_timer.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/ui_driver/ui_common.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/usb_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../include_lib/btctrler/adapter/include/common/sys_timer.h" />
 <Unit filename="../../../../include_lib/btctrler/ble/hci_ll.h" />
 <Unit filename="../../../../include_lib/btctrler/ble/ll_config.h" />
@@ -309,6 +314,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/br25/asm/uart.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br25/asm/uart_dev.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br25/asm/wdt.h" />
+<Unit filename="../../../../include_lib/driver/device/chargebox.h" />
 <Unit filename="../../../../include_lib/driver/device/sdio_host_init.h" />
 <Unit filename="../../../../include_lib/driver/device/spiflash.h" />
 <Unit filename="../../../../include_lib/driver/device/uart.h" />

@@ -26,5 +26,10 @@ typedef struct _FS_DISP_INFO {
     u8 update_flag;
 } FS_DISP_INFO;
 
+typedef struct _FLASH_FAT_CLUSTINFO {
+    u32 sclust2addr; //当前连续簇块文件起始实际物理地址
+    u32 endclust2addr; //当前连续簇块结束位置
+    u32 file_len; //文件长度,如 JL.res文件的
+} FLASH_FAT_CLUSTINFO;
 #endif  /* __FS_FILE_NAME_H__ */
 

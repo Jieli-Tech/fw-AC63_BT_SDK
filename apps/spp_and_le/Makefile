@@ -68,4 +68,18 @@ objs += \
 objs += \
 	$(ROOT)/apps/common/bt_common/bt_test_api.o \
 
+#audio
+ifeq ($(AUDIO_LITE_VERSION),y)
+includes += \
+	-I$(ROOT)/apps/common/audio/  \
+	-I$(ROOT)/cpu/$(CPU)/audio_dec \
+	-I$(ROOT)/cpu/$(CPU)/audio_enc \
+
+objs += \
+	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_media_config.o \
+	$(ROOT)/apps/common/audio/sine_make.o \
+	$(ROOT)/apps/common/audio/decode/decode.o \
+
+endif
+
 -include $(ROOT)/apps/common/usb/Makefile.inc

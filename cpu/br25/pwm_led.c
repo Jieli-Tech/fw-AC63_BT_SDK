@@ -412,6 +412,7 @@ static void pwm_led_two_io_mode_display(u8 display)
     led_pin_set_disable(__this->user_data->io_cfg.two_io.pin0);
     led_pin_set_disable(__this->user_data->io_cfg.two_io.pin1);
 
+#if (PWM_LED_TWO_IO_CONNECT == 0)
     switch (display) {
     case PWM_LED_ALL_OFF:
     case PWM_LED0_OFF:
@@ -483,6 +484,79 @@ static void pwm_led_two_io_mode_display(u8 display)
         led_pin_set_enable(__this->user_data->io_cfg.two_io.pin0);
         __this->display_index = 0;
     }
+#else
+    switch (display) {
+    case PWM_LED_ALL_OFF:
+    case PWM_LED0_OFF:
+    case PWM_LED1_OFF:
+        _pwm_led_display_mode(PWM_LED_ALL_OFF);
+        break;
+
+    case PWM_LED0_ON:
+    case PWM_LED0_SLOW_FLASH:
+    case PWM_LED0_FAST_FLASH:
+    case PWM_LED0_ONE_FLASH_5S:
+    case PWM_LED0_DOUBLE_FLASH_5S:
+    case PWM_LED0_BREATHE:
+        led_pin_set_enable(__this->user_data->io_cfg.two_io.pin0);
+        _pwm_led_display_mode(display);
+        break;
+
+    case PWM_LED1_ON:
+        change_mode = PWM_LED0_ON;
+        break;
+    case PWM_LED1_SLOW_FLASH:
+        change_mode = PWM_LED0_SLOW_FLASH;
+        break;
+    case PWM_LED1_FAST_FLASH:
+        change_mode = PWM_LED0_FAST_FLASH;
+        break;
+    case PWM_LED1_ONE_FLASH_5S:
+        change_mode = PWM_LED0_ONE_FLASH_5S;
+        break;
+    case PWM_LED1_DOUBLE_FLASH_5S:
+        change_mode = PWM_LED0_DOUBLE_FLASH_5S;
+        break;
+    case PWM_LED1_BREATHE:
+        change_mode = PWM_LED0_BREATHE;
+        break;
+    case PWM_LED_ALL_ON:
+        _pwm_led_display_mode(PWM_LED0_ON);
+        led_pin_set_enable(__this->user_data->io_cfg.two_io.pin0);
+        led_pin_set_enable(__this->user_data->io_cfg.two_io.pin1);
+        break;
+/////////////
+
+//双灯互闪
+    case PWM_LED0_LED1_FAST_FLASH: //使用中断切灯
+        isr_mode = PWM_LED0_FAST_FLASH;
+        break;
+    case PWM_LED0_LED1_SLOW_FLASH:
+        isr_mode = PWM_LED0_SLOW_FLASH;
+        break;
+//呼吸模式
+    case PWM_LED0_LED1_BREATHE: //使用中断切灯
+        isr_mode = PWM_LED0_BREATHE;
+        break;
+
+    default:
+        break;
+    }
+    if (change_mode) {
+        _pwm_led_display_mode(change_mode);
+        LED_PWM_DISABLE;
+        LED_BRI_DUTY0_SYNC1();
+        led_pin_set_enable(__this->user_data->io_cfg.two_io.pin1);
+        LED_PWM_ENABLE;
+    }
+    if (isr_mode) {
+        _pwm_led_display_mode(isr_mode);
+        _led_pwm1_duty_set(0xFF, 2, 0, 0, 0); //占满整个周期
+        _pwm_led_register_irq(_change_io_display, 0);
+        led_pin_set_enable(__this->user_data->io_cfg.two_io.pin0);
+        __this->display_index = 0;
+    }
+#endif
 }
 
 static void _pwm_led_two_io_user_define_mode(u8 led_index)

@@ -117,6 +117,12 @@
 #define CONFIG_BT_TX_BUFF_SIZE  (0)
 #endif
 
+#if (CONFIG_BT_MODE != BT_NORMAL)
+////bqb 如果测试3M tx buf 最好加大一点
+#undef  CONFIG_BT_TX_BUFF_SIZE
+#define CONFIG_BT_TX_BUFF_SIZE  (6 * 1024)
+
+#endif
 #define BT_NORMAL_HZ	            CONFIG_BT_NORMAL_HZ
 //*********************************************************************************//
 //                                 时钟切换配置                                    //

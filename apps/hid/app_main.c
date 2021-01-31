@@ -34,6 +34,7 @@ const struct task_info task_info_table[] = {
     {"app_core",            1,     640,   128  },
     {"sys_event",           7,     256,   0    },
     {"btctrler",            4,     512,   256  },
+    {"btencry",             1,     512,   128  },
     {"btstack",             3,     768,  256  },
     {"systimer",		    7,	   128,   0		},
     {"update",				1,	   320,   0		},
@@ -43,6 +44,9 @@ const struct task_info task_info_table[] = {
 #if (RCSP_BTMATE_EN)
     {"rcsp_task",		2,		640,	128	},
 #endif
+#ifdef CONFIG_LITE_AUDIO
+    {"audio_dec",           3,     768,   128  },
+#endif/*CONFIG_LITE_AUDIO*/
     {0, 0},
 };
 
@@ -81,6 +85,13 @@ void app_main()
     } else {
         check_power_on_voltage();
     }
+
+#if TCFG_AUDIO_ENABLE
+    extern int audio_dec_init();
+    extern int audio_enc_init();
+    audio_dec_init();
+    audio_enc_init();
+#endif/*TCFG_AUDIO_ENABLE*/
 
     init_intent(&it);
 #if (CONFIG_APP_MOUSE)
@@ -148,4 +159,8 @@ int eSystemConfirmStopStatus(void)
     return 1;
 }
 
-
+__attribute__((used)) int *__errno()
+{
+    static int err;
+    return &err;
+}

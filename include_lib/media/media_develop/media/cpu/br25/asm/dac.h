@@ -6,6 +6,7 @@
 #include "generic/atomic.h"
 #include "os/os_api.h"
 #include "media/audio_stream.h"
+#include "media/audio_cfifo.h"
 
 
 #define DAC_44_1KHZ            0
@@ -59,6 +60,8 @@
 #define DA_SOUND_NORMAL                 0x0
 #define DA_SOUND_RESET                  0x1
 #define DA_SOUND_WAIT_RESUME            0x2
+
+#define AUDIO_DAC_MULTI_CHANNEL_ENABLE  1
 
 enum {
     DAC_EVENT_START,
@@ -154,6 +157,7 @@ struct audio_dac_hdl {
     u16 start_points;
     u16 delay_points;
     u16 prepare_points;//未开始让DAC真正跑之前写入的PCM点数
+    u16 unread_samples;
 
     u16 irq_points;
     u8 channel_mode;
@@ -167,9 +171,39 @@ struct audio_dac_hdl {
     s16 read_offset;
     unsigned long sound_resume_time;
     struct audio_stream_entry entry;
+    struct audio_cfifo fifo;
+    struct list_head ch_head;
+    OS_MUTEX ch_mutex;
 };
 
+struct audio_dac_channel {
+    u8  state;
+    u8  pause;
+    u8  samp_sync_step;
+    u8  wait_resume;
+    u8  write_mode;
+    u16 delay_time;
+    struct audio_sample_sync *samp_sync; /*样点同步句柄*/
+    struct audio_dac_hdl *dac;
+    struct audio_cfifo_channel fifo;
+    struct list_head ch_entry;
+    struct audio_stream_entry entry;
+};
 
+struct audio_dac_channel_attr {
+    u8  write_mode;
+    u16 delay_time;
+};
+
+int audio_dac_new_channel(struct audio_dac_hdl *dac, struct audio_dac_channel *ch);
+
+void audio_dac_free_channel(struct audio_dac_channel *ch);
+
+int audio_dac_channel_set_attr(struct audio_dac_channel *ch, struct audio_dac_channel_attr *attr);
+
+int audio_dac_channel_sync_enable(struct audio_dac_channel *ch, struct audio_sample_sync *samp_sync);
+
+int audio_dac_channel_sync_disable(struct audio_dac_channel *ch, struct audio_sample_sync *samp_sync);
 
 int audio_dac_init(struct audio_dac_hdl *dac, const struct dac_platform_data *pd);
 
@@ -273,6 +307,8 @@ int audio_dac_ch_digital_gain_set(struct audio_dac_hdl *dac, u8 ch, u32 dgain);
 int audio_dac_ch_digital_gain_get(struct audio_dac_hdl *dac, u8 ch);
 
 void audio_dac_ch_mute(struct audio_dac_hdl *dac, u8 ch, u8 mute);
+
+void audio_dac_zero_detect_onoff(struct audio_dac_hdl *dac, u8 onoff);
 
 int audio_dac_set_RL_digital_vol(struct audio_dac_hdl *dac, u16 vol);
 int audio_dac_set_RR_digital_vol(struct audio_dac_hdl *dac, u16 vol);

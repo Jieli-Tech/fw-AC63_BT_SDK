@@ -11,8 +11,10 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/mcpwm.o \
 	  $(ROOT)/cpu/$(CPU)/charge.o \
 	  $(ROOT)/cpu/$(CPU)/chargestore.o \
+	  $(ROOT)/cpu/$(CPU)/chargebox_hw.o \
 	  $(ROOT)/cpu/$(CPU)/port_wkup.o \
       $(ROOT)/cpu/$(CPU)/adc_api.o \
+      $(ROOT)/cpu/$(CPU)/usb_key.o \
 
 
 ifeq ($(APP_CASE),earphone)
@@ -69,3 +71,17 @@ include $(ROOT)/cpu/$(CPU)/localtws/Makefile
 include $(ROOT)/cpu/$(CPU)/audio_mic/Makefile
 
 
+ifeq ($(AUDIO_LITE_VERSION),y)
+#include $(ROOT)/cpu/$(CPU)/audio_common/Makefile
+#include $(ROOT)/cpu/$(CPU)/audio_dec/Makefile
+#include $(ROOT)/cpu/$(CPU)/audio_enc/Makefile
+objs += \
+	  $(ROOT)/cpu/$(CPU)/clock_manager.o \
+	  $(ROOT)/cpu/$(CPU)/audio_common/app_audio.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dec/tone_player.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_tone.o \
+	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_enc.o \
+	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_adc_demo.o \
+
+endif

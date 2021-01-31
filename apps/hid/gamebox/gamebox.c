@@ -245,46 +245,50 @@ static void gamebox_task(void *arg)
 }
 static void usb_event_handler(struct sys_event *event, void *priv)
 {
-    switch (event->type) {
-    case SYS_DEVICE_EVENT:
-        if ((u32)event->arg == DEVICE_EVENT_FROM_OTG) {
-            const char *usb_msg = (const char *)event->u.dev.value;
-            const usb_dev usb_id = usb_msg[2] - '0';
-            log_debug("usb event : %d DEVICE_EVENT_FROM_OTG %s", event->u.dev.event, usb_msg);
-            if (usb_msg[0] == 'h') {
-                if (event->u.dev.event == DEVICE_EVENT_IN) {
-                    log_info("usb %c online", usb_msg[2]);
-                    if (usb_host_mount(usb_id, 3, 20, 250)) {
-                        usb_h_force_reset(usb_id);
-                        usb_otg_suspend(usb_id, OTG_UNINSTALL);
-                        usb_otg_resume(usb_id);
-                    }
-                } else if (event->u.dev.event == DEVICE_EVENT_OUT) {
-                    log_info("usb %c offline", usb_msg[2]);
-                    set_phone_connect_status(0);
-                    usb_host_unmount(usb_id);
-                }
-            } else if (usb_msg[0] == 's') {
-#if TCFG_PC_ENABLE
-                if (event->u.dev.event == DEVICE_EVENT_ONLINE) {
-                    usb_start(usb_id);
-                } else {
-                    usb_stop(usb_id);
-                }
-#endif
-            }
+    const char *usb_msg;
+    usb_dev usb_id;
 
-        } else if ((u32)event->arg == DEVICE_EVENT_FROM_USB_HOST) {
-            log_debug("host_event %x", event->u.dev.event);
-            if ((event->u.dev.event == DEVICE_EVENT_IN) ||
-                (event->u.dev.event == DEVICE_EVENT_CHANGE)) {
-                int err = os_taskq_post_msg(TASK_NAME, 2, DEVICE_EVENT_IN, event->u.dev.value);
-                if (err) {
-                    r_printf("err %x ", err);
+    switch ((u32)event->arg) {
+    case DEVICE_EVENT_FROM_OTG:
+        usb_msg = (const char *)event->u.dev.value;
+        usb_id = usb_msg[2] - '0';
+
+        log_debug("usb event : %d DEVICE_EVENT_FROM_OTG %s",
+                  event->u.dev.event, usb_msg);
+
+        if (usb_msg[0] == 'h') {
+            if (event->u.dev.event == DEVICE_EVENT_IN) {
+                log_info("usb %c online", usb_msg[2]);
+                if (usb_host_mount(usb_id, 3, 20, 250)) {
+                    usb_h_force_reset(usb_id);
+                    usb_otg_suspend(usb_id, OTG_UNINSTALL);
+                    usb_otg_resume(usb_id);
                 }
             } else if (event->u.dev.event == DEVICE_EVENT_OUT) {
-                log_error("device out %x", event->u.dev.value);
+                log_info("usb %c offline", usb_msg[2]);
+                set_phone_connect_status(0);
+                usb_host_unmount(usb_id);
             }
+        } else if (usb_msg[0] == 's') {
+#if TCFG_PC_ENABLE
+            if (event->u.dev.event == DEVICE_EVENT_ONLINE) {
+                usb_start(usb_id);
+            } else {
+                usb_stop(usb_id);
+            }
+#endif
+        }
+        break;
+    case DEVICE_EVENT_FROM_USB_HOST:
+        log_debug("host_event %x", event->u.dev.event);
+        if ((event->u.dev.event == DEVICE_EVENT_IN) ||
+            (event->u.dev.event == DEVICE_EVENT_CHANGE)) {
+            int err = os_taskq_post_msg(TASK_NAME, 2, DEVICE_EVENT_IN, event->u.dev.value);
+            if (err) {
+                r_printf("err %x ", err);
+            }
+        } else if (event->u.dev.event == DEVICE_EVENT_OUT) {
+            log_error("device out %x", event->u.dev.value);
         }
         break;
     }
@@ -295,16 +299,13 @@ void usbstack_init()
 {
     key_list_init();
     set_run_mode(UT_DEBUG_MODE);
-    sys_event_id = register_sys_event_handler(SYS_DEVICE_EVENT, 2, NULL, usb_event_handler);
+    register_sys_event_handler(SYS_DEVICE_EVENT, 0, 2, usb_event_handler);
     int err = task_create(gamebox_task, NULL, TASK_NAME);
 }
 
 void usbstack_exit()
 {
-    if (sys_event_id) {
-        unregister_sys_event_handler(sys_event_id);
-        sys_event_id = 0;
-    }
+    unregister_sys_event_handler(usb_event_handler);
 }
 
 struct ut_packet {

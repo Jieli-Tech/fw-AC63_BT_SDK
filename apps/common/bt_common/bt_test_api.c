@@ -14,7 +14,7 @@
 //bredr test api
 extern void ble_enter_dut_tx_mode(void *param);
 extern void bt_ble_adv_enable(u8 enable);
-extern void bredr_fcc_init(u8 mode);
+extern void bredr_fcc_init(u8 mode, u8 fre);
 
 #if 0
 
@@ -44,14 +44,14 @@ static void bt_dut_api(void)
 
 void bit_clr_ie(unsigned char index);
 /* !!!Notice:when this api is called and sleep mode should be sure to exit; */
-void bt_fix_fre_api()
+void bt_fix_fre_api(u8 fre)
 {
     bt_dut_api();
 
     bit_clr_ie(IRQ_BREDR_IDX);
     bit_clr_ie(IRQ_BT_CLKN_IDX);
 
-    bredr_fcc_init(BT_FRE);
+    bredr_fcc_init(BT_FRE, fre);
 }
 #endif
 

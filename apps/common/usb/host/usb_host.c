@@ -11,6 +11,11 @@
 #include "aoa.h"
 #include "hid.h"
 
+#if TCFG_USB_APPLE_DOCK_EN
+#include "apple_dock/iAP.h"
+#include "apple_mfi.h"
+#endif
+
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[mount]"
 #define LOG_ERROR_ENABLE
@@ -130,6 +135,15 @@ static int _usb_msd_parser(struct usb_host_device *host_dev, u8 interface_num, c
     return USB_DT_INTERFACE_SIZE;
 #endif
 }
+static int _usb_apple_mfi_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf)
+{
+    log_info("find udisk @ interface %d", interface_num);
+#if TCFG_USB_APPLE_DOCK_EN
+    return   usb_apple_mfi_parser(host_dev, interface_num, pBuf);
+#else
+    return USB_DT_INTERFACE_SIZE;
+#endif
+}
 static int _usb_adb_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf)
 {
     log_info("find adb @ interface %d", interface_num);
@@ -202,6 +216,18 @@ static int usb_descriptor_parser(struct usb_host_device *host_dev, const u8 *pBu
 
             if (interface->bInterfaceClass == USB_CLASS_MASS_STORAGE) {
                 i = _usb_msd_parser(host_dev, interface_num, pBuf);
+                if (i < 0) {
+                    log_error("---%s %d---", __func__, __LINE__);
+                    len = total_len;
+                } else {
+                    interface_num++;
+                    len += i;
+                    pBuf += i;
+                    have_find_valid_class = true;
+                }
+            } else if ((device_desc->idVendor == 0x05AC) &&
+                       ((device_desc->idProduct & 0xff00) == 0x1200)) {
+                i = _usb_apple_mfi_parser(host_dev, interface_num, pBuf);
                 if (i < 0) {
                     log_error("---%s %d---", __func__, __LINE__);
                     len = total_len;
@@ -296,6 +322,7 @@ static int usb_descriptor_parser(struct usb_host_device *host_dev, const u8 *pBu
     return !have_find_valid_class;
 }
 
+
 /* --------------------------------------------------------------------------*/
 /**
  * @brief usb_host_suspend
@@ -314,7 +341,6 @@ void usb_host_resume(const usb_dev usb_id)
 {
     usb_h_resume(usb_id);
 }
-
 
 static u32 _usb_host_mount(const usb_dev usb_id, u32 retry, u32 reset_delay, u32 mount_timeout)
 {

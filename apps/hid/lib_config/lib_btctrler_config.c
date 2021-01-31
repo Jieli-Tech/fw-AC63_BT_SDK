@@ -62,6 +62,7 @@ const int config_btctler_mode        = CONFIG_BT_MODE;
 //固定使用正常发射功率的等级:0-使用不同模式的各自等级;1~10-固定发射功率等级
 const int config_force_bt_pwr_tab_using_normal_level  = 0;
 const int CONFIG_BLE_SYNC_WORD_BIT = 30;
+const int CONFIG_LNA_CHECK_VAL = -60;
 const int CONFIG_DUT_POWER                  = 10;
 
 const int CONFIG_TWS_POWER_BALANCE_ENABLE   = 0;
@@ -105,6 +106,13 @@ const int CONFIG_INQUIRY_PAGE_OFFSET_ADJUST =  0;
 const int CONFIG_LMP_NAME_REQ_ENABLE  =  1;
 const int CONFIG_LMP_PASSKEY_ENABLE  =  1;
 const int CONFIG_LMP_MASTER_ESCO_ENABLE  =  1;
+
+const int config_bt_function  =  0;
+///bredr 强制 做 maseter
+const int config_btctler_bredr_master = 0;
+
+///afh maseter 使用app设置的map 通过USER_CTRL_AFH_CHANNEL 设置
+const int config_bredr_afh_user = 0;
 
 #if CONFIG_APP_STANDARD_KEYBOARD
 const int config_delete_link_key          = 0;           //配置是否连接失败返回PIN or Link Key Missing时删除linkKey

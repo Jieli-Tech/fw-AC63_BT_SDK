@@ -156,6 +156,33 @@ struct bt_mesh_prov {
      */
     void (*complete)(u16_t net_idx, u16_t addr);
 
+    /** @brief Unprovisioned beacon has been received.
+     *
+     *  This callback notifies the application that an unprovisioned
+     *  beacon has been received.
+     *
+     *  @param uuid     UUID
+     *  @param oob_info OOB Information
+     *  @param uri_hash Pointer to URI Hash value. NULL if no hash was
+     *                  present in the beacon.
+     */
+    void (*unprovisioned_beacon)(u8_t uuid[16],
+                                 bt_mesh_prov_oob_info_t oob_info,
+                                 u32_t *uri_hash);
+
+    /** @brief A new node has been added to the provisioning database.
+     *
+     *  This callback notifies the application that provisioning has
+     *  been successfully completed, and that a node has been assigned
+     *  the specified NetKeyIndex and primary element address.
+     *
+     *  @param net_idx  NetKeyIndex given during provisioning.
+     *  @param uuid     UUID of the added node
+     *  @param addr     Primary element address.
+     *  @param num_elem Number of elements that this node has.
+     */
+    void (*node_added)(u16_t net_idx, u8_t uuid[16], u16_t addr, u8_t num_elem);
+
     /** @brief Node has been reset.
      *
      *  This callback notifies the application that the local node

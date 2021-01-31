@@ -7,10 +7,8 @@
 #define FILE_TYPE_JPEG 	5
 #define AT_UI_RAM             AT(.ui_ram)
 
-#define EXTERN_PATH "storage/nor_ui/C/res/"
-#define INTERN_PATH "mnt/sdfile/res/"
-#define RES_PATH   EXTERN_PATH
-
+// #define EXTERN_PATH "storage/nor_ui/C/res/"
+// #define EXTERN_PATH "storage/virfat_flash/C/uires/"
 struct image_file {
     u8 format;
     u8 compress;
@@ -33,9 +31,9 @@ int str_file_version_compare(int str_ver);
 int open_style_file(const char *name);
 
 int font_ascii_init(const char *name);
-int open_image_by_id(struct image_file *f, int id, int page);
+int open_image_by_id(FILE *specfile, struct image_file *f, int id, int page);
 int read_image_data(struct image_file *f, u8 *data, int len);
-int br23_read_image_data(struct image_file *f, u8 *data, int len, int offset);
+int br23_read_image_data(FILE *specfile, struct image_file *f, u8 *data, int len, int offset);
 u32 image_decode(const void *pSour, void *pDest, u32 SourLen, u32 DestLen, u8 compress);
 int open_string_pic(struct image_file *file, int id);
 int read_str_data(struct image_file *f, u8 *data, int len);
@@ -49,5 +47,6 @@ int res_fread(FILE *_file, void *buf, u32 len);
 int res_fseek(FILE *_file, int offset, int fromwhere);
 int res_flen(FILE *file);
 int res_fclose(FILE *file);
+int _norflash_read_watch(u8 *buf, u32 addr, u32 len, u8 wait);//加速读
 
 #endif

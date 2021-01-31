@@ -45,7 +45,7 @@ void chargestore_set_update_ram(void)
     nvram_set_boot_state(UPGRADE_UART_SOFT_KEY);
 }
 
-static chargestore_get_f95_det_res(u32 equ_res)
+static u8 chargestore_get_f95_det_res(u32 equ_res)
 {
     u8 det_res = (equ_res + 50) / 100;
     if (det_res > 0) {
@@ -109,9 +109,12 @@ static void uart_isr(void)
 
 void chargestore_write(u8 *data, u8 len)
 {
-    ASSERT(((u32)data) % 4 == 0); //4byte对齐
+    u32 data_addr = (u32)data;
+    if (data_addr % 4) {//4byte对齐
+        ASSERT(0, "%s: unaligned accesses!", __func__);
+    }
     send_busy = 1;
-    __this->UART->TXADR = (u32)data;
+    __this->UART->TXADR = data_addr;
     __this->UART->TXCNT = len;
 }
 

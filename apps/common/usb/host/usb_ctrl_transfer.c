@@ -334,6 +334,10 @@ int set_configuration(struct usb_host_device *host_dev)
 {
     return  usb_control_msg(host_dev, USB_REQ_SET_CONFIGURATION, 0, 1, 0, NULL, 0);
 }
+int set_configuration_add_value(struct usb_host_device *host_dev, u16 value)
+{
+    return  usb_control_msg(host_dev, USB_REQ_SET_CONFIGURATION, 0, value, 0, NULL, 0);
+}
 int get_config_descriptor(struct usb_host_device *host_dev, void *cfg_desc, u32 len)
 {
     return usb_control_msg(host_dev,
@@ -344,6 +348,18 @@ int get_config_descriptor(struct usb_host_device *host_dev, void *cfg_desc, u32 
                            cfg_desc,
                            len);
 }
+
+int get_config_descriptor_add_value_l(struct usb_host_device *host_dev, void *cfg_desc, u32 len, u8 value_l)
+{
+    return usb_control_msg(host_dev,
+                           USB_REQ_GET_DESCRIPTOR,
+                           USB_DIR_IN,
+                           (USB_DT_CONFIG << 8) | value_l,
+                           0,
+                           cfg_desc,
+                           len);
+}
+
 
 int get_msd_max_lun(struct usb_host_device *host_dev, void *lun)
 {
@@ -442,6 +458,16 @@ int usb_switch2aoa(struct usb_host_device *host_dev)
 {
     return usb_control_msg(host_dev,
                            AOA_CMD53,
+                           USB_DIR_OUT | USB_TYPE_VENDOR,
+                           0,
+                           0,
+                           NULL,
+                           0);
+}
+int usb_switch2slave(struct usb_host_device *host_dev)
+{
+    return usb_control_msg(host_dev,
+                           0x51,
                            USB_DIR_OUT | USB_TYPE_VENDOR,
                            0,
                            0,

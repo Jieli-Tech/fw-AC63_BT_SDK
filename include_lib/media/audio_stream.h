@@ -5,17 +5,21 @@
 #include "media/audio_base.h"
 
 
+#define AUDIO_STREAM_IOCTRL_CMD_CHECK_ACTIVE		(1)
+
+
 struct audio_stream_entry;
 struct audio_frame_copy;
 
 
 struct audio_data_frame {
     u8 channel;
-    u8 stop;
-    u8 coding_type;
-    u8 data_sync;
+    // u8 coding_type;
+    u16 stop : 1;
+    u16 data_sync : 1;
+    u16 no_subsequent : 1;	// 没有后续
+    u32 sample_rate;
     u16 offset;             //数据偏移
-    u16 sample_rate;
     u16 data_len;
     s16 *data;
 };
@@ -49,6 +53,7 @@ struct audio_stream_entry {
                         struct audio_data_frame *out);
     void (*data_process_len)(struct audio_stream_entry *,  int len);
     void (*data_clear)(struct audio_stream_entry *);
+    int (*ioctrl)(struct audio_stream_entry *, int cmd, int *param);
 };
 
 struct audio_frame_copy {
@@ -110,6 +115,13 @@ void audio_stream_clear_from(struct audio_stream_entry *entry);
 void audio_stream_clear(struct audio_stream *stream);
 
 void audio_stream_clear_by_entry(struct audio_stream_entry *entry);
+
+
+/*
+ * 数据流活动检测。true 活动
+ */
+int audio_stream_check_active_from(struct audio_stream_entry *entry);
+
 
 void audio_stream_close(struct audio_stream *);
 

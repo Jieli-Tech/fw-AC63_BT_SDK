@@ -228,7 +228,22 @@
 #define TCFG_AUDIO_ADC_LINE_CHA0			LADC_LINE1_MASK
 #define TCFG_AUDIO_ADC_LINE_CHA1			LADC_CH_LINE0_L
 
+#define TCFG_AUDIO_DAC_ENABLE				DISABLE_THIS_MOUDLE
+
+//支持Audio功能，才能使能DAC/ADC模块
+#ifdef CONFIG_LITE_AUDIO
+#define TCFG_AUDIO_ENABLE					DISABLE
+#if TCFG_AUDIO_ENABLE
+#undef TCFG_AUDIO_ADC_ENABLE
+#undef TCFG_AUDIO_DAC_ENABLE
+#define TCFG_AUDIO_ADC_ENABLE				ENABLE_THIS_MOUDLE
 #define TCFG_AUDIO_DAC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_DEC_PCM_ENABLE					ENABLE
+#else
+#define TCFG_DEC_PCM_ENABLE					DISABLE
+#endif/*TCFG_AUDIO_ENABLE*/
+#endif/*CONFIG_LITE_AUDIO*/
+
 #define TCFG_AUDIO_DAC_LDO_SEL				1
 /*
 DACVDD电压设置(要根据具体的硬件接法来确定):
@@ -244,7 +259,7 @@ DAC硬件上的连接方式,可选的配置：
     DAC_OUTPUT_LR                   立体声
     DAC_OUTPUT_MONO_LR_DIFF         单声道差分输出
 */
-#define TCFG_AUDIO_DAC_CONNECT_MODE         DAC_OUTPUT_MONO_LR_DIFF
+#define TCFG_AUDIO_DAC_CONNECT_MODE         DAC_OUTPUT_LR
 
 /*
 解码后音频的输出方式:
@@ -254,7 +269,18 @@ DAC硬件上的连接方式,可选的配置：
     AUDIO_OUTPUT_R_CH               只输出原始声道的右声道
     AUDIO_OUTPUT_MONO_LR_CH         输出左右合成的单声道
  */
-#define AUDIO_OUTPUT_MODE                   AUDIO_OUTPUT_MONO_LR_CH
+#define AUDIO_OUTPUT_MODE                   AUDIO_OUTPUT_STEREO
+
+#define AUDIO_OUTPUT_WAY_DAC        0
+#define AUDIO_OUTPUT_WAY_IIS        1
+#define AUDIO_OUTPUT_WAY_FM         2
+#define AUDIO_OUTPUT_WAY_HDMI       3
+#define AUDIO_OUTPUT_WAY_SPDIF      4
+#define AUDIO_OUTPUT_WAY_BT      	5	// bt emitter
+#define AUDIO_OUTPUT_WAY_DAC_IIS    6
+#define AUDIO_OUTPUT_WAY_DONGLE		7
+#define AUDIO_OUTPUT_WAY            AUDIO_OUTPUT_WAY_DAC
+
 //*********************************************************************************//
 //                                  充电仓配置                                     //
 //*********************************************************************************//

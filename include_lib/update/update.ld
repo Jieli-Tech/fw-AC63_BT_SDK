@@ -27,6 +27,9 @@ SECTIONS
 
 		update_code_end = .;
     } > code0
+
+
+    UPDATE_CODE_TOTAL_SIZE = update_code_end - update_code_start;
 }
 
 

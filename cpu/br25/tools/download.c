@@ -10,12 +10,12 @@ ${OBJCOPY} -O binary -j .data $1.elf data.bin
 ${OBJCOPY} -O binary -j .data_code $1.elf data_code.bin
 
 ${OBJCOPY} -O binary -j .overlay_aec $1.elf aeco.bin
-${OBJCOPY} -O binary -j .overlay_wav $1.elf wav.bin
-${OBJCOPY} -O binary -j .overlay_ape $1.elf ape.bin
-${OBJCOPY} -O binary -j .overlay_flac $1.elf flac.bin
-${OBJCOPY} -O binary -j .overlay_m4a $1.elf m4a.bin
-${OBJCOPY} -O binary -j .overlay_amr $1.elf amr.bin
-${OBJCOPY} -O binary -j .overlay_dts $1.elf dts.bin
+${OBJCOPY} -O binary -j .overlay_wav $1.elf wavo.bin
+${OBJCOPY} -O binary -j .overlay_ape $1.elf apeo.bin
+${OBJCOPY} -O binary -j .overlay_flac $1.elf flaco.bin
+${OBJCOPY} -O binary -j .overlay_m4a $1.elf m4ao.bin
+${OBJCOPY} -O binary -j .overlay_amr $1.elf amro.bin
+${OBJCOPY} -O binary -j .overlay_dts $1.elf dtso.bin
 ${OBJCOPY} -O binary -j .overlay_fm $1.elf fmo.bin
 ${OBJCOPY} -O binary -j .overlay_mp3 $1.elf mp3o.bin
 ${OBJCOPY} -O binary -j .overlay_wma $1.elf wmao.bin
@@ -23,6 +23,12 @@ ${OBJCOPY} -O binary -j .overlay_wma $1.elf wmao.bin
 
 
 /opt/utils/remove_tailing_zeros -i aeco.bin -o aec.bin -mark ff
+/opt/utils/remove_tailing_zeros -i wavo.bin -o wav.bin -mark ff
+/opt/utils/remove_tailing_zeros -i apeo.bin -o ape.bin -mark ff
+/opt/utils/remove_tailing_zeros -i flaco.bin -o flac.bin -mark ff
+/opt/utils/remove_tailing_zeros -i m4ao.bin -o m4a.bin -mark ff
+/opt/utils/remove_tailing_zeros -i amro.bin -o amr.bin -mark ff
+/opt/utils/remove_tailing_zeros -i dtso.bin -o dts.bin -mark ff
 /opt/utils/remove_tailing_zeros -i fmo.bin -o fm.bin -mark ff
 /opt/utils/remove_tailing_zeros -i mp3o.bin -o mp3.bin -mark ff
 /opt/utils/remove_tailing_zeros -i wmao.bin -o wma.bin -mark ff
@@ -59,7 +65,7 @@ cat text.bin data.bin data_code.bin \
 	> app.bin
 
 
-files="app.bin br25loader.bin br25loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
+files="app.bin br25loader.bin br25loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug uboot_lrc.boot uboot_lrc.boot_debug ota_lrc.bin ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
 
 #if(CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE)
 #if RCSP_UPDATE_EN
@@ -90,6 +96,9 @@ cp soundbox/ai_single_bank/isd_config.ini ./
 #ifdef CONFIG_SOUNDBOX_FLASH_256K
 NICKNAME="br25_standard_2m_flash"
 cp soundbox/standard_2m_flash/isd_config.ini ./
+#elif defined CONFIG_SOUNDBOX_608N
+NICKNAME="br_standard_608n"
+cp soundbox/standard_608n/isd_config.ini ./
 #else
 NICKNAME="br25_standard"
 cp soundbox/standard/isd_config.ini ./
@@ -125,18 +134,24 @@ REM %OBJDUMP% -D -address-mask=0x1ffffff -print-dbg $1.elf > $1.lst
 
 
 %OBJCOPY% -O binary -j .overlay_aec %ELFFILE% aeco.bin
-%OBJCOPY% -O binary -j .overlay_wav %ELFFILE% wav.bin
-%OBJCOPY% -O binary -j .overlay_ape %ELFFILE% ape.bin
-%OBJCOPY% -O binary -j .overlay_flac %ELFFILE% flac.bin
-%OBJCOPY% -O binary -j .overlay_m4a %ELFFILE% m4a.bin
-%OBJCOPY% -O binary -j .overlay_amr %ELFFILE% amr.bin
-%OBJCOPY% -O binary -j .overlay_dts %ELFFILE% dts.bin
+%OBJCOPY% -O binary -j .overlay_wav %ELFFILE% wavo.bin
+%OBJCOPY% -O binary -j .overlay_ape %ELFFILE% apeo.bin
+%OBJCOPY% -O binary -j .overlay_flac %ELFFILE% flaco.bin
+%OBJCOPY% -O binary -j .overlay_m4a %ELFFILE% m4ao.bin
+%OBJCOPY% -O binary -j .overlay_amr %ELFFILE% amro.bin
+%OBJCOPY% -O binary -j .overlay_dts %ELFFILE% dtso.bin
 %OBJCOPY% -O binary -j .overlay_fm %ELFFILE% fmo.bin
 %OBJCOPY% -O binary -j .overlay_mp3 %ELFFILE% mp3o.bin
 %OBJCOPY% -O binary -j .overlay_wma %ELFFILE% wmao.bin
 
 
 remove_tailing_zeros -i aeco.bin -o aec.bin -mark ff
+remove_tailing_zeros -i wavo.bin -o wav.bin -mark ff
+remove_tailing_zeros -i apeo.bin -o ape.bin -mark ff
+remove_tailing_zeros -i flaco.bin -o flac.bin -mark ff
+remove_tailing_zeros -i m4ao.bin -o m4a.bin -mark ff
+remove_tailing_zeros -i amro.bin -o amr.bin -mark ff
+remove_tailing_zeros -i dtso.bin -o dts.bin -mark ff
 remove_tailing_zeros -i fmo.bin -o fm.bin -mark ff
 remove_tailing_zeros -i mp3o.bin -o mp3.bin -mark ff
 remove_tailing_zeros -i wmao.bin -o wma.bin -mark ff
@@ -181,6 +196,11 @@ copy app.bin soundbox\standard_2m_flash\app.bin
 copy br25loader.bin soundbox\standard_2m_flash\br25loader.bin
 
 soundbox\standard_2m_flash\download.bat
+#elif defined CONFIG_SOUNDBOX_608N
+copy app.bin soundbox\standard_608n\app.bin
+copy br25loader.bin soundbox\standard_608n\br25loader.bin
+
+soundbox\standard_608n\download.bat
 #else
 copy app.bin soundbox\standard\app.bin
 copy br25loader.bin soundbox\standard\br25loader.bin

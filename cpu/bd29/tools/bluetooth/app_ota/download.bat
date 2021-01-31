@@ -5,7 +5,6 @@ cd %~dp0
 
 json_to_res.exe json.txt
 
-copy ..\..\script.ver .
 copy ..\..\uboot.boot .
 copy ..\..\ota.bin .
 

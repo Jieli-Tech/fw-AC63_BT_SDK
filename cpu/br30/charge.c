@@ -149,36 +149,36 @@ void charge_power_switch_timer(void *priv)
 
 void power_enter_charge_mode(void)
 {
-#if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15)
-    u32 vbat_voltage;
-    vbat_voltage = adc_get_voltage(AD_CH_VBAT) * 4 / 10;
-    if (vbat_voltage > 300) {
-        power_set_charge_mode(0);
-        power_set_mode(PWR_DCDC15);
-        power_set_charge_mode(1);
-    } else {
-        power_set_charge_mode(0);
-        power_set_mode(PWR_LDO15);
-        power_set_charge_mode(1);
-        if (__this->power_sw_timer == 0) {
-            //低压充电不进低功耗
-            adc_set_sample_freq(AD_CH_VBAT, 20);
-            __this->power_sw_timer = usr_timer_add(NULL, charge_power_switch_timer, 1000, 1);
+    if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15) {
+        u32 vbat_voltage;
+        vbat_voltage = adc_get_voltage(AD_CH_VBAT) * 4 / 10;
+        if (vbat_voltage > 300) {
+            power_set_charge_mode(0);
+            power_set_mode(PWR_DCDC15);
+            power_set_charge_mode(1);
+        } else {
+            power_set_charge_mode(0);
+            power_set_mode(PWR_LDO15);
+            power_set_charge_mode(1);
+            if (__this->power_sw_timer == 0) {
+                //低压充电不进低功耗
+                adc_set_sample_freq(AD_CH_VBAT, 20);
+                __this->power_sw_timer = usr_timer_add(NULL, charge_power_switch_timer, 1000, 1);
+            }
         }
     }
-#endif
 }
 
 void power_exit_charge_mode(void)
 {
-#if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15)
-    power_set_charge_mode(0);
-    power_set_mode(TCFG_LOWPOWER_POWER_SEL);
-    if (__this->power_sw_timer) {
-        usr_timer_del(__this->power_sw_timer);
-        __this->power_sw_timer = 0;
+    if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15) {
+        power_set_charge_mode(0);
+        power_set_mode(TCFG_LOWPOWER_POWER_SEL);
+        if (__this->power_sw_timer) {
+            usr_timer_del(__this->power_sw_timer);
+            __this->power_sw_timer = 0;
+        }
     }
-#endif
 }
 
 void charge_start(void)
@@ -192,7 +192,12 @@ void charge_start(void)
 
     power_wakeup_enable_with_port(IO_CHGFL_DET);
 
-    power_enter_charge_mode();
+    u8 chip_id = get_chip_version() & 0x0f;
+    //A B C版本需要特殊处理,D版之后走正常流程
+    if ((chip_id >= 0x0C) || (chip_id == 0x01) || (chip_id == 0x02)) {
+        power_enter_charge_mode();
+    }
+
     CHGBG_EN(1);
     CHARGE_EN(1);
 
@@ -206,7 +211,11 @@ void charge_close(void)
     CHGBG_EN(0);
     CHARGE_EN(0);
 
-    power_exit_charge_mode();
+    u8 chip_id = get_chip_version() & 0x0f;
+    //A B C版本需要特殊处理,D版之后走正常流程
+    if ((chip_id >= 0x0C) || (chip_id == 0x01) || (chip_id == 0x02)) {
+        power_exit_charge_mode();
+    }
 
     power_wakeup_disable_with_port(IO_CHGFL_DET);
 

@@ -6,60 +6,13 @@
 #include "generic/jiffies.h"
 #include "misc/byteorder.h"
 #include "misc/slist.h"
-#include "kernel/atomic_h.h"
+// #include "kernel/atomic_h.h"
 #include "api/sig_mesh_api.h"
 
 /*******************************************************************/
 /*
  *-------------------  common adapter
  */
-//< error type
-#define ENONE           0  /* Err None */
-#define	EPERM		    1	/* Operation not permitted */
-#define	ENOENT		    2	/* No such file or directory */
-#define	ESRCH		    3	/* No such process */
-#define	EINTR		    4	/* Interrupted system call */
-#define	EIO		        5	/* I/O error */
-#define	ENXIO		    6	/* No such device or address */
-#define	E2BIG		    7	/* Argument list too long */
-#define	ENOEXEC		    8	/* Exec format error */
-#define	EBADF		    9	/* Bad file number */
-#define	ECHILD		    10	/* No child processes */
-#define	EAGAIN		    11	/* Try again */
-#define	ENOMEM		    12	/* Out of memory */
-#define	EACCES		    13	/* Permission denied */
-#define	EFAULT		    14	/* Bad address */
-#define	ENOTBLK		    15	/* Block device required */
-#define	EBUSY		    16	/* Device or resource busy */
-#define	EEXIST		    17	/* File exists */
-#define	EXDEV		    18	/* Cross-device link */
-#define	ENODEV		    19	/* No such device */
-#define	ENOTDIR		    20	/* Not a directory */
-#define	EISDIR		    21	/* Is a directory */
-#define	EINVAL		    22	/* Invalid argument */
-#define	ENFILE		    23	/* File table overflow */
-#define	EMFILE		    24	/* Too many open files */
-#define	ENOTTY		    25	/* Not a typewriter */
-#define	ETXTBSY		    26	/* Text file busy */
-#define	EFBIG		    27	/* File too large */
-#define	ENOSPC		    28	/* No space left on device */
-#define	ESPIPE		    29	/* Illegal seek */
-#define	EROFS		    30	/* Read-only file system */
-#define	EMLINK		    31	/* Too many links */
-#define	EPIPE		    32	/* Broken pipe */
-#define	EDOM		    33	/* Math argument out of domain of func */
-#define	ERANGE		    34	/* Math result not representable */
-#define ENOTSUP         35      /* Unsupported value */
-#define EMSGSIZE        36     /* Message size */
-#define ENOBUFS         55      /* No buffer space available */
-#define ENOTCONN        57     /* Socket is not connected */
-#undef ETIMEDOUT
-#define ETIMEDOUT       60    /* Connection timed out */
-#define EALREADY        69    /* Operation already in progress */
-#define ECANCELED       72 /* Operation canceled */
-#define EBADMSG         77 /* Invalid STREAMS message */
-#define SL_ERROR_BSD_EADDRNOTAVAIL          (-99L)  /* Cannot assign requested address */
-#define EADDRNOTAVAIL                       SL_ERROR_BSD_EADDRNOTAVAIL
 //< base operation
 #define min(a, b)       MIN(a, b)
 #define max(a, b)       MAX(a, b)
@@ -94,61 +47,6 @@ __extension__ ({							\
 #define __ASSERT                ASSERT
 #define __ASSERT_NO_MSG(test)   ASSERT(test)
 #define BUILD_ASSERT(...)
-
-/**
- * @brief Check for macro definition in compiler-visible expressions
- *
- * This trick was pioneered in Linux as the config_enabled() macro.
- * The madness has the effect of taking a macro value that may be
- * defined to "1" (e.g. CONFIG_MYFEATURE), or may not be defined at
- * all and turning it into a literal expression that can be used at
- * "runtime".  That is, it works similarly to
- * "defined(CONFIG_MYFEATURE)" does except that it is an expansion
- * that can exist in a standard expression and be seen by the compiler
- * and optimizer.  Thus much ifdef usage can be replaced with cleaner
- * expressions like:
- *
- *     if (IS_ENABLED(CONFIG_MYFEATURE))
- *             myfeature_enable();
- *
- * INTERNAL
- * First pass just to expand any existing macros, we need the macro
- * value to be e.g. a literal "1" at expansion time in the next macro,
- * not "(1)", etc...  Standard recursive expansion does not work.
- */
-#define IS_ENABLED(config_macro) _IS_ENABLED1(config_macro)
-
-/* Now stick on a "_XXXX" prefix, it will now be "_XXXX1" if config_macro
- * is "1", or just "_XXXX" if it's undefined.
- *   ENABLED:   _IS_ENABLED2(_XXXX1)
- *   DISABLED   _IS_ENABLED2(_XXXX)
- */
-#define _IS_ENABLED1(config_macro) _IS_ENABLED2(_XXXX##config_macro)
-
-/* Here's the core trick, we map "_XXXX1" to "_YYYY," (i.e. a string
- * with a trailing comma), so it has the effect of making this a
- * two-argument tuple to the preprocessor only in the case where the
- * value is defined to "1"
- *   ENABLED:    _YYYY,    <--- note comma!
- *   DISABLED:   _XXXX
- *   DISABLED:   _XXXX0
- */
-#define _XXXX1 _YYYY,
-#define _XXXX0
-
-/* Then we append an extra argument to fool the gcc preprocessor into
- * accepting it as a varargs macro.
- *                         arg1   arg2  arg3
- *   ENABLED:   _IS_ENABLED3(_YYYY,    1,    0)
- *   DISABLED   _IS_ENABLED3(_XXXX 1,  0)
- *   DISABLED   _IS_ENABLED3(_XXXX0 1,  0)
- */
-#define _IS_ENABLED2(one_or_two_args) _IS_ENABLED3(one_or_two_args true, false)
-
-/* And our second argument is thus now cooked to be 1 in the case
- * where the value is defined to 1, and 0 if not:
- */
-#define _IS_ENABLED3(ignore_this, val, ...) val
 
 static inline int irq_lock(void)
 {
@@ -322,8 +220,6 @@ typedef struct {
 #define bt_hex      bt_hex_real
 
 const char *bt_hex_real(const void *buf, size_t len);
-
-int bt_rand(void *buf, size_t len);
 
 const char *bt_uuid_str(const struct bt_uuid *uuid);
 

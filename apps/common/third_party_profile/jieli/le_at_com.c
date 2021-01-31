@@ -42,6 +42,7 @@
 
 #include "rcsp_bluetooth.h"
 #include "JL_rcsp_api.h"
+#include "custom_cfg.h"
 
 #if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_AT_COM)
 

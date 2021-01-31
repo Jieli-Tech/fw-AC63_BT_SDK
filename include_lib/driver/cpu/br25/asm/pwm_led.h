@@ -25,6 +25,7 @@
 
 #define PWM_LED_NEW_FORMAT_EN				1
 #define PWM_LED_TWO_IO_SUPPORT					//定义该宏会支持两个IO推灯模式, 默认关闭
+#define PWM_LED_TWO_IO_CONNECT			     0  //两个IO LED 接法: 0->一端接地 , 1->一端接高
 
 #if (!PWM_LED_NEW_FORMAT_EN)
 #define CFG_LED0_LIGHT						100  	//10 ~ 500, 值越大, (红灯)亮度越高

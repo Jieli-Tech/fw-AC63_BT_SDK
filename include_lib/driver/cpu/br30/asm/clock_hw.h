@@ -419,7 +419,7 @@ enum {
     PLL_SYS_SEL_5DIV2 = 12,
 };
 
-#define PLL_SYS_SEL_GET()       ((JL_PLL->PLL_CON2 & 0x1f))
+#define PLL_SYS_SEL_GET()       ((JL_PLL->PLL_CON2 & 0x0f))
 
 #define PLL_SYS_DIV(x)          SFR(JL_PLL->PLL_CON2,  4,  4,  x)
 //for MACRO - PLL_SYS_DIV

@@ -14,6 +14,7 @@
 #include "app_task.h"
 #include "os/os_api.h"
 #include "device/sdmmc.h"
+
 #include "app_charge.h"
 #include "asm/charge.h"
 
@@ -32,8 +33,11 @@
 #include "dev_multiplex_api.h"
 #endif
 
+#if TCFG_USB_APPLE_DOCK_EN
+#include "apple_dock/iAP.h"
+#endif
 
-#define LOG_TAG_CONST       APP_PC
+#define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB_TASK]"
 #define LOG_ERROR_ENABLE
 #define LOG_DEBUG_ENABLE
@@ -73,6 +77,9 @@ static void usb_task(void *p)
 #if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
         case USBSTACK_MSD_RUN:
             os_mutex_pend(&msd_mutex, 0);
+#if TCFG_USB_APPLE_DOCK_EN
+            apple_mfi_link((void *)msg[2]);
+#endif
             USB_MassStorage((void *)msg[2]);
             os_mutex_post(&msd_mutex);
             break;
@@ -213,77 +220,66 @@ void usb_stop()
 
 int pc_device_event_handler(struct sys_event *event)
 {
-    int switch_app_case = false;
-    switch (event->type) {
-    case SYS_DEVICE_EVENT:
-        if ((u32)event->arg == DEVICE_EVENT_FROM_OTG) {
-            const char *usb_msg = (const char *)event->u.dev.value;
-            log_debug("usb event : %d DEVICE_EVENT_FROM_OTG %s", event->u.dev.event, usb_msg);
+    if (event->arg != DEVICE_EVENT_FROM_OTG) {
+        return false;
+    }
 
-            if (usb_msg[0] == 's') {
-                if (event->u.dev.event == DEVICE_EVENT_IN) {
-                    log_info("usb %c online", usb_msg[2]);
-                    usbfd = usb_msg[2] - '0';
+    int switch_app_case = false;
+    const char *usb_msg = (const char *)event->u.dev.value;
+    //log_debug("usb event : %d DEVICE_EVENT_FROM_OTG %s", event->u.dev.event, usb_msg);
+
+    if (usb_msg[0] == 's') {
+        if (event->u.dev.event == DEVICE_EVENT_IN) {
+            log_info("usb %c online", usb_msg[2]);
+            usbfd = usb_msg[2] - '0';
 #if   USB_PC_NO_APP_MODE
-                    usb_start();
+            usb_start();
 #elif TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0
-                    usb_otg_suspend(0, OTG_KEEP_STATE);
-                    mult_sdio_suspend();
-                    usb_pause();
-                    mult_sdio_resume();
+            usb_otg_suspend(0, OTG_KEEP_STATE);
+            mult_sdio_suspend();
+            usb_pause();
+            mult_sdio_resume();
 #else
-                    usb_pause();
+            usb_pause();
 #endif
-                    switch_app_case = 1;
-                } else if (event->u.dev.event == DEVICE_EVENT_OUT) {
-                    log_info("usb %c offline", usb_msg[2]);
-                    switch_app_case = 2;
+            switch_app_case = 1;
+        } else if (event->u.dev.event == DEVICE_EVENT_OUT) {
+            log_info("usb %c offline", usb_msg[2]);
+            switch_app_case = 2;
 #ifdef  USB_PC_NO_APP_MODE
-                    usb_stop();
+            usb_stop();
 #else
 
 #ifdef CONFIG_SOUNDBOX
-                    if (!app_check_curr_task(APP_PC_TASK)) {
+            if (!app_check_curr_task(APP_PC_TASK)) {
 #else
-                    if (!app_cur_task_check(APP_NAME_PC)) {
+            if (!app_cur_task_check(APP_NAME_PC)) {
 #endif
 #if TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0
-                        mult_sdio_suspend();
+                mult_sdio_suspend();
 #endif
-                        usb_stop();
+                usb_stop();
 #if TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0
-                        mult_sdio_resume();
+                mult_sdio_resume();
 #endif
-                    }
+            }
 
 #endif
-                }
-            }
         }
-        break;
-    default:
-        log_d("%x\n", event->type);
-        break;
     }
+
     return switch_app_case;
 }
 
 #ifdef  CONFIG_DONGLE_CASE
-static void usb_event_handler(struct sys_event *event, void *priv)
-{
-    pc_device_event_handler(event);
-}
-
-static u16 sys_event_id;
 void usbstack_init()
 {
-    sys_event_id = register_sys_event_handler(SYS_ALL_EVENT, 2, NULL, usb_event_handler);
+    register_sys_event_handler(SYS_DEVICE_EVENT, DEVICE_EVENT_FROM_OTG, 2,
+                               pc_device_event_handler);
 }
+
 void usbstack_exit()
 {
-    if (sys_event_id) {
-        unregister_sys_event_handler(sys_event_id);
-        sys_event_id = 0;
-    }
+    unregister_sys_event_handler(pc_device_event_handler);
 }
 #endif

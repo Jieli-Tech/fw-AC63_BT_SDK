@@ -57,6 +57,8 @@ CC_DEFINE += -DCONFIG_FPGA_ENABLE
 endif
 CC_DEFINE += -DCONFIG_EQ_SUPPORT_ASYNC
 
+CC_DEFINE += -DCONFIG_MIXER_CYCLIC
+
 ifeq ($(MP3_WMA_LIB_SPECIAL),y)
 CC_DEFINE += -DCONFIG_MP3_WMA_LIB_SPECIAL
 endif
@@ -236,7 +238,16 @@ export LINKER = \
 #
 # --------------CBP Setting-----------------------
 #
-export CBP_TITLE = AC696X_$(APP_CASE)$(PROJECT_SUFFIX)
+ifeq ($(APP_CASE), mesh)
+export CBP_TITLE = AC636N_$(APP_CASE)$(PROJECT_SUFFIX)
+else ifeq ($(APP_CASE),hid)
+export CBP_TITLE = AC636N_$(APP_CASE)$(PROJECT_SUFFIX)
+else ifeq ($(APP_CASE),spp_and_le)
+export CBP_TITLE = AC636N_$(APP_CASE)$(PROJECT_SUFFIX)
+else
+export CBP_TITLE = AC696N_$(APP_CASE)$(PROJECT_SUFFIX)
+endif
+
 export CBP_COMPILER = pi32v2_r3_lto_compiler
 export CBP_ADD_OPT =
 export CBP_POSITION ?= .

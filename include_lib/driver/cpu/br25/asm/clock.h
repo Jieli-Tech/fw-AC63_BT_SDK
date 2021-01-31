@@ -96,7 +96,7 @@ enum clk_mode {
 //clk : SYS_48M / SYS_24M
 void sys_clk_set(u8 clk);
 
-void clk_voltage_init(u8 mode, u8 sys_dvdd, u8 vdc13);
+void clk_voltage_init(u8 mode, u8 sys_dvdd, u8 vdc13, u8 pwr_mode);
 
 void clk_set_osc_cap(u8 sel_l, u8 sel_r);
 
@@ -108,9 +108,12 @@ void clk_init_osc_cap(u8 sel_l, u8 sel_r);
 
 
 /**
- * @brief sfc_enable_high_performance
+ * @brief clock_set_sfc_max_freq
  * 使用前需要保证所使用的flash支持4bit 100Mhz 模式
+ *
+ * @param dual_max_freq for cmd 3BH BBH
+ * @param quad_max_freq for cmd 6BH EBH
  */
-void sfc_enable_high_performance();
+void clock_set_sfc_max_freq(u32 dual_max_freq, u32 quad_max_freq);
 #endif
 

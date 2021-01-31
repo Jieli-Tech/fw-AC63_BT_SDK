@@ -15,6 +15,7 @@
 #define ONE_PORT_TO_LOW 		0 		//按键一个端口接低电平, 另一个端口接IO
 #define ONE_PORT_TO_HIGH		1 		//按键一个端口接高电平, 另一个端口接IO
 #define DOUBLE_PORT_TO_IO		2		//按键两个端口接IO
+#define CUST_DOUBLE_PORT_TO_IO	3
 
 
 struct one_io_key {

@@ -304,6 +304,48 @@ void pwm_led_init(const struct led_platform_data *user_data)
     __this->init = 1;
 }
 
+//prd: 亮度总级数
+//duty: 设置亮度级数
+//实际输出频率 = Flrc / prd
+//输出占空比: duty /prd
+//gpio: 设置输出的IO
+//注意：duty不能大于prd，并且prd和duty是非标准非线性的，建议用示波器看着来调
+int pwm_led_output_clk(u8 gpio, u8 prd, u8 duty)
+{
+    RESET_PWM_CON0;
+    RESET_PWM_CON1;
+    RESET_PWM_CON2;
+    RESET_PWM_CON3;
+
+    if (power_param.config == SLEEP_EN && power_param.osc_type == OSC_TYPE_LRC) {
+        g_printf(">>>PWM_LED_CLK_RC32K");
+        pwm_clock_set(PWM_LED_CLK_RC32K);
+        LED_PWM0_CLK_DIV(0);
+    } else {
+        pwm_clock_set(PWM_LED_CLK_BTOSC_24M);
+        g_printf(">>>PWM_LED_CLK_BTOSC_24M");
+        LED_PWM0_CLK_DIV(CLK_DIV_x2_x256(CLK_DIV_1));
+    }
+
+    duty = duty > prd ? prd : duty;
+
+    LED_BRI_DUTY_CYCLE(prd);
+    LED_BRI_DUTY1_SET(duty);
+    LED_BRI_DUTY0_SET(duty);
+
+    LED_PWM1_INV_ENABLE;
+
+    /* LED_PWM1_DUTY0_SET(1); */
+    /* LED_PWM1_DUTY0_EN; */
+
+    LED_PWM_OUT_LOGIC_SET;
+
+    LED_PWM1_CLK_DIV(200);
+    led_pin_set_enable(gpio);
+    LED_PWM_ENABLE;
+
+    return 0;
+}
 
 void log_pwm_led_info()
 {

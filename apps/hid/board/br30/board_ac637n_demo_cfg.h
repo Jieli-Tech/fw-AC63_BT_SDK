@@ -72,6 +72,42 @@
 #define TCFG_IOKEY_POWER_CONNECT_WAY		ONE_PORT_TO_LOW    //按键一端接低电平一端接IO
 #define TCFG_IOKEY_POWER_ONE_PORT			IO_PORTB_01        //IO按键端口
 
+//                             lp tocuh key 配置                                   //
+//*********************************************************************************//
+#define TCFG_LP_TOUCH_KEY_ENABLE 			DISABLE_THIS_MOUDLE 		//是否使能触摸按键
+#define TCFG_LP_EARTCH_KEY_ENABLE 			DISABLE_THIS_MOUDLE 	 	//内置入耳检测是否使能
+//电容检测灵敏度级数配置(范围: 0 ~ 9)
+//该参数配置与触摸时电容变化量有关, 触摸时电容变化量跟模具厚度, 触摸片材质, 面积等有关,
+//触摸时电容变化量越小, 推荐选择灵敏度级数越大,
+//触摸时电容变化量越大, 推荐选择灵敏度级数越小,
+//用户可以从灵敏度级数为0开始调试, 级数逐渐增大, 直到选择一个合适的灵敏度配置值.
+#define TCFG_LP_TOUCH_KEY_SENSITIVITY 			0 	//触摸按键电容检测灵敏度配置(级数0 ~ 9)
+#define TCFG_EARIN_TOUCH_KEY_SENSITIVITY 		5 	//触摸按键电容检测灵敏度配置(级数0 ~ 9)
+
+#if TCFG_LP_TOUCH_KEY_ENABLE
+
+//取消外置触摸的一些宏定义
+#ifdef TCFG_IOKEY_ENABLE
+#undef TCFG_IOKEY_ENABLE
+#define TCFG_IOKEY_ENABLE 					DISABLE_THIS_MOUDLE
+#endif /* #ifdef TCFG_IOKEY_ENABLE */
+
+#endif /* #if TCFG_LP_TOUCH_KEY_ENABLE */
+//*********************************************************************************//
+//                            ctmu tocuh key 配置                                      //
+//*********************************************************************************//
+#define TCFG_CTMU_TOUCH_KEY_ENABLE              DISABLE_THIS_MOUDLE             //是否使能CTMU触摸按键
+#define TCFG_CTMU_TOUCH_KEY_PRESS_CFG 		   	30//按下灵敏度（s16）,数值越小, 灵敏度越高，一般设置30-100
+#define TCFG_CTMU_TOUCH_KEY_RELEASE_CFG0 		10 //释放灵敏度0（s16），数值越小，灵敏度越高，必须比按下灵敏度小
+#define TCFG_CTMU_TOUCH_KEY_RELEASE_CFG1 		160 //释放灵敏度1（s16）, 数值越小, 灵敏度越高，一般只需要调节上面两个
+
+//key0配置
+#define TCFG_CTMU_TOUCH_KEY0_PORT 				IO_PORTA_03  //触摸按键key0 IO配置
+#define TCFG_CTMU_TOUCH_KEY0_VALUE 				0x12 		 	 //触摸按键key0 按键值
+
+//key1配置
+#define TCFG_CTMU_TOUCH_KEY1_PORT 				IO_PORTB_06  //触摸按键key1 IO配置
+#define TCFG_CTMU_TOUCH_KEY1_VALUE 				0x34 		 	 //触摸按键key1 按键值
 //*********************************************************************************//
 //                                 adkey 配置                                      //
 //*********************************************************************************//

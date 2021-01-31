@@ -31,6 +31,8 @@ static void vendor_set(struct bt_mesh_model *model,
                        struct bt_mesh_msg_ctx *ctx,
                        struct net_buf_simple *buf);
 
+#define SERVER_PUBLISH_EN       0
+
 /**
  * @brief Config current node features(Relay/Proxy/Friend/Low Power)
  */
@@ -155,7 +157,7 @@ const u8 led_use_port[1] = {
  * transmission occurs.
  *
  */
-BT_MESH_MODEL_PUB_DEFINE(vendor_pub_cli, NULL, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
+BT_MESH_MODEL_PUB_DEFINE(vendor_pub_srv, NULL, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
 
 /*
  * Models in an element must have unique op codes.
@@ -202,7 +204,7 @@ static struct bt_mesh_model root_models[] = {
 
 static struct bt_mesh_model vendor_server_models[] = {
     BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_SRV,
-    vendor_srv_op, NULL, &onoff_state[0]),
+    vendor_srv_op, &vendor_pub_srv, &onoff_state[0]),
 };
 
 /*
@@ -240,7 +242,7 @@ static void vendor_set(struct bt_mesh_model *model,
                        struct bt_mesh_msg_ctx *ctx,
                        struct net_buf_simple *buf)
 {
-    log_info("receive vendor client message len except opcode =0x%x", buf->len);
+    log_info("receive message len except opcode =0x%x", buf->len);
     log_info_hexdump(buf->data, buf->len);
 
     struct net_buf_simple *msg = model->pub->msg;
@@ -263,6 +265,49 @@ static void vendor_set(struct bt_mesh_model *model,
         log_info("Unable to send Status response\n");
     }
 }
+
+#if SERVER_PUBLISH_EN
+static void server_publish(struct _switch *sw)
+{
+    int err;
+    struct bt_mesh_model *mod_srv;
+    struct bt_mesh_model_pub *pub_srv;
+
+    mod_srv = mod_srv_sw[sw->sw_num];
+    pub_srv = mod_srv->pub;
+
+    if (pub_srv->addr == BT_MESH_ADDR_UNASSIGNED) {
+        log_info("pub_srv->addr == BT_MESH_ADDR_UNASSIGNED");
+        return;
+    }
+
+    log_info("publish to Remote 0x%04x onoff 0x%04x sw_num 0x%04x\n",
+             pub_srv->addr, sw->onoff_state, sw->sw_num);
+
+    bt_mesh_model_msg_init(pub_srv->msg, BT_MESH_VENDOR_MODEL_OP_SET);
+    buffer_add_u8_at_tail(pub_srv->msg, sw->onoff_state);
+    buffer_memset(pub_srv->msg, REMAIN_DATA_VALUE, REMAIN_DATA_LEN);
+
+    err = bt_mesh_model_publish(mod_srv);
+    if (err) {
+        log_info("bt_mesh_model_publish err %d\n", err);
+    }
+    log_info_hexdump(pub_srv->msg->data, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
+}
+
+/*
+ * Button Pressed Worker Task
+ */
+static void button_pressed_worker(struct _switch *sw)
+{
+    if (sw->sw_num >= composition.elem_count) {
+        log_info("sw_num over elem_count");
+        return;
+    }
+
+    server_publish(sw);
+}
+#endif /* SERVER_PUBLISH_EN */
 
 #define NODE_ADDR 0x0002
 
@@ -318,6 +363,23 @@ static void configure(void)
                                 BT_COMP_ID_LF,
                                 NULL);
 
+#if SERVER_PUBLISH_EN
+    /* Add model publish */
+    struct bt_mesh_cfg_mod_pub pub;
+    pub.addr = dst_addr;
+    pub.app_idx = app_idx;
+    pub.cred_flag = 0;
+    pub.ttl = 7;
+    pub.period = 0;
+    /* pub.transmit = 0b00100001; */
+    pub.transmit = 0;
+    log_info("bt_mesh_cfg_mod_pub_set_vnd server");
+    bt_mesh_cfg_mod_pub_set_vnd(net_idx, node_addr, elem_addr,
+                                BT_MESH_VENDOR_MODEL_ID_SRV,
+                                BT_COMP_ID_LF,
+                                &pub, NULL);
+#endif /* SERVER_PUBLISH_EN */
+
     log_info("Configuration complete");
 }
 
@@ -336,6 +398,11 @@ void input_key_handler(u8 key_status, u8 key_number)
     switch (key_status) {
     case KEY_EVENT_CLICK:
         log_info("  [KEY_EVENT_CLICK]  ");
+#if SERVER_PUBLISH_EN
+        press_switch.sw_num = key_number;
+        press_switch.onoff_state = 1;
+        button_pressed_worker(&press_switch);
+#endif /* SERVER_PUBLISH_EN */
         break;
     case KEY_EVENT_LONG:
         log_info("  [KEY_EVENT_LONG]  ");

@@ -42,7 +42,21 @@ enum {
 };
 
 enum {
+    AB_REPEAT_MODE_BP_A = 0x01,
+    AB_REPEAT_MODE_BP_B,
+    AB_REPEAT_MODE_CUR,
+};
+
+enum {
+    AUDIO_IOCTRL_CMD_SET_BREAKPOINT_A = 0x08,
+    AUDIO_IOCTRL_CMD_SET_BREAKPOINT_B,
+    AUDIO_IOCTRL_CMD_SET_BREAKPOINT_MODE,
+
     AUDIO_IOCTRL_CMD_REPEAT_PLAY = 0x90,
+};
+
+struct audio_ab_repeat_mode_param {
+    u32 value;
 };
 
 struct fixphase_repair_obj {
@@ -77,7 +91,9 @@ struct audio_decoder_task {
     const char *name;	// 解码任务名称
     int wakeup_timer;	// 定时唤醒
     int fmt_lock;		// 格式锁
-    u32 is_add_wait;	// 正在添加res资源
+    u16 is_add_wait : 1;	// 正在添加res资源
+    u16 step_cnt : 8;
+    u16 step_timer;
 };
 
 
@@ -179,7 +195,7 @@ struct audio_decoder {
     u16 resume_flag : 1;// 解码激活标记
     u16 output_err : 1;	// 解码输出错误
     u16 read_err : 1;	// 解码读取错误
-    u16 reserved : 11;	// 保留
+    u16 open_step : 4;
     u8 run_max;			// 正常解码最大次数
     // u8 output_channel;	// 输出通道
     u8 state;			// 解码状态

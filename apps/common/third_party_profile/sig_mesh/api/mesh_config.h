@@ -107,10 +107,17 @@
 #define CONFIG_BT_MESH_SEQ_STORE_RATE 		    128
 #define CONFIG_BT_MESH_RPL_STORE_TIMEOUT        600
 
-/* TODO */
+/* Provisioner config */
 #define CONFIG_BT_MESH_PROVISIONER              0
-// #define CONFIG_BT_MESH_HEALTH_CLI               1
+#if CONFIG_BT_MESH_PROVISIONER
+#define CONFIG_BT_MESH_CDB
+#define CONFIG_BT_MESH_CDB_NODE_COUNT           3
+#define CONFIG_BT_MESH_CDB_SUBNET_COUNT         3
+#define CONFIG_BT_MESH_CDB_APP_KEY_COUNT        3
+#endif /* CONFIG_BT_MESH_PROVISIONER */
 
+/* TODO */
+// #define CONFIG_BT_MESH_HEALTH_CLI               1
 
 /*******************************************************************/
 /*

@@ -11,10 +11,12 @@
 #include "ui_battery.h"
 #include "ui_browser.h"
 #include "ui_slider.h"
+#include "ui_slider_vert.h"
 #include "ui_number.h"
 #include "ui_watch.h"
 #include "ui_progress.h"
 #include "ui_progress_multi.h"
+#include "ui_rotate.h"
 #include <stdarg.h>
 
 struct uimsg_handl {
@@ -55,6 +57,12 @@ int ui_register_msg_handler(int id, const struct uimsg_handl *handl);
 int ui_message_handler(int id, const char *msg, va_list);
 
 const char *str_substr_iter(const char *str, char delim, int *iter);
+
+int ui_get_child_by_id(int id, int (*event_handler_cb)(void *, int, int));
+
+int ui_set_default_handler(int (*ontouch)(void *, struct element_touch_event *),
+                           int (*onkey)(void *, struct element_key_event *),
+                           int (*onchange)(void *, enum element_change_event, void *));
 
 /*
  * 锁定元素elm之外的区域，所有的触摸消息都发给elm

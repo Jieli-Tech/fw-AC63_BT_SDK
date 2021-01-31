@@ -32,6 +32,32 @@ BT_CONFIG bt_cfg = {
     .tws_device_indicate = 0x6688,
 };
 
+u8 get_max_sys_vol(void)
+{
+#if TCFG_APP_FM_EMITTER_EN
+    return FM_EMITTER_MAX_VOL;
+#else
+    //return (audio_cfg.max_sys_vol);
+    return 15;
+#endif
+}
+
+#if 1
+u8 get_tone_vol(void)
+{
+    return 15;
+#if 0
+    if (!audio_cfg.tone_vol) {
+        return (get_max_sys_vol());
+    }
+    if (audio_cfg.tone_vol > get_max_sys_vol()) {
+        return (get_max_sys_vol());
+    }
+
+    return (audio_cfg.tone_vol);
+#endif
+}
+#endif
 
 //======================================================================================//
 //                                 		BTIF配置项表                               		//
@@ -172,6 +198,9 @@ void cfg_file_parse(u8 idx)
     bt_max_pwr_set(app_var.rf_power, 5, 8, 9);
     /* g_printf("rf config:%d\n", app_var.rf_power); */
     log_info("rf config:%d\n", app_var.rf_power);
+
+    app_var.music_volume = 14;
+    app_var.wtone_volume = 14;
 
 
 #if (USE_CONFIG_CHARGE_SETTING) && (TCFG_CHARGE_ENABLE)

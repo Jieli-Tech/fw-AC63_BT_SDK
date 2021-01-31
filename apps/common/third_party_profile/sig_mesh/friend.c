@@ -1248,7 +1248,13 @@ static void friend_lpn_enqueue_tx(struct bt_mesh_friend *frnd,
     info.ttl = tx->ctx->send_ttl;
     info.ctl = (tx->ctx->app_idx == BT_MESH_KEY_UNUSED);
 
+#if MESH_ADAPTATION_OPTIMIZE
+    // when tx->ctx->addr is not unicast,
+    // the function bt_mesh_net_send() will call bt_mesh_next_seq().
+    seq = bt_mesh.seq;
+#else
     seq = bt_mesh_next_seq();
+#endif /* MESH_ADAPTATION_OPTIMIZE */
     info.seq[0] = seq >> 16;
     info.seq[1] = seq >> 8;
     info.seq[2] = seq;
@@ -1319,6 +1325,18 @@ bool bt_mesh_friend_match(u16_t net_idx, u16_t addr)
     return false;
 }
 
+#if MESH_ADAPTATION_OPTIMIZE
+static bool friend_rx_self_lpn_msg(struct bt_mesh_friend *frnd, u16_t addr)
+{
+    if (addr == frnd->lpn) {
+        BT_INFO("Friend receive self Lpn msg");
+        return true;
+    }
+
+    return false;
+}
+#endif /* MESH_ADAPTATION_OPTIMIZE */
+
 void bt_mesh_friend_enqueue_rx(struct bt_mesh_net_rx *rx,
                                enum bt_mesh_friend_pdu_type type,
                                u64_t *seq_auth, struct net_buf_simple *sbuf)
@@ -1333,12 +1351,29 @@ void bt_mesh_friend_enqueue_rx(struct bt_mesh_net_rx *rx,
         return;
     }
 
+#if MESH_ADAPTATION_OPTIMIZE
+    // Not enqueue local net on bt_mesh_friend_enqueue_rx(),
+    // because it enqueue on bt_mesh_friend_enqueue_tx() first.
+    if (BT_MESH_NET_IF_LOCAL == rx->net_if) {
+        BT_ERR("Not enqueue rx, local net");
+        return;
+    }
+#endif /* MESH_ADAPTATION_OPTIMIZE */
+
     BT_DBG("recv_ttl %u net_idx 0x%04x src 0x%04x dst 0x%04x",
            rx->ctx.recv_ttl, rx->sub->net_idx, rx->ctx.addr,
            rx->ctx.recv_dst);
 
     for (i = 0; i < CONFIG_BT_MESH_FRIEND_LPN_COUNT; i++) {
         struct bt_mesh_friend *frnd = &bt_mesh.frnd[i];
+
+#if MESH_ADAPTATION_OPTIMIZE
+        // When receiving msg from own Lpn,
+        // the message will not be added to the friend queue.
+        if (friend_rx_self_lpn_msg(frnd, rx->ctx.addr)) {
+            continue;
+        }
+#endif /* MESH_ADAPTATION_OPTIMIZE */
 
         if (friend_lpn_matches(frnd, rx->sub->net_idx,
                                rx->ctx.recv_dst)) {
@@ -1370,6 +1405,15 @@ bool bt_mesh_friend_enqueue_tx(struct bt_mesh_net_tx *tx,
             matched = true;
         }
     }
+
+#if MESH_ADAPTATION_OPTIMIZE
+    // when tx->ctx->addr is unicast,
+    // will not call bt_mesh_net_send() to change the "bt_mesh.seq".
+    if (BT_MESH_ADDR_IS_UNICAST(tx->ctx->addr)) {
+        bt_mesh.seq++;
+        BT_INFO("Inc bt_mesh.seq");
+    }
+#endif /* MESH_ADAPTATION_OPTIMIZE */
 
     return matched;
 }

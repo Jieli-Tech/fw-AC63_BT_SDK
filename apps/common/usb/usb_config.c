@@ -24,10 +24,7 @@
 #define     MAX_EP_RX   5
 static usb_interrupt usb_interrupt_tx[USB_MAX_HW_NUM][MAX_EP_TX];// SEC(.usb_g_bss);
 static usb_interrupt usb_interrupt_rx[USB_MAX_HW_NUM][MAX_EP_RX];// SEC(.usb_h_bss);
-/* const u32 ENABLE_HID_CLASS          = 1;
-const u32 ENABLE_MIC_CLASS          = 1;
-const u32 ENABLE_SPEAKER_CLASS      = 1;
-const u32 ENABLE_MASSSTORAGE_CLASS  = 1; */
+
 static u8 ep0_dma_buffer[EP0_DMA_SIZE]     __attribute__((aligned(4))) SEC(.usb_ep0)    ;
 static u8 msd_dma_buffer[2][MSD_DMA_SIZE]  __attribute__((aligned(4)))SEC(.usb_msd_dma);
 static u8 hid_dma_rx_buffer[HID_DMA_SIZE]  __attribute__((aligned(4)))SEC(.usb_hid_dma);
@@ -76,7 +73,7 @@ void *usb_get_ep_buffer(const usb_dev usb_id, u32 ep)
             ep_buffer = ep0_dma_buffer;
             break;
         case 1:
-            ep_buffer = msd_dma_buffer[1];
+            ep_buffer = msd_dma_buffer[0];
             break;
         case 2:
             ep_buffer = hid_dma_rx_buffer;

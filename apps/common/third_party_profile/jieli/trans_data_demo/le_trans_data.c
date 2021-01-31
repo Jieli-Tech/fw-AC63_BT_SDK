@@ -40,6 +40,7 @@
 
 #include "rcsp_bluetooth.h"
 #include "JL_rcsp_api.h"
+#include "custom_cfg.h"
 
 
 #if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_TRANS_DATA)
@@ -490,7 +491,7 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 connection_update_complete_success(packet + 8);
                 server_profile_start(con_handle);
 #if RCSP_BTMATE_EN
-#if (0 == BT_CONNECTION_VERIFY)
+#if (defined(BT_CONNECTION_VERIFY) && (0 == BT_CONNECTION_VERIFY))
                 JL_rcsp_auth_reset();
 #endif
                 //rcsp_dev_select(RCSP_BLE);

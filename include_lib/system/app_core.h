@@ -8,6 +8,7 @@
 
 #define ACTION_BACK 				0x0a1b2c00
 #define ACTION_STOP 				0x0a1b2c01
+#define ACTION_DO_NOTHING           0x0a1b2c02
 #define ACTION_CLASS_MASK 			0xfffff000
 
 
@@ -68,6 +69,9 @@ void register_app_event_handler(int (*handler)(struct sys_event *));
 
 struct application *get_current_app();
 
+struct application *get_prev_app();
+
+void app_core_back_to_prev_app();
 
 int start_app(struct intent *it);
 

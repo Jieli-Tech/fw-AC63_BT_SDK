@@ -133,10 +133,23 @@ u32 clk_get_osc_cap();
 
 void clk_init_osc_cap(u8 sel_l, u8 sel_r);
 
+/* ***************************************************************************/
 /**
- * @brief sfc_enable_high_performance
- * 使用前需要保证所使用的flash支持4bit 100Mhz 模式
+ * \Brief :         频率电压适配模式接口，支持动态配置频率电压为自适应或用户设置
+ *
+ * \Param :         mode    : CLOCK_MODE_ADAPTIVE 频率电压自适应使能 / CLOCK_MODE_USR 频率电压用户控制
+ * \Param :         sys_dvdd: 用户设置值
  */
-void sfc_enable_high_performance();
+/* *****************************************************************************/
+void clk_voltage_mode(u8 mode, u8 sys_dvdd);
+
+/**
+ * @brief clock_set_sfc_max_freq
+ * 使用前需要保证所使用的flash支持4bit 100Mhz 模式
+ *
+ * @param dual_max_freq for cmd 3BH BBH
+ * @param quad_max_freq for cmd 6BH EBH
+ */
+void clock_set_sfc_max_freq(u32 dual_max_freq, u32 quad_max_freq);
 #endif
 

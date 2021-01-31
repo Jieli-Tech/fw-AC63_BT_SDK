@@ -124,6 +124,7 @@ void audio_mixer_position_correct(struct audio_mixer *ch, int diff);
 
 u32 audio_mixer_get_input_position(struct audio_mixer *mixer);
 
+int audio_mixer_get_start_ch_num(struct audio_mixer *mixer);
 
 
 

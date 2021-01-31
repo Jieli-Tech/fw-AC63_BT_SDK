@@ -9,6 +9,10 @@
 #include "gpio.h"
 #include "app_config.h"
 
+#if TCFG_USB_APPLE_DOCK_EN
+#include "apple_dock/iAP.h"
+#endif
+
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB]"
 #define LOG_ERROR_ENABLE
@@ -33,6 +37,16 @@ static const u8 user_stirng[] = {
     '.', 0x00,
     '0', 0x00,
 };
+
+#if TCFG_USB_APPLE_DOCK_EN
+static const u8 IAP_interface_string[]  = {
+    0x1c, 0x03,
+    //iAP Interface
+    0x69, 0x00, 0x41, 0x00, 0x50, 0x00, 0x20, 0x00, 0x49, 0x00, 0x6e, 0x00, 0x74, 0x00,
+    0x65, 0x00, 0x72, 0x00, 0x66, 0x00, 0x61, 0x00, 0x63, 0x00, 0x65, 0x00
+};
+#endif
+
 static u8 root2_testing;
 u32 usb_root2_testing()
 {
@@ -108,6 +122,18 @@ static u32 setup_device(struct usb_device_t *usb_device, struct usb_ctrlrequest 
                     ret = 1;
                 }
                 break;
+#endif
+#if TCFG_USB_APPLE_DOCK_EN
+            case MSD_STR_INDEX:
+                if (apple_mfi_chip_online_lib()) {
+                    y_printf("MSD_STR_INDEX \n");
+                    usb_set_data_payload(usb_device, req, IAP_interface_string, sizeof(IAP_interface_string));
+                    apple_mfi_pass_ready_set_api();
+                    extern void apple_usb_msd_wakeup(struct usb_device_t *usb_device);
+                    apple_usb_msd_wakeup(usb_device);
+                    ret = 1;
+                    break;
+                }
 #endif
             default:
                 break;

@@ -234,7 +234,7 @@ static void ble_mouse_timer_handler(void)
 
     if (sensor_send_flag == 0) {
         ble_hid_data_send(2, &second_packet.data, sizeof(second_packet.data));
-        memset(&second_packet.data, 0, sizeof(second_packet.data));
+        /* memset(&second_packet.data, 0, sizeof(second_packet.data)); */
         sensor_send_flag = 1;
     }
 #endif
@@ -408,24 +408,26 @@ static void app_optical_sensor_event_handler(struct sys_event *event)
         delta_y = 0;
     }
 
-    if (event->u.axis.event == 0) {
-        if (((delta_x + event->u.axis.x) >= -2047) && ((delta_x + event->u.axis.x) <= 2047)) {
-            event->u.axis.x = gradient_acceleration(event->u.axis.x);
-            delta_x += event->u.axis.x;
-        }
+    /* if (event->u.axis.event == 0) { */
+    if (((delta_x + event->u.axis.x) >= -2047) && ((delta_x + event->u.axis.x) <= 2047)) {
+        event->u.axis.x = gradient_acceleration(event->u.axis.x);
+        delta_x += event->u.axis.x;
+    }
 
-        if (((delta_y + event->u.axis.y) >= -2047) && ((delta_y + event->u.axis.y) <= 2047)) {
-            event->u.axis.y = gradient_acceleration(event->u.axis.y);
-            delta_y += event->u.axis.y;
-        }
+    if (((delta_y + event->u.axis.y) >= -2047) && ((delta_y + event->u.axis.y) <= 2047)) {
+        event->u.axis.y = gradient_acceleration(event->u.axis.y);
+        delta_y += event->u.axis.y;
+    }
 
+    if (sensor_send_flag) {
         second_packet.data[SENSOR_XLSB_IDX] = delta_x & 0xFF;
         second_packet.data[SENSOR_YLSB_XMSB_IDX] = ((delta_y << 4) & 0xF0) | ((delta_x >> 8) & 0x0F);
         second_packet.data[SENSOR_YMSB_IDX] = (delta_y >> 4) & 0xFF;
         second_packet.event_arg = event->arg;
-
-        /* log_info("x = %d.\ty = %d.\n", event->u.axis.x, event->u.axis.y); */
     }
+
+    /* log_info("x = %d.\ty = %d.\n", event->u.axis.x, event->u.axis.y); */
+    /* } */
 
     sensor_send_flag = 0;
 }

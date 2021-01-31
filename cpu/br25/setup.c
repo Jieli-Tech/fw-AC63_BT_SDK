@@ -167,11 +167,11 @@ void setup_arch()
     clk_init_osc_cap(0x0a, 0x0a);
 #endif
 
-#ifdef CONFIG_BOARD_AC6082_DEMO
+#if (TCFG_CLOCK_SYS_SRC == SYS_CLOCK_INPUT_PLL_RCL)
     mode = CLOCK_MODE_USR;//免晶振时,用usr,并提高内核电压
-    clk_voltage_init(mode, SYSVDD_VOL_SEL_120V, VDC13_VOL_SEL_110V);
+    clk_voltage_init(mode, SYSVDD_VOL_SEL_120V, VDC13_VOL_SEL_110V, TCFG_LOWPOWER_POWER_SEL);
 #else
-    clk_voltage_init(mode, SYSVDD_VOL_SEL_102V, VDC13_VOL_SEL_110V);
+    clk_voltage_init(mode, SYSVDD_VOL_SEL_102V, VDC13_VOL_SEL_110V, TCFG_LOWPOWER_POWER_SEL);
 #endif
 
 #ifdef CONFIG_BOARD_AC696X_LIGHTER

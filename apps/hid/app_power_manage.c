@@ -24,7 +24,10 @@ enum {
     VBAT_LOWPOWER,
 } VBAT_STATUS;
 
-#define VBAT_DETECT_CNT     6
+#define VBAT_DETECT_CNT       (2*1) //2*N
+#define VBAT_DETECT_ADC_MS    (10)  //unint:ms
+#define VBAT_PERIOD_CHECK_S   (30)  //unint:s
+
 static int vbat_slow_timer = 0;
 static int vbat_fast_timer = 0;
 static int lowpower_timer = 0;
@@ -169,25 +172,25 @@ u8  get_cur_battery_level(void)
 void vbat_check_slow(void *priv)
 {
     if (vbat_fast_timer == 0) {
-        vbat_fast_timer = usr_timer_add(NULL, vbat_check, 10, 1);
+        vbat_fast_timer = usr_timer_add(NULL, vbat_check, VBAT_DETECT_ADC_MS, 1);
     }
     if (get_charge_online_flag()) {
         sys_timer_modify(vbat_slow_timer, 60 * 1000);
     } else {
-        sys_timer_modify(vbat_slow_timer, 10 * 1000);
+        sys_timer_modify(vbat_slow_timer, VBAT_PERIOD_CHECK_S * 1000);
     }
 }
 
 void vbat_check_init(void)
 {
     if (vbat_slow_timer == 0) {
-        vbat_slow_timer = sys_timer_add(NULL, vbat_check_slow, 10 * 1000);
+        vbat_slow_timer = sys_timer_add(NULL, vbat_check_slow, VBAT_PERIOD_CHECK_S * 1000);
     } else {
-        sys_timer_modify(vbat_slow_timer, 10 * 1000);
+        sys_timer_modify(vbat_slow_timer, VBAT_PERIOD_CHECK_S * 1000);
     }
 
     if (vbat_fast_timer == 0) {
-        vbat_fast_timer = usr_timer_add(NULL, vbat_check, 10, 1);
+        vbat_fast_timer = usr_timer_add(NULL, vbat_check, VBAT_DETECT_ADC_MS, 1);
     }
 }
 

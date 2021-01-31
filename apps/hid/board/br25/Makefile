@@ -12,6 +12,13 @@ LIBS = \
 LIBS += \
    $(AR_DIR)/update.a \
 
+ifeq ($(AUDIO_LITE_VERSION),y)
+LIBS += \
+--start-group \
+   $(AR_DIR)/media.a \
+   $(AR_DIR)/media_app.a \
+--end-group
+endif
 
 objs += \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac636n_demo.o \

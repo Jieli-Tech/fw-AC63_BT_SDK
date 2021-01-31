@@ -124,6 +124,8 @@ export CBP_COMPILER = q32s_lto_compiler
 export CBP_ADD_OPT =
 export CBP_POSITION ?= .
 
+export NEED_USED_LIST = y
+
 #
 # --------------Architecture & Complier Setting-----------------------
 #

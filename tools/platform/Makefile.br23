@@ -38,6 +38,9 @@ export CC_DEFINE += \
 
 export CONFIG_BLUETOOTH_EN = y
 
+ifeq ($(APP_CASE),watch)
+CC_DEFINE += -DCONFIG_WATCH_APP
+endif
 
 export cibuild ?= n
 ifeq ($(cibuild),y)
@@ -49,7 +52,6 @@ ifneq ($(cibuild), y)
 CC_DEFINE += -D__SHELL__
 endif
 endif
-
 # -DCONFIG_PRINT_IN_MASK \
 
 ifeq ($(TYPE),FPGA)
@@ -57,6 +59,8 @@ CC_DEFINE += -DCONFIG_FPGA_ENABLE
 endif
 
 CC_DEFINE += -DCONFIG_EQ_SUPPORT_ASYNC
+
+CC_DEFINE += -DCONFIG_MIXER_CYCLIC
 
 ifeq ($(MP3_WMA_LIB_SPECIAL),y)
 CC_DEFINE += -DCONFIG_MP3_WMA_LIB_SPECIAL
@@ -201,7 +205,16 @@ export LINKER = \
 
 #
 # --------------CBP Setting-----------------------
+ifeq ($(APP_CASE), mesh)
+export CBP_TITLE = AC635N_$(APP_CASE)$(PROJECT_SUFFIX)
+else ifeq ($(APP_CASE),hid)
+export CBP_TITLE = AC635N_$(APP_CASE)$(PROJECT_SUFFIX)
+else ifeq ($(APP_CASE),spp_and_le)
+export CBP_TITLE = AC635N_$(APP_CASE)$(PROJECT_SUFFIX)
+else
 export CBP_TITLE = AC695N_$(APP_CASE)$(PROJECT_SUFFIX)
+endif
+
 export CBP_COMPILER = pi32v2_r3_lto_compiler
 export CBP_ADD_OPT =
 export CBP_POSITION ?= .
@@ -212,6 +225,9 @@ export NEED_USED_LIST = y
 # --------------Architecture & Complier Setting-----------------------
 #
 -include tools$(SLASH)compiler$(SLASH)Makefile.$(CORE)$(COMPLIE_MODE)
+
+LD_ARGS += --gc-sections
+#LD_ARGS += --print-gc-sections
 
 CC_ARGS += \
 -fms-extensions \

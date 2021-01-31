@@ -28,7 +28,7 @@ struct eq_coeff_info {
     u16 nsection : 6;
     u16 no_coeff : 1;	//不是滤波系数
 #ifdef CONFIG_EQ_NO_USE_COEFF_TABLE
-    u16 sr;
+    u32 sr;
 #endif
     int *L_coeff;
     int *R_coeff;
@@ -74,7 +74,7 @@ struct hw_eq_ch {
     volatile unsigned int active : 1;
         volatile unsigned int need_run: 1;
 #ifdef CONFIG_EQ_NO_USE_COEFF_TABLE
-        u16 sr;
+        u32 sr;
 #endif
         int *L_coeff;
         int *R_coeff;

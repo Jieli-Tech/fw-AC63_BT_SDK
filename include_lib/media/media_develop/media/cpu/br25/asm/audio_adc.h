@@ -83,7 +83,8 @@ struct adc_platform_data {
     u8 mic_ldo_vsel : 2;//00:2.3v 01:2.5v 10:2.7v 11:3.0v
     u8 mic_bias_inside : 1;//MIC电容隔直模式使用内部mic偏置(PC7)
     u8 mic_bias_keep : 1;//保持内部mic偏置输出
-    u8 reserved: 4;
+    u8 mic_ldo_state : 1;//当前micldo是否打开
+    u8 reserved: 3;
     u8 ladc_num;
     const struct ladc_port *ladc;
 };
@@ -145,6 +146,7 @@ struct audio_adc_hdl {
 #endif
 #if SUPPORT_MIC_CAPLESS
     struct capless_low_pass lp;
+    int last_dacr32;
 #endif
 };
 
@@ -177,6 +179,8 @@ void audio_adc_add_output_handler(struct audio_adc_hdl *, struct audio_adc_outpu
 void audio_adc_del_output_handler(struct audio_adc_hdl *, struct audio_adc_output_hdl *);
 
 void audio_adc_irq_handler(struct audio_adc_hdl *adc);
+
+int audio_mic_ldo_en(u8 en, struct adc_platform_data *pd);
 
 int audio_adc_mic_open(struct adc_mic_ch *mic, int ch, struct audio_adc_hdl *adc);
 

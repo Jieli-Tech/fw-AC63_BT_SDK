@@ -924,6 +924,8 @@ int bt_mesh_net_send(struct bt_mesh_net_tx *tx, struct net_buf *buf,
 {
     int err;
 
+    BT_INFO("--func=%s", __FUNCTION__);
+
     BT_DBG("src 0x%04x dst 0x%04x len %u headroom %u tailroom %u",
            tx->src, tx->ctx->addr, buf->len, net_buf_headroom(buf),
            net_buf_tailroom(buf));
@@ -969,9 +971,20 @@ int bt_mesh_net_send(struct bt_mesh_net_tx *tx, struct net_buf *buf,
 
     /* Deliver to local network interface if necessary */
     if (bt_mesh_fixed_group_match(tx->ctx->addr) ||
+
         bt_mesh_elem_find(tx->ctx->addr)) {
-        bt_mesh_adv_send(buf, cb, cb_data);
+
+#if MESH_ADAPTATION_OPTIMIZE
+        // When dst and src are the same, no message is sent on the physical layer.
+        if (tx->ctx->addr != tx->src) {
+            bt_mesh_adv_send(buf, cb, cb_data);
+        } else {
+            BT_ERR("Dst address the same as Src address");
+        }
+#endif /* MESH_ADAPTATION_OPTIMIZE */
+
         bt_mesh_net_local(buf);
+
     } else if (tx->ctx->send_ttl != 1) {
         /* Deliver to to the advertising network interface. Mesh spec
          * 3.4.5.2: "The output filter of the interface connected to

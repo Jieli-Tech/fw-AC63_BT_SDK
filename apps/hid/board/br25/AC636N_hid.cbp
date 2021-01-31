@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 <FileVersion major="1" minor="6" />
 <Project>
-<Option title="AC696X_hid" />
+<Option title="AC636N_hid" />
 <Option compiler="pi32v2_r3_lto_compiler" />
 <Build>
 <Target title="Release">
@@ -27,6 +27,7 @@
 <Add option="-DCONFIG_PRINT_IN_MASK" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
 <Add option="-DCONFIG_EQ_SUPPORT_ASYNC" />
+<Add option="-DCONFIG_MIXER_CYCLIC" />
 <Add option="-DCONFIG_FREE_RTOS_ENABLE" />
 <Add option="-DTCFG_APP_BT_EN=1" />
 <Add option="-DUSB_PC_NO_APP_MODE" />
@@ -36,7 +37,7 @@
 <Add option="-DCONFIG_EVENT_KEY_MAP_ENABLE=0" />
 <Add option="-DTIMER_POOL_NUM_CONFIG=10" />
 <Add option="-DAPP_ASYNC_POOL_NUM_CONFIG=0" />
-<Add option="-DVFS_ENABLE=0" />
+<Add option="-DVFS_ENABLE=1" />
 <Add option="-DUSE_SDFILE_NEW=1" />
 <Add option="-DVFS_FILE_POOL_NUM_CONFIG=0" />
 <Add option="-DSDFILE_VERSION=0x020000" />
@@ -44,6 +45,7 @@
 <Add option="-DVM_ITEM_MAX_NUM=128" />
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_HID_CASE_ENABLE" />
+<Add option="-DCONFIG_LITE_AUDIO" />
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
@@ -89,10 +91,14 @@
 <Add directory="../../../../apps/common/usb" />
 <Add directory="../../../../include_lib/ai_stack/JL_rcsp" />
 <Add directory="../../../../include_lib/btstack" />
+<Add directory="../../../../cpu/br25" />
 <Add directory="../../../../apps/common/code_switch/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include/hal3205" />
 <Add directory="../../../../apps/common/touch_pad" />
+<Add directory="../../../../apps/common/audio" />
+<Add directory="../../../../cpu/br25/audio_dec" />
+<Add directory="../../../../cpu/br25/audio_enc" />
 <Add directory="../../../../apps/common/usb/device" />
 <Add directory="../../../../apps/common/usb/host" />
 </Compiler>
@@ -124,6 +130,10 @@
 <Add option="../../../../include_lib/liba/br25/rcsp_stack.a" />
 <Add option="--end-group" />
 <Add option="../../../../include_lib/liba/br25/update.a" />
+<Add option="--start-group" />
+<Add option="../../../../include_lib/liba/br25/media.a" />
+<Add option="../../../../include_lib/liba/br25/media_app.a" />
+<Add option="--end-group" />
 <Add option="-T../../../../cpu/br25/sdk.ld" />
 <Add option="-M=../../../../cpu/br25/tools/sdk.map" />
 <Add library="C:\JL\pi32\pi32v2-lib\r3\libm.a" />
@@ -138,6 +148,9 @@
 </ExtraCommands>
 </Target>
 </Build>
+<Unit filename="../../../../apps/common/audio/audio_digital_vol.h" />
+<Unit filename="../../../../apps/common/audio/decode/decode.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/audio/sine_make.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/code_switch/code_switch.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/code_switch/include/code_switch.h" />
 <Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
@@ -150,9 +163,12 @@
 <Unit filename="../../../../apps/common/include/standard_hid.h" />
 <Unit filename="../../../../apps/common/include/update_tws.h" />
 <Unit filename="../../../../apps/common/key/adkey.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/key/ctmu_touch_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/iokey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/key_driver.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/matrix_keyboard.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/music/music_decrypt.h" />
+<Unit filename="../../../../apps/common/music/music_id3.h" />
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data/le_rcsp_adv_module.h" />
@@ -226,10 +242,12 @@
 <Unit filename="../../../../apps/hid/include/gamebox.h" />
 <Unit filename="../../../../apps/hid/include/lib_profile_cfg.h" />
 <Unit filename="../../../../apps/hid/include/rtc_alarm.h" />
+<Unit filename="../../../../apps/hid/include/tone_player.h" />
 <Unit filename="../../../../apps/hid/include/user_cfg_id.h" />
 <Unit filename="../../../../apps/hid/lib_config/lib_btctrler_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/lib_config/lib_btstack_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/lib_config/lib_driver_config.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/hid/lib_config/lib_media_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/lib_config/lib_profile_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/lib_config/lib_system_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/lib_config/lib_update_config.c"><Option compilerVer="CC"/></Unit>
@@ -239,11 +257,36 @@
 <Unit filename="../../../../apps/hid/user_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/version.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/adc_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/audio_common/app_audio.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/audio_config.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec_bt.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec_file.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec_linein.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec_pc.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec_record.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec_spdif.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec_tone.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec_tone.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_spectrum.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/tone_player.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/audio_enc/audio_adc_demo.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/audio_enc/audio_dongle_codec.h" />
+<Unit filename="../../../../cpu/br25/audio_enc/audio_enc.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/audio_enc/audio_enc.h" />
+<Unit filename="../../../../cpu/br25/audio_enc/audio_enc_file.h" />
+<Unit filename="../../../../cpu/br25/audio_enc/audio_enc_recoder.h" />
+<Unit filename="../../../../cpu/br25/audio_enc/audio_recorder_mix.h" />
 <Unit filename="../../../../cpu/br25/charge.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/chargebox_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/chargestore.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/clock_cfg.h" />
+<Unit filename="../../../../cpu/br25/clock_manager.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/iic_soft.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/led_spi.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/localtws/localtws.h" />
 <Unit filename="../../../../cpu/br25/mcpwm.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/port_wkup.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/pwm_led.c"><Option compilerVer="CC"/></Unit>
@@ -255,6 +298,7 @@
 <Unit filename="../../../../cpu/br25/ui_driver/led7/led7_driver.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/ui_driver/led7_timer.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/ui_driver/ui_common.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/usb_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../include_lib/btctrler/ble/hci_ll.h" />
 <Unit filename="../../../../include_lib/btctrler/ble/ll_config.h" />
 <Unit filename="../../../../include_lib/btctrler/btcontroller_mode.h" />
@@ -262,6 +306,9 @@
 <Unit filename="../../../../include_lib/btctrler/btctrler_task.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/hci_lmp.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/lmp_config.h" />
+<Unit filename="../../../../include_lib/btctrler/classic/tws_api.h" />
+<Unit filename="../../../../include_lib/btctrler/classic/tws_event.h" />
+<Unit filename="../../../../include_lib/btctrler/classic/tws_local_media_sync.h" />
 <Unit filename="../../../../include_lib/btctrler/hci_transport.h" />
 <Unit filename="../../../../include_lib/btctrler/port/br25/btcontroller_config.h" />
 <Unit filename="../../../../include_lib/btstack/avctp_user.h" />
@@ -321,6 +368,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/br25/asm/uart_dev.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br25/asm/usb.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br25/asm/wdt.h" />
+<Unit filename="../../../../include_lib/driver/device/chargebox.h" />
 <Unit filename="../../../../include_lib/driver/device/sdio_host_init.h" />
 <Unit filename="../../../../include_lib/driver/device/spiflash.h" />
 <Unit filename="../../../../include_lib/driver/device/uart.h" />
@@ -334,6 +382,52 @@
 <Unit filename="../../../../include_lib/driver/device/usb/otg.h" />
 <Unit filename="../../../../include_lib/driver/device/usb/scsi.h" />
 <Unit filename="../../../../include_lib/driver/device/usb/usb_phy.h" />
+<Unit filename="../../../../include_lib/media/audio_stream.h" />
+<Unit filename="../../../../include_lib/media/localtws_decoder.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_buf_sync.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_dec_app.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_dig_vol.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_drc.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_energy_detect.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_eq.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_eq_drc_apply.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_localtws.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_output_dac.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_pitchspeed.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_surround.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_vbass.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_vocal_remove.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/eq_config.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/audio_base.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/audio_cfifo.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/audio_decoder.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/audio_encoder.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/audio_resample.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/automute.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/channel_switch.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/audio_adc.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/audio_linein.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/audio_spdif.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/audio_src.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/audio_sync.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/cpu_includes.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/dac.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/hw_eq.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/ps_cal_api.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/effectrs_sync.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/file_decoder.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/includes.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/mixer.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/mixer_cyclic.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/prevent_task_fill.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/spectrum/SpectrumShow_api.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/spectrum/coeff_calculate_api.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/spectrum/rms_api.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/spectrum/spectrum_eq.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/spectrum/spectrum_fft.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/surround/effect_sur_api.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/sw_drc.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/vbass/vbass_api.h" />
 <Unit filename="../../../../include_lib/system/app_core.h" />
 <Unit filename="../../../../include_lib/system/app_msg.h" />
 <Unit filename="../../../../include_lib/system/bank_switch.h" />
