@@ -17,7 +17,10 @@
 #include "app_main.h"
 #include "clock_cfg.h"
 #include "media/pcm_decoder.h"
+
+#if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
+#endif
 
 #if TCFG_UI_ENABLE
 #include "ui/ui_api.h"

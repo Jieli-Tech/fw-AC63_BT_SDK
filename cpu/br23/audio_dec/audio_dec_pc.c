@@ -17,7 +17,11 @@
 #include "app_main.h"
 #include "clock_cfg.h"
 #include "media/pcm_decoder.h"
+
+#if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
+#endif
+
 #include "media/audio_stream.h"
 
 #if (SOUNDCARD_ENABLE)
