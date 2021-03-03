@@ -128,14 +128,14 @@
 <Add option="../../../../include_lib/liba/br25/JL_Phone_Call.a" />
 <Add option="../../../../include_lib/liba/br25/math.a" />
 <Add option="--end-group" />
-<Add option="--start-group" />
+<Add option="--start-group " />
 <Add option="../../../../include_lib/liba/br25/media.a" />
 <Add option="../../../../include_lib/liba/br25/media_app.a" />
 <Add option="../../../../include_lib/liba/br25/opus_enc_lib.a" />
 <Add option="../../../../include_lib/liba/br25/speex_enc_lib.a" />
 <Add option="../../../../include_lib/liba/br25/bfilterfun_lib.a" />
 <Add option="../../../../include_lib/liba/br25/wtg_dec_lib.a" />
-<Add option="--end-group" />
+<Add option="--end-group " />
 <Add option="../../../../include_lib/liba/br25/update.a" />
 <Add option="-T../../../../cpu/br25/sdk.ld" />
 <Add option="-M=../../../../cpu/br25/tools/sdk.map" />
@@ -203,6 +203,7 @@
 <Unit filename="../../../../apps/common/usb/device/task_pc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/uac1.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/uac_stream.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/uac_stream.h" />
 <Unit filename="../../../../apps/common/usb/device/usb_device.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/user_setup.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/host/adb.c"><Option compilerVer="CC"/></Unit>
@@ -255,6 +256,7 @@
 <Unit filename="../../../../apps/spp_and_le/include/app_main.h" />
 <Unit filename="../../../../apps/spp_and_le/include/app_power_manage.h" />
 <Unit filename="../../../../apps/spp_and_le/include/at.h" />
+<Unit filename="../../../../apps/spp_and_le/include/bt_tws.h" />
 <Unit filename="../../../../apps/spp_and_le/include/lib_profile_cfg.h" />
 <Unit filename="../../../../apps/spp_and_le/include/rtc_alarm.h" />
 <Unit filename="../../../../apps/spp_and_le/include/tone_player.h" />
@@ -280,12 +282,14 @@
 <Unit filename="../../../../cpu/br25/audio_dec/audio_dec_bt.h" />
 <Unit filename="../../../../cpu/br25/audio_dec/audio_dec_file.h" />
 <Unit filename="../../../../cpu/br25/audio_dec/audio_dec_linein.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_dec_pc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/audio_dec/audio_dec_pc.h" />
 <Unit filename="../../../../cpu/br25/audio_dec/audio_dec_record.h" />
 <Unit filename="../../../../cpu/br25/audio_dec/audio_dec_spdif.h" />
 <Unit filename="../../../../cpu/br25/audio_dec/audio_dec_tone.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/audio_dec/audio_dec_tone.h" />
 <Unit filename="../../../../cpu/br25/audio_dec/audio_spectrum.h" />
+<Unit filename="../../../../cpu/br25/audio_dec/audio_usb_mic.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/audio_dec/tone_player.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/audio_enc/audio_adc_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/audio_enc/audio_dongle_codec.h" />
@@ -406,6 +410,7 @@
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_dec_app.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_dig_vol.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_drc.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_echo_reverb.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_energy_detect.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_eq.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_eq_drc_apply.h" />
@@ -416,6 +421,7 @@
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_vbass.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_vocal_remove.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/eq_config.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/reverb_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/audio_base.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/audio_cfifo.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/audio_decoder.h" />
@@ -437,6 +443,7 @@
 <Unit filename="../../../../include_lib/media/media_develop/media/includes.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/mixer.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/mixer_cyclic.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/pcm_decoder.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/prevent_task_fill.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/SpectrumShow_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/coeff_calculate_api.h" />

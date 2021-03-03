@@ -309,6 +309,48 @@ u8 pc_rrrl_output_enable_status(void)
 }
 
 /*----------------------------------------------------------------------------*/
+/**@brief    计算pc输入采样率
+   @param
+   @return   采样率
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+static int audio_pc_input_sample_rate(void *priv)
+{
+    struct uac_dec_hdl *dec = (struct uac_dec_hdl *)priv;
+    int sample_rate = uac_speaker_stream_sample_rate();
+    int buf_size = uac_speaker_stream_size();
+#if TCFG_PCM_ENC2TWS_ENABLE
+    if (dec->pcm_dec.dec_no_out_sound) {
+        /*TWS的上限在uac输入buffer，下限在tws push buffer*/
+        if (buf_size >= uac_speaker_stream_length() / 2) {
+            sample_rate += (sample_rate * 5 / 10000);
+        } else if (tws_api_local_media_trans_check_ready_total() < 1024) {
+            sample_rate -= (sample_rate * 5 / 10000);
+        }
+        return sample_rate;
+    }
+#endif
+
+#if(TCFG_CLOCK_SYS_SRC==SYS_CLOCK_INPUT_PLL_RCL)
+    if (buf_size >= (uac_speaker_stream_length() * 3 / 4)) {
+        sample_rate += (sample_rate * 40 / 10000);
+    }
+    if (buf_size <= (uac_speaker_stream_length() / 4)) {
+        sample_rate -= (sample_rate * 40 / 10000);
+    }
+#else
+    if (buf_size >= (uac_speaker_stream_length() * 3 / 4)) {
+        sample_rate += (sample_rate * 5 / 10000);
+    }
+    if (buf_size <= (uac_speaker_stream_length() / 4)) {
+        sample_rate -= (sample_rate * 5 / 10000);
+    }
+#endif
+    return sample_rate;
+}
+
+/*----------------------------------------------------------------------------*/
 /**@brief    uac解码开始
    @param
    @return   0：成功
@@ -369,6 +411,7 @@ static int uac_audio_start(void)
 #endif/*CONFIG_MIXER_CYCLIC*/
 
 
+#if 0
     if (dec->pcm_dec.dec_no_out_sound) {
         // 自动变采样
         audio_mixer_ch_set_src(&dec->mix_ch, 1, 0);
@@ -385,6 +428,10 @@ static int uac_audio_start(void)
         info.get_size = uac_dec_get_size;
         audio_mixer_ch_set_sync(&dec->mix_ch, &info, 1, 1);
     }
+#else
+    audio_mixer_ch_follow_resample_enable(&dec->mix_ch, dec, audio_pc_input_sample_rate);//--
+#endif
+
     /* audio_mixer_ch_set_no_wait(&dec->mix_ch, 1, 10); // 超时自动丢数 */
     dec->eq_drc = pc_eq_drc_open(dec->pcm_dec.sample_rate, dec->pcm_dec.output_ch_num);
 #if TCFG_EQ_DIVIDE_ENABLE

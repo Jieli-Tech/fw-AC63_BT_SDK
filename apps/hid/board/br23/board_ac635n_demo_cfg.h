@@ -34,7 +34,14 @@
 #define TCFG_ADB_ENABLE                     0//ENABLE_THIS_MOUDLE
 #define TCFG_AOA_ENABLE                     0//ENABLE_THIS_MOUDLE
 
-#define TCFG_OTG_USB_DEV_EN                 (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
+
+#define TCFG_OTG_USB_DEV_EN                 (BIT(0) )//USB0 = BIT(0)  USB1 = BIT(1)
+
+#include "usb_std_class_def.h"
+///USB 配置重定义
+#undef USB_DEVICE_CLASS_CONFIG
+#define     USB_DEVICE_CLASS_CONFIG (SPEAKER_CLASS|MIC_CLASS|HID_CLASS)
+#define TCFG_APP_PC_EN                      TCFG_PC_ENABLE
 //*********************************************************************************//
 //                                 IIC配置                                        //
 //*********************************************************************************//

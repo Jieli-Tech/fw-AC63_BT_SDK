@@ -14,6 +14,11 @@
 #define     CFG_RCSP_ADV_LED_SETTING         26
 #define     CFG_RCSP_ADV_KEY_SETTING         27
 #define     CFG_AAP_MODE_INFO                28
-#define     CFG_DONGLE_PAIR_INFO             29
+#define     CFG_DONGLE_PAIR_INFO            29
+#define     CFG_BT_IDX_NUM                   4
+#define     CFG_EDR_ADDRESS_BEGIN            (CFG_BLE_ADDRESS_BEGIN + CFG_BT_IDX_NUM)
+#define     CFG_CUR_BT_IDX                   (CFG_EDR_ADDRESS_BEGIN + CFG_BT_IDX_NUM)
+#define     CFG_HID_MODE_BEGIN               (CFG_CUR_BT_IDX + 1)
 
+#define     VM_USB_MIC_GAIN             	 5
 #endif /* #ifndef _USER_CFG_ID_H_ */

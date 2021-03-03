@@ -308,7 +308,8 @@ DAC硬件上的连接方式,可选的配置：
 
 ///USB 配置重定义
 #undef USB_DEVICE_CLASS_CONFIG
-#define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS)
+#define     USB_DEVICE_CLASS_CONFIG (SPEAKER_CLASS|MIC_CLASS|HID_CLASS)
+#define TCFG_APP_PC_EN                     TCFG_PC_ENABLE
 
 //*********************************************************************************//
 //                                  LED 配置                                       //
