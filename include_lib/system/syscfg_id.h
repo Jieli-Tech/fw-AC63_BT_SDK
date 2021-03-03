@@ -137,6 +137,7 @@ u8 *syscfg_ptr_read(u16 item_id, u16 *len);
 //=========== btif & cfg_tool.bin & vm ============//
 #define		CFG_BT_NAME    				101
 #define     CFG_BT_MAC_ADDR             102
+#define     VM_BLE_LOCAL_INFO           109
 #define     CFG_BT_FRE_OFFSET			110
 #define 	VM_GMA_ALI_PARA				111
 #define 	VM_DMA_RAND					112

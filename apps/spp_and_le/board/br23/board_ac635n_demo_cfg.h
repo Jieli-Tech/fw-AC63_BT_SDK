@@ -247,6 +247,10 @@
 #define TCFG_AUDIO_ADC_ENABLE				ENABLE_THIS_MOUDLE
 #define TCFG_AUDIO_DAC_ENABLE				ENABLE_THIS_MOUDLE
 #define TCFG_DEC_PCM_ENABLE					ENABLE
+#define TCFG_DEC_G729_ENABLE				ENABLE
+#define TCFG_ENC_OPUS_ENABLE               	DISABLE
+#define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#define TCFG_LINEIN_LR_CH					AUDIO_LIN0_LR
 #else
 #define TCFG_DEC_PCM_ENABLE					DISABLE
 #endif/*TCFG_AUDIO_ENABLE*/
@@ -267,7 +271,7 @@ DAC硬件上的连接方式,可选的配置：
     DAC_OUTPUT_LR                   立体声
     DAC_OUTPUT_MONO_LR_DIFF         单声道差分输出
 */
-#define TCFG_AUDIO_DAC_CONNECT_MODE         DAC_OUTPUT_LR
+#define TCFG_AUDIO_DAC_CONNECT_MODE         DAC_OUTPUT_MONO_LR_DIFF
 
 /*
 解码后音频的输出方式:
@@ -288,6 +292,19 @@ DAC硬件上的连接方式,可选的配置：
 #define AUDIO_OUTPUT_WAY_DAC_IIS    6
 #define AUDIO_OUTPUT_WAY_DONGLE		7
 #define AUDIO_OUTPUT_WAY            AUDIO_OUTPUT_WAY_DAC
+
+/*
+ *  *系统音量类型选择
+ *   *软件数字音量是指纯软件对声音进行运算后得到的
+ *    *硬件数字音量是指dac内部数字模块对声音进行运算后输出
+ *     */
+#define VOL_TYPE_DIGITAL        0   //软件数字音量
+#define VOL_TYPE_ANALOG         1   //硬件模拟音量
+#define VOL_TYPE_AD             2   //联合音量(模拟数字混合调节)
+#define VOL_TYPE_DIGITAL_HW     3   //硬件数字音量
+#define SYS_VOL_TYPE            VOL_TYPE_ANALOG
+
+
 //*********************************************************************************//
 //                                  充电仓配置                                     //
 //*********************************************************************************//
@@ -441,6 +458,15 @@ DAC硬件上的连接方式,可选的配置：
 //                                 时钟切换配置                                    //
 //*********************************************************************************//
 #define CONFIG_BT_NORMAL_HZ	            (24 * 1000000L)
+
+//*********************************************************************************//
+//                           (Yes/No)语音识别使能                                  //
+//*********************************************************************************//
+#if TCFG_AUDIO_ENABLE
+#define TCFG_KWS_VOICE_RECOGNITION_ENABLE 			 	0 //DISABLE_THIS_MOUDLE
+#endif /* #if TCFG_AUDIO_ENABLE */
+
+
 
 //*********************************************************************************//
 //                                 配置结束                                         //

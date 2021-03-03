@@ -8,6 +8,10 @@
 #include "app_main.h"
 #include "app_power_manage.h"
 
+#ifdef CONFIG_LITE_AUDIO
+#include "audio_config.h"
+#endif /*CONFIG_LITE_AUDIO*/
+
 #define LOG_TAG_CONST       USER_CFG
 #define LOG_TAG             "[USER_CFG]"
 #define LOG_ERROR_ENABLE
@@ -161,6 +165,8 @@ extern u8 key_table[KEY_EVENT_MAX][KEY_NUM_MAX];
 #define USE_CONFIG_MIC_TYPE_SETTING          USE_CONFIG_BIN_FILE        //MIC类型设置
 #define USE_CONFIG_LOWPOWER_V_SETTING        USE_CONFIG_BIN_FILE        //低电提示设置
 #define USE_CONFIG_AUTO_OFF_SETTING          USE_CONFIG_BIN_FILE        //自动关机时间设置
+#define USE_CONFIG_COMBINE_VOL_SETTING       1					        //联合音量读配置
+
 
 void cfg_file_parse(u8 idx)
 {
@@ -172,6 +178,12 @@ void cfg_file_parse(u8 idx)
     /*************************************************************************/
     /*                      CFG READ IN cfg_tools.bin                        */
     /*************************************************************************/
+    //-----------------------------CFG_COMBINE_VOL----------------------------------//
+#ifdef TCFG_AUDIO_ENABLE
+#if (defined SYS_VOL_TYPE && SYS_VOL_TYPE == VOL_TYPE_AD)
+    audio_combined_vol_init(USE_CONFIG_COMBINE_VOL_SETTING);
+#endif/*SYS_VOL_TYPE*/
+#endif /*TCFG_AUDIO_ENABLE */
 
     //-----------------------------CFG_BT_NAME--------------------------------------//
     ret = syscfg_read(CFG_BT_NAME, tmp, 32);

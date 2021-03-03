@@ -24,7 +24,6 @@
 
 #include "update_tws.h"
 
-#define clear_wdt	wdt_clear
 
 #define LOG_TAG "[UPDATE]"
 #define LOG_INFO_ENABLE
@@ -183,7 +182,7 @@ int update_result_deal()
     }
     extern u8 get_max_sys_vol(void);
     while (1) {
-        clear_wdt();
+        wdt_clear();
         key_voice_cnt++;
 #ifdef UPDATE_VOICE_REMIND
         if (result == UPDATA_SUCC) {
@@ -231,6 +230,15 @@ static u32 loader_start_addr = 0;
 void set_loader_start_addr(u32 addr)
 {
     loader_start_addr = addr;
+}
+
+void update_close_hw(void)
+{
+    const struct update_target *p;
+    list_for_each_update_target(p) {
+        p->driver_close();
+        printf("close Hw Name : %s\n", p->name);
+    }
 }
 
 void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
@@ -438,28 +446,29 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
     }
     hci_controller_destory();
 #endif
-    switch (up_type) {
-#ifdef CONFIG_SD_UPDATE_ENABLE
-    case SD0_UPDATA:
-    case SD1_UPDATA:
-        sd1_unmount();
-        break;
-#endif      //CONFIG_SD_UPDATE_ENABLE
-#ifdef CONFIG_USB_UPDATE_ENABLE
-    case USB_UPDATA:
-        usb_sie_close_all();
-        break;
-#endif      //CONFIG_USB_UPDATE_ENABLE
-    default:
-
-        break;
-    }
+    update_close_hw();
+    /*     switch (up_type) { */
+    /* #ifdef CONFIG_SD_UPDATE_ENABLE */
+    /*     case SD0_UPDATA: */
+    /*     case SD1_UPDATA: */
+    /*         sd1_unmount(); */
+    /*         break; */
+    /* #endif      //CONFIG_SD_UPDATE_ENABLE */
+    /* #ifdef CONFIG_USB_UPDATE_ENABLE */
+    /*     case USB_UPDATA: */
+    /*         usb_sie_close_all(); */
+    /*         break; */
+    /* #endif      //CONFIG_USB_UPDATE_ENABLE */
+    /*     default: */
+    /*  */
+    /*         break; */
+    /*     } */
     ram_protect_close();
     save_spi_port();
 
     printf("update jump to mask...\n");
-    JL_UART0->CON0 = 0;
-    JL_UART1->CON0 = 0;
+    /* JL_UART0->CON0 = 0; */
+    /* JL_UART1->CON0 = 0; */
     __JUMP_TO_MASKROM();
 #else
     //step 3: enter updata

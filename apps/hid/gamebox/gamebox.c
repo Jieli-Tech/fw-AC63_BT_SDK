@@ -202,6 +202,9 @@ static void gamebox_task(void *arg)
     int ret = 0;
     int msg[16];
     u8 heartbeat_packet[1] = {0};
+
+    key_list_init();
+    set_run_mode(UT_DEBUG_MODE);
     uart_comm_init();
 
     u16 timer_id = sys_timer_add(NULL, heartbeat, 500);
@@ -271,7 +274,7 @@ static void usb_event_handler(struct sys_event *event, void *priv)
             }
         } else if (usb_msg[0] == 's') {
 #if TCFG_PC_ENABLE
-            if (event->u.dev.event == DEVICE_EVENT_ONLINE) {
+            if (event->u.dev.event == DEVICE_EVENT_IN) {
                 usb_start(usb_id);
             } else {
                 usb_stop(usb_id);
@@ -295,17 +298,10 @@ static void usb_event_handler(struct sys_event *event, void *priv)
 }
 
 static u16 sys_event_id;
-void usbstack_init()
+void gamebox_init()
 {
-    key_list_init();
-    set_run_mode(UT_DEBUG_MODE);
     register_sys_event_handler(SYS_DEVICE_EVENT, 0, 2, usb_event_handler);
     int err = task_create(gamebox_task, NULL, TASK_NAME);
-}
-
-void usbstack_exit()
-{
-    unregister_sys_event_handler(usb_event_handler);
 }
 
 struct ut_packet {

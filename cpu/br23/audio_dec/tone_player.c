@@ -5,9 +5,10 @@
 #include "audio_config.h"
 #include "app_main.h"
 #include "audio_dec.h"
-#ifndef CONFIG_LITE_AUDIO
+#include "sine_make.h"
+#if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
-#endif/*CONFIG_LITE_AUDIO*/
+#endif/*TCFG_USER_TWS_ENABLE*/
 
 //////////////////////////////////////////////////////////////////////////////
 

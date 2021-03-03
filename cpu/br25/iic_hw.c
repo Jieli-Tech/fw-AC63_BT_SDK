@@ -3,6 +3,7 @@
 #include "system/generic/log.h"
 #include "asm/clock.h"
 #include "asm/cpu.h"
+#include "update.h"
 
 /*
     [[  注意!!!  ]]
@@ -459,3 +460,12 @@ u8 hw_iic_slave_tx_check_ack(hw_iic_dev iic)
 
     return iic_send_is_ack(iic_regs[id]);
 }
+void iic_disable_for_ota()
+{
+    JL_IIC->CON0 = 0;
+}
+
+REGISTER_UPDATE_TARGET(iic_update_target) = {
+    .name = "iic",
+    .driver_close = iic_disable_for_ota,
+};

@@ -140,31 +140,46 @@ struct audio_dec_stream_entries_hdl {
 };
 
 //////////////////////////////////////////////////////////////////////////////
+// 通过名字判断解码类型
 u32 audio_dec_app_get_format_by_name(char *name, struct audio_dec_format_hdl *format);
 
-// 默认优先级是3，dec->wait.priority=3;
+// 创建一个dec_app解码。默认优先级是3，dec->wait.priority=3;
 struct audio_dec_app_hdl *audio_dec_app_create(void *priv, int (*evt_cb)(void *, int event, int *param), u8 mix);
+// 打开dec_app解码
 int audio_dec_app_open(struct audio_dec_app_hdl *dec);
+// 关闭dec_app解码
 void audio_dec_app_close(struct audio_dec_app_hdl *dec);
+// 设置dec_app文件信息
 void audio_dec_app_set_file_info(struct audio_dec_app_hdl *dec, void *file_hdl);
+// 设置dec_app流数据信息
 void audio_dec_app_set_frame_info(struct audio_dec_app_hdl *dec, u16 pkt_len, u32 coding_type);
+// dec_app解码暂停播放
 int audio_dec_app_pp(struct audio_dec_app_hdl *dec);
-int audio_dec_app_get_status(struct audio_dec_app_hdl *dec); // 负数：错误
+// 获取dec_app解码状态。负数：错误
+int audio_dec_app_get_status(struct audio_dec_app_hdl *dec);
 // 检测一下hdl是否存在。true：存在
 int audio_dec_app_check_hdl(struct audio_dec_app_hdl *dec);
 
+// 创建一个文件解码
 // 默认开启可抢断同优先级解码，hdl->dec->wait.snatch_same_prio=1;
 // 开启被打断就自动close功能，hdl->dec->close_by_res_put=1;
 struct audio_dec_file_app_hdl *audio_dec_file_app_create(char *name, u8 mix);
+// 打开文件解码
 int audio_dec_file_app_open(struct audio_dec_file_app_hdl *file_dec);
+// 关闭文件解码
 void audio_dec_file_app_close(struct audio_dec_file_app_hdl *file_dec);
 
+// 创建一个正弦波文件解码
 // 默认开启可抢断同优先级解码，hdl->dec->wait.snatch_same_prio=1;
 // 开启被打断就自动close功能，hdl->dec->close_by_res_put=1;
 struct audio_dec_sine_app_hdl *audio_dec_sine_app_create(char *name, u8 mix);
+// 创建一个正弦波数组解码
 struct audio_dec_sine_app_hdl *audio_dec_sine_app_create_by_parm(struct audio_sin_param *sin, u8 sin_num, u8 mix);
+// 打开正弦波解码
 int audio_dec_sine_app_open(struct audio_dec_sine_app_hdl *sine_dec);
+// 关闭正弦波解码
 void audio_dec_sine_app_close(struct audio_dec_sine_app_hdl *sine_dec);
+// 正弦波解码参数预处理
 void audio_dec_sine_app_probe(struct audio_dec_sine_app_hdl *sine_dec);
 extern const int config_divide_en;
 

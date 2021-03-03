@@ -134,6 +134,108 @@
 #define TCFG_IRKEY_PORT                     IO_PORTA_08        //IR按键端口
 
 //*********************************************************************************//
+//                                 Audio配置                                       //
+//*********************************************************************************//
+#define TCFG_AUDIO_ADC_ENABLE				DISABLE_THIS_MOUDLE
+/*
+ *LADC_CH_MIC_L: MIC0(PA1)
+ *LADC_CH_MIC_R: MIC1(PB8)
+ *PLNK_MIC: MIC_PWR CLK DAT0 DAT1(IO可随意映射)
+ */
+#define TCFG_AUDIO_ADC_MIC_CHA				LADC_CH_MIC_L
+#define TCFG_AUDIO_ADC_LINE_CHA				LADC_LINE0_MASK
+/*MIC LDO电流档位设置：
+    0:0.625ua    1:1.25ua    2:1.875ua    3:2.5ua*/
+#define TCFG_AUDIO_ADC_LD0_SEL				3
+
+#define TCFG_AUDIO_DAC_ENABLE				DISABLE_THIS_MOUDLE
+
+//支持Audio功能，才能使能DAC/ADC模块
+#ifdef CONFIG_LITE_AUDIO
+#define TCFG_AUDIO_ENABLE					DISABLE
+#if TCFG_AUDIO_ENABLE
+#undef TCFG_AUDIO_ADC_ENABLE
+#undef TCFG_AUDIO_DAC_ENABLE
+#define TCFG_AUDIO_ADC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_AUDIO_DAC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_DEC_SBC_CLOSE
+#define TCFG_DEC_MSBC_CLOSE
+#define TCFG_DEC_SBC_HWACCEL_CLOSE
+#define TCFG_DEC_PCM_ENABLE                 ENABLE
+#define TCFG_DEC_G729_ENABLE                ENABLE
+#define TCFG_DEC_CVSD_CLOSE
+#define TCFG_ENC_OPUS_ENABLE               	DISABLE
+#define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#else
+#define TCFG_DEC_PCM_CLOSE
+#define TCFG_DEC_SBC_CLOSE
+#define TCFG_DEC_MSBC_CLOSE
+#define TCFG_DEC_SBC_HWACCEL_CLOSE
+#define TCFG_DEC_CVSD_CLOSE
+#endif/*TCFG_AUDIO_ENABLE*/
+#endif/*CONFIG_LITE_AUDIO*/
+
+
+
+
+#define TCFG_AUDIO_DAC_LDO_VOLT				DACVDD_LDO_1_25V
+/*
+DAC硬件上的连接方式,可选的配置：
+    DAC_OUTPUT_MONO_L               左声道
+    DAC_OUTPUT_MONO_R               右声道
+    DAC_OUTPUT_LR                   立体声
+    DAC_OUTPUT_MONO_LR_DIFF         单声道差分输出
+*/
+#define TCFG_AUDIO_DAC_CONNECT_MODE        DAC_OUTPUT_MONO_LR_DIFF
+/*ENC(双mic降噪)使能*/
+#define TCFG_AUDIO_DUAL_MIC_ENABLE			DISABLE_THIS_MOUDLE
+/*ENC双mic配置主mic副mic对应的mic port*/
+#define DMS_MASTER_MIC0		0 //mic0是主mic
+#define DMS_MASTER_MIC1		1 //mic1是主mic
+#define TCFG_AUDIO_DMS_MIC_MANAGE			DMS_MASTER_MIC0
+
+/*噪声门限&&限幅器使能*/
+#define TCFG_AUDIO_NOISE_GATE				DISABLE_THIS_MOUDLE
+/*
+ *系统音量类型选择
+ *软件数字音量是指纯软件对声音进行运算后得到的
+ *硬件数字音量是指dac内部数字模块对声音进行运算后输出
+ */
+#define VOL_TYPE_DIGITAL		0	//软件数字音量
+#define VOL_TYPE_ANALOG			1	//硬件模拟音量
+#define VOL_TYPE_AD				2	//联合音量(模拟数字混合调节)
+#define VOL_TYPE_DIGITAL_HW		3  	//硬件数字音量
+#define SYS_VOL_TYPE            VOL_TYPE_AD
+/*
+ *通话的时候使用数字音量
+ *0：通话使用和SYS_VOL_TYPE一样的音量调节类型
+ *1：通话使用数字音量调节，更加平滑
+ */
+#define TCFG_CALL_USE_DIGITAL_VOLUME		0
+
+#define TCFG_AUDIO_ANC_ENABLE				0	//0:关闭 1:测试使用 2:正常使用
+
+/*Audio数据导出配置:通过蓝牙spp导出或者sd写卡导出*/
+#define AUDIO_DATA_EXPORT_USE_SD	1
+#define AUDIO_DATA_EXPORT_USE_SPP 	2
+#define TCFG_AUDIO_DATA_EXPORT_ENABLE		DISABLE_THIS_MOUDLE
+/*
+ *支持省电容MIC模块
+ *(1)要使能省电容mic,首先要支持该模块:TCFG_SUPPORT_MIC_CAPLESS
+ *(2)只有支持该模块，才能使能该模块:TCFG_MIC_CAPLESS_ENABLE
+ */
+#define TCFG_SUPPORT_MIC_CAPLESS			ENABLE_THIS_MOUDLE
+//省电容MIC使能
+#define TCFG_MIC_CAPLESS_ENABLE				DISABLE_THIS_MOUDLE
+//省电容MIC1使能
+#define TCFG_MIC1_CAPLESS_ENABLE			DISABLE_THIS_MOUDLE
+
+// AUTOMUTE
+#define AUDIO_OUTPUT_AUTOMUTE   DISABLE_THIS_MOUDLE
+
+
+
+//*********************************************************************************//
 //                                  充电仓配置                                     //
 //*********************************************************************************//
 #define TCFG_CHARGESTORE_ENABLE				DISABLE_THIS_MOUDLE       //是否支持智能充点仓
@@ -261,6 +363,14 @@
 //*********************************************************************************//
 
 #define CONFIG_BT_NORMAL_HZ	            (24 * 1000000L)
+
+//*********************************************************************************//
+//                           (Yes/No)语音识别使能                                  //
+//*********************************************************************************//
+#if TCFG_AUDIO_ENABLE
+#define TCFG_KWS_VOICE_RECOGNITION_ENABLE 			 	DISABLE_THIS_MOUDLE
+#endif /* #if TCFG_AUDIO_ENABLE */
+
 
 //*********************************************************************************//
 //                                 配置结束                                        //

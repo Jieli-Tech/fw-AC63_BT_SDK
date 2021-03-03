@@ -230,6 +230,9 @@
 
 #define TCFG_AUDIO_DAC_ENABLE				DISABLE_THIS_MOUDLE
 
+
+
+
 //支持Audio功能，才能使能DAC/ADC模块
 #ifdef CONFIG_LITE_AUDIO
 #define TCFG_AUDIO_ENABLE					DISABLE
@@ -238,7 +241,11 @@
 #undef TCFG_AUDIO_DAC_ENABLE
 #define TCFG_AUDIO_ADC_ENABLE				ENABLE_THIS_MOUDLE
 #define TCFG_AUDIO_DAC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_DEC_G729_ENABLE                ENABLE
 #define TCFG_DEC_PCM_ENABLE					ENABLE
+#define TCFG_ENC_OPUS_ENABLE               	DISABLE
+#define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#define TCFG_LINEIN_LR_CH                   AUDIO_LIN0_LR
 #else
 #define TCFG_DEC_PCM_ENABLE					DISABLE
 #endif/*TCFG_AUDIO_ENABLE*/
@@ -259,7 +266,7 @@ DAC硬件上的连接方式,可选的配置：
     DAC_OUTPUT_LR                   立体声
     DAC_OUTPUT_MONO_LR_DIFF         单声道差分输出
 */
-#define TCFG_AUDIO_DAC_CONNECT_MODE         DAC_OUTPUT_LR
+#define TCFG_AUDIO_DAC_CONNECT_MODE         DAC_OUTPUT_MONO_LR_DIFF
 
 /*
 解码后音频的输出方式:
@@ -280,6 +287,41 @@ DAC硬件上的连接方式,可选的配置：
 #define AUDIO_OUTPUT_WAY_DAC_IIS    6
 #define AUDIO_OUTPUT_WAY_DONGLE		7
 #define AUDIO_OUTPUT_WAY            AUDIO_OUTPUT_WAY_DAC
+#define LINEIN_INPUT_WAY            LINEIN_INPUT_WAY_ANALOG
+
+#define AUDIO_OUTPUT_AUTOMUTE       0//ENABLE
+/*
+ *系统音量类型选择
+ *软件数字音量是指纯软件对声音进行运算后得到的
+ *硬件数字音量是指dac内部数字模块对声音进行运算后输出
+ */
+#define VOL_TYPE_DIGITAL		0	//软件数字音量
+#define VOL_TYPE_ANALOG			1	//硬件模拟音量
+#define VOL_TYPE_AD				2	//联合音量(模拟数字混合调节)
+#define VOL_TYPE_DIGITAL_HW		3  	//硬件数字音量
+#define SYS_VOL_TYPE            VOL_TYPE_ANALOG
+/*
+ *通话的时候使用数字音量
+ *0：通话使用和SYS_VOL_TYPE一样的音量调节类型
+ *1：通话使用数字音量调节，更加平滑
+ */
+#define TCFG_CALL_USE_DIGITAL_VOLUME		0
+
+// 使能改宏，提示音音量使用music音量
+#define APP_AUDIO_STATE_WTONE_BY_MUSIC      (1)
+// 0:提示音不使用默认音量； 1:默认提示音音量值
+#define TONE_MODE_DEFAULE_VOLUME            (0)
+
+/*
+ *支持省电容MIC模块
+ *(1)要使能省电容mic,首先要支持该模块:TCFG_SUPPORT_MIC_CAPLESS
+ *(2)只有支持该模块，才能使能该模块:TCFG_MIC_CAPLESS_ENABLE
+ */
+#define TCFG_SUPPORT_MIC_CAPLESS			DISABLE_THIS_MOUDLE
+//省电容MIC使能
+#define TCFG_MIC_CAPLESS_ENABLE				DISABLE_THIS_MOUDLE
+
+
 
 //*********************************************************************************//
 //                                  充电仓配置                                     //
@@ -449,6 +491,15 @@ DAC硬件上的连接方式,可选的配置：
 #undef TCFG_USER_EDR_ENABLE
 #define     TCFG_USER_EDR_ENABLE    0
 #endif
+
+//*********************************************************************************//
+//                           (Yes/No)语音识别使能                                  //
+//*********************************************************************************//
+#if TCFG_AUDIO_ENABLE
+#define TCFG_KWS_VOICE_RECOGNITION_ENABLE 			 	0 //DISABLE_THIS_MOUDLE
+#endif /* #if TCFG_AUDIO_ENABLE */
+
+
 
 //*********************************************************************************//
 //                                 配置结束                                         //

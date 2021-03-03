@@ -236,6 +236,7 @@ int eq_mode_get_cur(void);
 
 
 
+s32 eq_file_get_cfg(EQ_CFG *eq_cfg, u8 *path);
 int eq_get_filter_info(void *_eq, int sr, struct audio_eq_filter_info *info);
 int drc_get_filter_info(void *_drc, struct audio_drc_filter_info *info);
 int aec_ul_eq_filter(void *_eq, int sr, struct audio_eq_filter_info *info);

@@ -9,6 +9,15 @@
 #include "gpio.h"
 #include "app_config.h"
 
+#define LOG_TAG_CONST       USB
+#define LOG_TAG             "[USB]"
+#define LOG_ERROR_ENABLE
+#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+/* #define LOG_DUMP_ENABLE */
+#define LOG_CLI_ENABLE
+
+#include "debug.h"
 static void usb_device_init(const usb_dev usb_id)
 {
 
@@ -74,22 +83,27 @@ int usb_device_mode(const usb_dev usb_id, const u32 class)
     if ((class & MASSSTORAGE_CLASS) == MASSSTORAGE_CLASS) {
         msd_register(usb_id);
         usb_add_desc_config(usb_id, class_index++, msd_desc_config);
+        log_info("add desc msd");
     }
 #endif
 
 #if USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS
     if ((class & AUDIO_CLASS) == AUDIO_CLASS) {
         usb_add_desc_config(usb_id, class_index++, uac_audio_desc_config);
+        log_info("add desc audio");
     } else if ((class & SPEAKER_CLASS) == SPEAKER_CLASS) {
         usb_add_desc_config(usb_id, class_index++, uac_spk_desc_config);
+        log_info("add desc speaker");
     } else if ((class & MIC_CLASS) == MIC_CLASS) {
         usb_add_desc_config(usb_id, class_index++, uac_mic_desc_config);
+        log_info("add desc mic");
     }
 #endif
 
 #if USB_DEVICE_CLASS_CONFIG & HID_CLASS
     if ((class & HID_CLASS) == HID_CLASS) {
         usb_add_desc_config(usb_id, class_index++, hid_desc_config);
+        log_info("add desc std hid");
     }
 #endif
 

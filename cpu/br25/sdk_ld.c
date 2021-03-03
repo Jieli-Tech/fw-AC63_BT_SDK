@@ -84,7 +84,7 @@ SECTIONS
     {
         PROVIDE(flash_code_begin = .);
 
-        *startup.o(.text)
+        *(.startup.text)
 
         *(.text*)
         bank_stub_start = .;
@@ -178,6 +178,15 @@ SECTIONS
 		#include "btstack/btstack_lib_text.ld"
 		. = ALIGN(4);
 		#include "system/system_lib_text.ld"
+
+		. = ALIGN(4);
+	    update_target_begin = .;
+	    PROVIDE(update_target_begin = .);
+	    KEEP(*(.update_target))
+	    update_target_end = .;
+	    PROVIDE(update_target_end = .);
+		. = ALIGN(4);
+
         . = ALIGN(4);
 		*(.ui_ram)
 		. = ALIGN(4);

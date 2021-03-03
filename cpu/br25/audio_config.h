@@ -59,7 +59,7 @@
 #ifdef CONFIG_SOUNDBOX_FLASH_256K
 #define TCFG_ESCO_LIMITER			0  	//通话近端底噪/限幅器
 #else
-#define TCFG_ESCO_LIMITER			1  	//通话近端底噪/限幅器
+#define TCFG_ESCO_LIMITER			0  	//通话近端底噪/限幅器
 #endif
 
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_MONO_LR_DIFF || \
@@ -97,7 +97,7 @@
 #define AUDIO_OUTPUT_INCLUDE_DAC 	((AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DAC) \
 		|| (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT) \
 		|| (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DONGLE) \
-		|| (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_DAC_AND_IIS))
+		|| (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DAC_IIS))
 
 u8 get_max_sys_vol(void);
 u8 get_tone_vol(void);

@@ -341,5 +341,8 @@ void audio_dac_set_empty_handler(void *_dac, void *empty_priv, void (*handler)(v
 
 void audio_dac_set_dcc(u8 dcc);
 
+/*关闭audio相关模块使能*/
+void audio_disable_all(void);
+
 #endif
 

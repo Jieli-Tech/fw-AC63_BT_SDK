@@ -8,11 +8,6 @@
 /*无电容电路*/
 #define SUPPORT_MIC_CAPLESS          1
 
-#define BR22_ADC_BIT_FLAG_FADE_ON	BIT(31)
-
-#define FADE_OUT_IN           	1
-#define FADE_OUT_TIME_MS		2
-
 #define LADC_STATE_INIT			1
 #define LADC_STATE_OPEN      	2
 #define LADC_STATE_START     	3
@@ -96,19 +91,6 @@ struct capless_low_pass {
     u16 tbidx;
 };
 
-struct audio_adc_attr {
-    u8 gain;
-    u16 sample_rate;
-    u16 irq_time;
-    u16 irq_points;
-};
-
-struct adc_stream_ops {
-    void (*buf_reset)(void *priv);
-    void *(*alloc_space)(void *priv, u32 *len);
-    void (*output)(void *priv, void *buf, u32 len);
-};
-
 struct audio_adc_output_hdl {
     struct list_head entry;
     void *priv;
@@ -117,33 +99,11 @@ struct audio_adc_output_hdl {
 
 struct audio_adc_hdl {
     struct list_head head;
-    /*void *priv;
-    const struct adc_stream_ops *ops;*/
     const struct adc_platform_data *pd;
     atomic_t ref;
-    struct audio_adc_attr attr;
-    u16 pause_srp;
-    u16 pns;
-    u8 fifo_full;
     u8 channel;
-    u8 ch_sel;
     u8 input;
     u8 state;
-    union {
-        struct {
-            u8 out2dac : 1;
-            u8 out_l : 1;
-            u8 out_r : 1;
-            u8 out_mix : 1;
-            u8 cha_idx : 2;
-        } ladc;
-        u8 param;
-    } u;
-#if FADE_OUT_IN
-    u8 fade_on;
-    volatile u8 ref_gain;
-    volatile int fade_timer;
-#endif
 #if SUPPORT_MIC_CAPLESS
     struct capless_low_pass lp;
     int last_dacr32;

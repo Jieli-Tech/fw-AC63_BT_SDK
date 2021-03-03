@@ -57,7 +57,7 @@ int audio_mic_open(struct adc_mic_ch *mic, u16 sample_rate, u8 gain);
 void audio_mic_add_output(struct audio_adc_output_hdl *output);
 void audio_mic_start(struct adc_mic_ch *mic);
 void audio_mic_close(struct adc_mic_ch *mic, struct audio_adc_output_hdl *output);
-void audio_mic_set_gain(u8 gain);
+void audio_mic_set_gain(struct adc_mic_ch *mic, u8 gain);
 //////////////////////////////////////////////////////////////////
 #include "audio_enc_file.h"
 #include "audio_enc_recoder.h"

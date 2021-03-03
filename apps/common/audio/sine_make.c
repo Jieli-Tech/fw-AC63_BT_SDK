@@ -4,7 +4,7 @@
 >create time : Sun 05 May 2019 08:37:35 PM CST
 *****************************************************************/
 #include "system/includes.h"
-#include "tone_player.h"
+#include "sine_make.h"
 
 #define SINE_USE_MALLOC			1
 

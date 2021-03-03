@@ -67,7 +67,7 @@ SECTIONS
     {
         PROVIDE(text_rodata_begin = .);
 
-        *startup.o(.text)
+        *(.startup.text)
 
         *(.text*)
         *(.rodata*)
@@ -94,6 +94,14 @@ SECTIONS
 		#include "btctrler/btctler_lib_text.ld"
 		. = ALIGN(4);
 		#include "system/system_lib_text.ld"
+
+		. = ALIGN(4);
+	    update_target_begin = .;
+	    PROVIDE(update_target_begin = .);
+	    KEEP(*(.update_target))
+	    update_target_end = .;
+	    PROVIDE(update_target_end = .);
+		. = ALIGN(4);
 
     } >code0
 

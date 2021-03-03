@@ -39,6 +39,7 @@ static  u16 report_map_size;
 
 static void (*user_hid_send_wakeup)(void) = NULL;
 static u16 hid_channel;
+static u8  hid_run = 0;
 static volatile u8 is_hid_active = 0;
 static volatile u8 hid_s_step = 0;
 /* static int hid_timer_id = 0; */
@@ -80,6 +81,19 @@ typedef struct {
 } hid_data_info_t;
 
 //-----------------------------------------------------
+static void edr_bt_evnet_post(u32 arg_type, u8 priv_event, u8 *args, u32 value)
+{
+    struct sys_event e;
+    e.type = SYS_BT_EVENT;
+    e.arg  = (void *)arg_type;
+    e.u.bt.event = priv_event;
+    if (args) {
+        memcpy(e.u.bt.args, args, 7);
+    }
+    e.u.bt.value = value;
+    sys_event_notify(&e);
+}
+
 /* enum { */
 /* REMOTE_DEV_UNKNOWN  = 0, */
 /* REMOTE_DEV_ANDROID		, */
@@ -89,8 +103,8 @@ typedef struct {
 void sdp_callback_remote_type(u8 remote_type)
 {
     log_info("edr_hid:remote_type= %d\n", remote_type);
-    //to do,change report_map
-    /* user_hid_descriptor_init(); */
+    edr_bt_evnet_post(SYS_BT_EVENT_FORM_COMMON, COMMON_EVENT_EDR_REMOTE_TYPE, NULL, remote_type);
+    //to do
 }
 
 //-----------------------------------------------------
@@ -164,6 +178,13 @@ void user_hid_set_ReportMap(u8 *map, u16 size)
 {
     report_map = map;
     report_map_size = size;
+
+    if (hid_run) {
+#if !HID_CHANGE_DESCRIPTOR
+        hid_sdp_init(HID_REPORT_MAP_DATA, HID_REPORT_MAP_SIZE);
+#endif
+    }
+
 }
 
 
@@ -312,7 +333,7 @@ void user_hid_init(void (*user_hid_interrupt_handler)(u8 *packet, u16 size))
 #endif
 
     cbuf_init(&user_send_cbuf, hid_tmp_buffer, HID_TMP_BUFSIZE);
-
+    hid_run = 1;
 }
 
 void user_hid_exit(void)
@@ -329,6 +350,7 @@ void user_hid_exit(void)
         edr_hid_timer_handle = 0;
     }
 
+    hid_run = 0;
 }
 
 void user_hid_enable(u8 en)

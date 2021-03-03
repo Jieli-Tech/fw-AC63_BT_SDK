@@ -79,6 +79,7 @@
 #define SYS_BT_EVENT_TYPE_CON_STATUS   (('C' << 24) | ('O' << 16) | ('N' << 8) | '\0')
 #define SYS_BT_EVENT_TYPE_HCI_STATUS   (('H' << 24) | ('C' << 16) | ('I' << 8) | '\0')
 #define SYS_BT_EVENT_BLE_STATUS        (('B' << 24) | ('L' << 16) | ('E' << 8) | '\0')
+#define SYS_BT_EVENT_FORM_COMMON       (('C' << 24) | ('M' << 16) | ('M' << 8) | '\0')
 #define DEVICE_EVENT_FROM_KEY		   (('K' << 24) | ('E' << 16) | ('Y' << 8) | '\0')
 #define SYS_BT_AI_EVENT_TYPE_STATUS    (('B' << 24) | ('A' << 16) | ('I' << 8) | '\0')
 #define DEVICE_EVENT_FROM_UART_RX_OVERFLOW		(('U' << 24) | ('R' << 16) | ('F' << 8) | '\0')

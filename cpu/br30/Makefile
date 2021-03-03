@@ -6,6 +6,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/pwm_led.o \
 	  $(ROOT)/cpu/$(CPU)/iic_hw.o \
 	  $(ROOT)/cpu/$(CPU)/iic_soft.o \
+	  $(ROOT)/cpu/$(CPU)/irflt.o \
 	  $(ROOT)/cpu/$(CPU)/uart_dev.o \
 	  $(ROOT)/cpu/$(CPU)/spi.o \
 	  $(ROOT)/cpu/$(CPU)/charge.o \
@@ -34,6 +35,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/audio_dac_digital_volume.o \
 	  $(ROOT)/cpu/$(CPU)/overlay_code.o \
 	  $(ROOT)/cpu/$(CPU)/aec_tool.o \
+	  $(ROOT)/cpu/$(CPU)/audio_cvp_demo.o \
 
 ifeq ($(CONFIG_ANC_ENABLE),y)
 objs += \
@@ -52,3 +54,13 @@ objs += \
 
 endif
 
+ifeq ($(AUDIO_LITE_VERSION),y)
+objs += \
+	  $(ROOT)/cpu/$(CPU)/app_audio.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dec.o \
+	  $(ROOT)/cpu/$(CPU)/tone_player.o \
+	  $(ROOT)/cpu/$(CPU)/audio_enc.o \
+	  $(ROOT)/cpu/$(CPU)/audio_mic_codec.o \
+	  $(ROOT)/cpu/$(CPU)/audio_mic_capless.o \
+
+endif

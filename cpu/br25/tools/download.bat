@@ -53,4 +53,4 @@ copy /b text.bin+data.bin+data_code.bin+aec.bin+wav.bin+ape.bin+flac.bin+m4a.bin
 copy app.bin bluetooth\standard\app.bin
 copy br25loader.bin bluetooth\standard\br25loader.bin
 
-bluetooth\standard\download.bat
+bluetooth\standard\download.bat %kws_cfg%

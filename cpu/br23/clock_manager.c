@@ -43,7 +43,7 @@ void clock_remove_set(u32 type)
 #define CLOCK_FIX   0//192
 #endif
 
-#if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR)
+#if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR) && TCFG_EQ_DIVIDE_ENABLE
 #define  EQ4_CLK  (24)  //20段eq double eq
 #else
 #define  EQ4_CLK  (0)
@@ -151,6 +151,8 @@ const struct clock_type  clock_enum[] = {
     { LOCALTWS_CLK, (24), "LOCALTWS_CLK"  },
 #endif
     {SPECTRUM_CLK, (5),	"SPECTRUM_CLK"   },
+
+    {AI_SPEECH_CLK, (120),	"AI_SPEECH_CLK"   },
 };
 
 

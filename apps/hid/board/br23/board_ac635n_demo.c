@@ -389,7 +389,9 @@ void sleep_enter_callback(u8  step)
     if (step == 1) {
 		putchar('<');
         APP_IO_DEBUG_0(A, 6);
-        /*dac_power_off();*/
+#if TCFG_AUDIO_ENABLE
+        dac_power_off();
+#endif/*TCFG_AUDIO_ENABLE*/
 		if(TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15){
 			/* putchar('{'); */
 			power_set_mode(PWR_LDO15);

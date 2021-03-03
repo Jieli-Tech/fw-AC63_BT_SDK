@@ -4,6 +4,7 @@
 
 
 
+
 ##!/bin/sh
 ${OBJDUMP} -D -address-mask=0x1ffffff -print-dbg $1.elf > $1.lst
 ${OBJCOPY} -O binary -j .text $1.elf text.bin
@@ -33,9 +34,16 @@ ${OBJDUMP} -section-headers -address-mask=0x1ffffff $1.elf
 ${OBJSIZEDUMP} -lite -skip-zero -enable-dbg-info $1.elf | sort -k 1 > symbol_tbl.txt
 
 
-files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe packres.exe"
+files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe packres.exe json_to_res.exe md5sum.exe "
+NICKNAME="br23_sdk"
+
+
+
+
 cp bluetooth/standard/isd_config.ini ./
 
 
-cat text.bin data.bin data_code.bin aec.bin wav.bin ape.bin flac.bin m4a.bin amr.bin dts.bin fm.bin mp3.bin wma.bin bank.bin > app.bin
+
+
+cat text.bin data.bin data_code.bin > app.bin
 host-client -project ${NICKNAME}$2_${APP_CASE} -f ${files} $1.elf

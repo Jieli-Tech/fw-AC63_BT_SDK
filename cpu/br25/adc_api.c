@@ -537,7 +537,7 @@ void adc_init()
     //trim wvdd
     wvdd_trim();
 
-    check_pmu_voltage(vbat_vddio_tieup);
+    /* check_pmu_voltage(vbat_vddio_tieup); */
 
     _adc_init(1);
 

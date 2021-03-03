@@ -2,6 +2,7 @@
 #include "app_config.h"
 #include "device_drive.h"
 /* #include "os/os_compat.h" */
+#if TCFG_UDISK_ENABLE || TCFG_ADB_ENABLE ||TCFG_AOA_ENABLE || TCFG_HID_HOST_ENABLE || TCFG_HOST_AUDIO_ENABLE
 #include "usb_config.h"
 #include "usb/host/usb_host.h"
 #include "usb/usb_phy.h"
@@ -10,6 +11,7 @@
 #include "adb.h"
 #include "aoa.h"
 #include "hid.h"
+#include "audio.h"
 
 #if TCFG_USB_APPLE_DOCK_EN
 #include "apple_dock/iAP.h"
@@ -172,6 +174,15 @@ static int _usb_hid_parser(struct usb_host_device *host_dev, u8 interface_num, c
     return USB_DT_INTERFACE_SIZE;
 #endif
 }
+static int _usb_audio_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf)
+{
+    log_info("find audio @ interface %d", interface_num);
+#if TCFG_HOST_AUDIO_ENABLE
+    return usb_audio_parser(host_dev, interface_num, pBuf);
+#else
+    return USB_DT_INTERFACE_SIZE;
+#endif
+}
 static int _usb_adb_interface_ptp_mtp_parse(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf)
 {
     log_info("find adbmtp @ interface %d", interface_num);
@@ -228,6 +239,17 @@ static int usb_descriptor_parser(struct usb_host_device *host_dev, const u8 *pBu
             } else if ((device_desc->idVendor == 0x05AC) &&
                        ((device_desc->idProduct & 0xff00) == 0x1200)) {
                 i = _usb_apple_mfi_parser(host_dev, interface_num, pBuf);
+                if (i < 0) {
+                    log_error("---%s %d---", __func__, __LINE__);
+                    len = total_len;
+                } else {
+                    interface_num++;
+                    len += i;
+                    pBuf += i;
+                    have_find_valid_class = true;
+                }
+            } else if (interface->bInterfaceClass == USB_CLASS_AUDIO) {
+                i = _usb_audio_parser(host_dev, interface_num, pBuf);
                 if (i < 0) {
                     log_error("---%s %d---", __func__, __LINE__);
                     len = total_len;
@@ -498,6 +520,20 @@ static int usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
                 }
                 break;
 #endif
+#if TCFG_HOST_AUDIO_ENABLE
+            case USB_CLASS_AUDIO:
+                if (have_post_event & BIT(4)) {
+                    no_send_event = 1;
+                } else {
+                    have_post_event |= BIT(4);
+                }
+                if (id == 0) {
+                    event.u.dev.value = (int)"audio0";
+                } else {
+                    event.u.dev.value = (int)"audio1";
+                }
+                break;
+#endif
             }
 
             if (!no_send_event && event.u.dev.value) {
@@ -698,4 +734,4 @@ u32 usb_host_remount(const usb_dev id, u32 retry, u32 delay, u32 ot, u8 notify)
 __exit_fail:
     return ret;
 }
-
+#endif

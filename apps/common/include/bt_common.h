@@ -21,6 +21,14 @@ enum {
     ST_BIT_WEIXIN_CONN,
 };
 
+
+// #define SYS_BT_EVENT_FORM_COMMON       (('C' << 24) | ('M' << 16) | ('M' << 8) | '\0')
+enum {
+    COMMON_EVENT_EDR_REMOTE_TYPE = 1,
+    COMMON_EVENT_BLE_REMOTE_TYPE,
+};
+
+
 extern uint16_t little_endian_read_16(const uint8_t *buffer, int pos);
 extern uint32_t little_endian_read_24(const uint8_t *buffer, int pos);
 extern uint32_t little_endian_read_32(const uint8_t *buffer, int pos);

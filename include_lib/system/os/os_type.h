@@ -26,6 +26,7 @@ typedef struct {
 
 #include "FreeRTOS/FreeRTOS.h"
 #include "FreeRTOS/semphr.h"
+#include "FreeRTOS/task.h"
 
 typedef StaticSemaphore_t OS_SEM, OS_MUTEX;
 typedef StaticQueue_t OS_QUEUE;

@@ -385,16 +385,17 @@ static void app_code_sw_event_handler(struct sys_event *event)
 
 static s16 gradient_acceleration(s16 src)
 {
-#define GRADIENT_1              3
-#define GRADIENT_2              10
-#define ACCELERATION_1(x)       (x * 3 / 2) // 1.5
-#define ACCELERATION_2(x)       (x * 2) // 2
+    //不需要加速,由CPI决定速度
+    /* #define GRADIENT_1              3 */
+    /* #define GRADIENT_2              10 */
+    /* #define ACCELERATION_1(x)       (x * 3 / 2) // 1.5 */
+    /* #define ACCELERATION_2(x)       (x * 2) // 2 */
 
-    if ((src > GRADIENT_2) || (src < -GRADIENT_2)) {
-        src = ACCELERATION_2(src);
-    } else if ((src > GRADIENT_1) || (src < -GRADIENT_1)) {
-        src = ACCELERATION_1(src);
-    }
+    /* if ((src > GRADIENT_2) || (src < -GRADIENT_2)) { */
+    /* src = ACCELERATION_2(src); */
+    /* } else if ((src > GRADIENT_1) || (src < -GRADIENT_1)) { */
+    /* src = ACCELERATION_1(src); */
+    /* } */
 
     return src;
 }
@@ -1028,7 +1029,7 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 #endif
         } else {
 #if TCFG_USER_EDR_ENABLE
-            edr_hid_timer_handle = sys_s_hi_timer_add((void *)0, edr_mouse_timer_handler, 10);
+            edr_hid_timer_handle = sys_s_hi_timer_add((void *)0, edr_mouse_timer_handler, 5);
 #endif
         }
         break;
@@ -1218,7 +1219,9 @@ static int event_handler(struct application *app, struct sys_event *event)
 {
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //重置无操作定时计数
-    sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    if (event->type != SYS_DEVICE_EVENT || DEVICE_EVENT_FROM_POWER != event->arg) { //过滤电源消息
+        sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    }
 #endif
 
     bt_sniff_ready_clean();

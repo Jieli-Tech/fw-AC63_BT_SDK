@@ -74,12 +74,21 @@ includes += \
 	-I$(ROOT)/apps/common/audio/  \
 	-I$(ROOT)/cpu/$(CPU)/audio_dec \
 	-I$(ROOT)/cpu/$(CPU)/audio_enc \
+	-I$(ROOT)/cpu/$(CPU) \
 
 objs += \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_media_config.o \
 	$(ROOT)/apps/common/audio/sine_make.o \
 	$(ROOT)/apps/common/audio/decode/decode.o \
 
+ifeq ($(MEDIA_NEW_ENABLE),y)
+objs += \
+	$(ROOT)/apps/$(APP_CASE)/tone_table.o
 endif
+
+-include $(ROOT)/apps/common/jl_kws/Makefile
+
+endif
+
 
 -include $(ROOT)/apps/common/usb/Makefile.inc

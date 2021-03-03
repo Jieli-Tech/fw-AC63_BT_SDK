@@ -540,6 +540,8 @@ extern u8 delete_last_device_from_vm();
 #define BD_CLASS_KEYBOARD           0x002540
 #define BD_CLASS_KEYBOARD_MOUSE     0x0025C0
 
+#define BD_CLASS_TRANSFER_HEALTH    0x10091C
+
 extern void __change_hci_class_type(u32 class);
 extern void __set_support_msbc_flag(bool flag);
 extern void __set_support_aac_flag(bool flag);
@@ -632,7 +634,5 @@ enum {
 };
 u8 remote_dev_company_ioctrl(bd_addr_t dev_addr, u8 op_flag, u8 value);
 u8 hci_standard_link_check(void);
-u8 remote_support_sink_profile(void);
-u8 get_role_type_for_addr(bd_addr_t addr);
 extern void XM_status_update(u8 status);
 #endif

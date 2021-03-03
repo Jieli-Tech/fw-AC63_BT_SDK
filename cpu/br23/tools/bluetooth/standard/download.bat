@@ -4,8 +4,12 @@ cd %~dp0
 
 copy ..\..\uboot.boot .
 copy ..\..\ota.bin .
+copy ..\..\tone.cfg .
+copy ..\..\cfg_tool.bin .
+copy ..\..\app.bin .
+copy ..\..\br23loader.bin .
 
-..\..\isd_download.exe -tonorflash -dev br23 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin  -uboot_compress
+..\..\isd_download.exe -tonorflash -dev br23 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin -res tone.cfg %1
 :: -format all
 ::-reboot 2500
 
@@ -44,3 +48,4 @@ del jl_isd.ufw
 
 ping /n 2 127.1>null
 IF EXIST null del null
+

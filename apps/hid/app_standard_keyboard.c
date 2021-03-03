@@ -49,7 +49,7 @@
 #include "debug.h"
 
 #define SUPPORT_KEYBOARD_NO_CONFLICT        0    //无冲按键支持
-#define SUPPORT_USER_PASSKEY                1
+#define SUPPORT_USER_PASSKEY                0
 #define CAP_LED_PIN                         -1
 #define CAP_LED_ON_VALUE                    1
 
@@ -94,7 +94,7 @@ typedef struct _special_key {
     u8 is_user_key;
 } special_key;
 
-#if 1
+#if 0
 #define FN_ROW                   (2)
 #define FN_COL                   (13)
 const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用来标识是否为特殊键
@@ -173,7 +173,7 @@ const u16 fn_remap_event[12 + 4] = {_KEY_CUSTOM_CTRL_HOME, _KEY_CUSTOM_CTRL_EMAI
 
 
 special_key other_key[] = {
-    {.row = 0, .col = 18, .is_user_key = 1},
+    {.row = 6, .col = 13, .is_user_key = 1},
 };
 
 
@@ -486,7 +486,7 @@ void send_matrix_key_report(u16 *key)
         }
     }
 
-    //put_buf(key_report, 8);
+    put_buf(key_report, 8);
     hid_report_send(KEYBOARD_REPORT_ID, key_report, 8);
 }
 
@@ -526,8 +526,11 @@ void Phantomkey_process(void)
     }
 }
 
+#include "asm/power/p33.h"
+//void p33_tx_1byte(u16 addr, u8 data0);
 void full_key_array(u8 row, u8 col, u8 st)
 {
+    static u8 wk_toggle = 0;
     u8 offset = 0;
     u8 mark = 0, mark_offset = 0;
     //最多推6个按键出来，如果需要推多个按键需要自行修改，每个u16 低八位标识row 高八位标识col
@@ -554,6 +557,8 @@ void full_key_array(u8 row, u8 col, u8 st)
             break;
         }
     }
+    /* for (offset = 0; offset < sizeof(key_status_array) / sizeof(u16); offset++) { */
+    /* } */
 }
 
 void user_key_timeout(void *priv)
@@ -873,9 +878,9 @@ static int state_machine(struct application *app, enum app_state state, struct i
 
 #define  SNIFF_CNT_TIME               5/////<空闲5S之后进入sniff模式
 
-#define SNIFF_MAX_INTERVALSLOT        800
-#define SNIFF_MIN_INTERVALSLOT        100
-#define SNIFF_ATTEMPT_SLOT            4
+#define SNIFF_MAX_INTERVALSLOT        48
+#define SNIFF_MIN_INTERVALSLOT        48
+#define SNIFF_ATTEMPT_SLOT            2
 #define SNIFF_TIMEOUT_SLOT            1
 
 static u8 sniff_ready_status = 0; //0:sniff_ready 1:sniff_not_ready
@@ -1283,11 +1288,11 @@ void edr_led_status_callback(u8 *buffer, u16 len)
         }
     }
 }
+void le_hogp_set_output_callback(void *cb);
 static void keyboard_mode_init(u8 hid_mode)
 {
     u8 vm_hid_mode = HID_MODE_NULL;
 
-    le_hogp_set_output_callback(ble_led_status_callback);
     if ((!STACK_MODULES_IS_SUPPORT(BT_BTSTACK_LE) || !BT_MODULES_IS_SUPPORT(BT_MODULE_LE)) && (!STACK_MODULES_IS_SUPPORT(BT_BTSTACK_CLASSIC) || !BT_MODULES_IS_SUPPORT(BT_MODULE_CLASSIC))) {
         log_info("not surpport ble or edr,make sure config !!!\n");
         ASSERT(0);
@@ -1308,6 +1313,7 @@ static void keyboard_mode_init(u8 hid_mode)
 #endif
 
 #if TCFG_USER_BLE_ENABLE
+    le_hogp_set_output_callback(ble_led_status_callback);
     if (hid_mode & HID_MODE_BLE) {
         printf("HID BLE MODE INIT\n");
         u8 ble_ex_name[] = " 4.0";
@@ -1441,7 +1447,9 @@ static int event_handler(struct application *app, struct sys_event *event)
     u8 i = 0;
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //重置无操作定时计数
-    sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    if (event->type != SYS_DEVICE_EVENT || DEVICE_EVENT_FROM_POWER != event->arg) { //过滤电源消息
+        sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    }
 #endif
 
     bt_sniff_ready_clean();

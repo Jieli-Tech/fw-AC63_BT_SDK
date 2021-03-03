@@ -20,4 +20,5 @@
 #define     CFG_CUR_BT_IDX                   (CFG_EDR_ADDRESS_BEGIN + CFG_BT_IDX_NUM)
 #define     CFG_HID_MODE_BEGIN               (CFG_CUR_BT_IDX + 1)
 
+#define     VM_USB_MIC_GAIN             	 5
 #endif /* #ifndef _USER_CFG_ID_H_ */

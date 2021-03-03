@@ -7,9 +7,9 @@
 #include "system/includes.h"
 #include "media/audio_decoder.h"
 
-int uac_vol_switch(int vol);
-
+// pc解码重新开始
 int uac_dec_restart(int magic);
+// 推送pc解码重新开始命令
 int uac_dec_push_restart(void);
 
 #endif /* TCFG_APP_PC_EN */

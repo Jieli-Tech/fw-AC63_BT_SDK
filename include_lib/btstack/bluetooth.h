@@ -490,6 +490,9 @@
  */
 #define HCI_SUBEVENT_LE_CHANNEL_SELECTION_ALGORITHM                 0x14
 
+
+#define HCI_SUBEVENT_LE_VENDOR_INTERVAL_COMPLETE                    0xF0
+
 /**
  * @format
 */

@@ -1,5 +1,4 @@
 
-CONFIG_USB_ENABLE = y
 CONFIG_SD_ENABLE = n
 #------------------------ event config --------------------------#
 SYS_EVENT_CFG_DEFINE += \
@@ -41,6 +40,10 @@ ifeq ($(CPU),br25)
 CONFIG_MEDIA_ENABLE = y
 endif
 
+ifeq ($(CPU),br30)
+CONFIG_MEDIA_ENABLE = y
+endif
+
 
 ifeq ($(CONFIG_MEDIA_ENABLE),y)
 export AUDIO_LITE_VERSION = y
@@ -62,20 +65,16 @@ BTCTRLER_CFG_DEFINE += \
 TWS_ENABLE = y
 
 export CONFIG_USB_ENABLE = y
-export USB_SLAVE_SUPPORT_MSD = n
-export USB_SLAVE_SUPPORT_AUDIO = n
-export USB_SLAVE_SUPPORT_HID = n
-export USB_SLAVE_USER_STACK = y
-
+ 
+ 
 CC_DEFINE += \
 -DTCFG_APP_BT_EN=1 \
 -DUSB_PC_NO_APP_MODE
 
 ifeq ($(CPU),br23)
-OMIT_FILES = $(ROOT)/cpu/br23/tools/bluetooth/watch \
+OMIT_FILES = $(ROOT)/cpu/br23/tools/download/ \
 			 $(ROOT)/cpu/br23/tools/提示音 \
 			 $(ROOT)/cpu/br23/tools/tool_resource \
-			 $(ROOT)/cpu/br23/tools/AC695X_config_tool \
 
 endif
 

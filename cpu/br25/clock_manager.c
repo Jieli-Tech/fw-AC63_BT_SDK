@@ -39,7 +39,7 @@ void clock_remove_set(u32 type)
 ////  如果clock_fix 为0 就按照配置设置时钟，如果有值就固定频率
 #define CLOCK_FIX   0
 
-#if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR)
+#if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR) && TCFG_EQ_DIVIDE_ENABLE
 #define  EQ4_CLK  (24)
 #else
 #define  EQ4_CLK  (0)
@@ -161,6 +161,8 @@ const struct clock_type  clock_enum[] = {
     { LOCALTWS_CLK, (24), "LOCALTWS_CLK"  },
 #endif
     {SPECTRUM_CLK, (5),	"SPECTRUM_CLK"   },
+
+    {AI_SPEECH_CLK, (120),	"AI_SPEECH_CLK"   },
 };
 
 

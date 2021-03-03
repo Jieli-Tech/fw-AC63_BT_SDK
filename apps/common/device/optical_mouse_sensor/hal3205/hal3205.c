@@ -21,7 +21,7 @@
 #define CONFIG_CPI		0b111
 
 static OMSENSOR_PLATFORM_DATA *pdata = NULL;
-static u8 time_count = 0;
+static volatile u8 time_count = 0;
 static const u8 timeout = 5;
 
 static void uSecDelay(u8 len);
@@ -40,7 +40,7 @@ static void get_overflow_status(u8 motion);
 static void hal_pixart_info_dump(void);
 static void hal_pixart_set_cpi_init(u16 dst_cpi);
 
-const u16 cpi_table[] = {
+static const u16 cpi_table[] = {
     CPI_600, CPI_800, CPI_1000, CPI_1200, CPI_1600,
 };
 
@@ -118,15 +118,21 @@ static void paw3205_init(void)
     hal_pixart_writeRegister(0x7d, 0x80);
     hal_pixart_writeRegister(0x7e, 0x77);
 
+//    hal_pixart_writeRegister(0x1b, 0x35);
+//	hal_pixart_writeRegister(0x4b, 0x1b);
+//    hal_pixart_writeRegister(0x06, 0x01);
+
     hal_pixart_write(0xff);		//bank1
     hal_pixart_write(0x01);
     hal_pixart_writeRegister(0x0b, 0x00);
     hal_pixart_write(0xff);		//bank0
     hal_pixart_write(0x00);
 
-    hal_pixart_set_cpi_init(CPI_1200);
 
     hal_pixart_writeRegister(pixart_WP_ADDR, 0x00);	//Lock WP
+
+
+    hal_pixart_set_cpi_init(CPI_1200);
 }
 
 static bool hal_pixart_init(OMSENSOR_PLATFORM_DATA *priv)
@@ -180,6 +186,7 @@ static void hal_pixart_info_dump(void)
     log_info("Sleep2_Setting   = 0x%x.\n", hal_pixart_readRegister(pixart_SLP2_ADDR));
     log_info("Image_Threshold  = 0x%x.\n", hal_pixart_readRegister(pixart_IMGQATH_ADDR));
     log_info("Image_Recognition= 0x%x.\n", hal_pixart_readRegister(pixart_IMGRECOG_ADDR));
+    log_info("POWER_DOWN_CONFIG= 0x%x.\n", hal_pixart_readRegister(pixart_POWER_DOWN_ADDR));
     log_info("\n");
 }
 
@@ -221,8 +228,34 @@ static void hal_pixart_force_wakeup(void)
 
 static void hal_pixart_led_switch(u8 led_status)
 {
-    u8 reg = 0;
 
+#if 0
+    u8 reg = 0;
+    u8 ret = 0;
+
+    reg = hal_pixart_readRegister(pixart_POWER_DOWN_ADDR);
+    ret = hal_pixart_readRegister(pixart_CONFIG_ADDR);
+
+    if (led_status) {
+        ret &= ~BIT(3);
+        reg = 0x1b;
+
+    } else {
+        ret |= BIT(3);
+        reg = 0x13;
+    }
+
+    log_debug("%s:%02x,%02x", __FUNCTION__, ret, reg);
+
+    hal_pixart_writeRegister(pixart_WP_ADDR, 0x5a);	//Lock WP
+    hal_pixart_writeRegister(pixart_CONFIG_ADDR, ret);
+    hal_pixart_writeRegister(pixart_POWER_DOWN_ADDR, reg);
+    hal_pixart_writeRegister(pixart_WP_ADDR, 0x00);	//Lock WP
+    log_debug("read_cfg_reg:%02x", hal_pixart_readRegister(pixart_CONFIG_ADDR));
+
+#else
+
+    u8 reg = 0;
     reg = hal_pixart_readRegister(pixart_OPMODE_ADDR);
 
     if (led_status) {
@@ -234,6 +267,8 @@ static void hal_pixart_led_switch(u8 led_status)
     hal_pixart_writeRegister(pixart_WP_ADDR, 0x5a);	//Lock WP
     hal_pixart_writeRegister(pixart_OPMODE_ADDR, reg);
     hal_pixart_writeRegister(pixart_WP_ADDR, 0x00);	//Lock WP
+#endif
+
 }
 
 //功能：读数据
@@ -323,25 +358,42 @@ static void hal_pixart_writeRegister(u8 regAddress, u8 innData)
 /*   }while( hal_pixart_readRegister(regAddress)!= innData ); */
 /* } */
 
+static const u8 support_id[] = {0x30, 0x31};
 
-static bool  hal_pixart_resync(void)
+static bool hal_pixart_resync(void)
 {
-    u8 time = 0;
-
+    u8 i, id, time = 0;
     time = time_count;
 
+    do {
+        id = hal_pixart_readRegister(pixart_PID0_ADDR);
+        for (i = 0; i < sizeof(support_id); i++) {
+            if (id == support_id[i]) {
+                return true;
+            }
+        }
 
-    while (hal_pixart_readRegister(pixart_PID0_ADDR) != 0x30) {	//Make sure SPI is sync
-        uSecDelay(10);
-        resync();
+        log_debug("err Id: %x", id);
 
         if (abs(time - time_count) >= timeout) { //信号同步超时
             log_error("optical sensor resync fail!!!");
-            return false;
+            break;
         }
-    }
 
-    return true;
+    } while (1);
+
+    return false;
+
+    /* while (hal_pixart_readRegister(pixart_PID0_ADDR) != 0x30) {	//Make sure SPI is sync */
+    /* uSecDelay(10); */
+    /* resync(); */
+
+    /* if (abs(time - time_count) >= timeout) { //信号同步超时 */
+    /* log_error("optical sensor resync fail!!!"); */
+    /* return false; */
+    /* } */
+    /* } */
+    /* return true; */
 }
 
 
@@ -427,44 +479,43 @@ static void resync(void)
 }
 
 
-static void hal_pixart_set_cpi_init(u16 dst_cpi)
+
+//功能：设置CPI
+static u16 hal_pixart_set_cpi(u16 dst_cpi)
 {
-    u8 reg, i;
+    u8 reg = 0;
+    u8 cpi_idx = -1;
+    u8 i;
 
     for (i = 0; i < ARRAY_SIZE(cpi_table); i++) {
         if (dst_cpi == cpi_table[i]) {
+            cpi_idx = i;
             break;
         }
     }
 
-    reg = hal_pixart_readRegister(pixart_CONFIG_ADDR);
-    reg &= ~(CONFIG_CPI);
-    reg |= i;
-    hal_pixart_writeRegister(pixart_CONFIG_ADDR, reg);
-
-    log_info("cpi init default = %d", cpi_table[i]);
-}
-
-//功能：设置CPI
-static u16 hal_pixart_set_cpi(void)
-{
-    u8 reg = 0;
-    static u8 cpi_idx = 0;
+    if (cpi_idx > ARRAY_SIZE(cpi_table)) {
+        log_debug("cpi set fail");
+        return 0;
+    }
 
     reg = hal_pixart_readRegister(pixart_CONFIG_ADDR);
     reg &= ~(CONFIG_CPI);
-    reg |= cpi_idx; //CPI = 1200
-
+    reg |= cpi_idx;
     hal_pixart_writeRegister(pixart_WP_ADDR, 0x5a);     //Unlock WP
     hal_pixart_writeRegister(pixart_CONFIG_ADDR, reg);  //set cpi
     hal_pixart_writeRegister(pixart_WP_ADDR, 0x00);	   //Lock WP
 
-    reg = hal_pixart_readRegister(pixart_CONFIG_ADDR) & 7;
-    /* log_debug("CONFIGURATION:CPI[2:0] = %d. idx = %d\n", reg, cpi_idx); */
-
+    reg = hal_pixart_readRegister(pixart_CONFIG_ADDR) & CONFIG_CPI;
+    log_info("CONFIGURATION:CPI[2:0] = %d. idx = %d\n", reg, cpi_idx);
     cpi_idx = (cpi_idx + 1) % ARRAY_SIZE(cpi_table);
-
     return cpi_table[reg & CONFIG_CPI];
+}
+
+static void hal_pixart_set_cpi_init(u16 dst_cpi)
+{
+    u16 init_value = hal_pixart_set_cpi(dst_cpi);
+    log_info("cpi init default = %d", init_value);
 }
 
 

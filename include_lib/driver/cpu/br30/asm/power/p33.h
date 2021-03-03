@@ -16,22 +16,14 @@
 #ifndef __P33__
 #define __P33__
 
-#ifdef c51
-#define P33_ACCESS(x) (*(volatile u8 *)(0x1800 + x))
-#ifdef CONFIG_BR30_C_VERSION
-#define RTC_ACCESS(x) (*(volatile u8 *)(0x1400 + x))
-#endif /* #ifdef CONFIG_BR30_C_VERSION */
-#else
 #define P33_ACCESS(x) (*(volatile u8 *)(0x1A0000 + 0x1800 + x))
 #ifdef CONFIG_BR30_C_VERSION
 #define RTC_ACCESS(x) (*(volatile u8 *)(0x1A0000 + 0x1400 + x))
 #endif /* #ifdef CONFIG_BR30_C_VERSION */
-#endif
 
-//===========
 //===============================================================================//
 //
-//
+//					 p33 analog
 //
 //===============================================================================//
 //............. 0x0000 - 0x000f............ for analog control
@@ -180,7 +172,7 @@
 
 //===============================================================================//
 //
-//      p33 rtcvdd
+//                      p33 rtcvdd
 //
 //===============================================================================//
 #ifdef CONFIG_BR30_C_VERSION
@@ -347,6 +339,11 @@ static void P33_CON_DEBUG(void)
         // printf("--%x : %x--\n", i, P33_CON_GET(i));
     }
 }
+//===============================================================================//
+//
+//      				p33 analog
+//
+//===============================================================================//
 
 /*
  *-------------------P3_ANA_CON0
@@ -490,6 +487,8 @@ enum {
 
 #define BTDCDC_PFM_MODE(en)     P33_CON_SET(P3_ANA_CON7, 0, 1, en)
 
+#define GET_BTDCDC_PFM_MODE()   (P33_CON_GET(P3_ANA_CON7) & BIT(0) ? 1 : 0)
+
 #define BTDCDC_RAMP_EN(en)      P33_CON_SET(P3_ANA_CON7, 1, 1, en)
 
 #define BTDCDC_HCOMP_BS(en)     P33_CON_SET(P3_ANA_CON7, 2, 1, en)
@@ -578,6 +577,9 @@ enum {
 #define BTDCDC_DT(sel)          P33_CON_SET(P3_ANA_CON10, 4, 2, sel)
 
 #define BTDCDC_CLK_SEL(sel)     P33_CON_SET(P3_ANA_CON10, 6, 1, sel)
+
+#define GET_BTDCDC_CLK_SEL()    (P33_CON_GET(P3_ANA_CON10) & BIT(6) ? 1 : 0)
+
 enum {
     BTDCDC_CLK_SEL_RC = 0,
     BTDCDC_CLK_SEL_BTOSC,
@@ -856,7 +858,7 @@ enum {
 
 //===============================================================================//
 //
-//      p33 rtcvdd
+//      				p33 rtcvdd
 //
 //===============================================================================//
 

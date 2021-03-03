@@ -15,6 +15,9 @@
 #include "user_cfg.h"
 #include "asm/power/p33.h"
 /* #include "asm/lp_touch_key.h" */
+#ifdef CONFIG_LITE_AUDIO
+#include "media/includes.h"
+#endif/*CONFIG_LITE_AUDIO*/
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -144,6 +147,72 @@ const struct adkey_platform_data adkey_data = {
     },
 };
 #endif
+
+
+/************************** DAC ****************************/
+#if TCFG_AUDIO_DAC_ENABLE
+struct dac_platform_data dac_data = {
+    .ldo_volt       = TCFG_AUDIO_DAC_LDO_VOLT,                   //DACVDD等级
+    .vcmo_en        = 0,                                         //是否打开VCOMO
+    .output         = TCFG_AUDIO_DAC_CONNECT_MODE,               //DAC输出配置，和具体硬件连接有关，需根据硬件来设置
+    .ldo_isel       = 0,
+    .ldo_fb_isel    = 0,
+    .lpf_isel       = 0x2,
+    .dsm_clk        = DAC_DSM_6MHz,
+};
+#endif
+
+/************************** ADC ****************************/
+#if TCFG_AUDIO_ADC_ENABLE
+const struct ladc_port ladc_list[] = {
+	{// 0
+		.channel = TCFG_AUDIO_ADC_LINE_CHA,
+	},
+	// total must < 4
+};
+struct adc_platform_data adc_data = {
+/*MIC 是否省隔直电容：0: 不省电容  1: 省电容 */
+	.mic_capless    = TCFG_MIC_CAPLESS_ENABLE,
+/*差分mic使能,差分mic不能使用省电容模式*/
+	.mic_diff    = 0,
+/*MIC LDO电流档位设置：0:5    1:10ua    2:15ua    3:20ua*/
+	.mic_ldo_isel   = TCFG_AUDIO_ADC_LD0_SEL,
+/*MIC LDO电压档位设置,也会影响MIC的偏置电压0:1.5v  1:8v  2:2.1v  3:2.4v 4:2.7v 5:3.0 */
+	.mic_ldo_vsel  = 3,
+/*MIC免电容方案需要设置，影响MIC的偏置电压
+    21:1.18K	20:1.42K 	19:1.55K 	18:1.99K 	17:2.2K 	16:2.4K 	15:2.6K		14:2.91K	13:3.05K 	12:3.5K 	11:3.73K
+	10:3.91K  	9:4.41K 	8:5.0K  	7:5.6K		6:6K		5:6.5K		4:7K		3:7.6K		2:8.0K		1:8.5K				*/
+    .mic_bias_res   = 18,
+/*MIC电容隔直模式使用内部mic偏置(PA2)*/
+	.mic_bias_inside = 1,
+/*保持内部mic偏置(PA2)输出*/
+	.mic_bias_keep = 0,
+
+/*MIC1 是否省隔直电容：0: 不省电容  1: 省电容 */
+	.mic1_capless    = TCFG_MIC1_CAPLESS_ENABLE,
+/*差分mic使能,差分mic不能使用省电容模式*/
+	.mic1_diff    = 0,
+/*MIC1 LDO电流档位设置：0:5    1:10ua    2:15ua    3:20ua*/
+	.mic1_ldo_isel   = TCFG_AUDIO_ADC_LD0_SEL,
+/*MIC1 LDO电压档位设置,也会影响MIC的偏置电压0:1.5v  1:8v  2:2.1v  3:2.4v 4:2.7v 5:3.0 */
+	.mic1_ldo_vsel  = 3,
+/*MIC1免电容方案需要设置，影响MIC的偏置电压
+    21:1.18K	20:1.42K 	19:1.55K 	18:1.99K 	17:2.2K 	16:2.4K 	15:2.6K		14:2.91K	13:3.05K 	12:3.5K 	11:3.73K
+	10:3.91K  	9:4.41K 	8:5.0K  	7:5.6K		6:6K		5:6.5K		4:7K		3:7.6K		2:8.0K		1:8.5K				*/
+    .mic1_bias_res   = 18,
+/*MIC1电容隔直模式使用内部mic偏置(PB7)*/
+	.mic1_bias_inside = 1,
+/*保持内部mic偏置(PB7)输出*/
+	.mic1_bias_keep = 0,
+
+	// ladc 通道
+    .ladc_num = ARRAY_SIZE(ladc_list),
+    .ladc = ladc_list,
+};
+#endif
+
+
+
 
 /************************** PWM_LED ****************************/
 #if TCFG_PWMLED_ENABLE
@@ -614,7 +683,9 @@ void sleep_enter_callback(u8  step)
     if (step == 1) {
         putchar('<');
         APP_IO_DEBUG_0(B, 0);
-        /* dac_power_off(); */
+#if TCFG_AUDIO_ENABLE
+        dac_power_off();
+#endif/*TCFG_AUDIO_ENABLE*/
 	} else {
 		close_gpio();
 		/* gpio_set_pull_up(IO_PORTA_03, 0); */

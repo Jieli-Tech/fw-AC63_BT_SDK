@@ -43,6 +43,13 @@ static struct audio_stream_entry *audio_dec_app_entries[2] = {NULL};
 
 //////////////////////////////////////////////////////////////////////////////
 
+/*----------------------------------------------------------------------------*/
+/**@brief    解码创建参数初始化
+   @param    *dec: 解码句柄
+   @return   0-正常
+   @note     弱函数重定义
+*/
+/*----------------------------------------------------------------------------*/
 int audio_dec_app_create_param_init(struct audio_dec_app_hdl *dec)
 {
     dec->p_decode_task = &decode_task;
@@ -72,12 +79,27 @@ int audio_dec_app_create_param_init(struct audio_dec_app_hdl *dec)
     return 0;
 }
 
+/*----------------------------------------------------------------------------*/
+/**@brief    文件解码创建参数初始化
+   @param    *file_dec: 文件解码句柄
+   @return   0-正常
+   @note     弱函数重定义
+*/
+/*----------------------------------------------------------------------------*/
 int audio_dec_file_app_create_param_init(struct audio_dec_file_app_hdl *file_dec)
 {
     file_dec->format = decode_format_list;
     return 0;
 }
 
+/*----------------------------------------------------------------------------*/
+/**@brief    解码输出状态设置
+   @param    *dec: 解码句柄
+   @param    flag: 解码标签
+   @return   0-正常
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 int audio_dec_app_audio_state_switch(struct audio_dec_app_hdl *dec, u32 flag)
 {
     u8 need_set_audio = 1;
@@ -102,6 +124,13 @@ int audio_dec_app_audio_state_switch(struct audio_dec_app_hdl *dec, u32 flag)
     return 0;
 }
 
+/*----------------------------------------------------------------------------*/
+/**@brief    解码输出状态退出
+   @param    *p_aud_state: 输出状态
+   @return   0-正常
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 int audio_dec_app_audio_state_exit(struct audio_dec_app_audio_state_hdl *p_aud_state)
 {
     u8 need_set_audio = 1;
@@ -121,12 +150,26 @@ int audio_dec_app_audio_state_exit(struct audio_dec_app_audio_state_hdl *p_aud_s
     return 0;
 }
 
+/*----------------------------------------------------------------------------*/
+/**@brief    文件解码初始化完成
+   @param    *file_dec: 文件解码句柄
+   @return   0-正常
+   @note     弱函数重定义
+*/
+/*----------------------------------------------------------------------------*/
 int audio_dec_file_app_init_ok(struct audio_dec_file_app_hdl *file_dec)
 {
     audio_dec_app_audio_state_switch(file_dec->dec, file_dec->flag & AUDIO_DEC_FILE_FLAG_AUDIO_STATE_MASK);
     return 0;
 }
 
+/*----------------------------------------------------------------------------*/
+/**@brief    文件解码结束
+   @param    *file_dec: 文件解码句柄
+   @return   0-正常
+   @note     弱函数重定义
+*/
+/*----------------------------------------------------------------------------*/
 int audio_dec_file_app_play_end(struct audio_dec_file_app_hdl *file_dec)
 {
     struct audio_dec_app_audio_state_hdl aud_state = {0};
@@ -138,11 +181,25 @@ int audio_dec_file_app_play_end(struct audio_dec_file_app_hdl *file_dec)
     return 0;
 }
 
+/*----------------------------------------------------------------------------*/
+/**@brief    正弦波解码初始化完成
+   @param    *sine_dec: 正弦波解码句柄
+   @return   0-正常
+   @note     弱函数重定义
+*/
+/*----------------------------------------------------------------------------*/
 int audio_dec_sine_app_init_ok(struct audio_dec_sine_app_hdl *sine_dec)
 {
     audio_dec_app_audio_state_switch(sine_dec->dec, sine_dec->flag & AUDIO_DEC_FILE_FLAG_AUDIO_STATE_MASK);
     return 0;
 }
+/*----------------------------------------------------------------------------*/
+/**@brief    正弦波解码结束
+   @param    *sine_dec: 正弦波解码句柄
+   @return   0-正常
+   @note     弱函数重定义
+*/
+/*----------------------------------------------------------------------------*/
 int audio_dec_sine_app_play_end(struct audio_dec_sine_app_hdl *sine_dec)
 {
     struct audio_dec_app_audio_state_hdl aud_state = {0};

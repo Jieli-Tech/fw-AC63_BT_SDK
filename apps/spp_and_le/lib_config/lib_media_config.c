@@ -104,7 +104,7 @@ const int audio_dec_app_mix_en = 0;
 #else
 
 // mixer模块使能。不使能将关闭大部分功能，mix为直通
-const int config_mixer_en = 0;
+const int config_mixer_en = 1;
 // mixer变采样使能
 const int config_mixer_src_en = 1;
 
@@ -170,8 +170,20 @@ const int WMA_OUTPUT_LEN = 1;
 
 #endif
 
+// wav最大支持比特率，单位kbps
+const int WAV_MAX_BITRATEV = (48 * 2 * 24);
+
 // mixer在单独任务中输出
 const int config_mixer_task = 0;
+
+// tws音频解码自动设置输出声道。
+// 单声道：AUDIO_CH_L/AUDIO_CH_R。双声道：AUDIO_CH_DUAL_L/AUDIO_CH_DUAL_R
+// 关闭后，按照output_ch_num和output_ch_type/ch_type设置输出声道
+const int audio_tws_auto_channel = 1;
+
+// 解码使用单独任务做输出
+const int config_audio_dec_out_task_en = 0;
+
 
 /*省电容mic配置*/
 #if TCFG_SUPPORT_MIC_CAPLESS

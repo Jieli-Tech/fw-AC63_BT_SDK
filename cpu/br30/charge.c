@@ -36,6 +36,10 @@ static CHARGE_VAR charge_var;
 extern void charge_set_callback(void (*wakup_callback)(void), void (*sub_callback)(void));
 static u8 charge_flag;
 
+#define BIT_LDO5V_IN		BIT(0)
+#define BIT_LDO5V_OFF		BIT(1)
+#define BIT_LDO5V_ERR		BIT(2)
+
 u8 get_charge_poweron_en(void)
 {
     return __this->data->charge_poweron_en;
@@ -150,21 +154,27 @@ void charge_power_switch_timer(void *priv)
 void power_enter_charge_mode(void)
 {
     if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15) {
+        u8 chip_id = get_chip_version() & 0x0f;
         u32 vbat_voltage;
-        vbat_voltage = adc_get_voltage(AD_CH_VBAT) * 4 / 10;
-        if (vbat_voltage > 300) {
-            power_set_charge_mode(0);
-            power_set_mode(PWR_DCDC15);
-            power_set_charge_mode(1);
-        } else {
-            power_set_charge_mode(0);
-            power_set_mode(PWR_LDO15);
-            power_set_charge_mode(1);
-            if (__this->power_sw_timer == 0) {
-                //低压充电不进低功耗
-                adc_set_sample_freq(AD_CH_VBAT, 20);
-                __this->power_sw_timer = usr_timer_add(NULL, charge_power_switch_timer, 1000, 1);
+        if ((chip_id >= 0x0C) || (chip_id == 0x01) || (chip_id == 0x02)) {
+            vbat_voltage = adc_get_voltage(AD_CH_VBAT) * 4 / 10;
+            if (vbat_voltage > 300) {
+                power_set_charge_mode(0);
+                power_set_mode(PWR_DCDC15);
+                power_set_charge_mode(1);
+            } else {
+                power_set_charge_mode(0);
+                power_set_mode(PWR_LDO15);
+                power_set_charge_mode(1);
+                if (__this->power_sw_timer == 0) {
+                    //低压充电不进低功耗
+                    adc_set_sample_freq(AD_CH_VBAT, 20);
+                    __this->power_sw_timer = usr_timer_add(NULL, charge_power_switch_timer, 1000, 1);
+                }
             }
+        } else if ((chip_id == 0x03) || (chip_id == 0x04) || (chip_id == 0x06)) {
+            power_set_charge_mode(1);
+            power_set_mode(PWR_DCDC15_FOR_CHARGE);
         }
     }
 }
@@ -192,11 +202,7 @@ void charge_start(void)
 
     power_wakeup_enable_with_port(IO_CHGFL_DET);
 
-    u8 chip_id = get_chip_version() & 0x0f;
-    //A B C版本需要特殊处理,D版之后走正常流程
-    if ((chip_id >= 0x0C) || (chip_id == 0x01) || (chip_id == 0x02)) {
-        power_enter_charge_mode();
-    }
+    power_enter_charge_mode();
 
     CHGBG_EN(1);
     CHARGE_EN(1);
@@ -208,14 +214,12 @@ void charge_close(void)
 {
     log_info("%s\n", __func__);
 
-    CHGBG_EN(0);
-    CHARGE_EN(0);
-
-    u8 chip_id = get_chip_version() & 0x0f;
-    //A B C版本需要特殊处理,D版之后走正常流程
-    if ((chip_id >= 0x0C) || (chip_id == 0x01) || (chip_id == 0x02)) {
-        power_exit_charge_mode();
+    if (charge_flag != BIT_LDO5V_IN) {
+        CHGBG_EN(0);
+        CHARGE_EN(0);
     }
+
+    power_exit_charge_mode();
 
     power_wakeup_disable_with_port(IO_CHGFL_DET);
 
@@ -249,10 +253,6 @@ static void charge_full_detect(void *priv)
         power_wakeup_enable_with_port(IO_CHGFL_DET);
     }
 }
-
-#define BIT_LDO5V_IN		BIT(0)
-#define BIT_LDO5V_OFF		BIT(1)
-#define BIT_LDO5V_ERR		BIT(2)
 
 static void ldo5v_detect(void *priv)
 {

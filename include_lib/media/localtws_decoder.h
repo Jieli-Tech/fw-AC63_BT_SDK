@@ -19,6 +19,11 @@ struct localtws_decoder {
     u32 need_get_fmt : 1;	// 需要获取音频信息
     u32 sync_step : 3;
     u32 preempt_state : 4;
+    u32 remain_flag : 1;	// 输出剩余标记
+    u32 fade_out : 1;		// 淡出
+    s16 fade_step;			// 淡入淡出步进数
+    s16 fade_value;			// 淡入淡出记录值
+    u32 fade_out_mute_points;	// 淡出后静音点数
     u32 wait_time;
     int begin_delay_time;
     void *sync;
@@ -47,6 +52,8 @@ void localtws_decoder_stream_sync_enable(struct localtws_decoder *dec,
         void *sync,
         int delay_time,
         u8(*master)(void));
+
+void localtws_decoder_resume_pre(void);
 
 #endif /*A2DP_DECODER_H*/
 

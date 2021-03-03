@@ -7,6 +7,7 @@
 #include "generic/gpio.h"
 #include "asm/clock.h"
 #include "asm/spi.h"
+#include "update.h"
 
 
 #define spi_enable(reg)                     ((reg)->CON |= BIT(0))
@@ -661,3 +662,14 @@ void spi_close(spi_dev spi)
     spi_disable(spi_regs[id]);
 }
 
+void spi_disable_for_ota()
+{
+    for (int i = 0; i < 2; i++) {
+        spi_disable(spi_regs[i]);
+    }
+}
+
+REGISTER_UPDATE_TARGET(spi_update_target) = {
+    .name = "spi",
+    .driver_close = spi_disable_for_ota,
+};

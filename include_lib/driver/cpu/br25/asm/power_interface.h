@@ -253,6 +253,8 @@ u8 is_ldo5v_wakeup(void);
 // void power_wakeup_callback(JL_SignalEvent_t cb_event);
 
 void p33_soft_reset(void);
+
+void port_edge_wkup_set_callback(void (*wakeup_callback)(u8 index, u32 gpio));
 /*-----------------------------------------------------------*/
 
 void power_reset_close();

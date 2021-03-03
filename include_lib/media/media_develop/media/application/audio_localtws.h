@@ -34,6 +34,8 @@ enum {
 enum {
     LOCALTWS_MEDIA_SEND_PAUSE_START = 1,	// 发送暂停命令
     LOCALTWS_MEDIA_SEND_PAUSE_END,			// 发送完成
+    LOCALTWS_MEDIA_DEC_PAUSE,				// 暂停
+    LOCALTWS_MEDIA_DEC_PAUSE_RECOVER,		// 暂停恢复
 };
 
 extern const u16 LOCALTWS_MEDIA_BUF_LEN;
@@ -45,6 +47,7 @@ extern const u16 LOCALTWS_MEDIA_TO_MS;
 // 数据推送到tws
 struct localtws_push_hdl {
     u16 resume_tmr_id;
+    u8  wait_resume;
     struct audio_stream_entry entry;	// 音频流入口
 };
 
@@ -55,10 +58,12 @@ struct localtws_globle_hdl {
     u16 seqn;		// 传输包序号
     u32 media_value;		// 当前localtws媒体信息
     u32 drop_frame_start : 1;	// 中止数据传输
-    u32 tws_send_pause : 2;	// localtws正在发送暂停命令
+    u32 tws_send_pause : 3;	// localtws正在发送暂停命令
     u32 tws_stop : 1;		// localtws正在停止
     // u32 mixer_init : 1;		// mixer初始化ok
     u32 media_buf_malloc : 1;	// 1:使用malloc。0:使用固定地址
+    u8  fade_ms;			// 淡入淡出时长
+    u8  fade_out_mute_ms;	// 淡出后静音时长
     void *media_buf;		// buf地址
     int (*event_cb)(int event, int *parm);
     int (*check_active)();	// 检查是否是活动设备

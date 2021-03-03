@@ -95,7 +95,8 @@ static inline int data_sat_s16(int ind)
 }
 
 #else
-static inline int data_sat_s16(int ind)
+__attribute__((always_inline))
+static int data_sat_s16(int ind)
 {
     __asm__ volatile(
         " %0 = sat16(%0)(s)  \t\n"

@@ -11,13 +11,16 @@
 #include "server/server_core.h"
 #include "app_config.h"
 #include "app_action.h"
-#include "app_task.h"
 #include "os/os_api.h"
 #include "device/sdmmc.h"
 
 #include "app_charge.h"
 #include "asm/charge.h"
 
+#if TCFG_PC_ENABLE
+#ifndef  USB_PC_NO_APP_MODE
+#include "app_task.h"
+#endif
 #include "usb/usb_config.h"
 #include "usb/device/usb_stack.h"
 
@@ -59,6 +62,8 @@ extern void usb_audio_demo_exit(void);
 
 static usb_dev usbfd = 0;//SEC(.usb_g_bss);
 static OS_MUTEX msd_mutex ;//SEC(.usb_g_bss);
+static u8 msd_in_task;
+static u8 msd_run_reset;
 
 
 static void usb_task(void *p)
@@ -77,10 +82,16 @@ static void usb_task(void *p)
 #if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
         case USBSTACK_MSD_RUN:
             os_mutex_pend(&msd_mutex, 0);
+            msd_in_task = 1;
 #if TCFG_USB_APPLE_DOCK_EN
             apple_mfi_link((void *)msg[2]);
 #endif
             USB_MassStorage((void *)msg[2]);
+            if (msd_run_reset) {
+                msd_reset((struct usb_device_t *)msg[2], 0);
+                msd_run_reset = 0;
+            }
+            msd_in_task = 0;
             os_mutex_post(&msd_mutex);
             break;
         case USBSTACK_MSD_RELASE:
@@ -89,11 +100,11 @@ static void usb_task(void *p)
                 os_time_dly(10000);
             }
             break;
-        case USBSTACK_MSD_RESET:
-            os_mutex_pend(&msd_mutex, 0);
-            msd_reset((struct usb_device_t *)msg[2], (u32)msg[3]);
-            os_mutex_post(&msd_mutex);
-            break;
+//        case USBSTACK_MSD_RESET:
+//            os_mutex_pend(&msd_mutex, 0);
+//            msd_reset((struct usb_device_t *)msg[2], (u32)msg[3]);
+//            os_mutex_post(&msd_mutex);
+//            break;
 #endif
         default:
             break;
@@ -103,11 +114,18 @@ static void usb_task(void *p)
 
 static void usb_msd_wakeup(struct usb_device_t *usb_device)
 {
-    int err = os_taskq_post_msg(USB_TASK_NAME, 2, USBSTACK_MSD_RUN, usb_device);
+    os_taskq_post_msg(USB_TASK_NAME, 2, USBSTACK_MSD_RUN, usb_device);
 }
 static void usb_msd_reset_wakeup(struct usb_device_t *usb_device, u32 itf_num)
 {
-    os_taskq_post_msg(USB_TASK_NAME, 3, USBSTACK_MSD_RESET, usb_device, itf_num);
+    /* os_taskq_post_msg(USB_TASK_NAME, 3, USBSTACK_MSD_RESET, usb_device, itf_num); */
+    if (msd_in_task) {
+        msd_run_reset = 1;
+    } else {
+#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
+        msd_reset(usb_device, 0);
+#endif
+    }
 }
 static void usb_msd_init()
 {
@@ -220,13 +238,13 @@ void usb_stop()
 
 int pc_device_event_handler(struct sys_event *event)
 {
-    if (event->arg != DEVICE_EVENT_FROM_OTG) {
+    if ((int)event->arg != DEVICE_EVENT_FROM_OTG) {
         return false;
     }
 
     int switch_app_case = false;
     const char *usb_msg = (const char *)event->u.dev.value;
-    //log_debug("usb event : %d DEVICE_EVENT_FROM_OTG %s", event->u.dev.event, usb_msg);
+    log_debug("usb event : %d DEVICE_EVENT_FROM_OTG %s", event->u.dev.event, usb_msg);
 
     if (usb_msg[0] == 's') {
         if (event->u.dev.event == DEVICE_EVENT_IN) {
@@ -271,7 +289,7 @@ int pc_device_event_handler(struct sys_event *event)
     return switch_app_case;
 }
 
-#ifdef  CONFIG_DONGLE_CASE
+#ifdef  USB_PC_NO_APP_MODE
 void usbstack_init()
 {
     register_sys_event_handler(SYS_DEVICE_EVENT, DEVICE_EVENT_FROM_OTG, 2,
@@ -282,4 +300,6 @@ void usbstack_exit()
 {
     unregister_sys_event_handler(pc_device_event_handler);
 }
+#endif
+
 #endif

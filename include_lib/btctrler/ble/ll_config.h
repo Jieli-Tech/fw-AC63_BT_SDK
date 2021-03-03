@@ -13,6 +13,7 @@
 *********************************************************************************************/
 #ifndef _LL_CONFIG_H_
 #define _LL_CONFIG_H_
+#include <stdint.h> //for UINT64_C
 
 /*
  *-------------------LE FEATURE SUPPORT
@@ -129,6 +130,9 @@ extern const uint64_t config_btctler_le_features;
 #define LE_ADV                              BIT(2)
 #define LE_SCAN                             BIT(3)
 #define LE_INIT                             BIT(4)
+
+/*! \brief      Combination */
+#define LE_CONN                             (LE_MASTER|LE_SLAVE)
 
 extern const int config_btctler_le_roles;
 #define LE_ROLES_IS_SUPPORT(x)              (config_btctler_le_roles & x)

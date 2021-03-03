@@ -6,52 +6,40 @@
 #include "generic/atomic.h"
 
 /*无电容电路*/
-#define SUPPORT_MIC_CAPLESS          1
-
-#define BR22_ADC_BIT_FLAG_FADE_ON	BIT(31)
-
-#define FADE_OUT_IN           	1
-#define FADE_OUT_TIME_MS		2
+#define SUPPORT_MIC_CAPLESS     1
 
 #define LADC_STATE_INIT			1
 #define LADC_STATE_OPEN      	2
 #define LADC_STATE_START     	3
 #define LADC_STATE_STOP      	4
 
-#define FPGA_BOARD          0
+#define FPGA_BOARD          	0
 
 #define LADC_MIC                0
 #define LADC_LINEIN0            1
 #define LADC_LINEIN1            2
 #define LADC_LINEIN             3
 
-
-#define SOURCE_MONO_LEFT        0
-#define SOURCE_MONO_RIGHT       1
-#define SOURCE_MONO_LEFT_RIGHT  2
-
-#define ADC_DEFAULT_PNS         128
-
 /* 通道选择 */
-#define AUDIO_ADC_MIC_L					    BIT(0)
-#define AUDIO_ADC_MIC_R					    BIT(1)
-#define AUDIO_ADC_LINE0_L					BIT(2)
-#define AUDIO_ADC_LINE0_R					BIT(3)
-#define AUDIO_ADC_LINE1_L					BIT(4)
-#define AUDIO_ADC_LINE1_R					BIT(5)
-#define AUDIO_ADC_MIC_CH					BIT(0)
+#define AUDIO_ADC_MIC_L		    BIT(0)
+#define AUDIO_ADC_MIC_R		    BIT(1)
+#define AUDIO_ADC_LINE0_L		BIT(2)
+#define AUDIO_ADC_LINE0_R		BIT(3)
+#define AUDIO_ADC_LINE1_L		BIT(4)
+#define AUDIO_ADC_LINE1_R		BIT(5)
+#define AUDIO_ADC_MIC_CH		BIT(0)
 
-#define LADC_CH_MIC_L					    BIT(0)
-#define LADC_CH_MIC_R					    BIT(1)
-#define LADC_CH_LINE0_L						BIT(2)
-#define LADC_CH_LINE0_R						BIT(3)
-#define LADC_CH_LINE1_L						BIT(4)
-#define LADC_CH_LINE1_R						BIT(5)
-#define PLNK_MIC							BIT(6)
+#define LADC_CH_MIC_L		    BIT(0)
+#define LADC_CH_MIC_R		    BIT(1)
+#define LADC_CH_LINE0_L			BIT(2)
+#define LADC_CH_LINE0_R			BIT(3)
+#define LADC_CH_LINE1_L			BIT(4)
+#define LADC_CH_LINE1_R			BIT(5)
+#define PLNK_MIC				BIT(6)
 
-#define LADC_MIC_MASK					(BIT(0) | BIT(1))
-#define LADC_LINE0_MASK					(BIT(2) | BIT(3))
-#define LADC_LINE1_MASK					(BIT(4) | BIT(5))
+#define LADC_MIC_MASK			(BIT(0) | BIT(1))
+#define LADC_LINE0_MASK			(BIT(2) | BIT(3))
+#define LADC_LINE1_MASK			(BIT(4) | BIT(5))
 
 struct ladc_port {
     u8 channel;
@@ -100,19 +88,6 @@ struct capless_low_pass {
     u32 bud_factor;
 };
 
-struct audio_adc_attr {
-    u8 gain;
-    u16 sample_rate;
-    u16 irq_time;
-    u16 irq_points;
-};
-
-struct adc_stream_ops {
-    void (*buf_reset)(void *priv);
-    void *(*alloc_space)(void *priv, u32 *len);
-    void (*output)(void *priv, void *buf, u32 len);
-};
-
 struct audio_adc_output_hdl {
     struct list_head entry;
     void *priv;
@@ -120,39 +95,16 @@ struct audio_adc_output_hdl {
 };
 
 struct audio_adc_hdl {
-    struct list_head head;
-    /*void *priv;
-    const struct adc_stream_ops *ops;*/
-    const struct adc_platform_data *pd;
-    atomic_t ref;
-    struct audio_adc_attr attr;
-    u16 pause_srp;
-    u16 pns;
-    u8 fifo_full;
-    u8 channel;
-    u8 ch_sel;
-    u8 input;
     u8 state;
-    union {
-        struct {
-            u8 out2dac : 1;
-            u8 out_l : 1;
-            u8 out_r : 1;
-            u8 out_mix : 1;
-            u8 cha_idx : 2;
-        } ladc;
-        u8 param;
-    } u;
-#if FADE_OUT_IN
-    u8 fade_on;
-    volatile u8 ref_gain;
-    volatile int fade_timer;
-#endif
+    u8 channel;
+    struct list_head head;
+    const struct adc_platform_data *pd;
+    //atomic_t ref;
 #if SUPPORT_MIC_CAPLESS
     struct capless_low_pass lp0;
     struct capless_low_pass lp1;
     struct capless_low_pass *lp;
-#endif
+#endif/*SUPPORT_MIC_CAPLESS*/
 };
 
 struct adc_mic_ch {
@@ -166,32 +118,141 @@ struct adc_mic_ch {
     void (*handler)(struct adc_mic_ch *, s16 *, u16);
 };
 
+/*
+*********************************************************************
+*                  Audio ADC Initialize
+* Description: 初始化Audio_ADC模块的相关数据结构
+* Arguments  : adc	ADC模块操作句柄
+*			   pd	ADC模块硬件相关配置参数
+* Note(s)    : None.
+*********************************************************************
+*/
 void audio_adc_init(struct audio_adc_hdl *, const struct adc_platform_data *);
 
+/*
+*********************************************************************
+*                  Audio ADC Output Callback
+* Description: 注册adc采样输出回调函数
+* Arguments  : adc		adc模块操作句柄
+*			   output  	采样输出回调
+* Return	 : None.
+* Note(s)    : None.
+*********************************************************************
+*/
 void audio_adc_add_output_handler(struct audio_adc_hdl *, struct audio_adc_output_hdl *);
 
+/*
+*********************************************************************
+*                  Audio ADC Output Callback
+* Description: 删除adc采样输出回调函数
+* Arguments  : adc		adc模块操作句柄
+*			   output  	采样输出回调
+* Return	 : None.
+* Note(s)    : 采样通道关闭的时候，对应的回调也要同步删除，防止内存释
+*              放出现非法访问情况
+*********************************************************************
+*/
 void audio_adc_del_output_handler(struct audio_adc_hdl *, struct audio_adc_output_hdl *);
 
+/*
+*********************************************************************
+*                  Audio ADC IRQ Handler
+* Description: Audio ADC中断回调函数
+* Arguments  : adc  adc模块操作句柄
+* Return	 : None.
+* Note(s)    : 仅供Audio_ADC中断使用
+*********************************************************************
+*/
 void audio_adc_irq_handler(struct audio_adc_hdl *adc);
 
+/*
+*********************************************************************
+*                  Audio ADC Mic Open
+* Description: 打开mic采样通道
+* Arguments  : mic	mic操作句柄
+*			   ch	mic通道索引
+*			   adc  adc模块操作句柄
+* Return	 : 0 成功	其他 失败
+* Note(s)    : None.
+*********************************************************************
+*/
 int audio_adc_mic_open(struct adc_mic_ch *mic, int ch, struct audio_adc_hdl *adc);
+int audio_adc_mic1_open(struct adc_mic_ch *mic, int ch, struct audio_adc_hdl *adc);
 
+/*
+*********************************************************************
+*                  Audio ADC Mic Sample Rate
+* Description: 设置mic采样率
+* Arguments  : mic			mic操作句柄
+*			   sample_rate	采样率
+* Return	 : 0 成功	其他 失败
+* Note(s)    : None.
+*********************************************************************
+*/
 int audio_adc_mic_set_sample_rate(struct adc_mic_ch *mic, int sample_rate);
 
+/*
+*********************************************************************
+*                  Audio ADC Mic Gain
+* Description: 设置mic增益
+* Arguments  : mic	mic操作句柄
+*			   gain	mic增益
+* Return	 : 0 成功	其他 失败
+* Note(s)    : MIC增益范围：0(-8dB)~19(30dB),step:2dB,level(4)=0dB
+*********************************************************************
+*/
 int audio_adc_mic_set_gain(struct adc_mic_ch *mic, int gain);
+int audio_adc_mic1_set_gain(struct adc_mic_ch *mic, int gain);
 
+/*
+*********************************************************************
+*                  Audio ADC Mic Buffer
+* Description: 设置采样buf和采样长度
+* Arguments  : mic		mic操作句柄
+*			   bufs		采样buf地址
+*			   buf_size	采样buf长度，即一次采样中断数据长度
+*			   buf_num 	采样buf的数量
+* Return	 : 0 成功	其他 失败
+* Note(s)    : (1)需要的总buf大小 = buf_size * ch_num * buf_num
+* 		       (2)buf_num = 2表示，第一次数据放在buf0，第二次数据放在
+*			   buf1,第三次数据放在buf0，依此类推。如果buf_num = 0则表
+*              示，每次数据都是放在buf0
+*********************************************************************
+*/
 int audio_adc_mic_set_buffs(struct adc_mic_ch *mic, s16 *bufs, u16 buf_size, u8 buf_num);
 
-int audio_adc_mic_set_output_handler(struct adc_mic_ch *mic,
-                                     void (*handler)(struct adc_mic_ch *, s16 *, u16));
-
+/*
+*********************************************************************
+*                  Audio ADC Mic Start
+* Description: 启动audio_adc采样
+* Arguments  : mic	mic操作句柄
+* Return	 : 0 成功	其他 失败
+* Note(s)    : None.
+*********************************************************************
+*/
 int audio_adc_mic_start(struct adc_mic_ch *mic);
 
+/*
+*********************************************************************
+*                  Audio ADC Mic Close
+* Description: 关闭mic采样
+* Arguments  : mic	mic操作句柄
+* Return	 : 0 成功	其他 失败
+* Note(s)    : None.
+*********************************************************************
+*/
 int audio_adc_mic_close(struct adc_mic_ch *mic);
-
-int audio_adc_mic1_open(struct adc_mic_ch *mic, int ch, struct audio_adc_hdl *adc);
-int audio_adc_mic1_set_gain(struct adc_mic_ch *mic, int gain);
 int audio_adc_mic1_close(struct adc_mic_ch *mic);
+
+/*
+*********************************************************************
+*                  Audio ADC Mic Pre_Gain
+* Description: 设置mic第一级/前级增益
+* Arguments  : en 前级增益使能(0:6dB 1:0dB)
+* Return	 : None.
+* Note(s)    : 前级增益只有0dB和6dB两个档位，使能即为0dB，否则为6dB
+*********************************************************************
+*/
 void audio_mic_0dB_en(bool en);
 void audio_mic1_0dB_en(bool en);
 /*
@@ -200,17 +261,16 @@ void audio_mic1_0dB_en(bool en);
  */
 int audio_mic_ldo_en(u8 en, struct adc_platform_data *pd);
 
+/*
+*********************************************************************
+*                  Audio MIC Mute
+* Description: mic静音使能控制
+* Arguments  : mute 静音使能
+* Return	 : None.
+* Note(s)    : None.
+*********************************************************************
+*/
+void audio_set_mic_mute(bool mute);
+void audio_set_mic1_mute(bool mute);
 
-
-
-
-
-
-
-
-
-
-
-
-
-#endif
+#endif/*AUDIO_ADC_H*/

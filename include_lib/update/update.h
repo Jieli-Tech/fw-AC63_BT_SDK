@@ -102,5 +102,21 @@ int update_result_deal();
 void update_result_set(u16 result);
 bool update_success_boot_check(void);
 
+typedef u8(*update_handler_t)(void);
+
+struct update_target {
+    char *name;
+    update_handler_t driver_close;
+};
+
+#define REGISTER_UPDATE_TARGET(target) \
+        const struct update_target target sec(.update_target)
+
+
+extern const struct update_target update_target_begin[];
+extern const struct update_target update_target_end[];
+
+#define list_for_each_update_target(p) \
+    for (p = update_target_begin; p < update_target_end; p++)
 
 #endif

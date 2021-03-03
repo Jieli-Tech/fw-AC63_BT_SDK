@@ -45,15 +45,30 @@ remove_tailing_zeros -i wmao.bin -o wma.bin -mark ff
 %OBJDUMP% -t %ELFFILE% > symbol_tbl.txt
 
 
-
 copy /b text.bin+data.bin+data_code.bin+bank.bin app.bin
+bluetooth\standard\download.bat %kws_cfg%
 
 
 
 
 
 
-copy app.bin bluetooth\standard\app.bin
-copy br23loader.bin bluetooth\standard\br23loader.bin
-
+del aeco.bin
+del wav.bin
+del ape.bin
+del flac.bin
+del m4a.bin
+del amr.bin
+del dts.bin
+del fmo.bin
+del mp3o.bin
+del wmao.bin
+del aec.bin
+del fm.bin
+del mp3.bin
+del wma.bin
+del data.bin
+del data_code.bin
+del text.bin
+del *.bc
 bluetooth\standard\download.bat

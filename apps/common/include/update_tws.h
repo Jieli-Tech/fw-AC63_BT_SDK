@@ -3,7 +3,7 @@
 
 #include "app_config.h"
 
-#if (OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || TME_EN || XM_MMA_EN))
+#if (OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || TME_EN || XM_MMA_EN || GMA_EN))
 
 #define SYS_BT_OTA_EVENT_TYPE_STATUS (('O' << 24) | ('T' << 16) | ('A' << 8) | '\0')
 

@@ -14,6 +14,17 @@
 #define IRQ_TIMEX_IDX           IRQ_TIME4_IDX
 #define RX_BIT                  ((JL_USB->CON0>>16)&0x01)
 
+static volatile u8 usbkey_active = 0;
+static u8 usbkey_idle_query(void)
+{
+    return (!usbkey_active);
+}
+
+REGISTER_LP_TARGET(usbkey_lp_target) = {
+    .name = "usb_key",
+    .is_idle = usbkey_idle_query,
+};
+
 ___interrupt
 static void usb_key_isr(void)
 {
@@ -29,6 +40,7 @@ static void usb_key_isr(void)
 void usb_key_check_entry(u32 timeout)
 {
     u32 usb_con0, usb_io_con0;
+    usbkey_active = 1;
     USB_TIMERx->CON = BIT(14);
     usb_con0 = JL_USB->CON0;
     usb_io_con0 = JL_USB_IO->CON0;
@@ -48,5 +60,7 @@ void usb_key_check_entry(u32 timeout)
     USB_TIMERx->CON = 0;
     JL_USB->CON0 = usb_con0;
     JL_USB_IO->CON0 = usb_io_con0;
+    usbkey_active = 0;
 }
+
 

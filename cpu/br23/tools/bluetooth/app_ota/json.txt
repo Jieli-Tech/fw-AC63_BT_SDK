@@ -1,4 +1,4 @@
-{
+﻿{
     "output": "config.dat",
     "defines":
     {
@@ -19,13 +19,13 @@
             "name": "ver_info",
 			"说明": "版本信息:VID(2byte),PID(2byte),VER(2byte)",
             "type":   "ARRAY",
-            "data":   "0x00, 0x02, 0x00, 0x48, 0x00, 0x01"
+            "data":   "0x00, 0x02, 0x00, 0x5F, 0x00, 0x00"
         },
 		{
 			"name": "ver_info_ext",
 			"说明": "额外信息(AuthKey,ProCode)",
 			"type": "STRING",
-			"data": "hE9yfseX6UdK7rFh,jl_sdk_ac696_soundbox"
+			"data": "hE9yfseX6UdK7rFh,jl_v8"
 		},
 		{
 			"name": "reset_io",
@@ -53,4 +53,3 @@
 		}
     ]
 }
-

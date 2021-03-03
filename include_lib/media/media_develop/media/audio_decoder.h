@@ -94,6 +94,7 @@ struct audio_decoder_task {
     u16 is_add_wait : 1;	// 正在添加res资源
     u16 step_cnt : 8;
     u16 step_timer;
+    void *out_task;		// 使用单独任务做输出
 };
 
 
@@ -192,7 +193,6 @@ struct audio_decoder {
     // u16 id;			// ID号
     u16 pick : 1;		// 本地拆包解码标记
     u16 tws : 1;		// 本地tws解码标记
-    u16 resume_flag : 1;// 解码激活标记
     u16 output_err : 1;	// 解码输出错误
     u16 read_err : 1;	// 解码读取错误
     u16 open_step : 4;
@@ -201,9 +201,11 @@ struct audio_decoder {
     u8 state;			// 解码状态
     u8 err;				// 解码结束错误类型标记
     u8 remain;			// 解码输出完成标记
+    volatile u8 resume_flag;// 解码激活标记
     u32 magic;			// 事件回调的私有标记
     u32 process_len;	// 数据流处理长度
     struct audio_stream_entry entry;	// 音频流入口
+    void *out_task_ch;	// 使用单独任务做输出
 };
 
 #define AUDIO_DEC_ORIG_CH       AUDIO_CH_LR
@@ -216,50 +218,65 @@ struct audio_decoder {
 
 #define AUDIO_DEC_IS_MONO(ch)	(((ch)==AUDIO_DEC_L_CH) || ((ch)==AUDIO_DEC_R_CH) || ((ch)==AUDIO_DEC_MONO_LR_CH))
 
+// 创建解码任务
 int audio_decoder_task_create(struct audio_decoder_task *task, const char *name);
 
+// 解码任务增加解码通道资源（加入链表后，按配置信息播放）
 int audio_decoder_task_add_wait(struct audio_decoder_task *, struct audio_res_wait *);
-
+// 解码任务删除解码通道资源
 void audio_decoder_task_del_wait(struct audio_decoder_task *, struct audio_res_wait *);
+// 获取解码任务链表中的资源数量
 int audio_decoder_task_wait_state(struct audio_decoder_task *task);
 
+// 激活解码任务链表中的所有解码
 int audio_decoder_resume_all(struct audio_decoder_task *task);
 
+// 解码任务资源添加格式锁
 int audio_decoder_fmt_lock(struct audio_decoder_task *task, int fmt);
-
+// 解码任务资源格式锁解锁
 int audio_decoder_fmt_unlock(struct audio_decoder_task *task, int fmt);
 
 // void *audio_decoder_get_output_buff(void *_dec, int *len);
 
+// 解码输出
 int audio_decoder_put_output_buff(void *_dec, void *buff, int len, void *priv);
 
+// 解码读数
 int audio_decoder_read_data(void *_dec, u8 *data, int len, u32 offset);
 
+// 获取解码文件长度（仅文件解码可用）
 int audio_decoder_get_input_data_len(void *_dec);
 
+// 获取流数据帧内容（仅流数据解码可用）
 int audio_decoder_get_frame(void *_dec, u8 **frame);
 
+// 检查流数据帧内容（仅流数据解码可用）
 int audio_decoder_fetch_frame(void *_dec, u8 **frame);
 
+// 流数据帧使用完（仅流数据解码可用）
 void audio_decoder_put_frame(void *_dec, u8 *frame);
 
-// int audio_fmt_find_frame(void *_dec, u8 **frame);
+// 打开一个解码通道
 int audio_decoder_open(struct audio_decoder *dec, const struct audio_dec_input *input,
                        struct audio_decoder_task *task);
 
+// 获取配置的解码类型
 int audio_decoder_data_type(void *_dec);
 
-// void audio_decoder_set_id(struct audio_decoder *dec, int);
-
+// 获取解码器格式信息（解码器没有打开时，尝试打开解码器）
 int audio_decoder_get_fmt(struct audio_decoder *dec, struct audio_fmt **fmt);
 
+// 设置解码的格式信息
 int audio_decoder_set_fmt(struct audio_decoder *dec, struct audio_fmt *fmt);
 
+// 实时获取解码器格式信息
 int audio_decoder_get_fmt_info(struct audio_decoder *dec, struct audio_fmt *fmt);
 
+// 设置解码处理handler
 void audio_decoder_set_handler(struct audio_decoder *dec, const struct audio_dec_handler *handler);
 
 
+// 设置解码事件回调
 void audio_decoder_set_event_handler(struct audio_decoder *dec,
                                      void (*handler)(struct audio_decoder *, int, int *), u32 magic);
 
@@ -268,44 +285,76 @@ void audio_decoder_set_event_handler(struct audio_decoder *dec,
 // void audio_decoder_set_output_buffs(struct audio_decoder *dec, s16 *buffs,
 // u16 buff_size, u8 buff_num);
 
+// 设置解码输出声道类型
 int audio_decoder_set_output_channel(struct audio_decoder *dec, enum audio_channel);
 
+// 启动解码
 int audio_decoder_start(struct audio_decoder *dec);
 
+// 停止解码
 int audio_decoder_stop(struct audio_decoder *dec);
 
+// 解码暂停
 int audio_decoder_pause(struct audio_decoder *dec);
 
+// 解码挂起
 int audio_decoder_suspend(struct audio_decoder *dec);
 
+// 解码挂起激活
 int audio_decoder_resume(struct audio_decoder *dec);
 
+// 关闭解码
 int audio_decoder_close(struct audio_decoder *dec);
+// 解码器reset
 int audio_decoder_reset(struct audio_decoder *dec);
 
+// 设置解码断点句柄
 void audio_decoder_set_breakpoint(struct audio_decoder *dec, struct audio_dec_breakpoint *bp);
 
+// 获取解码断点信息
 int audio_decoder_get_breakpoint(struct audio_decoder *dec, struct audio_dec_breakpoint *bp);
 
+// 解码快进
 int audio_decoder_forward(struct audio_decoder *dec, int step_s);
 
+// 解码快退
 int audio_decoder_rewind(struct audio_decoder *dec, int step_s);
 
+// 获取解码总时间
 int audio_decoder_get_total_time(struct audio_decoder *dec);
+// 获取解码当前时间
 int audio_decoder_get_play_time(struct audio_decoder *dec);
 
+// 设置解码拆包模式
 void audio_decoder_set_pick_stu(struct audio_decoder *dec, u8 pick);
+// 获取解码拆包模式
 int audio_decoder_get_pick_stu(struct audio_decoder *dec);
 
+// 设置解码tws模式
 void audio_decoder_set_tws_stu(struct audio_decoder *dec, u8 tws);
+// 获取解码tws模式
 int audio_decoder_get_tws_stu(struct audio_decoder *dec);
 
+// 设置解码每次轮询可执行的最大次数
 void audio_decoder_set_run_max(struct audio_decoder *dec, u8 run_max);
 
+// 双声道转换为其他声道
 void audio_decoder_dual_switch(u8 ch_type, u8 half_lr, s16 *data, int len);
 
+// 统计正在运行的解码数
 int audio_decoder_running_number(struct audio_decoder_task *task);
 
+// 解码器控制
 int audio_decoder_ioctrl(struct audio_decoder *dec, u32 cmd, void *parm);
+
+
+// 创建解码输出任务
+int audio_decoder_out_task_create(struct audio_decoder_task *task, const char *out_task_name);
+// 激活解码输出任务。0: 成功
+int audio_decoder_out_task_ch_enable(struct audio_decoder *dec);
+// 激活解码输出任务
+void audio_decoder_resume_out_task(struct audio_decoder *dec);
+
+
 #endif
 

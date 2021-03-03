@@ -17,6 +17,8 @@ struct audio_dac_hdl dac_hdl;
 #include "fm_emitter/fm_emitter_manage.h"
 #endif
 
+#include "update.h"
+
 #if (defined(AUDIO_OUTPUT_WAY) && AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT)
 extern void bt_emitter_set_vol(u8 vol);
 #endif
@@ -70,6 +72,23 @@ s16 dac_buff[1 * 1024] SEC(.dac_buff);
 s16 dac_buff[4 * 1024] SEC(.dac_buff);
 #endif
 
+/*关闭audio相关模块使能*/
+void audio_disable_all(void)
+{
+    //DAC:DACEN
+    JL_AUDIO->DAC_CON &= ~BIT(4);
+    //ADC:ADCEN
+    JL_AUDIO->ADC_CON &= ~BIT(4);
+    //EQ:
+    JL_EQ->CON0 &= ~BIT(0);
+    //FFT:
+    JL_FFT->CON = BIT(1);//置1强制关闭模块，不管是否已经运算完成
+}
+
+REGISTER_UPDATE_TARGET(audio_update_target) = {
+    .name = "audio",
+    .driver_close = audio_disable_all,
+};
 /*
  *************************************************************
  *
@@ -572,11 +591,11 @@ void dac_sniff_power_off(void)
 
 void dac_power_off(void)
 {
-    log_info(">>>dac_power_off:%d", __this->ref.counter);
-    if (atomic_dec_return(&__this->ref)) {
-        return;
-    }
-#if 1
+    /* log_info(">>>dac_power_off:%d", __this->ref.counter); */
+    /* if (atomic_dec_return(&__this->ref)) { */
+    /*     return; */
+    /* } */
+#if 0
     app_audio_mute(AUDIO_MUTE_DEFAULT);
     if (dac_hdl.vol_l || dac_hdl.vol_r) {
         u8 fade_time = dac_hdl.vol_l * 2 / 10 + 1;

@@ -20,7 +20,7 @@ typedef struct {
     u8(*OMSensor_status_dump)(void);
     void (*OMSensor_wakeup)(void);
     void (*OMSensor_led_switch)(u8);
-    u16(*OMSensor_set_cpi)(void);
+    u16(*OMSensor_set_cpi)(u16 dst_cpi);
 } OMSENSOR_INTERFACE;
 
 
@@ -41,7 +41,7 @@ extern OMSENSOR_INTERFACE OMSensor_dev_end[];
 
 bool optical_mouse_sensor_init(OMSENSOR_PLATFORM_DATA *priv);
 void optical_mouse_sensor_read_motion_handler(void);
-u16 optical_mouse_sensor_set_cpi(void);
+u16 optical_mouse_sensor_set_cpi(u16 dst_cpi);
 u8 get_optical_mouse_sensor_status(void);
 void optical_mouse_sensor_force_wakeup(void);
 void optical_mouse_sensor_led_switch(u8 led_status);

@@ -6,6 +6,7 @@
 #include "app_main.h"
 #include "clock_cfg.h"
 #include "classic/hci_lmp.h"
+#include "app_config.h"
 
 #ifndef CONFIG_LITE_AUDIO
 #include "app_task.h"
@@ -370,7 +371,7 @@ int audio_enc_init()
 #define LADC_IRQ_POINTS     160
 #else
 #if (TCFG_MIC_EFFECT_SEL == MIC_EFFECT_REVERB)
-#define LADC_IRQ_POINTS     320
+#define LADC_IRQ_POINTS    REVERB_LADC_IRQ_POINTS
 #else
 #define LADC_IRQ_POINTS     80
 #endif
@@ -378,10 +379,13 @@ int audio_enc_init()
 #else
 #define LADC_IRQ_POINTS     256
 #endif
-#define LADC_BUFS_SIZE      (LADC_CH_NUM * LADC_BUF_NUM * LADC_IRQ_POINTS)
+/* #define LADC_BUFS_SIZE      (LADC_CH_NUM * LADC_BUF_NUM * LADC_IRQ_POINTS) */
 
 
 /* #define ENABLE_MIC_LINEIN */
+#define LADC_LINE_L_MASK			(BIT(0))
+#define LADC_LINE_R_MASK			(BIT(1))
+#define LADC_MIC_CH_MASK    	    (BIT(2))
 
 typedef struct  {
     struct audio_adc_hdl *p_adc_hdl;
@@ -417,7 +421,7 @@ static void audio_adc_output_demo(void *priv, s16 *data, int len)
     struct audio_adc_output_hdl *p;
     /* struct audio_adc_hdl *hdl = priv; */
     if (ladc_var.ladc_ch_num == 1) {
-        if (ladc_var.ladc_ch_mark & BIT(2)) { //单mic
+        if (ladc_var.ladc_ch_mark & LADC_MIC_CH_MASK) { //单mic
             if (!list_empty(&ladc_var.mic_head)) {
                 list_for_each_entry(p, &ladc_var.mic_head, entry) {
                     p->handler(p->priv, data, len);
@@ -431,9 +435,9 @@ static void audio_adc_output_demo(void *priv, s16 *data, int len)
             }
         }
     } else if (ladc_var.ladc_ch_num == 2) {
-        if (ladc_var.ladc_ch_mark & BIT(2)) { //数据结构：LIN0 MIC0 LIN1 MIC1 LIN2 MIC2
+        if (ladc_var.ladc_ch_mark & LADC_MIC_CH_MASK) { //数据结构：LIN0 MIC0 LIN1 MIC1 LIN2 MIC2
             if (!list_empty(&ladc_var.mic_head)) {
-                if (ladc_var.ladc_ch_mark & BIT(1)) {
+                if (ladc_var.ladc_ch_mark & LADC_LINE_R_MASK) {
                     for (i = 0; i < len / 2; i++) {
                         ladc_var.temp_buf[i] = data[i * 2 + 0];
                     }
@@ -448,7 +452,7 @@ static void audio_adc_output_demo(void *priv, s16 *data, int len)
                 }
             }
             if (!list_empty(&ladc_var.linein_head)) {
-                if (ladc_var.ladc_ch_mark & BIT(1)) {
+                if (ladc_var.ladc_ch_mark & LADC_LINE_R_MASK) {
                     for (i = 0; i < len / 2; i++) {
                         data[i] = data[i * 2 + 1];
                     }
@@ -524,16 +528,17 @@ int audio_mic_open(struct adc_mic_ch *mic, u16 sample_rate, u8 gain)
     os_mutex_pend(&ladc_var.mutex, 0);
     if (!ladc_var.adc_buf) {
         log_i("\n mic malloc \n\n\n\n");
-        ladc_var.ladc_ch_mark |= BIT(2);
+        ladc_var.ladc_ch_mark = 0;
+        ladc_var.ladc_ch_mark |= LADC_MIC_CH_MASK;
         ladc_var.ladc_ch_num = 1;
 #if TCFG_MIC_EFFECT_ENABLE //开混响时启用多路AD
 #if (TCFG_LINEIN_ENABLE&&(LINEIN_INPUT_WAY == LINEIN_INPUT_WAY_ADC))
         if (TCFG_LINEIN_LR_CH & (AUDIO_LIN0L_CH | AUDIO_LIN1L_CH | AUDIO_LIN2L_CH)) { //判断Line0L Line1L Line2L 是否有打开
-            ladc_var.ladc_ch_mark |= BIT(0);
+            ladc_var.ladc_ch_mark |= LADC_LINE_L_MASK;
             ladc_var.ladc_ch_num++;
         }
         if (TCFG_LINEIN_LR_CH & (AUDIO_LIN0R_CH | AUDIO_LIN1R_CH | AUDIO_LIN2R_CH)) { //判断Line0R Line1R Line2R 是否有打开
-            ladc_var.ladc_ch_mark |= BIT(1);
+            ladc_var.ladc_ch_mark |= LADC_LINE_R_MASK;
             ladc_var.ladc_ch_num++;
         }
 #endif
@@ -551,7 +556,7 @@ int audio_mic_open(struct adc_mic_ch *mic, u16 sample_rate, u8 gain)
         audio_adc_mic_set_sample_rate(&ladc_var.mic_ch, sample_rate);
         audio_adc_mic_set_gain(&ladc_var.mic_ch, gain);
         ladc_var.mic_gain = gain;
-        if (ladc_var.ladc_ch_mark & 0x3) {
+        if (ladc_var.ladc_ch_mark & (LADC_LINE_R_MASK | LADC_LINE_L_MASK)) {
             audio_adc_linein_open(&ladc_var.linein_ch, TCFG_LINEIN_LR_CH << 2, &adc_hdl);
             audio_adc_linein_set_sample_rate(&ladc_var.linein_ch, sample_rate);
             audio_adc_linein_set_gain(&ladc_var.linein_ch, 0);
@@ -665,6 +670,7 @@ void audio_mic_close(struct adc_mic_ch *mic, struct audio_adc_output_hdl *output
         }
         ladc_var.temp_buf = NULL;
         ladc_var.states = 0;
+        ladc_var.ladc_ch_mark = 0;
     } else {
         if (list_empty(&ladc_var.mic_head)) {
             audio_adc_mic_set_gain(&ladc_var.mic_ch, 0);
@@ -695,9 +701,9 @@ int audio_linein_open(struct audio_adc_ch *linein, u16 sample_rate, int gain)
     os_mutex_pend(&ladc_var.mutex, 0);
     if (!ladc_var.adc_buf) {
         log_i("\n ladc malloc \n\n\n\n");
-
+        ladc_var.ladc_ch_mark = 0;
 #if	(TCFG_AUDIO_ADC_ENABLE&&TCFG_MIC_EFFECT_ENABLE)//开混响时启用多路AD
-        ladc_var.ladc_ch_mark = BIT(2);
+        ladc_var.ladc_ch_mark |= LADC_MIC_CH_MASK;
         ladc_var.ladc_ch_num = 1;
 #else
         ladc_var.ladc_ch_mark = 0;
@@ -705,15 +711,15 @@ int audio_linein_open(struct audio_adc_ch *linein, u16 sample_rate, int gain)
 #endif
         /* if (TCFG_LINEIN_LR_CH & (0x15)) { */
         if (TCFG_LINEIN_LR_CH & (AUDIO_LIN0L_CH | AUDIO_LIN1L_CH | AUDIO_LIN2L_CH)) { //判断Line0L Line1L Line2L 是否有打开
-            ladc_var.ladc_ch_mark |= BIT(0);
+            ladc_var.ladc_ch_mark |= LADC_LINE_L_MASK;
             ladc_var.ladc_ch_num++;
         }
         if (TCFG_LINEIN_LR_CH & (AUDIO_LIN0R_CH | AUDIO_LIN1R_CH | AUDIO_LIN2R_CH)) { //判断Line0R Line1R Line2R 是否有打开
-            ladc_var.ladc_ch_mark |= BIT(1);
+            ladc_var.ladc_ch_mark |= LADC_LINE_R_MASK;
             ladc_var.ladc_ch_num++;
         }
         ladc_var.adc_buf = (s16 *)zalloc(ladc_var.ladc_ch_num * irq_point_unit * 2 * LADC_BUF_NUM);
-        if (ladc_var.ladc_ch_mark & BIT(2)) { //mic通路有打开
+        if (ladc_var.ladc_ch_mark & LADC_MIC_CH_MASK) { //mic通路有打开
             ladc_var.temp_buf = (s16 *)zalloc(irq_point_unit * 2);
         }
         printf("ladc_ch_num[%d],[%x]", ladc_var.ladc_ch_num, ladc_var.ladc_ch_mark);
@@ -750,10 +756,10 @@ int audio_linein_open(struct audio_adc_ch *linein, u16 sample_rate, int gain)
             audio_adc_linein_set_gain(&ladc_var.linein_ch, gain);
             ladc_var.linein_gain = gain;
         }
-        if (ladc_var.ladc_ch_mark & BIT(0)) {
+        if (ladc_var.ladc_ch_mark & LADC_LINE_L_MASK) {
             JL_ANA->ADA_CON1 &= ~BIT(17);
         }
-        if (ladc_var.ladc_ch_mark & BIT(1)) {
+        if (ladc_var.ladc_ch_mark & LADC_LINE_R_MASK) {
             JL_ANA->ADA_CON2 &= ~BIT(13);
         }
 
@@ -798,7 +804,7 @@ void audio_linein_start(struct audio_adc_ch *linein)
         return;
     }
     os_mutex_pend(&ladc_var.mutex, 0);
-    if (ladc_var.ladc_ch_mark & BIT(2)) {
+    if (ladc_var.ladc_ch_mark & LADC_MIC_CH_MASK) {
         audio_adc_start(&ladc_var.linein_ch, &ladc_var.mic_ch);
     } else {
         audio_adc_start(&ladc_var.linein_ch, NULL);
@@ -836,6 +842,7 @@ void audio_linein_close(struct audio_adc_ch *linein, struct audio_adc_output_hdl
         }
         ladc_var.temp_buf = NULL;
         ladc_var.states = 0;
+        ladc_var.ladc_ch_mark = 0;
     } else {
         if (list_empty(&ladc_var.linein_head)) {
             audio_adc_linein_set_gain(&ladc_var.linein_ch, 0);
@@ -863,7 +870,7 @@ u8 get_audio_linein_ch_num(void)
     os_mutex_pend(&ladc_var.mutex, 0);
     if (ladc_var.states == 1) {
         ret = ladc_var.ladc_ch_num;
-        if (ladc_var.ladc_ch_mark & BIT(2)) {
+        if (ladc_var.ladc_ch_mark & LADC_MIC_CH_MASK) {
             ret--;
         }
     }

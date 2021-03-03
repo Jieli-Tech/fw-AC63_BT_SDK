@@ -32,28 +32,20 @@ ${OBJDUMP} -section-headers -address-mask=0x1ffffff $1.elf
 ${OBJSIZEDUMP} -lite -skip-zero -enable-dbg-info $1.elf | sort -k 1 >  symbol_tbl.txt
 
 
-files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe packres.exe"
+files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe packres.exe json_to_res.exe md5sum.exe "
 
 #if(CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE)
 #if RCSP_UPDATE_EN
 
 NICKNAME="br23_app_ota"
 
-#ifdef CONFIG_WATCH_APP
-cp bluetooth/watch/isd_config.ini ./
-#else
 cp bluetooth/app_ota/isd_config.ini ./
-#endif
 
 #else
 
 NICKNAME="br23_sdk"
 
-#ifdef CONFIG_WATCH_APP
-cp bluetooth/watch/isd_config.ini ./
-#else
 cp bluetooth/standard/isd_config.ini ./
-#endif
 
 #endif
 
@@ -63,9 +55,9 @@ cat text.bin data.bin data_code.bin \
 #else
 
 #ifdef CONFIG_WATCH_APP
-cp bluetooth/watch/isd_config.ini ./
+cp download/watch/isd_config.ini ./
 #else
-cp bluetooth/standard/isd_config.ini ./
+cp download/standard/isd_config.ini ./
 #endif
 
 cat text.bin data.bin data_code.bin \
@@ -131,47 +123,64 @@ remove_tailing_zeros -i wmao.bin -o wma.bin -mark ff
 %OBJDUMP% -section-headers -address-mask=0x1ffffff %ELFFILE%
 %OBJDUMP% -t %ELFFILE% >  symbol_tbl.txt
 
-
 #if CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE
 copy /b text.bin+data.bin+data_code.bin+bank.bin app.bin
+
+#if TCFG_KWS_VOICE_RECOGNITION_ENABLE
+set kws_cfg=..\..\jl_kws.cfg
+#endif
+
 #if RCSP_UPDATE_EN
-copy app.bin bluetooth\app_ota\app.bin
-copy br23loader.bin bluetooth\app_ota\br23loader.bin
-
-bluetooth\app_ota\download.bat
+bluetooth\app_ota\download.bat %kws_cfg%
 #else
-copy app.bin bluetooth\standard\app.bin
-copy br23loader.bin bluetooth\standard\br23loader.bin
-
-bluetooth\standard\download.bat
+bluetooth\standard\download.bat %kws_cfg%
 #endif
 
 #else
 copy /b text.bin+data.bin+data_code.bin+aec.bin+wav.bin+ape.bin+flac.bin+m4a.bin+amr.bin+dts.bin+fm.bin+mp3.bin+wma.bin+bank.bin app.bin
 #endif      //endif CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE
 
-#if CONFIG_SOUNDBOX_CASE_ENABLE
+del aeco.bin
+del wav.bin
+del ape.bin
+del flac.bin
+del m4a.bin
+del amr.bin
+del dts.bin
+del fmo.bin
+del mp3o.bin
+del wmao.bin
+del aec.bin
+del fm.bin
+del mp3.bin
+del wma.bin
+del data.bin
+del data_code.bin
+del text.bin
+del *.bc
 
-#ifdef CONFIG_APP_BT_ENABLE
-#if CONFIG_DOUBLE_BANK_ENABLE
-copy app.bin soundbox\ai_double_bank\app.bin
-copy br23loader.bin soundbox\ai_double_bank\br23loader.bin
-soundbox\ai_double_bank\download.bat
-#else
-copy app.bin soundbox\ai_single_bank\app.bin
-copy br23loader.bin soundbox\ai_single_bank\br23loader.bin
-soundbox\ai_single_bank\download.bat
-#endif      //CONFIG_DOUBLE_BANK_ENABLE
-#else
-copy app.bin soundbox\standard\app.bin
-copy br23loader.bin soundbox\standard\br23loader.bin
+#ifdef CONFIG_BOARD_AC695X_SOUNDCARD
 
-soundbox\standard\download.bat
-#endif
+download\soundcard\download.bat
+
+#elif defined CONFIG_WATCH_APP
+
+download\watch\download.bat
+
+#elif CONFIG_SOUNDBOX_CASE_ENABLE
+
+download\app_ota\download.bat
+
+#elif CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE
+
+bluetooth\standard\download.bat
+
+#else
+
+download\standard\download.bat
 
 #endif      //endif CONFIG_SOUNDBOX_CASE_ENABLE
 
-
-
 #endif
+
 

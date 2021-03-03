@@ -90,17 +90,28 @@ struct file_decoder *file_dec_get_file_decoder_hdl(void);
 #define file_dec_get_cur_time()			file_decoder_get_cur_time(file_dec_get_file_decoder_hdl())
 #define file_dec_get_decoder_type()		file_decoder_get_decoder_type(file_dec_get_file_decoder_hdl())
 
+// 创建一个文件解码
 int file_dec_create(void *priv, void (*handler)(void *, int argc, int *argv));
+// 打开文件解码
 int file_dec_open(void *file, struct audio_dec_breakpoint *bp);
+// 关闭文件解码
 void file_dec_close();
+
+// 文件解码重新开始
 int file_dec_restart(int id);
+// 推送文件解码重新开始命令
 int file_dec_push_restart(void);
+// 获取file_dec状态
 int file_dec_get_status(void);
 
+// 设置解码数据流设置回调接口
 void file_dec_set_stream_set_hdl(struct file_dec_hdl *dec,
                                  void (*stream_handler)(void *priv, int event, struct file_dec_hdl *),
                                  void *stream_priv);
+
+// 获取文件解码hdl
 void *get_file_dec_hdl();
+
 #if (FILE_DEC_AB_REPEAT_EN)
 int file_dec_ab_repeat_switch(void);
 int file_dec_ab_repeat_close(void);

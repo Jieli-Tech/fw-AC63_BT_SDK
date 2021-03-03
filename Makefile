@@ -29,18 +29,17 @@ export CLANG_TIDY=/opt/utils/llvm11/bin/clang-tidy
 export TIDY_FILTER=/opt/utils/tidy-filter
 
 
-
 #配置下载目标SoC(br18/br21/br22/br23/br25/br26/bd29)
 #export前面不要有空格，会导致文件sync异常
 #export SoC?=br18
 #export SoC?=br21
 #export SoC?=br22
 #export SoC?=br23
-#export SoC?=br25
+export SoC?=br25
 #export SoC?=br25_r
 #export SoC?=br26
 #export SoC?=bd29
-export SoC?=br30
+#export SoC?=br30
 #export SoC?=br30c
 #export SoC?=br34
 #export SoC?=br28
@@ -55,9 +54,8 @@ export SoC?=br30
 #export APP_CASE?=dongle
 #export APP_CASE?=spp_and_le
 export APP_CASE?=hid
-#export APP_CASE?=gamebox
 #export APP_CASE?=mesh
-# export APP_CASE?=watch
+#export APP_CASE?=watch
 #export APP_CASE?=iot
 #export APP_CASE?=bt_udisk
 #export APP_CASE?=multi_link
@@ -65,6 +63,16 @@ export APP_CASE?=hid
 
 # --------------common var begin-----------------------
 export ROOT=$(abspath .)
+
+ifeq ($(cibuild),y)
+export OUTPUT_PREFIX=
+else
+ifeq ($(HOST_OS), windows)
+export OUTPUT_PREFIX=
+else
+export OUTPUT_PREFIX=${HOME}/tmp
+endif
+endif
 
 export MAKE_RULE = $(ROOT)/rule.mk
 
@@ -100,6 +108,19 @@ app: pre_make
 	@$(MAKE) -C apps || exit 1
 
 libs:
+ifneq ($(cibuild),y)
+	@if [ ! -d $(OUTPUT_PREFIX)$(ROOT) ]; then \
+		find $(ROOT) -type d | while read dir_name; do \
+			mkdir -p $(OUTPUT_PREFIX)$$dir_name; \
+		done \
+	else \
+		find $(ROOT) -type d | while read dir_name; do \
+			if [ ! -d $(OUTPUT_PREFIX)$$dir_name ]; then \
+				mkdir -p $(OUTPUT_PREFIX)$$dir_name; \
+			fi \
+		done \
+	fi
+endif
 	@$(MAKE) -C lib || exit 1
 
 clean:
@@ -107,10 +128,12 @@ clean:
 	@find . -name "*.d" -delete
 	@find . -name "*.o" -delete
 	@find . -name "*.z.S" -delete
+	@find $(OUTPUT_PREFIX)$(ROOT) -name "*.d" -delete
+	@find $(OUTPUT_PREFIX)$(ROOT) -name "*.o" -delete
+	@find $(OUTPUT_PREFIX)$(ROOT) -name "*.z.S" -delete
 
 dry_run:
 	@for i in $(AR_TARGET); do \
-	do \
 		if [ -d $$i ] && [ -s $$i/Makefile ]; then \
 			echo "********"$$i; \
 			$(MAKE) clean -C $$i; \

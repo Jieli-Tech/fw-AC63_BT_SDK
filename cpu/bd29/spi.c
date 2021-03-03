@@ -642,4 +642,9 @@ void spi_close(spi_dev spi)
     }
     spi_disable(spi_regs[id]);
 }
-
+void spi_disable_for_ota()
+{
+    for (int i = 0; i < 2; i++) {
+        spi_disable(spi_regs[i]);
+    }
+}

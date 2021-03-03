@@ -228,6 +228,8 @@ int audio_wireless_sync_set_tws_time(void *c, int time);
 int audio_wireless_sync_is_working(void *c);
 
 int audio_wireless_sync_sound_reset(void *c, int time);
+
+int audio_wireless_sync_sound_fade_in(void *c, u16 time);
 #endif
 /*
 #if (defined CONFIG_CPU_BR26 || \

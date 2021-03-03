@@ -26,6 +26,7 @@
 #define pixart_SLP2_ADDR    		0x0C
 #define pixart_IMGQATH_ADDR  		0x0D
 #define pixart_IMGRECOG_ADDR   		0x0E
+#define pixart_POWER_DOWN_ADDR          0x4B
 
 // PixArt Read/Write configuration settings
 #define pixart_WRITE      0x80

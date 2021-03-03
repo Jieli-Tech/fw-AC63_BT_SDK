@@ -12,6 +12,9 @@ struct chargestore_handle {
     const struct chargestore_platform_data *data;
     JL_UART_TypeDef *UART;
     u32 baudrate;
+    u32 input_chl;
+    u32 output_chl;
+    u32 ut_chl;
 };
 #define DMA_ISR_LEN 64
 #define DMA_BUF_LEN 64
@@ -35,16 +38,31 @@ extern void charge_reset_pb5_pd_status(void);
 extern void nvram_set_boot_state(u32 state);
 extern void local_irq_disable();
 void hw_mmu_disable(void);
+void update_close_hw(void);
+
+void uart_update_set_nvram()
+{
+    local_irq_disable();
+    update_close_hw();
+    hw_mmu_disable();
+
+    nvram_set_boot_state(UPGRADE_UART_SOFT_KEY);
+    cpu_reset();
+}
+
 void chargestore_set_update_ram(void)
 {
-    int tmp;
-    __asm__ volatile("%0 =icfg" : "=r"(tmp));
-    tmp &= ~(3 << 8);
-    __asm__ volatile("icfg = %0" :: "r"(tmp));//GIE1
-    local_irq_disable();
-    hw_mmu_disable();
-    nvram_set_boot_state(UPGRADE_UART_SOFT_KEY);
-
+    if ((__this->data) && (__this->data->io_port != IO_PORTB_05)) {
+        u8 *p = (u8 *)BOOT_STATUS_ADDR;
+        memcpy(p, "UART_UPDATE_CUSTOM", sizeof("UART_UPDATE_CUSTOM"));
+    } else {
+        int tmp;
+        __asm__ volatile("%0 =icfg" : "=r"(tmp));
+        tmp &= ~(3 << 8);
+        __asm__ volatile("icfg = %0" :: "r"(tmp));//GIE1
+        void UART_UPDATE_JUMP();
+        UART_UPDATE_JUMP();
+    }
 }
 
 static u8 chargestore_get_f95_det_res(u32 equ_res)
@@ -125,12 +143,7 @@ void chargestore_open(u8 mode)
     send_busy = 0;
     __this->UART->CON0 = BIT(13) | BIT(12) | BIT(10);
     if (mode == MODE_RECVDATA) {
-        //约定:ut0->input_ch0 ut1->input_ch3(因为input_ch1要给IR用)
-        if (__this->UART == JL_UART0) {
-            gpio_uart_rx_input(__this->data->io_port, 0, INPUT_CH0);
-        } else {
-            gpio_uart_rx_input(__this->data->io_port, 1, INPUT_CH3);
-        }
+        gpio_uart_rx_input(__this->data->io_port, __this->ut_chl, __this->input_chl);
         //避免插入普通充电舱,舱体不升压 only for br23/br25
         if (__this->data->io_port == IO_PORTB_05) {
             charge_reset_pb5_pd_status();
@@ -141,12 +154,7 @@ void chargestore_open(u8 mode)
         __this->UART->RXCNT = DMA_ISR_LEN;
         __this->UART->CON0 |= BIT(6) | BIT(5) | BIT(3);
     } else {
-        //约定:ut0->output_ch0 ut1->output_ch1
-        if (__this->UART == JL_UART0) {
-            gpio_output_channle(__this->data->io_port, CH0_UT0_TX);
-        } else {
-            gpio_output_channle(__this->data->io_port, CH1_UT1_TX);
-        }
+        gpio_output_channle(__this->data->io_port, __this->output_chl);
         gpio_set_hd(__this->data->io_port, 1);
         __this->UART->CON0 |= BIT(2);
     }
@@ -182,19 +190,32 @@ void chargestore_init(const struct chargestore_platform_data *data)
     u32 uart_timeout;
     __this->data = (struct chargestore_platform_data *)data;
     ASSERT(data);
-    switch (__this->data->uart_irq) {
-    case IRQ_UART0_IDX:
+    if (!(JL_UART0->CON0 & BIT(0))) {
+        JL_UART0->CON0 = BIT(13) | BIT(12) | BIT(10);
+        request_irq(IRQ_UART0_IDX, 2, uart_isr, 0);
         __this->UART = JL_UART0;
-        break;
-    case IRQ_UART1_IDX:
+        __this->input_chl = INPUT_CH0;
+        __this->output_chl = CH0_UT0_TX;
+        __this->ut_chl = 0;
+        gpio_set_uart0(-1);
+    } else if (!(JL_UART1->CON0 & BIT(0))) {
+        JL_UART1->CON0 = BIT(13) | BIT(12) | BIT(10);
+        request_irq(IRQ_UART1_IDX, 2, uart_isr, 0);
         __this->UART = JL_UART1;
-        break;
-    default:
-        ASSERT(0, "uart irq(%d) err!\n", __this->data->uart_irq);
-        break;
-    }
-    if (__this->UART->CON0 & BIT(0)) {
-        ASSERT(0, "uart used!\n");
+        __this->input_chl = INPUT_CH3;
+        __this->output_chl = CH1_UT1_TX;
+        __this->ut_chl = 1;
+        gpio_set_uart1(-1);
+    } else if (!(JL_UART2->CON0 & BIT(0))) {
+        JL_UART2->CON0 = BIT(13) | BIT(12) | BIT(10);
+        request_irq(IRQ_UART2_IDX, 2, uart_isr, 0);
+        __this->UART = JL_UART2;
+        __this->input_chl = INPUT_CH2;
+        __this->output_chl = CH2_UT2_TX;
+        __this->ut_chl = 2;
+        gpio_set_uart2(-1);
+    } else {
+        ASSERT(0, "uart all used!\n");
     }
     send_busy = 0;
     uart_timeout = 20 * 1000000 / __this->data->baudrate;
@@ -210,19 +231,13 @@ void chargestore_init(const struct chargestore_platform_data *data)
     gpio_set_pull_up(__this->data->io_port, 0);
     gpio_set_die(__this->data->io_port, 1);
     gpio_direction_input(__this->data->io_port);
-    request_irq(__this->data->uart_irq, 2, uart_isr, 0);
-    if (__this->UART == JL_UART0) {
-        //不占用IO
-        gpio_set_uart0(-1);
-    } else {
-        //不占用IO
-        gpio_set_uart1(-1);
-    }
 #if (!TCFG_CHARGE_ENABLE)
-    LDO5V_EN(1);
-    LDO5V_EDGE_SEL(1);
-    LDO5V_PND_CLR();
-    LDO5V_EDGE_WKUP_EN(1);
+    if (__this->data->io_port == IO_PORTB_05) {
+        LDO5V_EN(1);
+        LDO5V_EDGE_SEL(1);
+        LDO5V_PND_CLR();
+        LDO5V_EDGE_WKUP_EN(1);
+    }
 #endif
 }
 
@@ -247,4 +262,5 @@ static void clock_critical_exit(void)
     __this->UART->BAUD = (UART_SRC_CLK / __this->baudrate) / 4 - 1;
 }
 CLOCK_CRITICAL_HANDLE_REG(chargestore, clock_critical_enter, clock_critical_exit)
+
 

@@ -41,7 +41,7 @@
 
 #define     SPK_ISO_EP_OUT              3
 
-#define     SPEAKER_STR_INDEX           8
+#define     SPEAKER_STR_INDEX           0
 
 #define     SPK_INPUT_TERMINAL_ID       1
 #define     SPK_FEATURE_UNIT_ID         2
@@ -77,7 +77,7 @@
 
 #define     MIC_ISO_EP_IN               3
 
-#define     MIC_STR_INDEX               9
+#define     MIC_STR_INDEX               0
 
 #define     MIC_INPUT_TERMINAL_ID       4
 #define     MIC_FEATURE_UNIT_ID         5

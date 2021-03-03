@@ -31,6 +31,16 @@ const int config_asser         = 1;
 //================================================//
 const int SDFILE_VFS_REDUCE_ENABLE = 1;
 
+
+//================================================//
+//                  dev使用异步读使能             //
+//================================================//
+#ifdef TCFG_DEVICE_BULK_READ_ASYNC_ENABLE
+const int device_bulk_read_async_enable = 1;
+#else
+const int device_bulk_read_async_enable = 0;
+#endif
+
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)
  */

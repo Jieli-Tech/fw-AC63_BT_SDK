@@ -1,5 +1,6 @@
 #include "generic/gpio.h"
 #include "asm/includes.h"
+#include "asm/power/p33.h"
 #include "asm/pwm_led.h"
 #include "system/timer.h"
 
@@ -200,7 +201,8 @@ static void pwm_clock_set(u8 _clock)
         break;
     }
 
-    p33_tx_1byte(P3_CLK_CON0, clk_val);
+    P33_CON_SET(P3_CLK_CON0, 0, 2, clk_val);
+    /* p33_tx_1byte(P3_CLK_CON0, clk_val); */
     __this->clock = clock;
     led_debug("clock = 0x%x, clk_val= %d, P3_CLK_CON0 = 0x%x", __this->clock, clk_val, p33_rx_1byte(P3_CLK_CON0));
 }

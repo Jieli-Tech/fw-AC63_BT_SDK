@@ -303,6 +303,13 @@ int key_driver_init(void)
     if (err == 0) {
     }
 #endif//TCFG_SLIDE_KEY_ENABLE
+
+#if TCFG_6083_ADKEY_ENABLE
+    extern int adkey_init_6083();
+    err = adkey_init_6083();
+    if (err == 0) {
+    }
+#endif
     return 0;
 }
 

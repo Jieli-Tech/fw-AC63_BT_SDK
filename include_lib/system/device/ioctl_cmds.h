@@ -67,6 +67,8 @@
 
 #define IOCTL_SET_DATA_CALLBACK         301
 
+#define IOCTL_GET_PART_INFO             320
+
 struct ioctl_irq_handler {
     void *priv;
     void *handler;

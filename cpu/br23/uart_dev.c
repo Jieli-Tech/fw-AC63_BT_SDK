@@ -922,5 +922,10 @@ void change_rts_state(u8 state)
     }
 }
 
-
+void uart_disable_for_ota()
+{
+    JL_UART0->CON0 = BIT(13) | BIT(12) | BIT(10);
+    JL_UART1->CON0 = BIT(13) | BIT(12) | BIT(10);
+    JL_UART2->CON0 = BIT(13) | BIT(12) | BIT(10);
+}
 

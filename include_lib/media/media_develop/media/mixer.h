@@ -89,6 +89,7 @@ struct audio_mixer_ch {
     u32 check_sr : 1;	// 需要检查采样率
     u32 src_running : 1;// 执行变采样处理
     u32 wait_resume : 1;
+    u32 follow_resample : 1;
     u32 sample_rate;	// 当前通道采样率
     u16 offset;			// 当前通道在输出buf中的偏移位置
     u16 lose_time;		// 超过该时间还没有数据，则以为可以丢数。no_wait置1有效
@@ -100,6 +101,8 @@ struct audio_mixer_ch {
     struct audio_mixer_ch_sync_info sync_info;	// 同步参数
     void *priv;		// 事件回调私有句柄
     void (*event_handler)(void *priv, int event, int param);	// 事件回调接口
+    void *follow_priv;
+    int (*follow_sample_rate)(void *priv);
 
     struct audio_stream_entry entry;	// 音频流入口，通道后面不应该再接其他的音频流，最后由mixer合并后输出
 };
@@ -188,6 +191,7 @@ int audio_mixer_ch_write(struct audio_mixer_ch *ch, s16 *data, int len);
 
 void audio_mixer_ch_sample_sync_enable(struct audio_mixer_ch *ch, u8 enable);
 
+void audio_mixer_ch_follow_resample_enable(struct audio_mixer_ch *ch, void *priv, int (*follow_sample_rate)(void *));
 #endif /*CONFIG_MIXER_CYCLIC*/
 
 #endif

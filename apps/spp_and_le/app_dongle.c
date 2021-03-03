@@ -47,7 +47,7 @@
 
 //dongle 上电开配对管理,若配对失败，没有配对设备，停止搜索
 #define POWER_ON_PAIR_START      (1)//
-#define POWER_ON_PAIR_TIME       (10000)//unit ms,持续配对搜索时间
+#define POWER_ON_PAIR_TIME       (3500)//unit ms,切换搜索回连周期
 #define DEVICE_RSSI_LEVEL        (-50)
 #define POWER_ON_KEEP_SCAN       (0)//配对失败，保持一直搜索配对
 
@@ -59,6 +59,10 @@ void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 
 static u8 is_app_active = 0;
 static u8 bt_connected = 0;
+static u16  dongle_timer_id = 0;
+
+static void dongle_timer_handle(u32 priv);
+
 //---------------------------------------------------------------------
 static const u8 sHIDReportDesc[] = {
     0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
@@ -181,7 +185,7 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
     /* log_info("report_data:type %02x,handle %04x,offset %d,len %d", report_data->packet_type, */
     /* report_data->value_handle, report_data->value_offset, report_data->blob_length); */
 
-    log_info_hexdump(report_data->blob, report_data->blob_length);
+    /* log_info_hexdump(report_data->blob, report_data->blob_length); */
 
     /* if (search_uuid == NULL) { */
     /* log_info("not_match handle"); */
@@ -198,6 +202,7 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
         }
         memcpy(&packet[1], report_data->blob, report_data->blob_length);
         hid_send_data(packet, sizeof(packet));
+        putchar('&');
     }
     break;
 
@@ -223,21 +228,30 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
 }
 
 static struct ble_client_operation_t *ble_client_api;
-/* static const u8 dongle_remoter_name1[] = "AC630N_HIDTEST(BLE)";// */
-static const u8 dongle_remoter_name1[] = "AC696X_1mx(BLE)";//
-static const u8 dongle_remoter_name2[] = "JL_MOUSE(BLE)";//
+static const u8 dongle_remoter_name1[] = "JL_MOUSE(BLE)";//
 
+//匹配配置的名字
 static const client_match_cfg_t match_dev01 = {
     .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
     .compare_data_len = sizeof(dongle_remoter_name1) - 1, //去结束符
     .compare_data = dongle_remoter_name1,
-    .bonding_flag = 0,//不绑定
+    .bonding_flag = 1,//
 };
 
-static const client_match_cfg_t match_dev02 = {
+//匹配配置的名字
+static client_match_cfg_t match_config_name = {
     .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
-    .compare_data_len = sizeof(dongle_remoter_name2) - 1, //去结束符
-    .compare_data = dongle_remoter_name2,
+    .compare_data_len = 0, //去结束符
+    .compare_data = 0,
+    .bonding_flag = 1,//绑定
+};
+
+//匹配配置的厂家信息
+static const u8 user_config_tag_string[] = "abc123";
+static const client_match_cfg_t match_user_tag = {
+    .create_conn_mode = BIT(CLI_CREAT_BY_TAG),
+    .compare_data_len = sizeof(user_config_tag_string) - 1, //去结束符
+    .compare_data = user_config_tag_string,
     .bonding_flag = 1,//绑定
 };
 
@@ -252,14 +266,15 @@ static void dongle_enable_notify_ccc(void)
 static void dongle_event_callback(le_client_event_e event, u8 *packet, int size)
 {
     switch (event) {
-    case CLI_EVENT_MATCH_DEV: {
+    case CLI_EVENT_MATCH_DEV:
         client_match_cfg_t *match_dev = packet;
         log_info("match_name:%s\n", match_dev->compare_data);
-    }
-    break;
+        break;
 
     case CLI_EVENT_SEARCH_PROFILE_COMPLETE:
+        log_info("search profile commplete");
         dongle_enable_notify_ccc();
+        bt_connected = 2;
         break;
 
     case CLI_EVENT_CONNECTED:
@@ -277,16 +292,18 @@ static void dongle_event_callback(le_client_event_e event, u8 *packet, int size)
     }
 }
 
-
+//配置 client 信息
 static const client_conn_cfg_t dongle_conn_config = {
-    .match_dev_cfg[0] = &match_dev01,
-    .match_dev_cfg[1] = &match_dev02,
+    .match_dev_cfg[0] = &match_dev01,      //匹配指定的名字
+    /* .match_dev_cfg[1] = &match_config_name,//匹配配置的名字 */
+    /* .match_dev_cfg[2] = &match_user_tag, */
+    .match_dev_cfg[1] = NULL,
     .match_dev_cfg[2] = NULL,
     .report_data_callback = ble_report_data_deal,
     .search_uuid_cnt = 0, //配置不搜索profile，加快回连速度
     /* .search_uuid_cnt = (sizeof(dongle_search_ble_uuid_table) / sizeof(target_uuid_t)), */
     /* .search_uuid_table = dongle_search_ble_uuid_table, */
-    .security_en = 1,
+    .security_en = 1, //加密配对
     .event_callback = dongle_event_callback,
 };
 
@@ -313,8 +330,71 @@ void power_on_pair_timeout(void *priv)
 #endif
 }
 
+//input priv
+static void dongle_timer_handle(u32 priv)
+{
+    putchar('%');
+    static u8 connected_tag = 0;//上电连接配对过标识
+
+    if (bt_connected) {
+        if (bt_connected == 2) {
+            connected_tag = 1;
+        }
+        return;
+    }
+
+    if (priv == 0) {
+        ///init
+        if (0 == ble_client_api->create_connect(0, 0, 1)) {
+            log_info("pair is exist");
+            log_info("reconnect start0");
+        } else {
+            ble_client_api->set_force_search(1, DEVICE_RSSI_LEVEL);
+            ble_client_api->scan_enable(0, 1);
+            log_info("pair new start0");
+        }
+    } else {
+
+        if (connected_tag) {
+            //上电连接配对过，就不执行搜索配对;默认创建连接
+            return;
+        }
+
+        switch (ble_client_api->get_work_state()) {
+        case BLE_ST_CREATE_CONN:
+            ble_client_api->create_connect_cannel();
+            ble_client_api->set_force_search(1, DEVICE_RSSI_LEVEL);
+            ble_client_api->scan_enable(0, 1);
+            log_info("pair new start1");
+            break;
+
+        case BLE_ST_SCAN:
+            ble_client_api->scan_enable(0, 0);
+            ble_client_api->set_force_search(0, 0);
+            if (0 == ble_client_api->create_connect(0, 0, 1)) {
+                log_info("reconnect start1");
+            } else {
+                ble_client_api->set_force_search(1, DEVICE_RSSI_LEVEL);
+                ble_client_api->scan_enable(0, 1);
+                log_info("keep pair new start1");
+            }
+            break;
+
+        default:
+            break;
+        }
+    }
+}
+
+
 static void dongle_ble_config_init(void)
 {
+    u8 *cfg_name_p = bt_get_local_name();
+    u8 cfg_name_len = strlen(cfg_name_p);
+
+    match_config_name.compare_data_len = cfg_name_len; //
+    match_config_name.compare_data = cfg_name_p;
+
     ble_client_api = ble_get_client_operation_table();
     ble_client_api->init_config(0, &dongle_conn_config);
     /* client_clear_bonding_info();//for test */
@@ -807,8 +887,8 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 #if POWER_ON_PAIR_START
         //蓝牙初始化后,才可调用
         log_info("power pair start");
-        ble_client_api->set_force_search(1, DEVICE_RSSI_LEVEL);
-        sys_timeout_add(NULL, power_on_pair_timeout, POWER_ON_PAIR_TIME);
+        dongle_timer_handle(0);
+        dongle_timer_id = sys_timer_add((void *)1, dongle_timer_handle, POWER_ON_PAIR_TIME);
 #endif
 
         rf_set_24g_hackable_coded(CFG_RF_24G_CODE_ID);

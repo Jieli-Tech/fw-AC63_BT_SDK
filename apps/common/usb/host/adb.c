@@ -9,7 +9,7 @@
 #include "adb.h"
 #include "usb_config.h"
 #include "app_config.h"
-
+#if TCFG_ADB_ENABLE
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[adb]"
 #define LOG_ERROR_ENABLE
@@ -456,3 +456,4 @@ void adb_switch_aoa(u32 id)
     aoa_switch(host_dev);
     /* usb_host_remount(id, 3, 30, 50, 1); */
 }
+#endif //TCFG_ADB_ENABLE

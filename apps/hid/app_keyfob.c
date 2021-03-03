@@ -521,7 +521,7 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
     u16 key_msg = 0;
 
 #if TCFG_USER_EDR_ENABLE
-    if (!edr_hid_is_connected()) {
+    if (bt_hid_mode == HID_MODE_EDR && !edr_hid_is_connected()) {
         if (bt_connect_phone_back_start(1)) { //回连
             return;
         }
@@ -1276,7 +1276,9 @@ static int event_handler(struct application *app, struct sys_event *event)
 
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //重置无操作定时计数
-    sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    if (event->type != SYS_DEVICE_EVENT || DEVICE_EVENT_FROM_POWER != event->arg) { //过滤电源消息
+        sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    }
 #endif
 
     bt_sniff_ready_clean();

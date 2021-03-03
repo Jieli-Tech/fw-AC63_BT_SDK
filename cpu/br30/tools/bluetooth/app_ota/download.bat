@@ -8,7 +8,7 @@ cd %~dp0
 
 set /p "themd5=" < "md5.bin"
 
-..\..\isd_download.exe isd_config_%1.ini -tonorflash -dev br30 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app app.bin cfg_tool.bin  -res  config.dat ..\..\p11_code.bin md5.bin -uboot_compress
+..\..\isd_download.exe isd_config_%1.ini -tonorflash -dev br30 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app app.bin cfg_tool.bin  -res  config.dat ..\..\p11_code.bin %2 md5.bin -uboot_compress
 
 
 @REM 常用命令说明

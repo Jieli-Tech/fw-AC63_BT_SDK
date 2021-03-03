@@ -44,6 +44,7 @@
 <Add option="-DVM_ITEM_MAX_NUM=128" />
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_HID_CASE_ENABLE" />
+<Add option="-DCONFIG_LITE_AUDIO" />
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
@@ -96,6 +97,9 @@
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include/hal3205" />
 <Add directory="../../../../apps/common/touch_pad" />
+<Add directory="../../../../apps/common/audio" />
+<Add directory="../../../../cpu/br30/audio_dec" />
+<Add directory="../../../../cpu/br30/audio_enc" />
 <Add directory="../../../../apps/common/usb/device" />
 <Add directory="../../../../apps/common/usb/host" />
 </Compiler>
@@ -138,6 +142,13 @@
 <Add option="../../../../include_lib/liba/br30/limiter.a" />
 <Add option="--end-group" />
 <Add option="../../../../include_lib/liba/br30/update.a" />
+<Add option="--start-group" />
+<Add option="../../../../include_lib/liba/br30/media.a" />
+<Add option="../../../../include_lib/liba/br30/media_app.a" />
+<Add option="../../../../include_lib/liba/br30/wtg_dec_lib.a" />
+<Add option="../../../../include_lib/liba/br30/opus_enc_lib.a" />
+<Add option="../../../../include_lib/liba/br30/speex_enc_lib.a" />
+<Add option="--end-group" />
 <Add option="-T../../../../cpu/br30/sdk.ld" />
 <Add option="-M=../../../../cpu/br30/tools/sdk.map" />
 <Add library="C:\JL\pi32\pi32v2-lib\r3\libm.a" />
@@ -146,12 +157,18 @@
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_used_list.c -o ..\..\..\..\cpu\br30\sdk_used_list.used" />
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_ld.c -o ..\..\..\..\cpu\br30\sdk.ld" />
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\download.c -o ..\..\..\..\cpu\br30\tools\download.bat" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\isd_config.c -o ..\..\..\..\cpu\br30\tools\isd_config.ini" />
 <Mode before="always" />
 <Add after="..\..\..\..\cpu\br30\tools\download.bat sdk" />
 <Mode after="always" />
 </ExtraCommands>
 </Target>
 </Build>
+<Unit filename="../../../../apps/common/audio/audio_digital_vol.h" />
+<Unit filename="../../../../apps/common/audio/audio_plc.h" />
+<Unit filename="../../../../apps/common/audio/decode/decode.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/audio/sine_make.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/audio/sine_make.h" />
 <Unit filename="../../../../apps/common/code_switch/code_switch.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/code_switch/include/code_switch.h" />
 <Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
@@ -163,11 +180,18 @@
 <Unit filename="../../../../apps/common/include/matrix_keyboard.h" />
 <Unit filename="../../../../apps/common/include/standard_hid.h" />
 <Unit filename="../../../../apps/common/include/update_tws.h" />
+<Unit filename="../../../../apps/common/jl_kws/jl_kws_algo.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/jl_kws/jl_kws_api.h" />
+<Unit filename="../../../../apps/common/jl_kws/jl_kws_audio.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/jl_kws/jl_kws_common.h" />
+<Unit filename="../../../../apps/common/jl_kws/jl_kws_event.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/jl_kws/jl_kws_main.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/adkey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/ctmu_touch_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/iokey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/key_driver.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/matrix_keyboard.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/phone_message/phone_message.h" />
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data/le_rcsp_adv_module.h" />
@@ -187,12 +211,20 @@
 <Unit filename="../../../../apps/common/touch_pad/SYD9557M.h" />
 <Unit filename="../../../../apps/common/update/update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/descriptor.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/hid.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/msd.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/msd_upgrade.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/task_pc.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/uac1.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/uac_stream.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/usb_device.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/user_setup.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/host/adb.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/host/adb.h" />
 <Unit filename="../../../../apps/common/usb/host/aoa.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/host/aoa.h" />
+<Unit filename="../../../../apps/common/usb/host/audio.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/host/audio_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/host/hid.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/host/hid.h" />
 <Unit filename="../../../../apps/common/usb/host/usb_bulk_transfer.c"><Option compilerVer="CC"/></Unit>
@@ -201,6 +233,7 @@
 <Unit filename="../../../../apps/common/usb/host/usb_ctrl_transfer.h" />
 <Unit filename="../../../../apps/common/usb/host/usb_hid_keys.h" />
 <Unit filename="../../../../apps/common/usb/host/usb_host.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/host/usb_storage.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/host/usb_storage.h" />
 <Unit filename="../../../../apps/common/usb/usb_common_def.h" />
 <Unit filename="../../../../apps/common/usb/usb_config.c"><Option compilerVer="CC"/></Unit>
@@ -230,6 +263,7 @@
 <Unit filename="../../../../apps/hid/board/br30/board_config.h" />
 <Unit filename="../../../../apps/hid/gamebox/gamebox.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/gamebox/key_mapping.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/hid/include/aec_user.h" />
 <Unit filename="../../../../apps/hid/include/app_action.h" />
 <Unit filename="../../../../apps/hid/include/app_charge.h" />
 <Unit filename="../../../../apps/hid/include/app_config.h" />
@@ -239,19 +273,33 @@
 <Unit filename="../../../../apps/hid/include/key_event_deal.h" />
 <Unit filename="../../../../apps/hid/include/lib_profile_cfg.h" />
 <Unit filename="../../../../apps/hid/include/rtc_alarm.h" />
+<Unit filename="../../../../apps/hid/include/tone_player.h" />
 <Unit filename="../../../../apps/hid/include/user_cfg_id.h" />
 <Unit filename="../../../../apps/hid/lib_config/lib_btctrler_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/lib_config/lib_btstack_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/lib_config/lib_driver_config.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/hid/lib_config/lib_media_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/lib_config/lib_profile_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/lib_config/lib_system_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/lib_config/lib_update_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/log_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/misc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/rtc_alarm.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/hid/tone_table.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/user_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/version.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/Resample_api.h" />
 <Unit filename="../../../../cpu/br30/adc_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/app_audio.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/audio_config.h" />
+<Unit filename="../../../../cpu/br30/audio_dac_digital_volume.h" />
+<Unit filename="../../../../cpu/br30/audio_dec.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/audio_enc.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/audio_enc.h" />
+<Unit filename="../../../../cpu/br30/audio_iis.h" />
+<Unit filename="../../../../cpu/br30/audio_link.h" />
+<Unit filename="../../../../cpu/br30/audio_mic_capless.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/audio_mic_codec.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/charge.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/chargestore.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/clock_cfg.h" />
@@ -259,6 +307,7 @@
 <Unit filename="../../../../cpu/br30/ctmu.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/iic_soft.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/irflt.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/lp_touch_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/lp_touch_key_epd.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/lp_touch_key_epd.h" />
@@ -267,6 +316,8 @@
 <Unit filename="../../../../cpu/br30/pwm_led.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/setup.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/spi.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/tone_player.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/tone_player_api.h" />
 <Unit filename="../../../../cpu/br30/uart_dev.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../include_lib/btctrler/ble/hci_ll.h" />
 <Unit filename="../../../../include_lib/btctrler/ble/ll_config.h" />
@@ -280,6 +331,7 @@
 <Unit filename="../../../../include_lib/btctrler/classic/tws_local_media_sync.h" />
 <Unit filename="../../../../include_lib/btctrler/hci_transport.h" />
 <Unit filename="../../../../include_lib/btctrler/port/br30/btcontroller_config.h" />
+<Unit filename="../../../../include_lib/btstack/a2dp_media_codec.h" />
 <Unit filename="../../../../include_lib/btstack/avctp_user.h" />
 <Unit filename="../../../../include_lib/btstack/bluetooth.h" />
 <Unit filename="../../../../include_lib/btstack/bt_profile_config.h" />
@@ -326,6 +378,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/includes.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/io_imap.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/io_omap.h" />
+<Unit filename="../../../../include_lib/driver/cpu/br30/asm/irflt.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/irq.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/lp_touch_key.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/plcnt.h" />
@@ -357,6 +410,12 @@
 <Unit filename="../../../../include_lib/driver/device/usb/usb_phy.h" />
 <Unit filename="../../../../include_lib/media/audio_stream.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/anc_btspp.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/application/audio_dec_app.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/application/audio_drc.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/application/audio_energy_detect.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/application/audio_eq.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/application/audio_surround.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/application/audio_vbass.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/audio_base.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/audio_decoder.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/audio_encoder.h" />
@@ -369,8 +428,14 @@
 <Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/cpu_includes.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/dac.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/hw_eq.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/pdm_link.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/commproc.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/effectrs_sync.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/includes.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/mixer.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/surround/effect_sur_api.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/sw_drc.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/vbass/vbass_api.h" />
 <Unit filename="../../../../include_lib/system/app_core.h" />
 <Unit filename="../../../../include_lib/system/app_msg.h" />
 <Unit filename="../../../../include_lib/system/bank_switch.h" />
@@ -430,12 +495,14 @@
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/FreeRTOS.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/FreeRTOSConfig.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/deprecated_definitions.h" />
+<Unit filename="../../../../include_lib/system/os/FreeRTOS/list.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/mpu_wrappers.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/pi32v2/portmacro.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/portable.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/projdefs.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/queue.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/semphr.h" />
+<Unit filename="../../../../include_lib/system/os/FreeRTOS/task.h" />
 <Unit filename="../../../../include_lib/system/os/os_api.h" />
 <Unit filename="../../../../include_lib/system/os/os_cpu.h" />
 <Unit filename="../../../../include_lib/system/os/os_error.h" />

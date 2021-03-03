@@ -15,6 +15,7 @@
 #include "user_cfg.h"
 #include "asm/power/p33.h"
 #include "asm/lp_touch_key.h"
+#include "usb/otg.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -170,23 +171,93 @@ const struct lp_touch_key_platform_data lp_touch_key_config = {
 #include "asm/ctmu.h"
 static const struct ctmu_key_port touch_ctmu_port[] = {
     {
+	    .press_delta = TCFG_CTMU_TOUCH_KEY0_PRESS_DELTA,
         .port = TCFG_CTMU_TOUCH_KEY0_PORT,
         .key_value = TCFG_CTMU_TOUCH_KEY0_VALUE,
     },
     {
+	    .press_delta = TCFG_CTMU_TOUCH_KEY1_PRESS_DELTA,
 	    .port = TCFG_CTMU_TOUCH_KEY1_PORT,
         .key_value = TCFG_CTMU_TOUCH_KEY1_VALUE,
-     },
+    },
+    {
+	    .press_delta = TCFG_CTMU_TOUCH_KEY2_PRESS_DELTA,
+	    .port = TCFG_CTMU_TOUCH_KEY2_PORT,
+        .key_value = TCFG_CTMU_TOUCH_KEY2_VALUE,
+    },
 };
 
 const struct ctmu_touch_key_platform_data ctmu_touch_key_data = {
     .num = ARRAY_SIZE(touch_ctmu_port),
-	.press_cfg		= TCFG_CTMU_TOUCH_KEY_PRESS_CFG,
-	.release_cfg0 	= TCFG_CTMU_TOUCH_KEY_RELEASE_CFG0,
-	.release_cfg1 	= TCFG_CTMU_TOUCH_KEY_RELEASE_CFG1,
     .port_list = touch_ctmu_port,
 };
 #endif  /* #if TCFG_CTMU_TOUCH_KEY_ENABLE */
+
+
+/************************** DAC ****************************/
+#if TCFG_AUDIO_DAC_ENABLE
+struct dac_platform_data dac_data = {
+    .ldo_volt       = TCFG_AUDIO_DAC_LDO_VOLT,                   //DACVDD等级
+    .vcmo_en        = 0,                                         //是否打开VCOMO
+    .output         = TCFG_AUDIO_DAC_CONNECT_MODE,               //DAC输出配置，和具体硬件连接有关，需根据硬件来设置
+    .ldo_isel       = 0,
+    .ldo_fb_isel    = 0,
+    .lpf_isel       = 0x2,
+    .dsm_clk        = DAC_DSM_6MHz,
+};
+#endif
+
+/************************** ADC ****************************/
+#if TCFG_AUDIO_ADC_ENABLE
+const struct ladc_port ladc_list[] = {
+    {// 0
+        .channel = TCFG_AUDIO_ADC_LINE_CHA,
+    },
+    // total must < 4
+};
+struct adc_platform_data adc_data = {
+/*MIC 是否省隔直电容：0: 不省电容  1: 省电容 */
+    .mic_capless    = TCFG_MIC_CAPLESS_ENABLE,
+/*差分mic使能,差分mic不能使用省电容模式*/
+    .mic_diff    = 0,
+/*MIC LDO电流档位设置：0:5    1:10ua    2:15ua    3:20ua*/
+    .mic_ldo_isel   = TCFG_AUDIO_ADC_LD0_SEL,
+/*MIC LDO电压档位设置,也会影响MIC的偏置电压0:1.5v  1:8v  2:2.1v  3:2.4v 4:2.7v 5:3.0 */
+    .mic_ldo_vsel  = 3,
+/*MIC免电容方案需要设置，影响MIC的偏置电压
+    21:1.18K    20:1.42K    19:1.55K    18:1.99K    17:2.2K     16:2.4K     15:2.6K     14:2.91K    13:3.05K    12:3.5K     11:3.73K
+    10:3.91K    9:4.41K     8:5.0K      7:5.6K      6:6K        5:6.5K      4:7K        3:7.6K      2:8.0K      1:8.5K              */
+    .mic_bias_res   = 18,
+/*MIC电容隔直模式使用内部mic偏置(PA2)*/
+    .mic_bias_inside = 1,
+/*保持内部mic偏置(PA2)输出*/
+    .mic_bias_keep = 0,
+
+/*MIC1 是否省隔直电容：0: 不省电容  1: 省电容 */
+    .mic1_capless    = TCFG_MIC1_CAPLESS_ENABLE,
+/*差分mic使能,差分mic不能使用省电容模式*/
+    .mic1_diff    = 0,
+/*MIC1 LDO电流档位设置：0:5    1:10ua    2:15ua    3:20ua*/
+    .mic1_ldo_isel   = TCFG_AUDIO_ADC_LD0_SEL,
+/*MIC1 LDO电压档位设置,也会影响MIC的偏置电压0:1.5v  1:8v  2:2.1v  3:2.4v 4:2.7v 5:3.0 */
+    .mic1_ldo_vsel  = 3,
+/*MIC1免电容方案需要设置，影响MIC的偏置电压
+    21:1.18K    20:1.42K    19:1.55K    18:1.99K    17:2.2K     16:2.4K     15:2.6K     14:2.91K    13:3.05K    12:3.5K     11:3.73K
+    10:3.91K    9:4.41K     8:5.0K      7:5.6K      6:6K        5:6.5K      4:7K        3:7.6K      2:8.0K      1:8.5K              */
+    .mic1_bias_res   = 18,
+/*MIC1电容隔直模式使用内部mic偏置(PB7)*/
+    .mic1_bias_inside = 1,
+/*保持内部mic偏置(PB7)输出*/
+    .mic1_bias_keep = 0,
+
+    // ladc 通道
+    .ladc_num = ARRAY_SIZE(ladc_list),
+    .ladc = ladc_list,
+};
+#endif
+
+
+
 
 /************************** PWM_LED ****************************/
 #if TCFG_PWMLED_ENABLE
@@ -236,6 +307,18 @@ const struct hw_iic_config hw_iic_cfg[] = {
 };
 #endif
 
+/************************** otg data****************************/
+#if TCFG_OTG_MODE
+struct otg_dev_data otg_data = {
+    .usb_dev_en = TCFG_OTG_USB_DEV_EN,
+	.slave_online_cnt = TCFG_OTG_SLAVE_ONLINE_CNT,
+	.slave_offline_cnt = TCFG_OTG_SLAVE_OFFLINE_CNT,
+	.host_online_cnt = TCFG_OTG_HOST_ONLINE_CNT,
+	.host_offline_cnt = TCFG_OTG_HOST_OFFLINE_CNT,
+	.detect_mode = TCFG_OTG_MODE,
+	.detect_time_interval = TCFG_OTG_DET_INTERVAL,
+};
+#endif
 REGISTER_DEVICES(device_table) = {
     /* { "audio", &audio_dev_ops, (void *) &audio_data }, */
 
@@ -244,6 +327,9 @@ REGISTER_DEVICES(device_table) = {
 #endif
 #if TCFG_SD0_ENABLE
 	{ "sd0", 	&sd_dev_ops, 	(void *) &sd0_data},
+#endif
+#if TCFG_OTG_MODE
+    { "otg",     &usb_dev_ops, (void *) &otg_data},
 #endif
 };
 
@@ -667,7 +753,9 @@ void sleep_enter_callback(u8  step)
     if (step == 1) {
         putchar('<');
         APP_IO_DEBUG_0(B, 0);
-        /* dac_power_off(); */
+#if TCFG_AUDIO_ENABLE
+        dac_power_off();
+#endif/*TCFG_AUDIO_ENABLE*/
 	} else {
 		close_gpio();
 		/* gpio_set_pull_up(IO_PORTA_03, 0); */

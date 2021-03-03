@@ -18,20 +18,29 @@ extern struct audio_decoder_task decode_task;
 extern struct audio_mixer mixer;
 extern struct audio_mixer recorder_mixer;
 
+// 获取输出采样率
 u32 audio_output_rate(int input_rate);
+// 获取输出通道数
 u32 audio_output_channel_num(void);
+// 获取输出通道类型
 u32 audio_output_channel_type(void);
+// 设置输出音量状态
 int audio_output_set_start_volume(u8 state);
-
+// 开始音频输出
 int audio_output_start(u32 sample_rate, u8 reset_rate);
+// 关闭音频输出
 void audio_output_stop(void);
 
+// 打开一个变采样通道
 struct audio_src_handle *audio_hw_resample_open(void *priv, int (*output_handler)(void *, void *, int),
         u8 channel, u16 input_sample_rate, u16 output_sample_rate);
+// 关闭变采样
 void audio_hw_resample_close(struct audio_src_handle *hdl);
 
+// 激活所有解码
 void audio_resume_all_decoder(void);
 
+u32 audio_output_nor_rate(void);
 enum {
     AUDIO_MODE_MAIN_STATE_DEC_A2DP = 1,
     AUDIO_MODE_MAIN_STATE_DEC_ESCO,
@@ -59,50 +68,17 @@ enum {
 void audio_mode_main_dec_open(u32 state);
 
 //////////////////////////////////////////////////////////////////////////////
-void audio_sbc_enc_inbuf_resume(void);
 
+// 音频解码初始化
 int audio_dec_init();
 
-void set_source_sample_rate(u16 sample_rate);
-u16 get_source_sample_rate();
-#if USER_DIGITAL_VOLUME_ADJUST_ENABLE != 0
-void a2dp_user_digital_volume_set(u8 vol);
-u8 a2dp_user_audio_digital_volume_get();
-void a2dp_user_digital_volume_tab_set(u16 *user_vol_tab, u8 user_vol_max);
-
-void linein_user_digital_volume_set(u8 vol);
-u8 linein_user_audio_digital_volume_get();
-void linein_user_digital_volume_tab_set(u16 *user_vol_tab, u8 user_vol_max);
-
-void fm_user_digital_volume_set(u8 vol);
-u8 fm_user_audio_digital_volume_get();
-void fm_user_digital_volume_tab_set(u16 *user_vol_tab, u8 user_vol_max);
-
-void file_user_digital_volume_set(u8 vol);
-u8 file_user_audio_digital_volume_get();
-void file_user_digital_volume_tab_set(u16 *user_vol_tab, u8 user_vol_max);
-
-void pc_user_digital_volume_set(u8 vol);
-u8 pc_user_audio_digital_volume_get();
-void pc_user_digital_volume_tab_set(u16 *user_vol_tab, u8 user_vol_max);
-
-void spdif_user_digital_volume_set(u8 vol);
-u8 spdif_user_audio_digital_volume_get();
-void spdif_user_digital_volume_tab_set(u16 *user_vol_tab, u8 user_vol_max);
-
-
-void reverb_user_digital_volume_set(u8 vol);
-u8 reverb_user_audio_digital_volume_get();
-void reverb_user_digital_volume_tab_set(u16 *user_vol_tab, u8 user_vol_max);
-#endif
-void reverb_set_dodge_threshold(int threshold_in, int threshold_out, u8 fade_tar, u8 dodge_en);
-
-
-void a2dp_dec_output_set_start_bt_time(u32 bt_tmr);
+// mix out后 做高低音
 void mix_out_high_bass(u32 cmd, struct high_bass *hb);
+// mix out后 是否做高低音处理
 void mix_out_high_bass_dis(u32 cmd, u8 dis);
-
+// 切换频响计算
 void spectrum_switch_demo(u8 en);
+
 //////////////////////////////////////////////////////////////////////////////
 static inline void audio_pcm_mono_to_dual(s16 *dual_pcm, s16 *mono_pcm, int points)
 {

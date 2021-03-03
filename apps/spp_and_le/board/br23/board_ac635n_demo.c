@@ -155,7 +155,7 @@ struct dac_platform_data dac_data = {
 #if ((TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR) || (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_DUAL_LR_DIFF))
     .vcmo_en        = 0,                                         //四声道与双声道差分关闭VCOMO
 #else
-    .vcmo_en        = 1,                                         //是否打开VCOMO
+    .vcmo_en        = 0,                                         //是否打开VCOMO
 #endif
     .output         = TCFG_AUDIO_DAC_CONNECT_MODE,               //DAC输出配置，和具体硬件连接有关，需根据硬件来设置
     .ldo_isel       = 3,
@@ -370,7 +370,9 @@ void sleep_enter_callback(u8  step)
     if (step == 1) {
 		putchar('<');
         APP_IO_DEBUG_0(A, 6);
-        /*dac_power_off();*/
+#if TCFG_AUDIO_ENABLE
+        dac_power_off();
+#endif/*TCFG_AUDIO_ENABLE*/
 		if(TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15){
 			/* putchar('{'); */
 			power_set_mode(PWR_LDO15);

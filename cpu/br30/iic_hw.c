@@ -11,19 +11,6 @@
       接cfg_done单独发送；而STOP则应在发送或接收字节cfg_done后设置，必须接
       cfg_done单独发送
 */
-struct iic_iomapping {
-    u8 scl;
-    u8 sda;
-};
-
-static const struct iic_iomapping hwiic_iomap[IIC_HW_NUM][IIC_PORT_GROUP_NUM] = {
-    {
-        {IO_PORT_DP, IO_PORT_DM},    //group a
-        {IO_PORTC_04, IO_PORTC_05},  //group b
-        {IO_PORTC_02, IO_PORTC_03},  //group c
-        {IO_PORTA_05, IO_PORTA_06},  //group d
-    },
-};
 
 static JL_IIC_TypeDef *const iic_regs[IIC_HW_NUM] = {
     JL_IIC,
@@ -31,7 +18,7 @@ static JL_IIC_TypeDef *const iic_regs[IIC_HW_NUM] = {
 
 #define iic_get_id(iic)         (iic)
 
-#define iic_info_port(iic)      (hw_iic_cfg[iic_get_id(iic)].port - 'A')
+#define iic_info_port(iic, x)   (hw_iic_cfg[iic_get_id(iic)].port[x])
 #define iic_info_baud(iic)      (hw_iic_cfg[iic_get_id(iic)].baudrate)
 #define iic_info_hdrive(iic)    (hw_iic_cfg[iic_get_id(iic)].hdrive)
 #define iic_info_io_filt(iic)   (hw_iic_cfg[iic_get_id(iic)].io_filter)
@@ -39,28 +26,22 @@ static JL_IIC_TypeDef *const iic_regs[IIC_HW_NUM] = {
 
 static inline u32 iic_get_scl(hw_iic_dev iic)
 {
-    u8 port = iic_info_port(iic);
-    return hwiic_iomap[iic_get_id(iic)][port].scl;
+    u8 port = iic_info_port(iic, 0);
+    return port;
 }
 
 static inline u32 iic_get_sda(hw_iic_dev iic)
 {
-    u8 port = iic_info_port(iic);
-    return hwiic_iomap[iic_get_id(iic)][port].sda;
+    u8 port = iic_info_port(iic, 1);
+    return port;
 }
 
 static int iic_port_init(hw_iic_dev iic)
 {
     u32 reg;
     int ret = 0;
-    u8 port;
     u8 id = iic_get_id(iic);
     u32 scl, sda;
-
-    port = iic_info_port(iic);
-    if (port >= IIC_PORT_GROUP_NUM) {
-        return -EINVAL;
-    }
     scl = iic_get_scl(iic);
     sda = iic_get_sda(iic);
     if (id == 0) {
@@ -68,44 +49,6 @@ static int iic_port_init(hw_iic_dev iic)
         gpio_set_fun_output_port(sda, FO_IIC_SDA, 1, 1);
         gpio_set_fun_input_port(scl, PFI_IIC_SCL);
         gpio_set_fun_input_port(sda, PFI_IIC_SDA);
-#if 0
-        if (port == 0) {
-            //USB_DP, USB_DM init
-            log_w("warning!!!  iic overwrite usb configuration\n");
-            JL_USB_IO->CON0 |= (BIT(12) | BIT(14)); //IO MODE
-            /* JL_USB_IO->CON0 &= ~BIT(2);  //DP DIR OUT */
-            /* JL_USB_IO->CON0 &= ~BIT(3);  //DM DIR OUT */
-            /* JL_USB_IO->CON0 |= BIT(0);  //DP output 1 */
-            /* JL_USB_IO->CON0 |= BIT(1);  //DM output 1 */
-            if (iic_info_io_pu(iic)) {
-                JL_USB_IO->CON0 |= BIT(4);  //DP PU
-                JL_USB_IO->CON0 |= BIT(5);  //DM PU
-            } else {
-                JL_USB_IO->CON0 &= ~BIT(4);  //DP PU
-                JL_USB_IO->CON0 &= ~BIT(5);  //DM PU
-            }
-        } else {
-            //gpio_direction_output(sca, 1);
-            //gpio_direction_output(sda, 1);
-            if (iic_info_hdrive(iic)) {
-                gpio_set_hd(scl, 1);
-                gpio_set_hd(sda, 1);
-            } else {
-                gpio_set_hd(scl, 0);
-                gpio_set_hd(sda, 0);
-            }
-            if (iic_info_io_pu(iic)) {
-                gpio_set_pull_up(scl, 1);
-                gpio_set_pull_up(sda, 1);
-            } else {
-                gpio_set_pull_up(scl, 0);
-                gpio_set_pull_up(sda, 0);
-            }
-        }
-#else
-        if (port == 0) {
-            usb_iomode(1);
-        }
         if (iic_info_hdrive(iic)) {
             gpio_set_hd(scl, 1);
             gpio_set_hd(sda, 1);
@@ -120,8 +63,6 @@ static int iic_port_init(hw_iic_dev iic)
             gpio_set_pull_up(scl, 0);
             gpio_set_pull_up(sda, 0);
         }
-#endif
-        //} else if (fh->id == 1) {
     } else {
         ret = -EINVAL;
     }
@@ -146,32 +87,12 @@ int hw_iic_set_baud(hw_iic_dev iic, u32 baud)
 static void hw_iic_set_die(hw_iic_dev iic, u8 en)
 {
     u8 id = iic_get_id(iic);
-    u8 port = iic_info_port(iic);
     u32 scl, sda;
-
-    if (port >= IIC_PORT_GROUP_NUM) {
-        return ;
-    }
     scl = iic_get_scl(iic);
     sda = iic_get_sda(iic);
     if (id == 0) {
-#if 0
-        if (port == 0) {
-            if (en) {
-                JL_USB_IO->CON0 |= BIT(8);  //DP 1.2V digital input en
-                JL_USB_IO->CON0 |= BIT(9);  //DM 1.2V digital input en
-            } else {
-                JL_USB_IO->CON0 &= ~BIT(8);
-                JL_USB_IO->CON0 &= ~BIT(9);
-            }
-        } else {
-            gpio_set_die(scl, en);  //!!!must set
-            gpio_set_die(sda, en);  //!!!must set
-        }
-#else
         gpio_set_die(scl, en);
         gpio_set_die(sda, en);
-#endif
     } else {
         //undefined
     }
@@ -230,37 +151,16 @@ int hw_iic_init(hw_iic_dev iic)
 void hw_iic_uninit(hw_iic_dev iic)
 {
     u8 id = iic_get_id(iic);
-    u8 port = iic_info_port(iic);
     u32 scl, sda;
 
     scl = iic_get_scl(iic);
     sda = iic_get_sda(iic);
     hw_iic_set_die(iic, 0);
     if (id == 0) {
-#if 0
-        if (port == 0) {
-            //JL_USB_IO->CON0 |= BIT(2);  //DP DIR IN
-            //JL_USB_IO->CON0 |= BIT(3);  //DM DIR IN
-            JL_USB_IO->CON0 &= ~(BIT(12) | BIT(14)); //disable IO_MODE
-            JL_USB_IO->CON0 &= ~BIT(4);  //DP PU
-            JL_USB_IO->CON0 &= ~BIT(5);  //DM PU
-        } else {
-            /* gpio_set_direction(scl, 1); */
-            /* gpio_set_direction(sda, 1); */
-            gpio_set_hd(scl, 0);
-            gpio_set_hd(sda, 0);
-            gpio_set_pull_up(scl, 0);
-            gpio_set_pull_up(sda, 0);
-        }
-#else
         gpio_set_hd(scl, 0);
         gpio_set_hd(sda, 0);
         gpio_set_pull_up(scl, 0);
         gpio_set_pull_up(sda, 0);
-        if (port == 0) {
-            usb_iomode(0);
-        }
-#endif
     }
     iic_disable(iic_regs[id]);
 }
@@ -354,3 +254,7 @@ int hw_iic_write_buf(hw_iic_dev iic, const void *buf, int len)
     return i;
 }
 
+void iic_disable_for_ota()
+{
+    JL_IIC->CON0 = 0;
+}

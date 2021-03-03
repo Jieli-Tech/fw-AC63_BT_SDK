@@ -8,6 +8,7 @@
 #include "application/eq_config.h"
 #include "media/audio_stream.h"
 
+#define DECREASE_MEM  1  //减少输出buf占用
 struct audio_eq_drc_parm {
     u8 eq_en: 1;				//eq是否使能 1:使能  0:关闭
     u8 drc_en: 1;           //drc是否使能 1:使能  0:关闭
@@ -54,6 +55,9 @@ struct audio_eq_drc {
 
     //2路32bit异步输出
     s16 *eq_out_buf;
+#if !DECREASE_MEM
+    int out_buf_size;
+#endif
     int eq_out_points;
     int eq_out_total;
     u8 high_bass_dis;

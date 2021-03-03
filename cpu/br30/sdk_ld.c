@@ -92,12 +92,20 @@ SECTIONS
     {
         PROVIDE(text_rodata_begin = .);
 
-        *startup.o(.text)
+        *(.startup.text)
 
 		*(.text)
 
 		#include "btstack/btstack_lib_text.ld"
 		#include "system/system_lib_text.ld"
+
+		. = ALIGN(4);
+	    update_target_begin = .;
+	    PROVIDE(update_target_begin = .);
+	    KEEP(*(.update_target))
+	    update_target_end = .;
+	    PROVIDE(update_target_end = .);
+		. = ALIGN(4);
 
         *(.classic_tws_const)
         *(.classic_tws_code)
@@ -305,7 +313,7 @@ SECTIONS
 	.heap ALIGN(32):
 	{
         _HEAP_BEGIN = .;
-        . = ALIGN(0x1FF00);
+        . = ALIGN(0x1FC00);
         _HEAP_END = .;
 	} >ram0
 #endif

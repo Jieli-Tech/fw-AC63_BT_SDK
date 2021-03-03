@@ -1389,6 +1389,7 @@ static const struct ble_client_operation_t client_operation = {
     .set_force_search = client_force_search,
     .create_connect = client_create_connect_api,
     .create_connect_cannel = client_create_cannel_api,
+    .get_work_state = get_ble_work_state,
 };
 
 struct ble_client_operation_t *ble_get_client_operation_table(void)

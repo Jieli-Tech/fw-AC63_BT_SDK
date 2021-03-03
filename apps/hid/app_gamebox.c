@@ -34,9 +34,11 @@
 #include "gamebox.h"
 
 #if(CONFIG_APP_GAMEBOX)
-extern    void usbstack_init();
+#undef TCFG_USER_EDR_ENABLE
+#define     TCFG_USER_EDR_ENABLE    0
+extern    void gamebox_init();
 #define LOG_TAG_CONST       MOUSE
-#define LOG_TAG             "[MOUSE]"
+#define LOG_TAG             "[GAMEPAD]"
 #define LOG_ERROR_ENABLE
 #define LOG_DEBUG_ENABLE
 #define LOG_INFO_ENABLE
@@ -451,7 +453,8 @@ extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
 static void app_start()
 {
 
-    usbstack_init();
+    gamebox_init();
+
     log_info("=======================================");
     log_info("-------------HID Mouse-----------------");
     log_info("=======================================");
@@ -983,7 +986,9 @@ static int event_handler(struct application *app, struct sys_event *event)
 {
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //重置无操作定时计数
-    sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    if (event->type != SYS_DEVICE_EVENT || DEVICE_EVENT_FROM_POWER != event->arg) { //过滤电源消息
+        sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    }
 #endif
 
     bt_sniff_ready_clean();

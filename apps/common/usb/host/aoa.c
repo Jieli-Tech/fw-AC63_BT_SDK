@@ -21,6 +21,7 @@
 #include "adb.h"
 #include "aoa.h"
 #include "usb_hid_keys.h"
+#if TCFG_AOA_ENABLE
 #include "gamebox.h"
 
 #define LOG_TAG_CONST       USB
@@ -228,4 +229,4 @@ static void aoa_timer_handler(void *priv)
     }
 
 }
-
+#endif

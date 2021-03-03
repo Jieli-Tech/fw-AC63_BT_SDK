@@ -14,7 +14,7 @@
 /* #define LOG_DUMP_ENABLE */
 #define LOG_CLI_ENABLE
 #include "debug.h"
-#if TCFG_PC_ENABLE && USB_SLAVE_USER_STACK
+#if TCFG_PC_ENABLE && TCFG_USB_SLAVE_USER_HID
 
 static const u8 sHIDDescriptor[] = {
 //HID

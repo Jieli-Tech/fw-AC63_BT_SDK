@@ -16,15 +16,6 @@ export APP_OTA_EN = n
 
 
 export CONFIG_USB_ENABLE ?= n
-export USB_SLAVE_SUPPORT_MSD ?= n
-export USB_SLAVE_SUPPORT_AUDIO ?= n
-export USB_SLAVE_SUPPORT_HID ?= n
-export USB_SLAVE_USER_STACK ?= n
-
-export USB_HOST_SUPPORT_MSD ?= n
-export USB_HOST_SUPPORT_AOA ?= n
-export USB_HOST_SUPPORT_ADB ?= n
-export USB_HOST_SUPPORT_HID ?= n
 
 
 

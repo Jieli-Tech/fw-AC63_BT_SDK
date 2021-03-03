@@ -107,6 +107,8 @@ u32 clk_get_osc_cap();
 
 void clk_init_osc_cap(u8 sel_l, u8 sel_r);
 
+void clk_init_osc_ldos(u8 ldos);
+
 /**
  * @brief clock_set_sfc_max_freq
  * 使用前需要保证所使用的flash支持4bit 100Mhz 模式

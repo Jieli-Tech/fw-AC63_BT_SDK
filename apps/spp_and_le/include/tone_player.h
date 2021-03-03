@@ -11,16 +11,6 @@
 #define TONE_RES_ROOT_PATH		 SDFILE_RES_ROOT_PATH   	//内置flash提示音根路径
 #endif//TCFG_NOR_FS
 
-#define DEFAULT_SINE_SAMPLE_RATE 16000
-#define SINE_TOTAL_VOLUME        26843546//16106128//20132660 //26843546
-struct sin_param {
-    //int idx_increment;
-    int freq;
-    int points;
-    int win;
-    int decay;
-};
-
 #define TONE_STOP       0
 #define TONE_START      1
 
@@ -109,6 +99,10 @@ enum {
 #define SINE_WTONE_LOW_POWER        4
 #define SINE_WTONE_RING             5
 #define SINE_WTONE_MAX_VOLUME       6
+#define SINE_WTONE_ADSP             7
+#define SINE_WTONE_LOW_LATENRY_IN   8
+#define SINE_WTONE_LOW_LATENRY_OUT  9
+
 
 #define TONE_REPEAT_BEGIN(a)  (char *)((0x1 << 30) | (a & 0xffff))
 #define TONE_REPEAT_END()     (char *)(0x2 << 30)
@@ -147,6 +141,7 @@ enum {
 
 extern const char *tone_table[];
 int tone_play(const char *name, u8 preemption);
+int tone_play_init(void);
 int tone_play_index(u8 index, u8 preemption);
 int tone_play_index_with_callback(u8 index, u8 preemption, void (*user_evt_handler)(void *priv), void *priv);
 int tone_file_list_play(const char **list, u8 preemption);

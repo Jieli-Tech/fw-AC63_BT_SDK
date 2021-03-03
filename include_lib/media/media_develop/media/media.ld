@@ -228,7 +228,11 @@ SECTIONS
 			/* *(.mp3_bss) */
 			/* *(.mp3_data) */
 			*(.mp3_const)
+
+#if SOUNDCARD_ENABLE
+#else
 			*(.mp3_code)
+#endif
 #endif
 
 		*(.msbc_code)
@@ -422,6 +426,23 @@ SECTIONS
 		*(.sur_cal_const)
 		*(.sur_cal_code)
 		. = ALIGN(4);
+		*(.reverb_cal_sparse_code)
+#if (SOUNDCARD_ENABLE == 0)
+		*(.mix_ram_code)
+        . = ALIGN(4);
+		*(.dvol_ram_code)
+        . = ALIGN(4);
+		*(.reverb_cal_const)
+  . = ALIGN(4);
+			*(.reverb_cal_code)
+. = ALIGN(4);
+		*(.stream_ram_code)
+
+#endif
+	
+		
+
+        . = ALIGN(4);
 
     	media_code_end = .;
 		. = ALIGN(4);

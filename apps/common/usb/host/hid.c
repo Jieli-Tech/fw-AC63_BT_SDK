@@ -131,7 +131,7 @@ int usb_hid_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 
         }
     } else {
         log_info("vendor");
-        host_dev->interface_info[interface_num] = NULL;
+        host_dev->interface_info[interface_num] = NULL; //???
         for (int i = 0 ; i < interface->bNumEndpoints; i++) {
             endpoint = (struct usb_endpoint_descriptor *)pBuf;
             if (USB_DIR_IN & endpoint->bEndpointAddress) {
@@ -141,7 +141,6 @@ int usb_hid_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 
             }
             pBuf += endpoint->bLength;
         }
-
         return sizeof(struct usb_interface_descriptor);
     }
 

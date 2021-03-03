@@ -101,6 +101,14 @@ enum CTMU_M2P_CMD {
 #define CTMU_RESET_TIMER_PRD_VALUE 		200 	//(ms)
 
 
+#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+#ifdef CTMU_RESET_TIME_CONFIG
+#undef CTMU_RESET_TIME_CONFIG
+#define CTMU_RESET_TIME_CONFIG 		0
+#endif /* #ifdef CTMU_RESET_TIME_CONFIG */
+#endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
+
+
 enum {
     BT_RES_MSG,
     BT_EVENT_HW_MSG,
@@ -150,8 +158,8 @@ static struct ctmu_key _ctmu_key = {
 };
 
 struct ch_adjust_table {
-    u8 cfg0;
-    u8 cfg1;
+    u16 cfg0;
+    u16 cfg1;
     u16 cfg2;
 };
 
@@ -159,24 +167,12 @@ struct ch_adjust_table {
 //模具厚度, 触摸片面积有关
 //模具越厚, 触摸片面积越大, 触摸时电容变化量
 //cap检测灵敏度级数配置建议从级数0开始调, 选取合适的灵敏度;
-#if 0
-const static struct ch_adjust_table ch_sensitivity_table[] = {
-    /*  cfg0 		cfg1 		cfg2 */
-    {45, 		50, 		230}, //cap检测灵敏度级数0
-    {40, 		45, 		210}, //cap检测灵敏度级数1
-    {35, 		40, 		190}, //cap检测灵敏度级数2
-    {30, 		35, 		170}, //cap检测灵敏度级数3
-    {30, 		35, 		150}, //cap检测灵敏度级数4
-    {30, 		35, 		130}, //cap检测灵敏度级数5
-    {30, 		35, 		110}, //cap检测灵敏度级数6
-    {25, 		30, 		 90}, //cap检测灵敏度级数7
 
-    {20, 		25, 		 70}, //cap检测灵敏度级数8
-    {15, 		20, 		 30}, //cap检测灵敏度级数9
-};
-#endif
-
-const static struct ch_adjust_table ch_sensitivity_table[] = {
+//======================================================//
+// 内置触摸灵敏度表, 由内置触摸灵敏度调试工具生成 		//
+// 请将该表替换sdk中lp_touch_key.c中同名的参数表        //
+//======================================================//
+const static struct ch_adjust_table ch0_sensitivity_table[] = {
     /*  cfg0 		cfg1 		cfg2 */
     {15, 		20, 		300}, //cap检测灵敏度级数0
     {15, 		20, 		270}, //cap检测灵敏度级数1
@@ -209,6 +205,11 @@ int eartch_event_deal_init(void);
 
 #define __this 		(&_ctmu_key)
 
+#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+static int lp_touch_key_online_debug_init(void);
+static int lp_touch_key_online_debug_send(u8 ch, u16 val);
+static int lp_touch_key_online_debug_key_event_handle(u8 ch_index, struct sys_event *event);
+#endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
 
 //init io HZ
 static void ctmu_port_init(u8 port)
@@ -296,13 +297,13 @@ void lp_touch_key_init(const struct lp_touch_key_platform_data *config)
         M2P_CTMU_MSG |= CTMU_INIT_CH0_FALL_ENABLE;
         M2P_CTMU_MSG |= CTMU_INIT_CH0_RAISE_ENABLE;
         //M2P_CTMU_MSG |= CTMU_INIT_CH0_SHORT_ENABLE;
-        ASSERT(ch0_sensity < ARRAY_SIZE(ch_sensitivity_table));
-        M2P_CTMU_CH0_CFG0L = ((ch_sensitivity_table[ch0_sensity].cfg0) & 0xFF);
-        M2P_CTMU_CH0_CFG0H = (((ch_sensitivity_table[ch0_sensity].cfg0) >> 8) & 0xFF);
-        M2P_CTMU_CH0_CFG1L = ((ch_sensitivity_table[ch0_sensity].cfg1) & 0xFF);
-        M2P_CTMU_CH0_CFG1H = (((ch_sensitivity_table[ch0_sensity].cfg1) >> 8) & 0xFF);
-        M2P_CTMU_CH0_CFG2L = ((ch_sensitivity_table[ch0_sensity].cfg2) & 0xFF);
-        M2P_CTMU_CH0_CFG2H = (((ch_sensitivity_table[ch0_sensity].cfg2) >> 8) & 0xFF);
+        ASSERT(ch0_sensity < ARRAY_SIZE(ch0_sensitivity_table));
+        M2P_CTMU_CH0_CFG0L = ((ch0_sensitivity_table[ch0_sensity].cfg0) & 0xFF);
+        M2P_CTMU_CH0_CFG0H = (((ch0_sensitivity_table[ch0_sensity].cfg0) >> 8) & 0xFF);
+        M2P_CTMU_CH0_CFG1L = ((ch0_sensitivity_table[ch0_sensity].cfg1) & 0xFF);
+        M2P_CTMU_CH0_CFG1H = (((ch0_sensitivity_table[ch0_sensity].cfg1) >> 8) & 0xFF);
+        M2P_CTMU_CH0_CFG2L = ((ch0_sensitivity_table[ch0_sensity].cfg2) & 0xFF);
+        M2P_CTMU_CH0_CFG2H = (((ch0_sensitivity_table[ch0_sensity].cfg2) >> 8) & 0xFF);
 
         M2P_CTMU_CH0_SHORT_TIMEL = (CFG_M2P_CTMU_CH0_SHORT_TIME & 0xFF);
         M2P_CTMU_CH0_SHORT_TIMEH = ((CFG_M2P_CTMU_CH0_SHORT_TIME >> 8) & 0xFF);
@@ -396,6 +397,10 @@ void lp_touch_key_init(const struct lp_touch_key_platform_data *config)
 
     __this->softoff_mode = LP_TOUCH_SOFTOFF_MODE_ADVANCE;
     __this->init = 1;
+
+#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+    lp_touch_key_online_debug_init();
+#endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
 }
 
 int __attribute__((weak)) lp_touch_key_event_remap(struct sys_event *e)
@@ -434,6 +439,12 @@ static void __ctmu_notify_key_event(struct sys_event *event)
         //TODO:
 #endif
     }
+
+#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+    if (lp_touch_key_online_debug_key_event_handle(0, event)) {
+        return;
+    }
+#endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
 
     if (lp_touch_key_event_remap(event)) {
         sys_event_notify(event);
@@ -586,6 +597,18 @@ static void ctmu_ch1_event_handle(u8 ch1_event)
 {
     __this->last_ear_in_state = ch1_event;
 
+#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+    struct sys_event event;
+    if (ch1_event == CH1_EAR_IN) {
+        event.u.key.event = 10;
+    } else if (ch1_event == CH1_EAR_OUT) {
+        event.u.key.event = 11;
+    }
+    if (lp_touch_key_online_debug_key_event_handle(1, &event)) {
+        return;
+    }
+#endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
+
     __this->ch0_msg_lock = true;
 
     if (__this->ch0_msg_lock_timer == 0) {
@@ -628,7 +651,7 @@ void p33_ctmu_key_event_irq_handler()
     u8 ret = 0;
     u32 data[4];
     u32 event_data[4];
-    log_debug("ctmu msg: 0x%x", ctmu_event);
+    //log_debug("ctmu msg: 0x%x", ctmu_event);
     switch (ctmu_event) {
     case CTMU_P2M_CH0_DEBUG_EVENT:
         //log_debug("CH0: debug: %d, RES = 0x%x", cnt0++, (P2M_CTMU_CH0_H_RES << 8) | P2M_CTMU_CH0_L_RES);
@@ -637,9 +660,13 @@ void p33_ctmu_key_event_irq_handler()
         log_debug("CH1: debug %d, RES = 0x%x", cnt1++, res);
         tws_send_res_data(res, BT_RES_MSG);
 #endif /* #if TWS_BT_SEND_CH0_RES_DATA_ENABLE */
+#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+        lp_touch_key_online_debug_send(0, res);
+#endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
         break;
     case CTMU_P2M_CH1_DEBUG_EVENT:
         res = (P2M_CTMU_CH1_H_RES << 8) | P2M_CTMU_CH1_L_RES;
+        //log_debug("CH1: debug %d, RES = 0x%x", cnt1++, res);
 #if CFG_CH1_USE_ALGORITHM_ENABLE
         //log_debug("CH1: debug %d, RES = 0x%x", cnt1++, res);
         ret = lp_touch_key_epd_update_res(res);
@@ -662,6 +689,10 @@ void p33_ctmu_key_event_irq_handler()
 #if TWS_BT_SEND_CH1_RES_DATA_ENABLE
         tws_send_res_data(res, BT_RES_MSG);
 #endif /* #if TWS_BT_SEND_CH1_RES_DATA_ENABLE */
+
+#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+        lp_touch_key_online_debug_send(1, res);
+#endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
 
 #endif /* #if CFG_CH1_USE_ALGORITHM_ENABLE */
         break;
@@ -862,4 +893,260 @@ REGISTER_TWS_FUNC_STUB(lp_touch_res_sync_stub) = {
     .func_id = TWS_FUNC_ID_VOL_LP_KEY,
     .func    = res_receive_handle, //handle
 };
+
+//==================================================//
+//==============  在线调节灵敏度参数表    ==========//
+//==================================================//
+#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+#include "online_db_deal.h"
+
+//LP KEY在线调试工具版本号管理
+const u8 lp_key_sdk_name[16] = "AC897N";
+const u8 lp_key_bt_ver[4] 	     = {0, 0, 1, 0};
+struct lp_key_ver_info {
+    char sdkname[16];
+    u8 lp_key_ver[4];
+};
+
+#if TCFG_LP_EARTCH_KEY_ENABLE
+//版本号                     按键事件个数  							   按键事件个数
+const char ch_content[] = {0x01, 'c', 'h', '0', '\0', 6, 0, 1, 2, 3, 4, 5, 'c', 'h', '1', '\0', 2, 10, 11}; //ch0 & ch1
+#else
+const char ch_content[] = {0x01, 'c', 'h', '0', '\0', 6, 0, 1, 2, 3, 4, 5}; //only ch0
+#endif /* #if TCFG_LP_EARTCH_KEY_ENABLE */
+
+enum {
+    TOUCH_RECORD_GET_VERSION = 0x05,
+    TOUCH_RECORD_GET_CH_SIZE = 0x0B,
+    TOUCH_RECORD_GET_CH_CONTENT = 0x0C,
+    TOUCH_RECORD_CHANGE_MODE = 0x0E,
+    TOUCH_RECORD_COUNT = 0x200,
+    TOUCH_RECORD_START,
+    TOUCH_RECORD_STOP,
+    ONLINE_OP_QUERY_RECORD_PACKAGE_LENGTH,
+    TOUCH_CH_CFG_UPDATE  = 0x3000,
+    TOUCH_CH_CFG_CONFIRM = 0x3100,
+};
+
+enum {
+    LP_KEY_ONLINE_ST_INIT = 0,
+    LP_KEY_ONLINE_ST_READY,
+    LP_KEY_ONLINE_ST_CH_RES_DEBUG_START,
+    LP_KEY_ONLINE_ST_CH_RES_DEBUG_STOP,
+    LP_KEY_ONLINE_ST_CH_KEY_DEBUG_START,
+    LP_KEY_ONLINE_ST_CH_KEY_DEBUG_CONFIRM,
+};
+
+//小机接收命令包格式, 使用DB_PKT_TYPE_TOUCH通道接收
+typedef struct {
+    int cmd_id;
+    int mode;
+    int data[];
+} touch_receive_cmd_t;
+
+//小机发送按键消息格式, 使用DB_PKT_TYPE_TOUCH通道发送
+typedef struct {
+    u32 cmd_id;
+    u32 mode;
+    u32 key_event;
+} lp_touch_online_key_event_t;
+
+typedef struct {
+    u8 state;
+    u8 current_record_ch;
+    u16 res_packet;
+    struct ch_adjust_table debug_cfg;
+    lp_touch_online_key_event_t online_key_event;
+} lp_touch_key_online;
+
+static lp_touch_key_online lp_key_online = {0};
+
+static int lp_touch_key_online_debug_key_event_handle(u8 ch_index, struct sys_event *event)
+{
+    int err = 0;
+    if ((lp_key_online.state == LP_KEY_ONLINE_ST_CH_KEY_DEBUG_START) && (lp_key_online.current_record_ch == ch_index)) {
+        lp_key_online.online_key_event.cmd_id = 0x3100;
+        lp_key_online.online_key_event.mode = 0;
+        lp_key_online.online_key_event.key_event = event->u.key.event;
+        log_debug("send %d event to PC", lp_key_online.online_key_event.key_event);
+        err = app_online_db_send(DB_PKT_TYPE_TOUCH, (u8 *)(&(lp_key_online.online_key_event)), sizeof(lp_touch_online_key_event_t));
+    }
+
+    if ((lp_key_online.state == LP_KEY_ONLINE_ST_CH_KEY_DEBUG_CONFIRM) ||
+        (lp_key_online.state <= LP_KEY_ONLINE_ST_READY)) {
+        return 0;
+    }
+
+    return 1;
+}
+
+static int lp_touch_key_debug_reinit(u8 update_state)
+{
+    log_debug("%s, current_record_ch = %d", __func__, lp_key_online.current_record_ch);
+
+    switch (update_state) {
+    case LP_KEY_ONLINE_ST_CH_RES_DEBUG_START:
+        if (lp_key_online.current_record_ch == 0) {
+            M2P_CTMU_MSG &= ~(CTMU_INIT_CH1_DEBUG);
+            M2P_CTMU_MSG |= CTMU_INIT_CH0_DEBUG;
+        } else if (lp_key_online.current_record_ch == 1) {
+            M2P_CTMU_MSG &= ~(CTMU_INIT_CH0_DEBUG);
+            M2P_CTMU_MSG |= CTMU_INIT_CH1_DEBUG;
+        }
+        break;
+    case LP_KEY_ONLINE_ST_CH_RES_DEBUG_STOP:
+        M2P_CTMU_MSG &= ~(CTMU_INIT_CH0_DEBUG);
+        M2P_CTMU_MSG &= ~(CTMU_INIT_CH1_DEBUG);
+        break;
+    case LP_KEY_ONLINE_ST_CH_KEY_DEBUG_START:
+        M2P_CTMU_MSG &= ~(CTMU_INIT_CH0_DEBUG);
+        M2P_CTMU_MSG &= ~(CTMU_INIT_CH1_DEBUG);
+        if (lp_key_online.current_record_ch == 0) {
+            M2P_CTMU_CH0_CFG0L = ((lp_key_online.debug_cfg.cfg0) & 0xFF);
+            M2P_CTMU_CH0_CFG0H = (((lp_key_online.debug_cfg.cfg0) >> 8) & 0xFF);
+            M2P_CTMU_CH0_CFG1L = ((lp_key_online.debug_cfg.cfg1) & 0xFF);
+            M2P_CTMU_CH0_CFG1H = (((lp_key_online.debug_cfg.cfg1) >> 8) & 0xFF);
+            M2P_CTMU_CH0_CFG2L = ((lp_key_online.debug_cfg.cfg2) & 0xFF);
+            M2P_CTMU_CH0_CFG2H = (((lp_key_online.debug_cfg.cfg2) >> 8) & 0xFF);
+        } else if (lp_key_online.current_record_ch == 1) {
+            M2P_CTMU_CH1_CFG0L = ((lp_key_online.debug_cfg.cfg0) & 0xFF);
+            M2P_CTMU_CH1_CFG0H = (((lp_key_online.debug_cfg.cfg0) >> 8) & 0xFF);
+            M2P_CTMU_CH1_CFG1L = ((lp_key_online.debug_cfg.cfg1) & 0xFF);
+            M2P_CTMU_CH1_CFG1H = (((lp_key_online.debug_cfg.cfg1) >> 8) & 0xFF);
+            M2P_CTMU_CH1_CFG2L = ((lp_key_online.debug_cfg.cfg2) & 0xFF);
+            M2P_CTMU_CH1_CFG2H = (((lp_key_online.debug_cfg.cfg2) >> 8) & 0xFF);
+        }
+        break;
+    case LP_KEY_ONLINE_ST_CH_KEY_DEBUG_CONFIRM:
+        M2P_CTMU_MSG &= ~(CTMU_INIT_CH0_DEBUG);
+        M2P_CTMU_MSG &= ~(CTMU_INIT_CH1_DEBUG);
+        break;
+    default:
+        break;
+    }
+
+
+    if (__this->short_timer != 0xFFFF) {
+        usr_timer_del(__this->short_timer);
+        __this->short_timer = 0xFFFF;
+    }
+    if (__this->long_timer != 0xFFFF) {
+        usr_timer_del(__this->long_timer);
+        __this->long_timer = 0xFFFF;
+    }
+    __this->last_key = CTMU_KEY_NULL;
+    __this->ch_init = 0;
+    //CTMU 初始化命令
+    lp_touch_key_send_cmd(CTMU_M2P_INIT);
+
+    return 0;
+}
+
+static int lp_touch_key_online_debug_parse(u8 *packet, u8 size, u8 *ext_data, u16 ext_size)
+{
+    int res_data = 0;
+    touch_receive_cmd_t *touch_cmd;
+    int err = 0;
+    u8 parse_seq = ext_data[1];
+    struct ch_adjust_table *receive_cfg;
+    struct lp_key_ver_info ver_info = {0};
+
+    res_data = 4;
+    log_debug("%s", __func__);
+    put_buf(packet, size);
+    put_buf(ext_data, ext_size);
+    //memcpy(&touch_cmd, packet, sizeof(touch_receive_cmd_t));
+    touch_cmd = (touch_receive_cmd_t *)packet;
+    switch (touch_cmd->cmd_id) {
+    /* case TOUCH_RECORD_COUNT: */
+    /* log_debug("TOUCH_RECORD_COUNT"); */
+    /* err = app_online_db_ack(parse_seq, (u8 *)&res_data, 4); */
+    /* break; */
+    case TOUCH_RECORD_START:
+        log_debug("TOUCH_RECORD_START");
+        err = app_online_db_ack(parse_seq, (u8 *)&res_data, 1); //该命令随便ack一个byte即可
+        lp_key_online.state = LP_KEY_ONLINE_ST_CH_RES_DEBUG_START;
+        lp_touch_key_debug_reinit(lp_key_online.state);
+        break;
+    case TOUCH_RECORD_STOP:
+        log_debug("TOUCH_RECORD_STOP");
+        app_online_db_ack(parse_seq, (u8 *)&res_data, 1); //该命令随便ack一个byte即可
+        lp_key_online.state = LP_KEY_ONLINE_ST_CH_RES_DEBUG_STOP;
+        lp_touch_key_debug_reinit(lp_key_online.state);
+        break;
+    /* case ONLINE_OP_QUERY_RECORD_PACKAGE_LENGTH: */
+    /* log_debug("ONLINE_OP_QUERY_RECORD_PACKAGE_LENGTH"); */
+    /* err = app_online_db_ack(parse_seq, (u8 *)&res_data, 4); //回复对应的通道数据长度 */
+    /* break; */
+    case TOUCH_CH_CFG_UPDATE:
+        log_debug("TOUCH_CH_CFG_UPDATE");
+        app_online_db_ack(parse_seq, (u8 *)"OK", 2); //回"OK"字符串
+        lp_key_online.state = LP_KEY_ONLINE_ST_CH_KEY_DEBUG_START;
+
+        receive_cfg = (struct ch_adjust_table *)(touch_cmd->data);
+        lp_key_online.debug_cfg.cfg0 = receive_cfg->cfg0;
+        lp_key_online.debug_cfg.cfg1 = receive_cfg->cfg1;
+        lp_key_online.debug_cfg.cfg2 = receive_cfg->cfg2;
+        log_debug("update, cfg0 = %d, cfg1 = %d, cfg2 = %d", lp_key_online.debug_cfg.cfg0, lp_key_online.debug_cfg.cfg1, lp_key_online.debug_cfg.cfg2);
+        lp_touch_key_debug_reinit(lp_key_online.state);
+        break;
+    case TOUCH_CH_CFG_CONFIRM:
+        log_debug("TOUCH_CH_CFG_CONFIRM");
+        app_online_db_ack(parse_seq, (u8 *)"OK", 2); //回"OK"字符串
+        lp_key_online.state = LP_KEY_ONLINE_ST_CH_KEY_DEBUG_CONFIRM;
+        break;
+    case TOUCH_RECORD_GET_VERSION:
+        log_debug("TOUCH_RECORD_GET_VERSION");
+        memcpy(ver_info.sdkname, lp_key_sdk_name, sizeof(lp_key_sdk_name));
+        memcpy(ver_info.lp_key_ver, lp_key_bt_ver, sizeof(lp_key_bt_ver));
+        app_online_db_ack(parse_seq, (u8 *)(&ver_info), sizeof(ver_info)); //回复版本号数据结构
+        break;
+    case TOUCH_RECORD_GET_CH_SIZE:
+        log_debug("TOUCH_RECORD_GET_CH_SIZE");
+        res_data = sizeof(ch_content);
+        err = app_online_db_ack(parse_seq, (u8 *)&res_data, 4); //回复对应的通道数据长度
+        break;
+    case TOUCH_RECORD_GET_CH_CONTENT:
+        log_debug("TOUCH_RECORD_GET_CH_CONTENT");
+        app_online_db_ack(parse_seq, (u8 *)(&ch_content), sizeof(ch_content));
+        break;
+    case TOUCH_RECORD_CHANGE_MODE:
+        log_debug("TOUCH_RECORD_CHANGE_MODE, cmd_mode = %d", touch_cmd->mode);
+        lp_key_online.current_record_ch = touch_cmd->mode;
+        app_online_db_ack(parse_seq, (u8 *)"OK", 2); //回"OK"字符串
+        break;
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+static int lp_touch_key_online_debug_send(u8 ch, u16 val)
+{
+    int err = 0;
+
+    putchar('s');
+    if (lp_key_online.state == LP_KEY_ONLINE_ST_CH_RES_DEBUG_START) {
+        lp_key_online.res_packet = val;
+        err = app_online_db_send(DB_PKT_TYPE_DAT_CH0, (u8 *)(&(lp_key_online.res_packet)), 2);
+    }
+
+    return err;
+}
+
+static int lp_touch_key_online_debug_init(void)
+{
+    log_debug("%s", __func__);
+    app_online_db_register_handle(DB_PKT_TYPE_TOUCH, lp_touch_key_online_debug_parse);
+    lp_key_online.state = LP_KEY_ONLINE_ST_READY;
+
+    return 0;
+}
+
+int lp_touch_key_online_debug_exit(void)
+{
+    return 0;
+}
+#endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
 

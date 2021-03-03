@@ -204,16 +204,23 @@ static void ble_check_need_pair_adv(void);
 void ble_hid_transfer_channel_recieve(u8 *packet, u16 size);
 //------------------------------------------------------
 //------------------------------------------------------
-void ble_state_to_user(u8 state, u8 reason)
+static void ble_bt_evnet_post(u32 arg_type, u8 priv_event, u8 *args, u32 value)
 {
     struct sys_event e;
     e.type = SYS_BT_EVENT;
-    e.arg  = (void *)SYS_BT_EVENT_BLE_STATUS;
-    e.u.bt.event = state;
-    e.u.bt.value = reason;
+    e.arg  = (void *)arg_type;
+    e.u.bt.event = priv_event;
+    if (args) {
+        memcpy(e.u.bt.args, args, 7);
+    }
+    e.u.bt.value = value;
     sys_event_notify(&e);
 }
 
+static void ble_state_to_user(u8 state, u8 reason)
+{
+    ble_bt_evnet_post(SYS_BT_EVENT_BLE_STATUS, state, NULL, reason);
+}
 
 //@function 检测连接参数是否需要更新
 static void check_connetion_updata_deal(void)
@@ -375,6 +382,9 @@ static void resume_all_ccc_enable(u8 update_request)
     att_set_ccc_config(ATT_CHARACTERISTIC_2a4d_01_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
     att_set_ccc_config(ATT_CHARACTERISTIC_2a4d_02_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
     att_set_ccc_config(ATT_CHARACTERISTIC_2a4d_04_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
+    att_set_ccc_config(ATT_CHARACTERISTIC_2a4d_05_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
+    att_set_ccc_config(ATT_CHARACTERISTIC_2a4d_06_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
+    att_set_ccc_config(ATT_CHARACTERISTIC_2a4d_07_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
     att_set_ccc_config(ATT_CHARACTERISTIC_ae42_01_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
 
     set_ble_work_state(BLE_ST_NOTIFY_IDICATE, 0);
@@ -398,8 +408,8 @@ static void can_send_now_wakeup(void)
 static void att_check_remote_result(u16 con_handle, remote_type_e remote_type)
 {
     log_info("le_hogp %02x:remote_type= %02x\n", con_handle, remote_type);
-
-    //to do,change report_map
+    ble_bt_evnet_post(SYS_BT_EVENT_FORM_COMMON, COMMON_EVENT_BLE_REMOTE_TYPE, NULL, remote_type);
+    //to do
 }
 /*
  * @section Packet Handler
@@ -461,7 +471,8 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     /* rcsp_dev_select(RCSP_BLE); */
                     rcsp_init();
 #endif
-                    //att_server_set_exchange_mtu(con_handle);
+                    /* att_server_set_exchange_mtu(con_handle); //主动请求交换MTU */
+                    /* ble_vendor_interval_event_enable(con_handle, 1); //enable interval事件-->HCI_SUBEVENT_LE_VENDOR_INTERVAL_COMPLETE */
                     break;
 
                 case BT_ERR_ADVERTISING_TIMEOUT:
@@ -483,6 +494,12 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 connection_update_waiting = 0;
                 connection_update_complete_success(packet, 0);
                 break;
+
+            case HCI_SUBEVENT_LE_VENDOR_INTERVAL_COMPLETE:
+                log_info("INTERVAL_EVENT:%04x,%04x\n", little_endian_read_16(packet, 4), little_endian_read_16(packet, 6));
+                /* put_buf(packet, size + 1); */
+                break;
+
             }
             break;
 
@@ -536,7 +553,7 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d\n", packet[2]);
             if (!packet[2]) {
                 if (first_pair_flag) {
-                    //只在配对时检查
+                    //只在配对时启动检查
                     att_server_set_check_remote(con_handle, att_check_remote_result);
 #if PAIR_DIREDT_ADV_EN
                     conn_pair_info.pair_flag = 1;
@@ -552,6 +569,14 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         conn_pair_vm_do(&conn_pair_info, 1);
                     }
                     resume_all_ccc_enable(1);
+
+                    //回连时,从配对表中获取
+                    u8 tmp_buf[6];
+                    u8 remote_type = 0;
+                    swapX(&cur_peer_addr_info[1], tmp_buf, 6);
+                    ble_list_get_remote_type(tmp_buf, cur_peer_addr_info[0], &remote_type);
+                    log_info("list's remote_type:%d\n", remote_type);
+                    att_check_remote_result(con_handle, remote_type);
                 }
                 check_report_map_change();
             }
@@ -748,6 +773,9 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     case ATT_CHARACTERISTIC_2a4d_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_2a4d_02_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_2a4d_04_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a4d_05_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a4d_06_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a4d_07_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae42_01_CLIENT_CONFIGURATION_HANDLE:
         if (buffer) {
             buffer[0] = att_get_ccc_config(handle);
@@ -812,9 +840,12 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 #endif
 #endif
     case ATT_CHARACTERISTIC_ae42_01_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a4d_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_2a4d_02_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_2a4d_04_CLIENT_CONFIGURATION_HANDLE:
-    case ATT_CHARACTERISTIC_2a4d_01_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a4d_05_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a4d_06_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a4d_07_CLIENT_CONFIGURATION_HANDLE:
         set_ble_work_state(BLE_ST_NOTIFY_IDICATE, 0);
         ble_op_latency_skip(con_handle, LATENCY_SKIP_INTERVAL_MIN); //
     case ATT_CHARACTERISTIC_2a19_01_CLIENT_CONFIGURATION_HANDLE:
@@ -1327,7 +1358,7 @@ void le_hogp_set_output_callback(void *cb)
 //配对绑定配置
 void le_hogp_set_pair_config(u8 pair_max, u8 is_allow_cover)
 {
-    ble_list_config_reset(1, 0); //开1对1配对绑定
+    ble_list_config_reset(pair_max, is_allow_cover); //开1对1配对绑定
 }
 //开可配对绑定允许
 void le_hogp_set_pair_allow(void)
@@ -1342,16 +1373,19 @@ int ble_hid_is_connected(void)
     return con_handle;
 }
 
-static const u16 report_id_handle_table[4] = {
+static const u16 report_id_handle_table[] = {
     0,
     HID_REPORT_ID_01_SEND_HANDLE,
     HID_REPORT_ID_02_SEND_HANDLE,
     HID_REPORT_ID_03_SEND_HANDLE,
+    HID_REPORT_ID_04_SEND_HANDLE,
+    HID_REPORT_ID_05_SEND_HANDLE,
+    HID_REPORT_ID_06_SEND_HANDLE,
 };
 
 int ble_hid_data_send(u8 report_id, u8 *data, u16 len)
 {
-    if (report_id == 0 || report_id > 3) {
+    if (report_id == 0 || report_id > 6) {
         log_info("report_id %d,err!!!\n", report_id);
         return -1;
     }

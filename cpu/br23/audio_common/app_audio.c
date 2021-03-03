@@ -11,6 +11,8 @@
 #include "application/audio_output_dac.h"
 #include "application/audio_dig_vol.h"
 
+#include "update.h"
+
 #if defined(AUDIO_OUTPUT_WAY) && (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
 #include "fm_emitter/fm_emitter_manage.h"
 #endif
@@ -73,9 +75,6 @@ extern struct dac_platform_data dac_data;
 struct audio_dac_hdl dac_hdl;
 extern struct audio_adc_hdl adc_hdl;
 OS_SEM dac_sem;
-#if AUDIO_OUTPUT_INCLUDE_IIS
-extern struct audio_iis_handle iis_hdl;
-#endif
 
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR)
 #define BNUM   2
@@ -83,9 +82,30 @@ extern struct audio_iis_handle iis_hdl;
 #define BNUM   1
 #endif
 
-#if AUDIO_OUTPUT_INCLUDE_DAC
+#if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_IIS)
+s16 dac_buff[4 * 1024] SEC(.dac_buff);
+#elif AUDIO_OUTPUT_INCLUDE_DAC
 s16 dac_buff[4 * 1024 * BNUM] SEC(.dac_buff);
 #endif
+
+/*关闭audio相关模块使能*/
+void audio_disable_all(void)
+{
+    //DAC:DACEN
+    JL_AUDIO->DAC_CON &= ~BIT(4);
+    //ADC:ADCEN
+    JL_AUDIO->ADC_CON &= ~BIT(4);
+    //EQ:
+    JL_EQ->CON0 &= ~BIT(0);
+    //FFT:
+    JL_FFT->CON = BIT(1);//置1强制关闭模块，不管是否已经运算完成
+}
+
+REGISTER_UPDATE_TARGET(audio_update_target) = {
+    .name = "audio",
+    .driver_close = audio_disable_all,
+};
+
 /*
  *************************************************************
  *
@@ -131,6 +151,13 @@ static int audio_vol_set(u8 gain_l, u8 gain_r, u8 gain_rl, u8 gain_rr, u8 fade)
     return 0;
 #endif
 
+#if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_IIS)
+    extern void *iis_digvol_last;
+    if (iis_digvol_last) {
+        audio_dig_vol_set(iis_digvol_last, AUDIO_DIG_VOL_ALL_CH, gain_l);
+    }
+#endif
+
 #if (TCFG_APP_FM_EMITTER_EN)
     extern void *fmtx_digvol_last;
     audio_dig_vol_set(fmtx_digvol_last, AUDIO_DIG_VOL_ALL_CH, gain_l);
@@ -145,6 +172,8 @@ static int audio_vol_set(u8 gain_l, u8 gain_r, u8 gain_rl, u8 gain_rr, u8 fade)
     __this->fade_gain_r = gain_r;
     __this->fade_gain_rl = gain_rl;
     __this->fade_gain_rr = gain_rr;
+
+#if AUDIO_OUTPUT_INCLUDE_DAC
 
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_MONO_L)
     audio_dac_vol_set(TYPE_DAC_AGAIN, BIT(0), gain_l, fade);
@@ -166,6 +195,8 @@ static int audio_vol_set(u8 gain_l, u8 gain_r, u8 gain_rl, u8 gain_rr, u8 fade)
     audio_dac_vol_set(TYPE_DAC_DGAIN, BIT(2), gain_rl ? DEFAULT_DIGTAL_VOLUME : 0, fade);
     audio_dac_vol_set(TYPE_DAC_DGAIN, BIT(3), gain_rr ? DEFAULT_DIGTAL_VOLUME : 0, fade);
 #endif
+
+#endif // AUDIO_OUTPUT_INCLUDE_DAC
 
     local_irq_enable();
 
@@ -388,12 +419,10 @@ void audio_set_hw_digital_vol_default(u8 fl, u8 fr, u8 rl, u8 rr)
 
 void audio_fade_in_fade_out(u8 left_gain, u8 right_gain, u8 fade)
 {
-#if AUDIO_OUTPUT_INCLUDE_DAC
 #if (SYS_VOL_TYPE == 2)
     audio_combined_vol_set(left_gain, right_gain, left_gain, right_gain, fade);
 #else
     audio_vol_set(left_gain, right_gain, left_gain, right_gain, fade);
-#endif
 #endif
 }
 
@@ -1296,7 +1325,7 @@ void _audio_adc_irq_hook(void)
 ********************* -HB ******************************/
 void app_audio_output_init(void)
 {
-#if AUDIO_OUTPUT_ONLY_DAC
+#if AUDIO_OUTPUT_INCLUDE_DAC //	AUDIO_OUTPUT_ONLY_DAC
     audio_dac_init(&dac_hdl, &dac_data);
 
     s16 dacr32 = read_capless_DTB();
@@ -1445,12 +1474,11 @@ static u16 iis_remain_len = 0;
 ********************* -HB ******************************/
 int app_audio_output_write(void *buf, int len)
 {
+#if 0
 #if AUDIO_OUTPUT_ONLY_DAC
     return audio_dac_write(&dac_hdl, buf, len);
 #elif AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM
     return fm_emitter_cbuf_write(buf, len);
-#elif AUDIO_OUTPUT_ONLY_IIS
-    return audio_link_write_stereodata(buf, len, TCFG_IIS_OUTPUT_PORT);
 #elif AUDIO_OUTPUT_DAC_AND_IIS
     int wlen1 = 0;
     int wlen2 = 0;
@@ -1487,6 +1515,7 @@ int app_audio_output_write(void *buf, int len)
             return wlen1;
         }
     }
+#endif
 #endif
     return len;
 }
@@ -1534,9 +1563,6 @@ int app_audio_output_reset(u32 msecs)
 {
 #if AUDIO_OUTPUT_INCLUDE_DAC
     audio_dac_sound_reset(&dac_hdl, msecs);
-#endif
-#if AUDIO_OUTPUT_INCLUDE_IIS
-    audio_link_sync_reset(TCFG_IIS_OUTPUT_PORT);
 #endif
     return 0;
 }
@@ -1588,14 +1614,13 @@ int audio_output_buf_time(void)
 
 int audio_output_dev_is_working(void)
 {
+#if 0
 #if AUDIO_OUTPUT_ONLY_DAC
     return audio_dac_is_working(&dac_hdl);
 #endif
-#if AUDIO_OUTPUT_ONLY_IIS
-    return audio_iis_is_working(&iis_hdl);
-#endif
 #if AUDIO_OUTPUT_DAC_AND_IIS
     return audio_dac_is_working(&dac_hdl) && audio_iis_is_working(&iis_hdl);
+#endif
 #endif
     return 1;
 
@@ -1604,19 +1629,11 @@ int audio_output_dev_is_working(void)
 int audio_output_sync_start(void)
 {
 
-#if AUDIO_OUTPUT_INCLUDE_IIS
-    void audio_link_sync_start(u8 alink_port);
-    audio_link_sync_start(TCFG_IIS_OUTPUT_PORT);
-#endif
     return 0;
 }
 
 int audio_output_sync_stop(void)
 {
-#if AUDIO_OUTPUT_INCLUDE_IIS
-    int audio_link_sync_stop(u8 alink_port);
-    audio_link_sync_stop(TCFG_IIS_OUTPUT_PORT);
-#endif
     return 0;
 }
 

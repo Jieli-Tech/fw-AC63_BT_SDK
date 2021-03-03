@@ -35,3 +35,9 @@ const int CONFIG_BTSTACK_SUPPORT_AAC    = 0;
 
 const u8 adt_profile_support = 0;
 
+//协议栈接收到命令是否自动退出sniff
+#if CONFIG_APP_STANDARD_KEYBOARD
+const int config_btstask_auto_exit_sniff = 0;
+#else
+const int config_btstask_auto_exit_sniff = 1;
+#endif

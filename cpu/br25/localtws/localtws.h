@@ -43,6 +43,8 @@ void localtws_dec_pause(void);
 // localtws已经开始解码
 int localtws_dec_out_is_start(void);
 
+// localtws暂停控制
+void localtws_decoder_pause(u8 pause);
 
 
 #endif /*__LOCALTWS_H_*/

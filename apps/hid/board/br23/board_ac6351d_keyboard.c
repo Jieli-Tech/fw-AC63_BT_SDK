@@ -97,11 +97,17 @@ const struct adkey_platform_data adkey_data = {
 #endif
 
 #if TCFG_MATRIX_KEY_ENABLE
-static u32 key_row[] = {IO_PORTB_06, IO_PORTB_07, IO_PORTB_08, IO_PORTB_09, IO_PORTB_10, IO_PORTB_11, IO_PORTC_06, IO_PORTC_07};
-static u32 key_col[] = {IO_PORTA_00, IO_PORTA_01, IO_PORTA_02, IO_PORTA_03, IO_PORTA_04, IO_PORTA_05, IO_PORTA_06, IO_PORTA_07, \
-                        IO_PORTA_08, IO_PORTA_09, IO_PORTA_10,  IO_PORTA_11, IO_PORTA_12, IO_PORTA_13, IO_PORTC_00, IO_PORTA_14, \
-                        IO_PORTC_01, IO_PORTA_15, IO_PORTB_05,
-                       };
+static u32 key_row[] = {IO_PORTB_09, IO_PORTB_07, IO_PORTB_11, IO_PORTC_07,    IO_PORTB_10, IO_PORTC_06, IO_PORTB_06, IO_PORTB_08 };
+
+static u32 key_col[] = {IO_PORTA_04, IO_PORTA_00, IO_PORTA_02, IO_PORTA_01,    IO_PORTA_03, IO_PORTA_05, IO_PORTA_08, IO_PORTA_06, \
+         IO_PORTA_07, IO_PORTA_12, IO_PORTC_00, IO_PORTA_15,    IO_PORTC_01, IO_PORTB_05, IO_PORTA_13, IO_PORTA_14, \
+         IO_PORTA_09, IO_PORTA_11, IO_PORTA_10,
+       };
+/* static u32 key_row[] = {IO_PORTB_06, IO_PORTB_07, IO_PORTB_08, IO_PORTB_09, IO_PORTB_10, IO_PORTB_11, IO_PORTC_06, IO_PORTC_07}; */
+/* static u32 key_col[] = {IO_PORTA_00, IO_PORTA_01, IO_PORTA_02, IO_PORTA_03, IO_PORTA_04, IO_PORTA_05, IO_PORTA_06, IO_PORTA_07, \ */
+/*                         IO_PORTA_08, IO_PORTA_09, IO_PORTA_10,  IO_PORTA_11, IO_PORTA_12, IO_PORTA_13, IO_PORTC_00, IO_PORTA_14, \ */
+/*                         IO_PORTC_01, IO_PORTA_15, IO_PORTB_05, */
+/*                        }; */
 
 static matrix_key_param  matrix_param = {
     .row_pin_list = key_row,
@@ -131,6 +137,7 @@ static void board_devices_init(void)
 #if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
 	key_driver_init();
 #endif
+
 
 #if TCFG_MATRIX_KEY_ENABLE
     matrix_key_init(&matrix_param);
@@ -180,15 +187,15 @@ void board_init()
 /************************** PWR config ****************************/
 struct port_wakeup port0 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
-	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORTB_06,                       //唤醒口选择
+	.iomap              = IO_PORTB_09,                       //唤醒口选择
     .filter_enable      = ENABLE,
 };
 
 struct port_wakeup port1 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
-	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
 	.iomap              = IO_PORTB_07,                       //唤醒口选择
     .filter_enable      = ENABLE,
@@ -196,23 +203,23 @@ struct port_wakeup port1 = {
 
 struct port_wakeup port2 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
-	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORTB_08,                       //唤醒口选择
+	.iomap              = IO_PORTB_11,                       //唤醒口选择
     .filter_enable      = ENABLE,
 };
 
 struct port_wakeup port3 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
-	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORTB_09,                       //唤醒口选择
+	.iomap              = IO_PORTC_07,                       //唤醒口选择
     .filter_enable      = ENABLE,
 };
 
 struct port_wakeup port4 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
-	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
 	.iomap              = IO_PORTB_10,                       //唤醒口选择
     .filter_enable      = ENABLE,
@@ -220,25 +227,25 @@ struct port_wakeup port4 = {
 
 struct port_wakeup port5 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
-	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
-	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORTB_11,                       //唤醒口选择
-    .filter_enable      = ENABLE,
-};
-
-struct port_wakeup port6 = {
-	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
-	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
 	.iomap              = IO_PORTC_06,                       //唤醒口选择
     .filter_enable      = ENABLE,
 };
 
+struct port_wakeup port6 = {
+	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
+	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.attribute          = BLUETOOTH_RESUME,                  //保留参数
+	.iomap              = IO_PORTB_06,                       //唤醒口选择
+    .filter_enable      = ENABLE,
+};
+
 struct port_wakeup port7 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
-	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORTC_07,                       //唤醒口选择
+	.iomap              = IO_PORTB_08,                       //唤醒口选择
     .filter_enable      = ENABLE,
 };
 
@@ -312,6 +319,30 @@ void board_set_soft_poweroff(void)
 
 
 
+    sdpg_config(0);
+
+    /* rtc_port_pr_out(1, 1); */
+    /* rtc_port_pr_out(0, 1); */
+    /* rtc_port_pr_in(0); */
+    /* rtc_port_pr_in(1); */
+    /* rtc_port_pr_die(0, 0); */
+    /* rtc_port_pr_die(1, 0); */
+    /* rtc_port_pr_pd(0, 0); */
+    /* rtc_port_pr_pd(1, 0); */
+    /* rtc_port_pr_pu(0, 0); */
+    /* rtc_port_pr_pu(1, 0); */
+
+    u8 i = 0;
+    for(; i< sizeof(key_col)/sizeof(u32); i++)
+    {
+        gpio_set_direction(key_col[i], 0);
+        gpio_set_output_value(key_col[i], 1);
+    }
+
+    P33_TX_NBIT(P3_ANA_CON2, BIT(1), 0);
+    P33_TX_NBIT(P3_ANA_CON2, BIT(2), 0);
+    RC32K_EN(0);
+    p33_tx_1byte(R3_OSL_CON, 0);
 	/* dac_power_off(); */
 }
 

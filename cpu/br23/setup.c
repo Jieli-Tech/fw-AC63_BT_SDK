@@ -190,6 +190,12 @@ void setup_arch()
     wdt_init(WDT_4S);
     /* wdt_close(); */
 
+#if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
+    clk_init_osc_ldos(2);
+#else
+    clk_init_osc_ldos(3);
+#endif
+
     clk_init_osc_cap(0x0a, 0x0a);
     clk_voltage_init(TCFG_CLOCK_MODE, SYSVDD_VOL_SEL_126V, TCFG_LOWPOWER_POWER_SEL, VDC13_VOL_SEL_140V);
 

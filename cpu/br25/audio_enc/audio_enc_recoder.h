@@ -13,6 +13,7 @@ void fm_inside_output_handler(void *priv, s16 *data, int len);
 int linein_sample_read(void *hdl, void *data, int len);
 int linein_sample_size(void *hdl);
 int linein_sample_total(void *hdl);
+int linein_stream_sample_rate(void *hdl);
 void *linein_sample_open(u8 source, u16 sample_rate);
 void linein_sample_close(void *hdl);
 void *fm_sample_open(u8 source, u16 sample_rate);

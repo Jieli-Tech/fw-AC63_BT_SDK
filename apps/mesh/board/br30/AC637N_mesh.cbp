@@ -139,6 +139,7 @@
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_used_list.c -o ..\..\..\..\cpu\br30\sdk_used_list.used" />
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_ld.c -o ..\..\..\..\cpu\br30\sdk.ld" />
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\download.c -o ..\..\..\..\cpu\br30\tools\download.bat" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\isd_config.c -o ..\..\..\..\cpu\br30\tools\isd_config.ini" />
 <Mode before="always" />
 <Add after="..\..\..\..\cpu\br30\tools\download.bat sdk" />
 <Mode after="always" />
@@ -265,6 +266,7 @@
 <Unit filename="../../../../cpu/br30/ctmu.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/iic_soft.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/irflt.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/lp_touch_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/lp_touch_key_epd.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/lp_touch_key_epd.h" />
@@ -324,6 +326,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/includes.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/io_imap.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/io_omap.h" />
+<Unit filename="../../../../include_lib/driver/cpu/br30/asm/irflt.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/irq.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/lp_touch_key.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/plcnt.h" />
@@ -416,12 +419,14 @@
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/FreeRTOS.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/FreeRTOSConfig.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/deprecated_definitions.h" />
+<Unit filename="../../../../include_lib/system/os/FreeRTOS/list.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/mpu_wrappers.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/pi32v2/portmacro.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/portable.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/projdefs.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/queue.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/semphr.h" />
+<Unit filename="../../../../include_lib/system/os/FreeRTOS/task.h" />
 <Unit filename="../../../../include_lib/system/os/os_api.h" />
 <Unit filename="../../../../include_lib/system/os/os_cpu.h" />
 <Unit filename="../../../../include_lib/system/os/os_error.h" />

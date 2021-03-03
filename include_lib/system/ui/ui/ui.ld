@@ -11,6 +11,11 @@
         KEEP(*(.elm_event_handler_JL))
 		elm_event_handler_end_JL = .;
 
+        elm_event_handler_begin_UPGRADE = .;
+        KEEP(*(.elm_event_handler_UPGRADE))
+        elm_event_handler_end_UPGRADE = .;
+
+
 
 		elm_event_handler_begin_DIAL = .;
         KEEP(*(.elm_event_handler_DIAL))
@@ -24,5 +29,9 @@
         control_ops_begin = .;
         KEEP(*(.control_ops))
         control_ops_end = .;
+
+        battery_notify_begin = .;
+        *(.battery_notify)
+        battery_notify_end = .;
 
 

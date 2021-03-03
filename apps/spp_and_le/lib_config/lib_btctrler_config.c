@@ -73,6 +73,7 @@ const int CONFIG_A2DP_DATA_CACHE_LOW_SBC    = 120;
 const int CONFIG_A2DP_DATA_CACHE_HI_SBC     = 160;
 const int CONFIG_A2DP_DELAY_TIME            = 200;
 const int CONFIG_A2DP_DELAY_TIME_LO         = 100;
+const int CONFIG_A2DP_SBC_DELAY_TIME_LO     = 80;
 
 const int CONFIG_PAGE_POWER                 = 4;
 const int CONFIG_PAGE_SCAN_POWER            = 7;

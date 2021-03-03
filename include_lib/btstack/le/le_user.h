@@ -86,6 +86,7 @@ extern "C" {
         int (*set_force_search)(u8 onoff, s8 rssi);
         int (*create_connect)(u8 *addr, u8 addr_type, u8 mode);
         int (*create_connect_cannel)(void);
+        int (*get_work_state)(void);
     };
 
     struct ble_client_operation_t *ble_get_client_operation_table(void);

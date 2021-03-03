@@ -875,7 +875,12 @@ u32 uart_dev_close(uart_bus_t *ut)
     return 0;
 }
 
-
+void uart_disable_for_ota()
+{
+    JL_UART0->CON0 = BIT(13) | BIT(12) | BIT(10);
+    JL_UART1->CON0 = BIT(13) | BIT(12) | BIT(10);
+    JL_UART2->CON0 = BIT(13) | BIT(12) | BIT(10);
+}
 
 
 

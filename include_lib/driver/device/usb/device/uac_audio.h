@@ -26,12 +26,12 @@ extern "C" {
 #endif
 #define __le16  u16
 
-#define __u8      unsigned int   // u8  to u32 special for struct
-#define __u16     unsigned int   // u16 to u32 special for struct
+#define u8      unsigned char   // u8  to u32 special for struct
+#define u16     unsigned short  // u16 to u32 special for struct
 #ifndef __s16
-#define __s16     short   		 // only s16
+#define s16     short   		 // only s16
 #endif
-#define __u32     unsigned int
+#define u32     unsigned int
 
 /* A.8. Audio Class-Specific Request Codes */
 #define UAC_RC_UNDEFINED		    0x00
@@ -155,13 +155,13 @@ extern "C" {
 /** Terminal Control Selectors */
 /** 4.3.2  Class-Specific AC Interface Descriptor */
 struct uac1_ac_header_descriptor {
-    __u8  bLength;			/** 8 + n */
-    __u8  bDescriptorType;		/** USB_DT_CS_INTERFACE */
-    __u8  bDescriptorSubtype;	/** UAC_MS_HEADER */
+    u8  bLength;			/** 8 + n */
+    u8  bDescriptorType;		/** USB_DT_CS_INTERFACE */
+    u8  bDescriptorSubtype;	/** UAC_MS_HEADER */
     __le16 bcdADC;			/** 0x0100 */
     __le16 wTotalLength;		/** includes Unit and Terminal desc. */
-    __u8  bInCollection;		/** n */
-    __u8  baInterfaceNr[];		/** [n] */
+    u8  bInCollection;		/** n */
+    u8  baInterfaceNr[];		/** [n] */
 } __attribute__((packed));
 
 #define UAC_DT_AC_HEADER_SIZE(n)	(8 + (n))
@@ -169,27 +169,27 @@ struct uac1_ac_header_descriptor {
 /** As above, but more useful for defining your own descriptors: */
 #define DECLARE_UAC_AC_HEADER_DESCRIPTOR(n)			\
     struct uac1_ac_header_descriptor_##n {			\
-        __u8  bLength;						\
-        __u8  bDescriptorType;					\
-        __u8  bDescriptorSubtype;				\
+        u8  bLength;						\
+        u8  bDescriptorType;					\
+        u8  bDescriptorSubtype;				\
         __le16 bcdADC;						\
         __le16 wTotalLength;					\
-        __u8  bInCollection;					\
-        __u8  baInterfaceNr[n];					\
+        u8  bInCollection;					\
+        u8  baInterfaceNr[n];					\
     } __attribute__ ((packed))
 
 /** 4.3.2.1 Input Terminal Descriptor */
 struct uac_input_terminal_descriptor {
-    __u8  bLength;			/** in bytes: 12 */
-    __u8  bDescriptorType;		/** CS_INTERFACE descriptor type */
-    __u8  bDescriptorSubtype;	/** INPUT_TERMINAL descriptor subtype */
-    __u8  bTerminalID;		/** Constant uniquely terminal ID */
+    u8  bLength;			/** in bytes: 12 */
+    u8  bDescriptorType;		/** CS_INTERFACE descriptor type */
+    u8  bDescriptorSubtype;	/** INPUT_TERMINAL descriptor subtype */
+    u8  bTerminalID;		/** Constant uniquely terminal ID */
     __le16 wTerminalType;		/** USB Audio Terminal Types */
-    __u8  bAssocTerminal;		/** ID of the Output Terminal associated */
-    __u8  bNrChannels;		/** Number of logical output channels */
+    u8  bAssocTerminal;		/** ID of the Output Terminal associated */
+    u8  bNrChannels;		/** Number of logical output channels */
     __le16 wChannelConfig;
-    __u8  iChannelNames;
-    __u8  iTerminal;
+    u8  iChannelNames;
+    u8  iTerminal;
 } __attribute__((packed));
 
 #define UAC_DT_INPUT_TERMINAL_SIZE			12
@@ -209,14 +209,14 @@ struct uac_input_terminal_descriptor {
 
 /** 4.3.2.2 Output Terminal Descriptor */
 struct uac1_output_terminal_descriptor {
-    __u8  bLength;			/** in bytes: 9 */
-    __u8  bDescriptorType;		/** CS_INTERFACE descriptor type */
-    __u8  bDescriptorSubtype;	/** OUTPUT_TERMINAL descriptor subtype */
-    __u8  bTerminalID;		/** Constant uniquely terminal ID */
+    u8  bLength;			/** in bytes: 9 */
+    u8  bDescriptorType;		/** CS_INTERFACE descriptor type */
+    u8  bDescriptorSubtype;	/** OUTPUT_TERMINAL descriptor subtype */
+    u8  bTerminalID;		/** Constant uniquely terminal ID */
     __le16 wTerminalType;		/** USB Audio Terminal Types */
-    __u8  bAssocTerminal;		/** ID of the Input Terminal associated */
-    __u8  bSourceID;		/** ID of the connected Unit or Terminal*/
-    __u8  iTerminal;
+    u8  bAssocTerminal;		/** ID of the Input Terminal associated */
+    u8  bSourceID;		/** ID of the connected Unit or Terminal*/
+    u8  iTerminal;
 } __attribute__((packed));
 
 #define UAC_DT_OUTPUT_TERMINAL_SIZE			9
@@ -238,62 +238,62 @@ struct uac1_output_terminal_descriptor {
 /** As above, but more useful for defining your own descriptors: */
 #define DECLARE_UAC_FEATURE_UNIT_DESCRIPTOR(ch)			\
     struct uac_feature_unit_descriptor_##ch {			\
-        __u8  bLength;						\
-        __u8  bDescriptorType;					\
-        __u8  bDescriptorSubtype;				\
-        __u8  bUnitID;						\
-        __u8  bSourceID;					\
-        __u8  bControlSize;					\
+        u8  bLength;						\
+        u8  bDescriptorType;					\
+        u8  bDescriptorSubtype;				\
+        u8  bUnitID;						\
+        u8  bSourceID;					\
+        u8  bControlSize;					\
         __le16 bmaControls[ch + 1];				\
-        __u8  iFeature;						\
+        u8  iFeature;						\
     } __attribute__ ((packed))
 
 /** 4.3.2.3 Mixer Unit Descriptor */
 struct uac_mixer_unit_descriptor {
-    __u8 bLength;
-    __u8 bDescriptorType;
-    __u8 bDescriptorSubtype;
-    __u8 bUnitID;
-    __u8 bNrInPins;
-    __u8 baSourceID[];
+    u8 bLength;
+    u8 bDescriptorType;
+    u8 bDescriptorSubtype;
+    u8 bUnitID;
+    u8 bNrInPins;
+    u8 baSourceID[];
 } __attribute__((packed));
 
 
 
 /** 4.3.2.4 Selector Unit Descriptor */
 struct uac_selector_unit_descriptor {
-    __u8 bLength;
-    __u8 bDescriptorType;
-    __u8 bDescriptorSubtype;
-    __u8 bUintID;
-    __u8 bNrInPins;
-    __u8 baSourceID[];
+    u8 bLength;
+    u8 bDescriptorType;
+    u8 bDescriptorSubtype;
+    u8 bUintID;
+    u8 bNrInPins;
+    u8 baSourceID[];
 } __attribute__((packed));
 
 
 
 /** 4.3.2.5 Feature Unit Descriptor */
 struct uac_feature_unit_descriptor {
-    __u8 bLength;
-    __u8 bDescriptorType;
-    __u8 bDescriptorSubtype;
-    __u8 bUnitID;
-    __u8 bSourceID;
-    __u8 bControlSize;
-    __u8 bmaControls[0]; /** variable length */
+    u8 bLength;
+    u8 bDescriptorType;
+    u8 bDescriptorSubtype;
+    u8 bUnitID;
+    u8 bSourceID;
+    u8 bControlSize;
+    u8 bmaControls[0]; /** variable length */
 } __attribute__((packed));
 
 
 
 /** 4.3.2.6 Processing Unit Descriptors */
 struct uac_processing_unit_descriptor {
-    __u8 bLength;
-    __u8 bDescriptorType;
-    __u8 bDescriptorSubtype;
-    __u8 bUnitID;
-    __u16 wProcessType;
-    __u8 bNrInPins;
-    __u8 baSourceID[];
+    u8 bLength;
+    u8 bDescriptorType;
+    u8 bDescriptorSubtype;
+    u8 bUnitID;
+    u16 wProcessType;
+    u8 bNrInPins;
+    u8 baSourceID[];
 } __attribute__((packed));
 
 
@@ -301,11 +301,11 @@ struct uac_processing_unit_descriptor {
 
 /** 4.5.2 Class-Specific AS Interface Descriptor */
 struct uac1_as_header_descriptor {
-    __u8  bLength;			/** in bytes: 7 */
-    __u8  bDescriptorType;		/** USB_DT_CS_INTERFACE */
-    __u8  bDescriptorSubtype;	/** AS_GENERAL */
-    __u8  bTerminalLink;		/** Terminal ID of connected Terminal */
-    __u8  bDelay;			/** Delay introduced by the data path */
+    u8  bLength;			/** in bytes: 7 */
+    u8  bDescriptorType;		/** USB_DT_CS_INTERFACE */
+    u8  bDescriptorSubtype;	/** AS_GENERAL */
+    u8  bTerminalLink;		/** Terminal ID of connected Terminal */
+    u8  bDelay;			/** Delay introduced by the data path */
     __le16 wFormatTag;		/** The Audio Data Format */
 } __attribute__((packed));
 
@@ -320,57 +320,57 @@ struct uac1_as_header_descriptor {
 #define UAC_FORMAT_TYPE_I_MULAW		0x5
 
 struct uac_format_type_i_continuous_descriptor {
-    __u8  bLength;			/** in bytes: 8 + (ns * 3) */
-    __u8  bDescriptorType;		/** USB_DT_CS_INTERFACE */
-    __u8  bDescriptorSubtype;	/** FORMAT_TYPE */
-    __u8  bFormatType;		/** FORMAT_TYPE_1 */
-    __u8  bNrChannels;		/** physical channels in the stream */
-    __u8  bSubframeSize;		/** */
-    __u8  bBitResolution;
-    __u8  bSamFreqType;
-    __u8  tLowerSamFreq[3];
-    __u8  tUpperSamFreq[3];
+    u8  bLength;			/** in bytes: 8 + (ns * 3) */
+    u8  bDescriptorType;		/** USB_DT_CS_INTERFACE */
+    u8  bDescriptorSubtype;	/** FORMAT_TYPE */
+    u8  bFormatType;		/** FORMAT_TYPE_1 */
+    u8  bNrChannels;		/** physical channels in the stream */
+    u8  bSubframeSize;		/** */
+    u8  bBitResolution;
+    u8  bSamFreqType;
+    u8  tLowerSamFreq[3];
+    u8  tUpperSamFreq[3];
 } __attribute__((packed));
 
 #define UAC_FORMAT_TYPE_I_CONTINUOUS_DESC_SIZE	14
 
 struct uac_format_type_i_discrete_descriptor {
-    __u8  bLength;			/** in bytes: 8 + (ns * 3) */
-    __u8  bDescriptorType;		/** USB_DT_CS_INTERFACE */
-    __u8  bDescriptorSubtype;	/** FORMAT_TYPE */
-    __u8  bFormatType;		/** FORMAT_TYPE_1 */
-    __u8  bNrChannels;		/** physical channels in the stream */
-    __u8  bSubframeSize;		/** */
-    __u8  bBitResolution;
-    __u8  bSamFreqType;
-    __u8  tSamFreq[][3];
+    u8  bLength;			/** in bytes: 8 + (ns * 3) */
+    u8  bDescriptorType;		/** USB_DT_CS_INTERFACE */
+    u8  bDescriptorSubtype;	/** FORMAT_TYPE */
+    u8  bFormatType;		/** FORMAT_TYPE_1 */
+    u8  bNrChannels;		/** physical channels in the stream */
+    u8  bSubframeSize;		/** */
+    u8  bBitResolution;
+    u8  bSamFreqType;
+    u8  tSamFreq[][3];
 } __attribute__((packed));
 
 #define DECLARE_UAC_FORMAT_TYPE_I_DISCRETE_DESC(n)		\
     struct uac_format_type_i_discrete_descriptor_##n {		\
-        __u8  bLength;						\
-        __u8  bDescriptorType;					\
-        __u8  bDescriptorSubtype;				\
-        __u8  bFormatType;					\
-        __u8  bNrChannels;					\
-        __u8  bSubframeSize;					\
-        __u8  bBitResolution;					\
-        __u8  bSamFreqType;					\
-        __u8  tSamFreq[n][3];					\
+        u8  bLength;						\
+        u8  bDescriptorType;					\
+        u8  bDescriptorSubtype;				\
+        u8  bFormatType;					\
+        u8  bNrChannels;					\
+        u8  bSubframeSize;					\
+        u8  bBitResolution;					\
+        u8  bSamFreqType;					\
+        u8  tSamFreq[n][3];					\
     } __attribute__ ((packed))
 
 #define UAC_FORMAT_TYPE_I_DISCRETE_DESC_SIZE(n)	(8 + (n * 3))
 
 struct uac_format_type_i_ext_descriptor {
-    __u8 bLength;
-    __u8 bDescriptorType;
-    __u8 bDescriptorSubtype;
-    __u8 bFormatType;
-    __u8 bSubslotSize;
-    __u8 bBitResolution;
-    __u8 bHeaderLength;
-    __u8 bControlSize;
-    __u8 bSideBandProtocol;
+    u8 bLength;
+    u8 bDescriptorType;
+    u8 bDescriptorSubtype;
+    u8 bFormatType;
+    u8 bSubslotSize;
+    u8 bBitResolution;
+    u8 bHeaderLength;
+    u8 bControlSize;
+    u8 bSideBandProtocol;
 } __attribute__((packed));
 
 /** Formats - Audio Data Format Type I Codes */
@@ -379,25 +379,25 @@ struct uac_format_type_i_ext_descriptor {
 #define UAC_FORMAT_TYPE_II_AC3	0x1002
 
 struct uac_format_type_ii_discrete_descriptor {
-    __u8 bLength;
-    __u8 bDescriptorType;
-    __u8 bDescriptorSubtype;
-    __u8 bFormatType;
+    u8 bLength;
+    u8 bDescriptorType;
+    u8 bDescriptorSubtype;
+    u8 bFormatType;
     __le16 wMaxBitRate;
     __le16 wSamplesPerFrame;
-    __u8 bSamFreqType;
-    __u8 tSamFreq[][3];
+    u8 bSamFreqType;
+    u8 tSamFreq[][3];
 } __attribute__((packed));
 
 struct uac_format_type_ii_ext_descriptor {
-    __u8 bLength;
-    __u8 bDescriptorType;
-    __u8 bDescriptorSubtype;
-    __u8 bFormatType;
-    __u16 wMaxBitRate;
-    __u16 wSamplesPerFrame;
-    __u8 bHeaderLength;
-    __u8 bSideBandProtocol;
+    u8 bLength;
+    u8 bDescriptorType;
+    u8 bDescriptorSubtype;
+    u8 bFormatType;
+    u16 wMaxBitRate;
+    u16 wSamplesPerFrame;
+    u8 bHeaderLength;
+    u8 bSideBandProtocol;
 } __attribute__((packed));
 
 /** type III */
@@ -418,11 +418,11 @@ struct uac_format_type_ii_ext_descriptor {
 #define UAC_EXT_FORMAT_TYPE_III		0x83
 
 struct uac_iso_endpoint_descriptor {
-    __u8  bLength;			/** in bytes: 7 */
-    __u8  bDescriptorType;		/** USB_DT_CS_ENDPOINT */
-    __u8  bDescriptorSubtype;	/** EP_GENERAL */
-    __u8  bmAttributes;
-    __u8  bLockDelayUnits;
+    u8  bLength;			/** in bytes: 7 */
+    u8  bDescriptorType;		/** USB_DT_CS_ENDPOINT */
+    u8  bDescriptorSubtype;	/** EP_GENERAL */
+    u8  bmAttributes;
+    u8  bLockDelayUnits;
     __le16 wLockDelay;
 } __attribute__((packed));
 #define UAC_ISO_ENDPOINT_DESC_SIZE	7
@@ -443,8 +443,8 @@ struct uac_iso_endpoint_descriptor {
 
 #include "asm/usb.h"
 struct uac1_status_word {
-    __u8 bStatusType;
-    __u8 bOriginator;
+    u8 bStatusType;
+    u8 bOriginator;
 } __attribute__((packed));
 
 u32 uac_setup_endpoint(struct usb_device_t *usb_device, struct usb_ctrlrequest *req);

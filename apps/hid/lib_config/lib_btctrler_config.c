@@ -77,6 +77,7 @@ const int CONFIG_A2DP_DATA_CACHE_LOW_SBC    = 120;
 const int CONFIG_A2DP_DATA_CACHE_HI_SBC     = 160;
 const int CONFIG_A2DP_DELAY_TIME            = 200;
 const int CONFIG_A2DP_DELAY_TIME_LO         = 100;
+const int CONFIG_A2DP_SBC_DELAY_TIME_LO     = 80;
 
 const int CONFIG_PAGE_POWER                 = 4;
 const int CONFIG_PAGE_SCAN_POWER            = 7;
@@ -156,7 +157,7 @@ const int config_btctler_le_rx_nums = 5;
 const int config_btctler_le_acl_packet_length = 27;
 const int config_btctler_le_acl_total_nums = 5;
 
-const int config_btctler_le_slave_conn_update_winden = 2500;//range:100 to 2500
+const int config_btctler_le_slave_conn_update_winden = 500;//range:100 to 2500
 /*-----------------------------------------------------------*/
 /**
  * @brief Bluetooth Analog setting
@@ -221,7 +222,7 @@ const char log_tag_const_e_HCI_LL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(1);
 
 const char log_tag_const_v_LL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(0);
 const char log_tag_const_i_LL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(0);
-const char log_tag_const_d_LL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(1);
+const char log_tag_const_d_LL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(0);
 const char log_tag_const_w_LL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(1);
 const char log_tag_const_e_LL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(1);
 

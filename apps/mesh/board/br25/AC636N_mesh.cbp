@@ -376,12 +376,14 @@
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/FreeRTOS.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/FreeRTOSConfig.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/deprecated_definitions.h" />
+<Unit filename="../../../../include_lib/system/os/FreeRTOS/list.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/mpu_wrappers.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/pi32v2/portmacro.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/portable.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/projdefs.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/queue.h" />
 <Unit filename="../../../../include_lib/system/os/FreeRTOS/semphr.h" />
+<Unit filename="../../../../include_lib/system/os/FreeRTOS/task.h" />
 <Unit filename="../../../../include_lib/system/os/os_api.h" />
 <Unit filename="../../../../include_lib/system/os/os_cpu.h" />
 <Unit filename="../../../../include_lib/system/os/os_error.h" />

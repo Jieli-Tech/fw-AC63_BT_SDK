@@ -120,4 +120,9 @@ const char log_tag_const_d_APP_POWER AT(.LOG_TAG_CONST) = FALSE;
 const char log_tag_const_w_APP_POWER AT(.LOG_TAG_CONST) = TRUE;
 const char log_tag_const_e_APP_POWER AT(.LOG_TAG_CONST) = TRUE;
 
+const char log_tag_const_v_APP_TONE AT(.LOG_TAG_CONST) = FALSE;
+const char log_tag_const_i_APP_TONE AT(.LOG_TAG_CONST) = TRUE;
+const char log_tag_const_d_APP_TONE AT(.LOG_TAG_CONST) = FALSE;
+const char log_tag_const_w_APP_TONE AT(.LOG_TAG_CONST) = TRUE;
+const char log_tag_const_e_APP_TONE AT(.LOG_TAG_CONST) = TRUE;
 

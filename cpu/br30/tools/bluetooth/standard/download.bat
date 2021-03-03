@@ -4,7 +4,7 @@
 cd %~dp0
 
 
-..\..\isd_download.exe isd_config_%1.ini -tonorflash -dev br30 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app app.bin cfg_tool.bin  -res  ..\..\p11_code.bin -uboot_compress
+..\..\isd_download.exe isd_config_%1.ini -tonorflash -dev br30 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app app.bin cfg_tool.bin  -res  ..\..\p11_code.bin %2 -uboot_compress
 
 :: -format all
 ::-reboot 2500

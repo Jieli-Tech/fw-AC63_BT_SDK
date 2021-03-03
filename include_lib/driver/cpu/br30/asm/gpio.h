@@ -630,20 +630,29 @@ enum PFI_TABLE {
 //@brief: CrossBar 输出设置 API, 将指定IO口设置为某个外设的输出
 //@input:
 // 		gpio: 需要输出外设信号的IO口;
-// 		fun_index: 需要输出到指定IO口的外设信号;
+// 		fun_index: 需要输出到指定IO口的外设信号, 可以输出外设信号列表请查看io_omap.h文件;
 // 		dir_ctl: IO口方向由外设控制使能, 常设为1;
 // 		data_ctl: IO口电平状态由外设控制使能, 常设为1;
-//@return: int
-//@note:
+//@return:
+// 		1)0: 执行正确;
+//		2)-EINVAL: 传参出错;
+//@note: 所映射的IO需要在设置IO状态为输出配置;
+//@example: 将UART0的Tx信号输出到IO_PORTA_05口:
+// 			gpio_direction_output(IO_PORTA_05, 1); //设置IO为输出状态
+//			gpio_set_fun_output_port(IO_PORTA_05, FO_UART0_TX, 1, 1); //将UART0的Tx信号输出到IO_PORTA_05口
 //=================================================================================//
 int gpio_set_fun_output_port(u32 gpio, u32 fun_index, u8 dir_ctl, u8 data_ctl);
 
 //=================================================================================//
 //@brief: CrossBar 输出设置 API, 将指定IO释放外设控制, 变为普通IO;
 //@input:
-// 		gpio: 需要释放外设控制IO口;
-//@return: int
+// 		gpio: 需要释放外设控制IO口, 释放后变为普通IO模式;
+//@return:
+// 		1)0: 执行正确;
+//		2)-EINVAL: 传参出错;
 //@note:
+//@example: 将IO_PORTA_05口被某一外设控制状态释放:
+// 			gpio_disable_fun_output_port(IO_PORTA_05);
 //=================================================================================//
 int gpio_disable_fun_output_port(u32 gpio);
 
@@ -651,18 +660,27 @@ int gpio_disable_fun_output_port(u32 gpio);
 //@brief: CrossBar 输入设置 API, 将某个外设的输入设置为从某个IO输入
 //@input:
 // 		gpio: 需要输入外设信号的IO口;
-// 		pfun: 需要从指定IO输入的外设信号;
-//@return: int
-//@note:
+// 		pfun: 需要从指定IO输入的外设信号, 可以输入的外设信号列表请查看gpio.h文件enum PFI_TABLE枚举项;
+//@return:
+// 		1)0: 执行正确;
+//		2)-EINVAL: 传参出错;
+//@note: 所映射的IO需要在设置IO状态为输入配置;
+//@example: 将UART0的Rx信号设置为IO_PORTA_05口输入:
+//			gpio_set_die(data->rx_pin, 1); 		//数字输入使能
+//			gpio_set_pull_up(data->rx_pin, 1);  //上拉输入使能
+//			gpio_direction_input(IO_PORTA_05);  //设置IO为输入状态
+//			gpio_set_fun_input_port(IO_PORTA_05, PFI_UART0_RX); //将UART0的Rx信号设置为IO_PORTA_05口输入
 //=================================================================================//
 int gpio_set_fun_input_port(u32 gpio, enum PFI_TABLE pfun);
 
 //=================================================================================//
 //@brief: CrossBar 输入设置 API, 将某个外设信号释放IO口控制, 变为普通IO;
 //@input:
-// 		pfun: 需要释放IO口控制的外设信号;
-//@return: int
+// 		pfun: 需要释放由某个IO口输入的外设信号, 外设信号列表请查看gpio.h文件enum PFI_TABLE枚举项;
+//@return:  默认为0, 无出错处理;
 //@note:
+//@example: 将外设信号PFI_UART0_RX释放由某个IO输入:
+// 			gpio_disable_fun_input_port(PFI_UART0_RX);
 //=================================================================================//
 int gpio_disable_fun_input_port(enum PFI_TABLE pfun);
 

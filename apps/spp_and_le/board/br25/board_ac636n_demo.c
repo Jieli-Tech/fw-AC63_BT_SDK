@@ -160,7 +160,7 @@ LED_PLATFORM_DATA_END()
 #if TCFG_AUDIO_DAC_ENABLE
 struct dac_platform_data dac_data = {
     .ldo_volt       = TCFG_AUDIO_DAC_LDO_VOLT,                   //DACVDD等级.需要根据具体硬件来设置（高低压）可选:1.2V/1.3V/2.35V/2.5V/2.65V/2.8V/2.95V/3.1V
-    .vcmo_en        = 1,                                         //是否打开VCOMO
+    .vcmo_en        = 0,                                         //是否打开VCOMO
     .output         = TCFG_AUDIO_DAC_CONNECT_MODE,               //DAC输出配置，和具体硬件连接有关，需根据硬件来设置
     .ldo_isel       = 3,
     .ldo_fb_isel    = 3,
@@ -447,7 +447,9 @@ void sleep_enter_callback(u8  step)
     if (step == 1) {
 		putchar('<');
         APP_IO_DEBUG_0(A, 6);
-        /*dac_power_off();*/
+#if TCFG_AUDIO_ENABLE
+        dac_power_off();
+#endif/*TCFG_AUDIO_ENABLE*/
 		if(TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15){
 			/* putchar('{'); */
 			power_set_mode(PWR_LDO15);

@@ -83,5 +83,6 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_tone.o \
 	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_enc.o \
 	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_adc_demo.o \
+	  $(ROOT)/cpu/$(CPU)/audio_enc/audio_mic_codec.o \
 
 endif

@@ -433,4 +433,3 @@ void adc_vbg_init()
 {
     return ;
 }
-//__initcall(adc_vbg_init);

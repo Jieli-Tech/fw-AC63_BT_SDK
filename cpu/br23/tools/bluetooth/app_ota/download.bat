@@ -2,13 +2,19 @@
 
 cd %~dp0
 
-set /p "themd5=" < "md5.bin"
-
-
+copy ..\..\script.ver .
 copy ..\..\uboot.boot .
 copy ..\..\ota.bin .
+copy ..\..\tone.cfg .
+copy ..\..\cfg_tool.bin .
+copy ..\..\app.bin .
+copy ..\..\br23loader.bin .
 
-..\..\isd_download.exe -tonorflash -dev br23 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin -uboot_compress
+..\..\json_to_res.exe json.txt
+..\..\md5sum.exe app.bin md5.bin
+set /p "themd5=" < "md5.bin"
+
+..\..\isd_download.exe -tonorflash -dev br23 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin -res tone.cfg %1 config.dat md5.bin 
 :: -format all
 ::-reboot 2500
 
@@ -28,6 +34,7 @@ if exist *.sty del *.sty
 @rem 添加配置脚本的版本信息到 FW 文件中
 ..\..\fw_add.exe -noenc -fw jl_isd.fw -add script.ver -out jl_isd.fw
 
+if exist update_*.ufw del update_*.ufw
 
 ..\..\ufw_maker.exe -fw_to_ufw jl_isd.fw
 copy jl_isd.ufw update_%themd5%.ufw

@@ -24,6 +24,17 @@ LIBS = \
 LIBS += \
    $(AR_DIR)/update.a \
 
+ifeq ($(AUDIO_LITE_VERSION),y)
+LIBS += \
+--start-group \
+	$(AR_DIR)/media.a \
+	$(AR_DIR)/media_app.a \
+	$(AR_DIR)/wtg_dec_lib.a \
+	$(AR_DIR)/opus_enc_lib.a \
+    	$(AR_DIR)/speex_enc_lib.a \
+--end-group
+endif
+
 objs += \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac637n_demo.o \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6373b_demo.o \

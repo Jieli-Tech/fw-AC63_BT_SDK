@@ -297,6 +297,17 @@ void debug_uart_init(const struct uart_platform_data *data)
 #endif
 }
 
+void gSensor_wkupup_disable(void)
+{
+	log_info("gSensor wkup disable\n");
+	power_wakeup_index_disable(3);
+}
+
+void gSensor_wkupup_enable(void)
+{
+	log_info("gSensor wkup enable\n");
+	power_wakeup_index_enable(3);
+}
 
 static void board_devices_init(void)
 {
@@ -505,7 +516,7 @@ void board_set_soft_poweroff(void)
 
 	printf("portb_value %x\n",portb_value);
 
-	gpio_direction_output(IO_PORTC_03, 1); //touch chip power support
+	/* gpio_direction_output(IO_PORTC_03, 1); //touch chip power support */
 
 	mask_io_cfg();
 
@@ -629,7 +640,7 @@ static void wakeup_callback(u8 index, u8 gpio)
 void board_power_init(void)
 {
 	log_info("Power init : %s", __FILE__);
-	gpio_direction_output(IO_PORTC_03, 1); //touch chip power support
+	/* gpio_direction_output(IO_PORTC_03, 1); //touch chip power support */
 
 	power_init(&power_param);
 

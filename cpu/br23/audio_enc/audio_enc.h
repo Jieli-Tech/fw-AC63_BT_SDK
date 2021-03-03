@@ -69,5 +69,5 @@ void audio_linein_close(struct audio_adc_ch *linein, struct audio_adc_output_hdl
 void audio_linein_set_gain(int gain);
 u8 get_audio_linein_ch_num(void);
 //////////////////////////////////////////////////////////////////
-
+#define REVERB_LADC_IRQ_POINTS (160-8)//(160)//(176)//(184)//(192)//(224)//(256)
 #endif/*_AUDIO_ENC_H_*/

@@ -10,6 +10,8 @@
 
 #define MIXER_AUDIO_CASK_EFFECT_EN	1 //短板效应
 #define MIXER_AUDIO_CHANNEL_NUM		4 //最大声道数
+#define MIXER_AUDIO_ENDDING_DCC     0
+#define MIXER_AUDIO_DIRECT_OUT		1 //直通输出
 
 // mixer事件回调
 enum {
@@ -67,17 +69,30 @@ struct audio_mixer {
     u16 points;			// 输出buf总点数
     u16 remain_points;	// 输出剩余点数
     u16 read_points;	// 读地址
-    u16 points_len;		// 数据长度
+    volatile u16 points_len;		// 数据长度
     u16 min_points;		// 最小输出点数，默认为总buf的1/4
+    u16 no_sync_points;	// 非sync数据剩余点数
     u32 process_len;	// 输出了多少
+    volatile u8 output_state;	// 输出状态
+    u32 aud_ch_mask;	// 声道数掩码
     u32 change_sr_limit_ch_num : 4;	// mixer活动通道小于该值时会重新检查采样率
     u32 aud_ch_num : 4;	// 声道数
-    u32 output_state : 2;	// 输出状态
     u32 sample_sync : 1;// sample同步标记
+    u32 ending_ch_dcc : 1;
 #if MIXER_AUDIO_CASK_EFFECT_EN
     u32 cask_effect : 1;// 短板效应。默认1，等待所有通道有数才能输出。关闭该功能，只要某个通道有数就输出
     u16 lose_to_id; 	// 超时激活ID
     u16 lose_to_once_ms;// 每次超时计数的时间
+#endif
+#if MIXER_AUDIO_DIRECT_OUT
+    void *remain_ch;	// 直接输出没有输出完成的通道
+    u8  direct_out;		// 直通使能。默认1
+    u8  cur_is_direct_out;	// 当前为直通输出
+#endif
+#if MIXER_AUDIO_ENDDING_DCC
+    u16 dcc_mixed_samples;
+    u32 dcc_sum[MIXER_AUDIO_CHANNEL_NUM];
+    s16 end_sample[MIXER_AUDIO_CHANNEL_NUM];
 #endif
     u32 sample_rate;	// 当前mixer的采样率
     int need_sr;		// mixer想要变成的采样率
@@ -102,21 +117,31 @@ struct audio_mixer_ch {
     u32 check_sr : 1;	// 需要检查采样率
     u32 master_sr_change : 1;	// master采样率变化
     u32 src_running : 1;// 执行变采样处理
-    u32 need_resume : 1;// 需要激活
     u32 aud_ch_num : 4;	// 声道数
+    u32 fade_dir : 2;	// 淡入淡出状态
+    u32 follow_resample : 1;	// follow变采样标志
 #if MIXER_AUDIO_CASK_EFFECT_EN
     u32 no_wait : 1;	// 不等待有数
-    u32 lose : 1;		// 丢数标记
     u16 lose_time;		// 超过该时间还没有数据，则以为可以丢数。no_wait置1有效
     u16 lose_cnt;		// 超时计数
+    volatile u8 lose;	// 丢数标记
 #endif
+    volatile u8 need_resume;	// 需要激活
+    s16 fade_vol;		// 淡入淡出值
+    s16 fade_step;		// 淡入淡出步进
+    u16 fade_time;		// 淡入淡出时长
+    OS_SEM *sem_fadeout;// 淡出等待信号量
     // 声道输出控制。如，当前通道的第1个声道输出到mixer的第0和第1个声道，aud_ch_out[1] = BIT(0) | BIT(1);
     // mixer单声道默认值：aud_ch_out[n] = BIT(0); 如，aud_ch_out[1] = BIT(0);
     // mixer其他声道默认值：aud_ch_out[n] = BIT(n)|BIT(n+2); 如，aud_ch_out[1] = BIT(1)|BIT(3);
     u8  aud_ch_out[MIXER_AUDIO_CHANNEL_NUM];
+#if MIXER_AUDIO_ENDDING_DCC
+    s16 end_sample[MIXER_AUDIO_CHANNEL_NUM];
+#endif
     u16 points_len;		// 数据长度
     u16 start_points;	// 初始化数据长度。默认为mixer->points/2
     u32 sample_rate;	// 当前通道采样率
+    u32 sample_rate_follow;	// 当前通道follow采样率。follow_resample==1有效
     struct list_head list_entry;	// 链表
     struct audio_mixer *mixer;	// mixer句柄
     struct audio_src_handle *src;	// 变采样
@@ -124,6 +149,8 @@ struct audio_mixer_ch {
     struct audio_mixer_ch_sync_info sync_info;	// buf同步参数
     void *priv;		// 事件回调私有句柄
     void (*event_handler)(void *priv, int event, int param);	// 事件回调接口
+    void *follow_priv;	// follow变采样私有参数
+    int (*follow_sample_rate)(void *priv);	// follow变采样回调
 
     struct audio_stream_entry entry;	// 音频流入口，通道后面不应该再接其他的音频流，最后由mixer合并后输出
 };
@@ -155,6 +182,9 @@ void audio_mixer_set_min_len(struct audio_mixer *mixer, u16 min_len);
 // 设置短板效应
 void audio_mixer_set_cask_effect(struct audio_mixer *mixer, u8 cask_effect);
 
+// 直通功能
+void audio_mixer_set_direct_out(struct audio_mixer *mixer, u8 direct_out_en);
+
 // 设置采样率类型
 void audio_mixer_set_sample_rate(struct audio_mixer *mixer, MIXER_SR_TYPE type, u32 sample_rate);
 // 按条件获取采样率（原始采样率，不调用check_sr检测）
@@ -169,7 +199,7 @@ int audio_mixer_get_cur_sample_rate(struct audio_mixer *mixer);
 // 获取通道总数
 int audio_mixer_get_ch_num(struct audio_mixer *mixer);
 
-// 获取非暂停通道总数
+// 获取活动通道总数
 int audio_mixer_get_active_ch_num(struct audio_mixer *mixer);
 
 // 获取mixer剩余长度
@@ -223,9 +253,20 @@ int audio_mixer_ch_data_len(struct audio_mixer_ch *ch);
 // 通道数据输出
 int audio_mixer_ch_write(struct audio_mixer_ch *ch, s16 *data, int len);
 
+// 设置sync标志
 void audio_mixer_ch_sample_sync_enable(struct audio_mixer_ch *ch, u8 enable);
 
+// 淡入（暂停、直通等情况下无效）
+int audio_mixer_ch_try_fadein(struct audio_mixer_ch *ch, u16 time);
 
+// 淡出（暂停、直通等情况下无效）。淡出后通道会暂停。
+int audio_mixer_ch_try_fadeout(struct audio_mixer_ch *ch, u16 time);
+
+// 关闭通道淡入淡出
+void audio_mixer_ch_fade_close(struct audio_mixer_ch *ch);
+
+// 设置通道follow变采样
+void audio_mixer_ch_follow_resample_enable(struct audio_mixer_ch *ch, void *priv, int (*follow_sample_rate)(void *));
 
 // mixer任务初始化
 int audio_mixer_task_init(struct audio_mixer_task *mtask, const char *task_name);

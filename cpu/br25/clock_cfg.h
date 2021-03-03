@@ -95,6 +95,8 @@ enum {
 
     LOCALTWS_CLK,
 
+    AI_SPEECH_CLK,
+
     ENUM_MAX_CLK = 63	,
 };
 

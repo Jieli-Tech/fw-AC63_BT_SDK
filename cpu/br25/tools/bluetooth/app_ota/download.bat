@@ -14,7 +14,7 @@ set /p "themd5=" < "md5.bin"
 copy ..\..\uboot.boot .
 copy ..\..\ota.bin .
 
-..\..\isd_download.exe -tonorflash -dev br25 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin -res tone.cfg config.dat md5.bin -uboot_compress
+..\..\isd_download.exe -tonorflash -dev br25 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin -res tone.cfg %1 config.dat md5.bin -uboot_compress
 :: -format all
 ::-reboot 2500
 

@@ -357,6 +357,7 @@ static void app_start()
     bt_function_select_init();
     bredr_handle_register();
     __change_hci_class_type(0);//default icon
+    /* __change_hci_class_type(BD_CLASS_TRANSFER_HEALTH);//icon */
     btstack_init();
 
 #if TCFG_USER_EDR_ENABLE
@@ -835,6 +836,7 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 
 #if TCFG_AUDIO_ENABLE
 #include "tone_player.h"
+#include "media/includes.h"
 #endif/*TCFG_AUDIO_ENABLE*/
 static void app_key_event_handler(struct sys_event *event)
 {
@@ -861,12 +863,27 @@ static void app_key_event_handler(struct sys_event *event)
 #if TCFG_AUDIO_ENABLE
         if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE0) {
             printf(">>>key0:open mic\n");
-            extern int audio_adc_open_demo(void);
-            audio_adc_open_demo();
+            //br23/br25 mic test
+            /* extern int audio_adc_open_demo(void); */
+            /* audio_adc_open_demo(); */
+            //br30 mic test
+            /* extern void audio_adc_mic_demo(u8 mic_idx, u8 gain, u8 mic_2_dac); */
+            /* audio_adc_mic_demo(1, 1, 1); */
+
+
+            /*encode test*/
+            /* extern int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 code_type); */
+            /* audio_mic_enc_open(NULL, AUDIO_CODING_OPUS);//opus encode test */
+            /* audio_mic_enc_open(NULL, AUDIO_CODING_SPEEX);//speex encode test */
         }
         if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE1) {
-            /* printf(">>>key1:tone_play_test\n");
-            tone_play_by_path(TONE_NORMAL, 1); */
+            printf(">>>key1:tone_play_test\n");
+            //br23/25 tone play test
+            /* tone_play_by_path(TONE_NORMAL, 1); */
+            /* tone_play_by_path(TONE_BT_CONN, 1); */
+            //br30 tone play test
+            /* tone_play(TONE_NUM_8, 1); */
+            /* tone_play(TONE_SIN_NORMAL, 1); */
         }
 #endif/*TCFG_AUDIO_ENABLE*/
     }

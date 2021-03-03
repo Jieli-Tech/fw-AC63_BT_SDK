@@ -66,5 +66,9 @@ int usb_aoa_set_hid_report_desc(struct usb_host_device *host_dev, u16 value, u16
 int usb_aoa_send_hid_event(struct usb_host_device *host_dev, u16 value, const u8 *pbuf, u32 len);
 int get_ms_extended_compat_id(struct usb_host_device *host_dev,  u8 *buffer);
 
+int usb_set_interface(struct usb_host_device *host_dev, u8 interface, u8 alternateSetting);
+int usb_audio_sampling_frequency_control(struct usb_host_device *host_dev, u32 ep, u32 sampe_rate);
+int usb_audio_volume_control(struct usb_host_device *host_dev, u8 feature_id, u8 channel_num, u16 volume);
+int usb_audio_mute_control(struct usb_host_device *host_dev, u8 feature_id, u8 mute);
 
 #endif

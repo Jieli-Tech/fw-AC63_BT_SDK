@@ -127,7 +127,7 @@ SECTIONS
 
         PROVIDE(text_rodata_begin = .);
 
-        *startup.o(.text)
+        *(.startup.text)
 
         bank_stub_start = .;
 		*(.bank.stub.*)
@@ -158,6 +158,10 @@ SECTIONS
         *(.LED_code)
         *(.LED_const)
 #endif
+
+		*(.cvsd_data)
+		*(.cvsd_const)
+		*(.cvsd_code)
 
 		. = ALIGN(4);
         gsensor_dev_begin = .;
@@ -211,6 +215,14 @@ SECTIONS
         . = ALIGN(4);
         #include "ui/ui/ui.ld"
         . = ALIGN(4);
+
+		. = ALIGN(4);
+	    update_target_begin = .;
+	    PROVIDE(update_target_begin = .);
+	    KEEP(*(.update_target))
+	    update_target_end = .;
+	    PROVIDE(update_target_end = .);
+		. = ALIGN(4);
 
         text_code_end = .;
 
@@ -297,8 +309,28 @@ SECTIONS
         *(.LED_const)
 #endif
 
+#if TCFG_FM_INSIDE_ENABLE
         *(.fm_code)
+#endif
 
+        . = ALIGN(4);
+
+#if (SOUNDCARD_ENABLE)
+		*(.mix_ram_code)
+        . = ALIGN(4);
+		*(.dvol_ram_code)
+        . = ALIGN(4);
+		*(.reverb_cal_const)
+ . = ALIGN(4);
+			*(.reverb_cal_code)
+
+        . = ALIGN(4);
+		*(.stream_ram_code)
+        . = ALIGN(4);
+			*(.mp3_code)
+        . = ALIGN(4);
+
+#endif
         . = ALIGN(4);
 
     	_data_code_end = . ;
@@ -396,11 +428,7 @@ SECTIONS
 
 		.overlay_aec
 		{
-#if (SOUNDCARD_ENABLE == 0)
-			*(.cvsd_data)
-			*(.cvsd_const)
-			*(.cvsd_code)
-#endif
+
 			*(.aec_bss_id)
 			o_aec_end = .;
 

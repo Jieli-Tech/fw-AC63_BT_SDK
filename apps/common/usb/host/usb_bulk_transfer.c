@@ -17,6 +17,7 @@
 #include "app_config.h"
 #include "device_drive.h"
 
+#if USB_HOST_ENABLE
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB]"
 #define LOG_ERROR_ENABLE
@@ -209,3 +210,4 @@ s32 usb_bulk_only_send(struct device *device, u8 host_ep, u16 txmaxp, u8 target_
     return ret;
 
 }
+#endif

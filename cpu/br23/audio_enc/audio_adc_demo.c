@@ -63,6 +63,7 @@ static void audio_adc1_output_demo(void *priv, s16 *data, int len)
     wlen = app_audio_output_write(ladc_var->temp_buf, len * 2);
 #else //单声道数据结构
     //TODO
+    wlen = app_audio_output_write(data, len * hdl->channel);
 #endif/*TCFG_AUDIO_DAC_CONNECT_MODE*/
 #endif/*LADC_2_DAC_ENABLE*/
 }
@@ -214,7 +215,7 @@ void audio_adc_close_demo()
     }
 }
 
-#if 0
+#if 1
 static u8 audio_adc_demo_idle_query(void)
 {
     if (ladc_var) {

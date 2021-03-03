@@ -9,6 +9,7 @@
 #define AUDIO_DEC_TONE_WAIT_USE_PRIO			0 // 采用优先级顺序播放方式
 
 extern struct audio_dac_hdl dac_hdl;
+extern struct audio_dac_channel default_dac;
 extern const int audio_dec_app_mix_en;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -21,15 +22,53 @@ static int tone_dec_list_play(struct tone_dec_handle *dec, u8 next);
 
 //////////////////////////////////////////////////////////////////////////////
 
+/*----------------------------------------------------------------------------*/
+/**@brief    tone解码数据流推送stop
+   @param    *dec: 解码句柄
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+static void tone_dec_stream_run_stop(struct audio_dec_app_hdl *dec)
+{
+#if AUDIO_DAC_MULTI_CHANNEL_ENABLE
+    struct audio_data_frame frame = {0};
+    struct audio_data_frame output = {0};
+    frame.stop = 1;
+    frame.channel = audio_output_channel_num();
+    frame.sample_rate = app_audio_output_samplerate_get();
+    /* audio_stream_run(&default_dac.entry, &frame); */
+    default_dac.entry.data_handler(&default_dac.entry, &frame, &output);
+    audio_stream_del_entry(&default_dac.entry);
+#else /*AUDIO_DAC_MULTI_CHANNEL_ENABLE*/
+    audio_dac_stop(&dac_hdl);
+#endif /*AUDIO_DAC_MULTI_CHANNEL_ENABLE*/
+}
+
 #if TONE_DEC_PROTECT_LIST_PLAY
 struct tone_dec_list_protect {
     struct audio_res_wait wait;
 };
+/*----------------------------------------------------------------------------*/
+/**@brief    tone链表播放保护用的临时解码资源等待
+   @param    *wait: 句柄
+   @param    event: 事件
+   @return   0：成功
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 static int tone_dec_list_protect_res_handler(struct audio_res_wait *wait, int event)
 {
     y_printf("tone protect event:%d \n", event);
     return 0;
 }
+/*----------------------------------------------------------------------------*/
+/**@brief    tone链表播放保护用的临时解码释放
+   @param    *dec: 解码链表句柄
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 static void tone_dec_list_protect_release(struct tone_dec_list_handle *dec_list)
 {
     if ((!dec_list) || (!dec_list->list_protect)) {
@@ -41,6 +80,13 @@ static void tone_dec_list_protect_release(struct tone_dec_list_handle *dec_list)
     free(dec_list->list_protect);
     dec_list->list_protect = NULL;
 }
+/*----------------------------------------------------------------------------*/
+/**@brief    tone链表播放保护用的临时解码处理
+   @param    *dec_list: 解码链表句柄
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 static void tone_dec_list_protect_deal(struct tone_dec_list_handle *dec_list)
 {
     if ((!dec_list) || (!dec_list->preemption)) {
@@ -273,10 +319,7 @@ static int tone_dec_file_app_evt_cb(void *priv, int event, int *param)
         break;
     case AUDIO_DEC_APP_EVENT_DEC_CLOSE:
         if (!audio_dec_app_mix_en) {
-#if AUDIO_DAC_MULTI_CHANNEL_ENABLE
-#else /*AUDIO_DAC_MULTI_CHANNEL_ENABLE*/
-            audio_dac_stop(&dac_hdl);
-#endif /*AUDIO_DAC_MULTI_CHANNEL_ENABLE*/
+            tone_dec_stream_run_stop(file_dec->dec);
         }
         if (dec->cur_list->stream_handler) {
             dec->cur_list->stream_handler(dec->cur_list->stream_priv, event, file_dec->dec);
@@ -336,10 +379,7 @@ static int tone_dec_sine_app_evt_cb(void *priv, int event, int *param)
         break;
     case AUDIO_DEC_APP_EVENT_DEC_CLOSE:
         if (!audio_dec_app_mix_en) {
-#if AUDIO_DAC_MULTI_CHANNEL_ENABLE
-#else /*AUDIO_DAC_MULTI_CHANNEL_ENABLE*/
-            audio_dac_stop(&dac_hdl);
-#endif /*AUDIO_DAC_MULTI_CHANNEL_ENABLE*/
+            tone_dec_stream_run_stop(sine_dec->dec);
         }
         if (dec->cur_list->stream_handler) {
             dec->cur_list->stream_handler(dec->cur_list->stream_priv, event, sine_dec->dec);

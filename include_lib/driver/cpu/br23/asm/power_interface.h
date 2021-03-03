@@ -268,6 +268,8 @@ void power_set_wvdd(u8 level);
 int cpu_reset_by_soft();
 
 void lvd_extern_wakeup_enable(void);
+
+void port_edge_wkup_set_callback(void (*wakeup_callback)(u8 index, u32 gpio));
 /*-----------------------------------------------------------*/
 
 typedef u8(*idle_handler_t)(void);

@@ -37,6 +37,7 @@ struct usb_interface_info {
         struct adb_device_t *adb;
         struct hid_device_t *hid;
         struct aoa_device_t *aoa;
+        struct audio_device_t *audio;
         void *p;
     } dev;
 };
@@ -61,10 +62,10 @@ const struct usb_host_device *host_id2device(const usb_dev id);
 
 #define     check_usb_mount(ret)    \
     if(ret == -DEV_ERR_OFFLINE){\
-        log_info("%s() @ %d DEV_ERR_OFFLINE\n", __func__, __LINE__);\
+        log_error("%s() @ %d DEV_ERR_OFFLINE\n", __func__, __LINE__);\
         goto __exit_fail;\
     } else if(ret){\
-        log_info("%s() @ %d %x\n", __func__, __LINE__, ret);\
+        log_error("%s() @ %d %x\n", __func__, __LINE__, ret);\
         continue;\
     }
 

@@ -173,7 +173,11 @@
 #define TCFG_DEC_SBC_CLOSE
 #define TCFG_DEC_MSBC_CLOSE
 #define TCFG_DEC_SBC_HWACCEL_CLOSE
+#define TCFG_DEC_PCM_ENABLE                 ENABLE
+#define TCFG_DEC_G729_ENABLE                ENABLE
 #define TCFG_DEC_CVSD_CLOSE
+#define TCFG_ENC_OPUS_ENABLE               	DISABLE
+#define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #else
 #define TCFG_DEC_PCM_CLOSE
 #define TCFG_DEC_SBC_CLOSE
@@ -198,7 +202,7 @@ DAC硬件上的连接方式,可选的配置：
     DAC_OUTPUT_LR                   立体声
     DAC_OUTPUT_MONO_LR_DIFF         单声道差分输出
 */
-#define TCFG_AUDIO_DAC_CONNECT_MODE    DAC_OUTPUT_LR
+#define TCFG_AUDIO_DAC_CONNECT_MODE    DAC_OUTPUT_MONO_LR_DIFF
 
 /*
 解码后音频的输出方式:
@@ -400,6 +404,14 @@ DAC硬件上的连接方式,可选的配置：
 //                                 时钟配置                                    //
 //*********************************************************************************//
 #define CONFIG_BT_NORMAL_HZ	            (24 * 1000000L)
+
+//*********************************************************************************//
+//                           (Yes/No)语音识别使能                                  //
+//*********************************************************************************//
+#if TCFG_AUDIO_ENABLE
+#define TCFG_KWS_VOICE_RECOGNITION_ENABLE 			 	0 //DISABLE_THIS_MOUDLE
+#endif /* #if TCFG_AUDIO_ENABLE */
+
 
 //*********************************************************************************//
 //                                 配置结束                                        //

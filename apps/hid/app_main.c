@@ -20,6 +20,10 @@
 #include "app_charge.h"
 #include "app_power_manage.h"
 
+#if TCFG_KWS_VOICE_RECOGNITION_ENABLE
+#include "jl_kws/jl_kws_api.h"
+#endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE */
+
 #define LOG_TAG_CONST       APP
 #define LOG_TAG             "[APP]"
 #define LOG_ERROR_ENABLE
@@ -44,9 +48,14 @@ const struct task_info task_info_table[] = {
 #if (RCSP_BTMATE_EN)
     {"rcsp_task",		2,		640,	128	},
 #endif
-#ifdef CONFIG_LITE_AUDIO
+#if TCFG_AUDIO_ENABLE
     {"audio_dec",           3,     768,   128  },
-#endif/*CONFIG_LITE_AUDIO*/
+    {"audio_enc",           4,     512,   128  },
+#endif/*TCFG_AUDIO_ENABLE*/
+#if TCFG_KWS_VOICE_RECOGNITION_ENABLE
+    {"kws",                 2,     256,   64   },
+#endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE */
+
     {0, 0},
 };
 
@@ -92,6 +101,10 @@ void app_main()
     audio_dec_init();
     audio_enc_init();
 #endif/*TCFG_AUDIO_ENABLE*/
+
+#if TCFG_KWS_VOICE_RECOGNITION_ENABLE
+    jl_kws_main_user_demo();
+#endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE */
 
     init_intent(&it);
 #if (CONFIG_APP_MOUSE)

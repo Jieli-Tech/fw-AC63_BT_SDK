@@ -22,6 +22,7 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+#if TCFG_UDISK_ENABLE || TCFG_ADB_ENABLE ||TCFG_AOA_ENABLE||TCFG_HOST_AUDIO_ENABLE
 
 _WEAK_
 void usb_dis_ep0_txdly(const usb_dev id)
@@ -570,3 +571,52 @@ int get_ms_extended_compat_id(struct usb_host_device *host_dev,  u8 *buffer)
                            buffer,
                            0x28);
 }
+
+
+int usb_set_interface(struct usb_host_device *host_dev, u8 interface, u8 alternateSetting)
+{
+    log_info("%s Set Interface:%d AlternateSetting:%d", __func__, interface, alternateSetting);
+    return usb_control_msg(host_dev,
+                           USB_REQ_SET_INTERFACE,
+                           USB_RECIP_INTERFACE,
+                           alternateSetting,
+                           interface,
+                           NULL,
+                           0);
+
+}
+
+int usb_audio_sampling_frequency_control(struct usb_host_device *host_dev, u32 ep, u32 sampe_rate)
+{
+    log_info("%s ep:%d sampe_rate:%d", __func__, ep, sampe_rate);
+    return usb_control_msg(host_dev,
+                           1,
+                           USB_TYPE_CLASS | USB_RECIP_ENDPOINT,
+                           0x0100,
+                           ep,
+                           &sampe_rate,
+                           3);
+}
+int usb_audio_volume_control(struct usb_host_device *host_dev, u8 feature_id, u8 channel_num, u16 volume)
+{
+    log_info("%s featureID:%d vol:%x", __func__, feature_id, volume);
+    return usb_control_msg(host_dev,
+                           1,
+                           USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+                           (0x02 << 8) | channel_num,
+                           feature_id << 8,
+                           &volume,
+                           2);
+}
+int usb_audio_mute_control(struct usb_host_device *host_dev, u8 feature_id, u8 mute)
+{
+    log_info("%s featureID:%d mute:%d", __func__, feature_id, mute);
+    return usb_control_msg(host_dev,
+                           1,
+                           USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+                           0x0100,
+                           feature_id << 8,
+                           &mute,
+                           1);
+}
+#endif

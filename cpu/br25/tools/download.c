@@ -165,15 +165,20 @@ copy /b text.bin+data.bin+data_code.bin+aec.bin+wav.bin+ape.bin+flac.bin+m4a.bin
 
 #if CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE
 #if RCSP_UPDATE_EN
+
+#if TCFG_KWS_VOICE_RECOGNITION_ENABLE
+set kws_cfg=..\..\jl_kws.cfg
+#endif
+
 copy app.bin bluetooth\app_ota\app.bin
 copy br25loader.bin bluetooth\app_ota\br25loader.bin
 
-bluetooth\app_ota\download.bat
+bluetooth\app_ota\download.bat %kws_cfg%
 #else
 copy app.bin bluetooth\standard\app.bin
 copy br25loader.bin bluetooth\standard\br25loader.bin
 
-bluetooth\standard\download.bat
+bluetooth\standard\download.bat %kws_cfg%
 #endif
 
 #endif      //endif CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE

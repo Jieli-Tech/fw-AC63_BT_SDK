@@ -7,6 +7,7 @@
 #include "app_action.h"
 #include "clock_cfg.h"
 #include "classic/hci_lmp.h"
+#include "app_config.h"
 
 #ifndef CONFIG_LITE_AUDIO
 #include "aec_user.h"
@@ -49,6 +50,9 @@ struct esco_enc_hdl {
 static void adc_mic_output_handler(void *priv, s16 *data, int len)
 {
     //printf("buf:%x,data:%x,len:%d",esco_enc->adc_buf,data,len);
+#if (RECORDER_MIX_EN)
+    recorder_mix_sco_data_write(data, len);
+#endif/*RECORDER_MIX_EN*/
     audio_aec_inbuf(data, len);
 }
 static void adc_mic_output_handler_downsr(void *priv, s16 *data, int len)
@@ -92,9 +96,9 @@ static int esco_enc_pcm_get(struct audio_encoder *encoder, s16 **frame, u16 fram
         rlen = audio_aec_output_read(enc->pcm_frame, frame_len);
         if (rlen == frame_len) {
             /*esco编码读取数据正常*/
-#if (RECORDER_MIX_EN)
-            recorder_mix_sco_data_write(enc->pcm_frame, frame_len);
-#endif/*RECORDER_MIX_EN*/
+            /* #if (RECORDER_MIX_EN) */
+            /* recorder_mix_sco_data_write(enc->pcm_frame, frame_len); */
+            /* #endif[>RECORDER_MIX_EN<] */
             break;
         } else if (rlen == 0) {
             /*esco编码读不到数,返回0*/
@@ -412,10 +416,9 @@ void audio_mic_close(struct adc_mic_ch *mic, struct audio_adc_output_hdl *output
     os_mutex_post(&mic_var.mutex);
 }
 
-extern void audio_adc_set_mic_gain(struct audio_adc_hdl *adc, u8 gain);
-void audio_mic_set_gain(u8 gain)
+void audio_mic_set_gain(struct adc_mic_ch *mic, u8 gain)
 {
-    audio_adc_set_mic_gain(&adc_hdl, gain);
+    audio_adc_mic_set_gain(mic, gain);
 }
 
 /*****************************************************************************/

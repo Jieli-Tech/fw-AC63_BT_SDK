@@ -7,6 +7,10 @@
 #include "usb_bulk_transfer.h"
 #include "usb/host/usb_host.h"
 
+#define  UDISK_READ_ASYNC_ENABLE    1   //使能u盘预读功能
+#if UDISK_READ_ASYNC_ENABLE
+#define UDISK_READ_ASYNC_BLOCK_NUM  (16) //预读扇区数
+#endif
 
 //设备状态：
 typedef enum usb_sta {
@@ -46,6 +50,11 @@ struct mass_storage {
     u8 suspend_cnt;
     u8 read_only;
 
+    u32 remain_len;
+    u32 prev_lba;
+#if UDISK_READ_ASYNC_ENABLE
+    u32 async_prev_lba;
+#endif
 #if ENABLE_DISK_HOTPLUG
     u8 media_sta_cur;  //for card reader, card removable
     u8 media_sta_prev;
@@ -54,7 +63,7 @@ struct mass_storage {
 #endif
 };
 
-
+#define MASS_LBA_INIT    (-2)
 
 int usb_msd_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf);
 

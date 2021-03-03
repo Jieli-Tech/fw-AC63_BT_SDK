@@ -17,7 +17,8 @@ struct iic_iomapping {
 };
 
 static const struct iic_iomapping hwiic_iomap[IIC_HW_NUM][IIC_PORT_GROUP_NUM] = {
-    {   //--- SCL ------- SDA ---
+    {
+        //--- SCL ------- SDA ---
         {IO_PORT_DP, IO_PORT_DM},    //group a
         {IO_PORT_DP1, IO_PORT_DM1},  //group b
         {IO_PORTA_07, IO_PORTA_08},  //group c
@@ -411,4 +412,9 @@ u8 hw_iic_slave_tx_check_ack(hw_iic_dev iic)
     u8 id = iic_get_id(iic);
 
     return iic_send_is_ack(iic_regs[id]);
+}
+
+void iic_disable_for_ota()
+{
+    JL_IIC->CON0 = 0;
 }

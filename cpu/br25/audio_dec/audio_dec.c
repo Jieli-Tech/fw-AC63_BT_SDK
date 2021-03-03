@@ -73,10 +73,13 @@ extern void mix_out_automute_close();
 
 struct audio_decoder_task 	decode_task = {0};
 struct audio_mixer 			mixer = {0};
-/*struct audio_stream_dac_out *dac_last = NULL;*/
 
 #if TCFG_MIXER_CYCLIC_TASK_EN
 struct audio_mixer_task 	mixer_task = {0};
+#endif
+
+#if TCFG_DEC2TWS_TASK_ENABLE
+struct audio_decoder_task 	localtws_decode_task = {0};
 #endif
 
 static u8 audio_dec_inited = 0;
@@ -89,10 +92,6 @@ struct prevent_task_fill *prevent_fill = NULL;
 
 u8  audio_src_hw_filt[SRC_FILT_POINTS * SRC_CHI * 2 * MAX_SRC_NUMBER];
 s16 mix_buff[AUDIO_MIXER_LEN / 2] SEC(.dec_mix_buff);
-#if (RECORDER_MIX_EN)
-struct audio_mixer recorder_mixer = {0};
-s16 recorder_mix_buff[AUDIO_MIXER_LEN / 2] SEC(.dec_mix_buff);
-#endif/*RECORDER_MIX_EN*/
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DAC)
 #if AUDIO_CODEC_SUPPORT_SYNC
@@ -103,6 +102,7 @@ s16 dac_sync_buff[256];
 #if AUDIO_VOCAL_REMOVE_EN
 vocal_remove_hdl *mix_vocal_remove_hdl = NULL;
 void *vocal_remove_open(u8 ch_num);
+struct channel_switch *mix_ch_switch = NULL;//声道变换,单声道时，先让解码出立体声，做完人声消除，再变单声道
 #endif
 
 
@@ -114,11 +114,6 @@ extern const int config_mixer_en;
 //////////////////////////////////////////////////////////////////////////////
 void *mix_out_eq_drc_open(u16 sample_rate, u8 ch_num);
 void mix_out_eq_drc_close(struct audio_eq_drc *eq_drc);
-
-extern void audio_reverb_set_src_by_dac_sync(int in_rate, int out_rate);
-extern void audio_linein_set_src_by_dac_sync(int in_rate, int out_rate);
-extern void audio_usb_set_src_by_dac_sync(int in_rate, int out_rate);
-
 
 #if AUDIO_SPECTRUM_CONFIG
 extern spectrum_fft_hdl *spec_hdl;
@@ -156,41 +151,8 @@ int audio_dac_energy_get(void)
 void audio_resume_all_decoder(void)
 {
     audio_decoder_resume_all(&decode_task);
-}
-
-/*----------------------------------------------------------------------------*/
-/**@brief    src中断处理
-   @param
-   @return
-   @note     弱函数重定义
-*/
-/*----------------------------------------------------------------------------*/
-void audio_src_isr_deal(void)
-{
-    audio_resume_all_decoder();
-}
-
-/*----------------------------------------------------------------------------*/
-/**@brief    dac变采样处理（同步）
-   @param    in_rate: 输入采样率
-   @param    out_rate: 输出采样率
-   @return
-   @note     弱函数重定义
-*/
-/*----------------------------------------------------------------------------*/
-void audio_dac_sync_src_deal(int in_rate, int out_rate)
-{
-#if TCFG_REVERB_ENABLE
-    audio_reverb_set_src_by_dac_sync(in_rate, out_rate);
-#endif
-#if TCFG_LINEIN_ENABLE
-    audio_linein_set_src_by_dac_sync(in_rate, out_rate);
-#endif
-
-#if TCFG_APP_PC_EN
-#if TCFG_PC_ENABLE
-    audio_usb_set_src_by_dac_sync(in_rate, out_rate);
-#endif
+#if TCFG_DEC2TWS_TASK_ENABLE
+    audio_decoder_resume_all(&localtws_decode_task);
 #endif
 }
 
@@ -206,7 +168,8 @@ void audio_dac_sync_src_deal(int in_rate, int out_rate)
 static void audio_decoder_wakeup_timer(void *priv)
 {
     //putchar('k');
-    audio_resume_all_decoder();
+    struct audio_decoder_task *task = priv;
+    audio_decoder_resume_all(task);
 }
 /*----------------------------------------------------------------------------*/
 /**@brief    添加一个解码预处理
@@ -218,7 +181,7 @@ static void audio_decoder_wakeup_timer(void *priv)
 int audio_decoder_task_add_probe(struct audio_decoder_task *task)
 {
     if (task->wakeup_timer == 0) {
-        task->wakeup_timer = sys_hi_timer_add(NULL, audio_decoder_wakeup_timer, AUDIO_DECODE_TASK_WAKEUP_TIME);
+        task->wakeup_timer = sys_hi_timer_add(task, audio_decoder_wakeup_timer, AUDIO_DECODE_TASK_WAKEUP_TIME);
         log_i("audio_decoder_task_add_probe:%d\n", task->wakeup_timer);
     }
     return 0;
@@ -298,6 +261,8 @@ u32 audio_output_nor_rate(void)
     return TCFG_REVERB_SAMPLERATE_DEFUAL;
 #endif
     /* return  app_audio_output_samplerate_select(input_rate, 1); */
+#elif (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT)
+
 #elif (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
     return 41667;
 #else
@@ -353,40 +318,34 @@ u32 audio_output_rate(int input_rate)
 u32 audio_output_channel_num(void)
 {
 #if AUDIO_OUTPUT_INCLUDE_DAC
-
-#if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT)
-    if (bt_user_priv_var.emitter_or_receiver == BT_EMITTER_EN) {
-        return audio_sbc_enc_get_channel_num();
-    }
-#endif
-
     /*根据DAC输出的方式选择输出的声道*/
     u8 dac_connect_mode =  app_audio_output_mode_get();
     if (dac_connect_mode == DAC_OUTPUT_LR || dac_connect_mode == DAC_OUTPUT_DUAL_LR_DIFF) {
         return 2;
     } else {
+#if AUDIO_VOCAL_REMOVE_EN
+        return  2;
+#endif
         return 1;
     }
 #elif (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
     return  2;
+
 #else
     return  2;
 #endif
 }
 
+/*----------------------------------------------------------------------------*/
+/**@brief    获取输出通道类型
+   @param
+   @return   输出通道类型
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 u32 audio_output_channel_type(void)
 {
 #if AUDIO_OUTPUT_INCLUDE_DAC
-
-#if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT)
-    if (bt_user_priv_var.emitter_or_receiver == BT_EMITTER_EN) {
-        if (audio_sbc_enc_get_channel_num() == 2) {
-            return AUDIO_CH_LR;
-        }
-        return AUDIO_CH_DIFF;
-    }
-#endif
-
     /*根据DAC输出的方式选择输出的声道*/
     u8 dac_connect_mode =  app_audio_output_mode_get();
     if (dac_connect_mode == DAC_OUTPUT_LR || dac_connect_mode == DAC_OUTPUT_DUAL_LR_DIFF) {
@@ -537,15 +496,13 @@ static void mixer_event_handler(struct audio_mixer *mixer, int event)
             }
             os_mutex_post(&mixer->mutex);
         }
-        {
-#if TCFG_REVERB_ENABLE
-            reset_reverb_src_out(audio_output_rate(audio_mixer_get_sample_rate(mixer)));
-#endif
-        }
         break;
     case MIXER_EVENT_SR_CHANGE:
 #if 0
         y_printf("sr change:%d \n", mixer->sample_rate);
+#endif
+#if TCFG_KEY_TONE_EN
+        audio_key_tone_resample(mixer->sample_rate);
 #endif
         break;
     }
@@ -566,6 +523,18 @@ static u32 audio_mixer_check_sr(struct audio_mixer *mixer, u32 sr)
 
 
 /*----------------------------------------------------------------------------*/
+/**@brief    重新设置mixer采样率
+   @param    sr: 采样率
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void audio_mixer_reset_sample_rate(u32 sr)
+{
+    audio_mixer_set_sample_rate(&mixer, MIXER_SR_SPEC, sr);
+}
+
+/*----------------------------------------------------------------------------*/
 /**@brief    音频解码初始化
    @param
    @return
@@ -573,27 +542,39 @@ static u32 audio_mixer_check_sr(struct audio_mixer *mixer, u32 sr)
 */
 /*----------------------------------------------------------------------------*/
 extern struct audio_dac_hdl dac_hdl;
-struct audio_dac_channel default_dac;
+struct audio_dac_channel default_dac = {0};
 int audio_dec_init()
 {
     int err;
 
     printf("audio_dec_init\n");
 
-
+    // 创建解码任务
     err = audio_decoder_task_create(&decode_task, "audio_dec");
 
+#if TCFG_AUDIO_DEC_OUT_TASK
+    audio_decoder_out_task_create(&decode_task, "audio_out");
+#endif
+
 #if (TCFG_PREVENT_TASK_FILL)
-    prevent_fill = prevent_task_fill_create("prevent");
+    // 初始化防task占满功能
+    prevent_fill = prevent_task_fill_create(100);
     if (prevent_fill) {
-        decode_task.prevent_fill = prevent_task_fill_ch_open(prevent_fill, 20);
+        // 解码任务加入防task占满功能
+        decode_task.prevent_fill = prevent_task_fill_ch_open(prevent_fill, 200);
     }
 #endif
 
+#if TCFG_DEC2TWS_TASK_ENABLE
+    // 创建本地转发解码任务
+    audio_decoder_task_create(&localtws_decode_task, "local_dec");
+#endif
 
+    // 初始化音频输出
     app_audio_output_init();
 
 #if TCFG_KEY_TONE_EN
+    // 按键音初始化
     audio_key_tone_init();
 #endif
 
@@ -602,27 +583,37 @@ int audio_dec_init()
 
     if (!AUDIO_DEC_MIXER_EN) {
 #if AUDIO_OUTPUT_INCLUDE_DAC
+        // 创建dac通道
         audio_dac_new_channel(&dac_hdl, &default_dac);
         struct audio_dac_channel_attr attr;
+        audio_dac_channel_get_attr(&default_dac, &attr);
         attr.delay_time = 50;
+        attr.protect_time = 5;
         attr.write_mode = WRITE_MODE_BLOCK;
         audio_dac_channel_set_attr(&default_dac, &attr);
 #endif
         goto __mixer_init_end;
     }
+    // 初始化mixer
     audio_mixer_open(&mixer);
+    // 使能mixer事件回调
     audio_mixer_set_event_handler(&mixer, mixer_event_handler);
+    // 使能mixer采样率检测
     audio_mixer_set_check_sr_handler(&mixer, audio_mixer_check_sr);
     if (config_mixer_en) {
         /*初始化mix_buf的长度*/
         audio_mixer_set_output_buf(&mixer, mix_buff, sizeof(mix_buff));
 #ifdef CONFIG_MIXER_CYCLIC
 #define MIXER_MIN_LEN		(128*4*2)
+        // 设置mixer最小输出长度
         audio_mixer_set_min_len(&mixer, sizeof(mix_buff) < (MIXER_MIN_LEN * 2) ? (sizeof(mix_buff) / 2) : MIXER_MIN_LEN);
 #endif
     }
+    // 获取音频输出声道数
     u8 ch_num = audio_output_channel_num();
+    // 设置mixer输出声道数
     audio_mixer_set_channel_num(&mixer, ch_num);
+    // 检测音频输出采样率是否为固定输出
     u32 sr = audio_output_nor_rate();
     if (sr) {
         // 固定采样率输出
@@ -631,6 +622,7 @@ int audio_dec_init()
 
 #ifdef CONFIG_MIXER_CYCLIC
 #if TCFG_MIXER_CYCLIC_TASK_EN
+    // mixer使用单独task输出
     audio_mixer_task_init(&mixer_task, "mix_out");
     audio_mixer_task_ch_open(&mixer, &mixer_task);
 #endif
@@ -643,13 +635,22 @@ int audio_dec_init()
 
 #if AUDIO_VOCAL_REMOVE_EN
     mix_vocal_remove_hdl = vocal_remove_open(ch_num);
+
+    u8 dac_connect_mode =  app_audio_output_mode_get();
+    if ((dac_connect_mode == DAC_OUTPUT_MONO_L)
+        || (dac_connect_mode == DAC_OUTPUT_MONO_R)
+        || (dac_connect_mode == DAC_OUTPUT_MONO_LR_DIFF)) {
+        mix_ch_switch = channel_switch_open(AUDIO_CH_DIFF, 512);
+    }
 #endif
 
 #if AUDIO_OUTPUT_AUTOMUTE
+    // 自动mute
     mix_out_automute_open();
 #endif
 
 #if AUDIO_SPECTRUM_CONFIG
+    //频响能量值获取接口
     spec_hdl = spectrum_open_demo(sr, ch_num);
 #endif
 
@@ -666,6 +667,9 @@ int audio_dec_init()
     if (mix_vocal_remove_hdl) {
         entries[entry_cnt++] = &mix_vocal_remove_hdl->entry;
     }
+    if (mix_ch_switch) {
+        entries[entry_cnt++] = &mix_ch_switch->entry;
+    }
 #endif
 
 #if AUDIO_OUTPUT_AUTOMUTE
@@ -674,19 +678,24 @@ int audio_dec_init()
 
     /* #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DAC) */
 #if AUDIO_OUTPUT_INCLUDE_DAC
+    // 创建dac通道
     audio_dac_new_channel(&dac_hdl, &default_dac);
     struct audio_dac_channel_attr attr;
+    audio_dac_channel_get_attr(&default_dac, &attr);
     attr.delay_time = 50;
+    attr.protect_time = 5;
     attr.write_mode = WRITE_MODE_BLOCK;
     audio_dac_channel_set_attr(&default_dac, &attr);
     entries[entry_cnt++] = &default_dac.entry;
     /*entries[entry_cnt++] = &dac_hdl.entry;*/
 #endif
 
+    // 创建数据流，把所有节点连接起来
     mixer.stream = audio_stream_open(&mixer, audio_mixer_stream_resume);
     audio_stream_add_list(mixer.stream, entries, entry_cnt);
 #if AUDIO_SPECTRUM_CONFIG
     if (spec_hdl) {
+        //频响能量值获取接口。从倒数第二个节点分流
         audio_stream_add_entry(entries[entry_cnt - 2], &spec_hdl->entry);
     }
 #endif
@@ -698,6 +707,7 @@ int audio_dec_init()
 
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_IIS)
+    // iis。从倒数第二个节点分流
     audio_dig_vol_param iis_digvol_last_param = {
         .vol_start = app_var.music_volume,
         .vol_max = SYS_MAX_VOL,
@@ -723,6 +733,7 @@ int audio_dec_init()
 
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DONGLE)
+    // 蓝牙dongle。从倒数第二个节点分流
     /* #if 1 */
     {
         audio_dig_vol_param dongle_digvol_last_param = {
@@ -750,6 +761,9 @@ int audio_dec_init()
 #endif
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT)
+    // 蓝牙发射。从倒数第二个节点分流
+    extern int audio_data_set_zero(struct audio_stream_entry * entry,  struct audio_data_frame * data_buf);
+    default_dac.entry.prob_handler = audio_data_set_zero;
     audio_dig_vol_param bt_digvol_last_param = {
         .vol_start = app_var.music_volume,
         .vol_max = SYS_MAX_VOL,
@@ -767,12 +781,13 @@ int audio_dec_init()
     audio_stream_add_entry(bt_digvol_last_entry, &sbc_emitter.entry);
 #endif
 
-__mixer_init_end:
-
 #if (RECORDER_MIX_EN)
-    recorder_mix_init(&recorder_mixer, recorder_mix_buff, sizeof(recorder_mix_buff));
-#endif//RECORDER_MIX_EN
+    // 录音
+    recorder_mix_audio_stream_entry_add(entries[entry_cnt - 2]);
+#endif
 
+__mixer_init_end:
+    // 音频音量初始化
     app_audio_volume_init();
     audio_output_set_start_volume(APP_AUDIO_STATE_MUSIC);
 
@@ -783,6 +798,7 @@ __mixer_init_end:
     /* #endif */
 #endif
 #if TCFG_SPDIF_ENABLE
+    // spdif音频
     spdif_init();
 #endif
 

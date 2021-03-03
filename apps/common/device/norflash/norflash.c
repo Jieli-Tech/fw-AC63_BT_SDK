@@ -590,6 +590,13 @@ int _norflash_ioctl(u32 cmd, u32 arg, u32 unit, void *_part)
         break;
     case IOCTL_CMD_SUSPEND:
         break;
+    case IOCTL_GET_PART_INFO:
+        u32 *info = (u32 *)arg;
+        u32 *start_addr = &info[0];
+        u32 *part_size = &info[1];
+        *start_addr = part->start_addr;
+        *part_size = part->size;
+        break;
     default:
         reg = -EINVAL;
         break;

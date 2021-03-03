@@ -112,8 +112,8 @@ static void udelay(u32 usec)
 {
     JL_TIMER0->CON = BIT(14);
     JL_TIMER0->CNT = 0;
-    JL_TIMER0->PRD = clk_get("timer") / 1000000L  * usec; //1us
-    JL_TIMER0->CON = BIT(0) | BIT(3); //sys clk
+    JL_TIMER0->PRD = clk_get("lsb") / 1000000L  * usec; //1us
+    JL_TIMER0->CON = BIT(0); //sys clk
     while ((JL_TIMER0->CON & BIT(15)) == 0);
     JL_TIMER0->CON = BIT(14);
 }

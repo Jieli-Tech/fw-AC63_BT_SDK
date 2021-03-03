@@ -115,12 +115,12 @@ void optical_mouse_sensor_read_motion_handler(void)
 }
 
 
-u16 optical_mouse_sensor_set_cpi(void)
+u16 optical_mouse_sensor_set_cpi(u16 dst_cpi)
 {
     u16 cpi = 0;
 
     if (OMSensor_hdl->OMSensor_set_cpi) {
-        cpi = OMSensor_hdl->OMSensor_set_cpi();
+        cpi = OMSensor_hdl->OMSensor_set_cpi(dst_cpi);
     }
 
     return cpi;

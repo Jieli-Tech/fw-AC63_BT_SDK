@@ -43,7 +43,7 @@
 typedef const int hw_iic_dev;
 
 struct hw_iic_config {
-    u8 port;   //example: 'A', 'B', 'C', 'D'
+    u8 port[2];
     u32 baudrate;
     u8 hdrive;
     u8 io_filter;

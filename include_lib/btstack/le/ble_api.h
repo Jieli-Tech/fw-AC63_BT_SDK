@@ -234,6 +234,14 @@ void user_client_init(u16 handle, u8 *buffer, u16 buffer_size);
 s8 ble_vendor_get_peer_rssi(u16 conn_handle);
 
 /**********************************************************************************
+   @function 使能周期interval事件上报
+   @param [in] con_handle  连接handle, range：>0
+   @param [in] enable      1 or 0
+   @return  true or false
+ *********************************************************************************/
+bool ble_vendor_interval_event_enable(u16 conn_handle, int enable);
+
+/**********************************************************************************
    @function 设置 搜索结束
    @param [in]
    @return
@@ -761,7 +769,8 @@ void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 /**********************************************************************************
 
    @function   ble 从机 配置配对表(可以不设置使用sdk默认值)
-   @param [in] pair_devices_count 记录配对设备  range: 0~10,默认10 ,若配置为0,不支持配对
+   @param [in] pair_devices_count 记录配对设备  range: 0~10,默认10
+               若配置为0:则不使用配对表记录管理，不限制配对个数
    @param [in] is_allow_cover  是否允许循环覆盖记录  1 or 0,默认1
    @param [in]
    @param [in]

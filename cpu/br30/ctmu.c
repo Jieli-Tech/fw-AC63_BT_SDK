@@ -19,14 +19,18 @@
 #define CTMU_CON1 		JL_CTM->CON1
 #define CTMU_ADR 		JL_CTM->ADR
 
-#define     CTMU_MAX_CH 16
-
+#define CTMU_MAX_CH     16
 static u32 ctm_buf[CTMU_MAX_CH * 2] = {0};
-
-static sCTMU_KEY_VAR ctm_key_value;
-static sCTMU_KEY_VAR *ctm_key_var;
-
 static u8 port_index_mapping_talbe[CTMU_KEY_CH_MAX] = {0};
+static u32 Touchkey_pre_value[CTMU_KEY_CH_MAX] = {0};
+static u32 Touchkey_normal_value[CTMU_KEY_CH_MAX] = {0};
+
+#define CALIBRATE_CYCLE 50//周期大约两秒
+static u8 Touchkey_start_cnt[CTMU_KEY_CH_MAX] = {0};
+static u32 Touchkey_calibrate_cnt[CTMU_KEY_CH_MAX] = {0};
+static u32 Touchkey_calibrate_tmp_value[CTMU_KEY_CH_MAX] = {0};
+
+static u8 Touchkey_state = 0;
 
 static const struct ctmu_touch_key_platform_data *user_data = NULL;
 
@@ -71,7 +75,6 @@ enum {
     GATE_SOURCE_PRE_DIV65536,
 };
 
-
 //放电时钟源硬件上默认是lsb, 可分频
 enum {
     DISCHARGE_SOURCE_PRE_DIV1 = 0,
@@ -84,7 +87,6 @@ enum {
     DISCHARGE_SOURCE_PRE_DIV128,
 };
 
-
 //充电时钟源选择, 不可分频
 enum {
     CHARGE_SOURCE_OSC = 0,
@@ -92,7 +94,6 @@ enum {
     CHARGE_SOURCE_PLL128M,
     CHARGE_SOURCE_PLL192M,
 };
-
 
 static const u8 ctmu_ch_table[] = {
     IO_PORTA_03, IO_PORTA_04, IO_PORTA_05, IO_PORTA_06,
@@ -105,106 +106,59 @@ static u32 get_ctmu_ch_val(u8 ch_index, u32 *ctm_buf)
     if (ch_index >= user_data->num) {
         return 0;
     }
-
     return ctm_buf[port_index_mapping_talbe[ch_index]];
 }
 
-static void ctm_irq(u16 ctm_res, u8 ch)
+static u32 ctm_flt(u8 ch, u32 value)
 {
-    u16 temp_u16_0, temp_u16_1;
-    s16 temp_s16_0, temp_s16_1;
-    s32 temp_s32_0;
-//..............................................................................................
-//取计数值/通道判断
-//..............................................................................................
-
-
-    if (ctm_key_var->touch_init_cnt[ch]) {
-        ctm_key_var->touch_init_cnt[ch]--;
-        ctm_key_var->touch_cnt_buf[ch] = (u32)ctm_res << (ctm_key_var->FLT0CFG + 1);
-        ctm_key_var->touch_release_buf[ch] = (u32)ctm_res << (ctm_key_var->FLT1CFG0 + 1);
+    if (Touchkey_pre_value[ch] == 0) {
+        Touchkey_pre_value[ch] = value;
     }
-
-//..............................................................................................
-//当前计数值去抖动滤波器
-//..............................................................................................
-    temp_u16_0 = ctm_key_var->touch_cnt_buf[ch];
-    temp_u16_1 = temp_u16_0;
-    temp_u16_1 -= (temp_u16_1 >> ctm_key_var->FLT0CFG);
-    temp_u16_1 += ctm_res;
-    ctm_key_var->touch_cnt_buf[ch] = temp_u16_1;
-    temp_u16_0 += temp_u16_1;
-    temp_u16_0 >>= (ctm_key_var->FLT0CFG + 1);
-
-
-//..............................................................................................
-//各通道按键释放计数值滤波器
-//..............................................................................................
-    temp_s32_0 = ctm_key_var->touch_release_buf[ch];
-    temp_u16_1 = temp_s32_0 >> ctm_key_var->FLT1CFG0;	//获得滤波器之后的按键释放值
-    temp_s16_0 = temp_u16_0 - temp_u16_1;	//获得和本次检测值的差值，按下按键为负值，释放按键为正值
-    temp_s16_1 = temp_s16_0;
-
-//	if(ch == 1)
-//	{
-//		printf("ch%d: %d  %d", (short)ch, temp_u16_0, temp_s16_1);
-//	}
-
-    if (ctm_key_var->touch_key_state & BIT(ch)) {	//如果本通道按键目前是处于释放状态
-        if (temp_s16_1 <= 0) {	//当前计数值小于低通值，放大后参与运算
-            if (temp_s16_1 > -(ctm_key_var->FLT1CFG2 >> 3)) {
-                temp_s16_1 = temp_s16_1 * 8; //temp_s16_1 <<= 3;	//放大后参与运算
-            } else {
-                temp_s16_1 = -(ctm_key_var->FLT1CFG2);	//饱和，防止某些较大的正偏差导致错判
-            }
-        } else if (temp_s16_1 <= ctm_key_var->FLT1CFG1) {	//当前计数值小于低通值不多，正常参与运算
-        } else {			//当前计数值小于低通值很多，缩小后参与运算
-            temp_s16_1 = temp_s16_1 / 8;  //temp_s16_1 >>= 3;(有符号数右移自动扩展符号位???)
-        }
-    } else {		//如果本通道按键目前是处于按下状态, 缓慢降低释放计数值
-        if (temp_s16_1 >= ctm_key_var->RELEASECFG1) {
-            temp_s16_1 >>= 3;		//缩小后参与运算
-        } else {
-            temp_s16_1 = 0;
-        }
+    if (value >= Touchkey_pre_value[ch]) {
+        value = Touchkey_pre_value[ch] + ((value - Touchkey_pre_value[ch]) * 0.2f);
+    } else {
+        value = Touchkey_pre_value[ch] - ((Touchkey_pre_value[ch] - value) * 0.2f);
     }
-
-    temp_s32_0 += (s32)temp_s16_1;
-    ctm_key_var->touch_release_buf[ch] = temp_s32_0;
-
-//..............................................................................................
-//按键按下与释放检测
-//..............................................................................................
-    /* printf(" %d %d %d",temp_s16_0,ctm_key_var->PRESSCFG,ctm_key_var->RELEASECFG0); */
-    if (temp_s16_0 >= ctm_key_var->PRESSCFG) {			//按键按下
-        ctm_key_var->touch_key_state &= ~BIT(ch);
-    } else if (temp_s16_0 >= ctm_key_var->RELEASECFG0) {	//按键释放
-        ctm_key_var->touch_key_state |= BIT(ch);
-    }
+    Touchkey_pre_value[ch] = value;
+    return value;
 }
-
 
 static void scan_capkey(u8 ch_index, u32 *ctmu_buf)
 {
-    u16 Touchkey_value_delta = 0;
-
     if (user_data == NULL || user_data->num == 0) {
         return;
     }
+    u32 Touchkey_cur_value = get_ctmu_ch_val(ch_index, ctmu_buf);       //当前采到的值
+    /* printf("ch: %d  val: %d\n", ch_index, Touchkey_cur_value); */
+    u32 Touchkey_flt_value = ctm_flt(ch_index, Touchkey_cur_value);     //滤波后的值
+    /* printf("ch: %d  val: %d\n", ch_index, Touchkey_flt_value); */
 
-    Touchkey_value_delta = get_ctmu_ch_val(ch_index, ctmu_buf);   ///获取计数值;
-
-    /* g_printf("%d %d", ch_index, Touchkey_value_delta); */
-    /*调用滤波算法*/
-    ctm_irq(Touchkey_value_delta, ch_index);
+    //拿滤波后的值做处理
+    if (Touchkey_start_cnt[ch_index] < 3) {
+        Touchkey_start_cnt[ch_index] ++;
+        Touchkey_normal_value[ch_index] = Touchkey_flt_value;
+        return;
+    }
+    if (Touchkey_flt_value > (Touchkey_normal_value[ch_index] + user_data->port_list[ch_index].press_delta)) {
+        Touchkey_state |=  BIT(ch_index);
+        Touchkey_calibrate_cnt[ch_index] = 0;
+    } else {
+        Touchkey_state &= ~BIT(ch_index);
+        Touchkey_calibrate_cnt[ch_index] ++;
+    }
+    //定期更新常态下的基准值
+    if (Touchkey_calibrate_cnt[ch_index] == (CALIBRATE_CYCLE / 2)) {
+        Touchkey_calibrate_tmp_value[ch_index] = Touchkey_flt_value;
+    } else if (Touchkey_calibrate_cnt[ch_index] > CALIBRATE_CYCLE) {
+        Touchkey_normal_value[ch_index] = Touchkey_calibrate_tmp_value[ch_index];
+        Touchkey_calibrate_cnt[ch_index] = 0;
+    }
 }
-
 
 ___interrupt
 static void ctmu_isr_handle(void)
 {
     u32 *rbuf = NULL;
-    u8 i, j;
     if (CTMU_CON0 & BIT(7)) {
         CTMU_CON0 |= BIT(6);
     }
@@ -213,8 +167,7 @@ static void ctmu_isr_handle(void)
     } else {
         rbuf = (u32 *)(&ctm_buf[CTMU_MAX_CH]);
     }
-
-    for (i = 0; i < user_data->num; i++) {
+    for (u8 i = 0; i < user_data->num; i++) {
         scan_capkey(i, rbuf);
     }
 }
@@ -256,8 +209,6 @@ static void log_ctmu_info(void)
 {
     log_info("CTMU_CON0 = 0x%x", CTMU_CON0);
     log_info("CTMU_CON1 = 0x%x", CTMU_CON1);
-    /* log_info("%x %x",JL_PORTA->DIR ,JL_PORTA->DIE); */
-    /* log_info("%x %x",JL_PORTA->PU ,JL_PORTA->PD);   */
 }
 
 static void touch_ctmu_init(const struct ctmu_key_port *port, u8 num)
@@ -308,25 +259,6 @@ int ctmu_init(void *_data)
     }
     user_data = (const struct ctmu_touch_key_platform_data *)_data;
 
-    memset((u8 *)&ctm_key_value, 0x0, sizeof(sCTMU_KEY_VAR));
-
-    /*触摸按键参数配置*/
-    ctm_key_value.FLT0CFG = 2;
-    ctm_key_value.FLT1CFG0 = 2;
-    ctm_key_value.FLT1CFG1 = 80;
-    ctm_key_value.FLT1CFG2 =  10 * 128; //128 = 2^7
-
-    ///调节灵敏度的主要参数
-    ctm_key_value.PRESSCFG =  user_data->press_cfg;;
-    ctm_key_value.RELEASECFG0 = user_data->release_cfg0;
-    ctm_key_value.RELEASECFG1 = user_data->release_cfg1;
-
-    memset((u8 *) & (ctm_key_value.touch_init_cnt[0]), 0x10, CTMU_KEY_CH_MAX);
-
-    ctm_key_value.touch_key_state = 0xffff; //<按键默认释放
-
-    ctm_key_var = &ctm_key_value;
-
     if (user_data->num > CTMU_KEY_CH_MAX) {
         log_error("ctm key num config err!!!");
         return -1;
@@ -343,21 +275,15 @@ int ctmu_init(void *_data)
     return 0;
 }
 
-
 u8 get_ctmu_value(void)
 {
-    u8 key = 0xFF;
-    u8 i;
-
-    /* log_ctmu_info(); */
-    for (i = 0; i < user_data->num; i++) {
-        if (!(ctm_key_value.touch_key_state & (u16)(BIT(i)))) {
-            break;
+    for (u8 i = 0; i < user_data->num; i++) {
+        if (Touchkey_state & BIT(i)) {
+            /* printf("i:%d\n", i); */
+            return i;
         }
     }
-    key = (i < user_data->num) ? i : 0xFF;
-
-    return key;
+    return 0xff;
 }
 
 #endif /* #if TCFG_CTMU_TOUCH_KEY_ENABLE */

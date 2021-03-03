@@ -253,6 +253,8 @@ void p33_soft_reset(void);
 void power_mclr(u8 enable);
 
 void power_pin_reset(u8 enable);
+
+void port_edge_wkup_set_callback(void (*wakeup_callback)(u8 index, u32 gpio));
 /*-----------------------------------------------------------*/
 
 

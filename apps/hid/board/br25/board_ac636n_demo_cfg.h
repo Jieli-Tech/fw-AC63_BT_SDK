@@ -28,13 +28,18 @@
 //*********************************************************************************//
 //                                 USB 配置                                        //
 //*********************************************************************************//
-#define TCFG_PC_ENABLE						DISABLE_THIS_MOUDLE //PC模块使能
+#define TCFG_PC_ENABLE                      DISABLE_THIS_MOUDLE//PC模块使能
 #define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE //U盘模块使能
-#define TCFG_HID_HOST_ENABLE                0//ENABLE_THIS_MOUDLE  //游戏盒子模式
-#define TCFG_ADB_ENABLE                     0//ENABLE_THIS_MOUDLE
-#define TCFG_AOA_ENABLE                     0//ENABLE_THIS_MOUDLE
+#define TCFG_HID_HOST_ENABLE                DISABLE_THIS_MOUDLE  //游戏盒子模式
+#define TCFG_ADB_ENABLE                     DISABLE_THIS_MOUDLE
+#define TCFG_AOA_ENABLE                     DISABLE_THIS_MOUDLE
 
 #define TCFG_OTG_USB_DEV_EN                 (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
+
+#include "usb_std_class_def.h"
+///USB 配置重定义
+#undef USB_DEVICE_CLASS_CONFIG
+#define     USB_DEVICE_CLASS_CONFIG (SPEAKER_CLASS|MIC_CLASS|HID_CLASS)
 //*********************************************************************************//
 //                                 IIC配置                                        //
 //*********************************************************************************//
@@ -155,6 +160,17 @@
 #define TCFG_ADKEY_VALUE7                   7
 #define TCFG_ADKEY_VALUE8                   8
 #define TCFG_ADKEY_VALUE9                   9
+//*********************************************************************************//
+//                                  app 配置                                       //
+//*********************************************************************************//
+#define TCFG_APP_BT_EN			            1
+#define TCFG_APP_MUSIC_EN			        1
+#define TCFG_APP_LINEIN_EN					1
+#define TCFG_APP_FM_EN					    1
+#define TCFG_APP_PC_EN					    1
+#define TCFG_APP_RTC_EN					    0
+#define TCFG_APP_RECORD_EN				    1
+#define TCFG_APP_SPDIF_EN                   0
 
 //*********************************************************************************//
 //                                 Audio配置                                       //
@@ -174,7 +190,7 @@
 
 //支持Audio功能，才能使能DAC/ADC模块
 #ifdef CONFIG_LITE_AUDIO
-#define TCFG_AUDIO_ENABLE					DISABLE
+#define TCFG_AUDIO_ENABLE					0
 #if TCFG_AUDIO_ENABLE
 #undef TCFG_AUDIO_ADC_ENABLE
 #undef TCFG_AUDIO_DAC_ENABLE
@@ -183,7 +199,11 @@
 #define TCFG_DEC_SBC_CLOSE
 #define TCFG_DEC_MSBC_CLOSE
 #define TCFG_DEC_SBC_HWACCEL_CLOSE
+#define TCFG_DEC_PCM_ENABLE                 ENABLE
+#define TCFG_DEC_G729_ENABLE                ENABLE
 #define TCFG_DEC_CVSD_CLOSE
+#define TCFG_ENC_OPUS_ENABLE               	DISABLE
+#define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #else
 #define TCFG_DEC_PCM_CLOSE
 #define TCFG_DEC_SBC_CLOSE
@@ -208,7 +228,7 @@ DAC硬件上的连接方式,可选的配置：
     DAC_OUTPUT_LR                   立体声
     DAC_OUTPUT_MONO_LR_DIFF         单声道差分输出
 */
-#define TCFG_AUDIO_DAC_CONNECT_MODE    DAC_OUTPUT_LR
+#define TCFG_AUDIO_DAC_CONNECT_MODE    DAC_OUTPUT_MONO_LR_DIFF
 
 /*
 解码后音频的输出方式:
@@ -411,6 +431,16 @@ DAC硬件上的连接方式,可选的配置：
 #undef TCFG_USER_EDR_ENABLE
 #define     TCFG_USER_EDR_ENABLE    0
 #endif
+
+
+//*********************************************************************************//
+//                           (Yes/No)语音识别使能                                  //
+//*********************************************************************************//
+#if TCFG_AUDIO_ENABLE
+#define TCFG_KWS_VOICE_RECOGNITION_ENABLE 			 	0 //DISABLE_THIS_MOUDLE
+#endif /* #if TCFG_AUDIO_ENABLE */
+
+
 
 //*********************************************************************************//
 //                                 配置结束                                        //
