@@ -20,7 +20,6 @@ sdk.ld
 
 # Libraries
 *.lib
-*.a
 *.la
 *.lo
 
@@ -56,7 +55,4 @@ tags
 filenametags
 cscope.out
 *.bc
-*.bin
-*.fw
-*.txt
 *.ufw

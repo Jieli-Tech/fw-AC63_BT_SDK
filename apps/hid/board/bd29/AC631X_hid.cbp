@@ -34,7 +34,7 @@
 <Add option="-DCONFIG_EVENT_KEY_MAP_ENABLE=0" />
 <Add option="-DTIMER_POOL_NUM_CONFIG=10" />
 <Add option="-DAPP_ASYNC_POOL_NUM_CONFIG=0" />
-<Add option="-DVFS_ENABLE=0" />
+<Add option="-DVFS_ENABLE=1" />
 <Add option="-DUSE_SDFILE_NEW=1" />
 <Add option="-DVFS_FILE_POOL_NUM_CONFIG=0" />
 <Add option="-DSDFILE_VERSION=0x020000" />
@@ -83,6 +83,7 @@
 <Add directory="../../../../apps/common/usb" />
 <Add directory="../../../../include_lib/ai_stack/JL_rcsp" />
 <Add directory="../../../../include_lib/btstack" />
+<Add directory="../../../../cpu/bd29" />
 <Add directory="../../../../apps/common/code_switch/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include/hal3205" />
@@ -112,6 +113,7 @@
 <Add library="C:\JL\pi32\q32s-lib\libm.a" />
 </Linker>
 <ExtraCommands>
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\sdk_used_list.c -o ..\..\..\..\cpu\bd29\sdk_used_list.used" />
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\sdk_ld.c -o ..\..\..\..\cpu\bd29\sdk.ld" />
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\tools\download.c -o ..\..\..\..\cpu\bd29\tools\download.bat" />
 <Mode before="always" />
@@ -132,6 +134,7 @@
 <Unit filename="../../../../apps/common/include/standard_hid.h" />
 <Unit filename="../../../../apps/common/include/update_tws.h" />
 <Unit filename="../../../../apps/common/key/adkey.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/key/ctmu_touch_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/iokey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/key_driver.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/matrix_keyboard.c"><Option compilerVer="CC"/></Unit>

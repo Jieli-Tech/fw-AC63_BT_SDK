@@ -34,7 +34,7 @@
 <Add option="-DCONFIG_EVENT_KEY_MAP_ENABLE=0" />
 <Add option="-DTIMER_POOL_NUM_CONFIG=10" />
 <Add option="-DAPP_ASYNC_POOL_NUM_CONFIG=0" />
-<Add option="-DVFS_ENABLE=0" />
+<Add option="-DVFS_ENABLE=1" />
 <Add option="-DUSE_SDFILE_NEW=1" />
 <Add option="-DVFS_FILE_POOL_NUM_CONFIG=0" />
 <Add option="-DSDFILE_VERSION=0x020000" />
@@ -106,6 +106,7 @@
 <Add library="C:\JL\pi32\q32s-lib\libm.a" />
 </Linker>
 <ExtraCommands>
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\sdk_used_list.c -o ..\..\..\..\cpu\bd29\sdk_used_list.used" />
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\sdk_ld.c -o ..\..\..\..\cpu\bd29\sdk.ld" />
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\tools\download.c -o ..\..\..\..\cpu\bd29\tools\download.bat" />
 <Mode before="always" />
@@ -142,6 +143,7 @@
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/adv.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/access.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/basic_depend.h" />
+<Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/cdb.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/cfg_cli.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/cfg_srv.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/health_cli.h" />
@@ -153,6 +155,7 @@
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/api/sig_mesh_api.h" />
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/beacon.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/beacon.h" />
+<Unit filename="../../../../apps/common/third_party_profile/sig_mesh/cdb.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/cfg_cli.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/cfg_srv.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/crypto.c"><Option compilerVer="CC"/></Unit>
