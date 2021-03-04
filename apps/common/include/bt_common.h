@@ -21,6 +21,11 @@ enum {
     ST_BIT_WEIXIN_CONN,
 };
 
+enum {
+    BLE_PRIV_MSG_PAIR_CONFIRM = 0xF0,
+    BLE_PRIV_PAIR_ENCRYPTION_CHANGE,
+};//ble_state_e
+
 
 // #define SYS_BT_EVENT_FORM_COMMON       (('C' << 24) | ('M' << 16) | ('M' << 8) | '\0')
 enum {
@@ -57,5 +62,8 @@ extern void reset_PK_cb_register(void (*reset_pk)(u32 *));
 extern void att_server_flow_enable(u8 enable);
 extern void le_device_db_init(void);
 extern bool get_remote_test_flag();
+extern void transport_spp_disconnect(void);
+extern int transport_spp_flow_enable(u8 en);
+extern void transport_spp_flow_cfg(void);
 
 #endif

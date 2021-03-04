@@ -29,13 +29,14 @@ export CLANG_TIDY=/opt/utils/llvm11/bin/clang-tidy
 export TIDY_FILTER=/opt/utils/tidy-filter
 
 
+
 #配置下载目标SoC(br18/br21/br22/br23/br25/br26/bd29)
 #export前面不要有空格，会导致文件sync异常
 #export SoC?=br18
 #export SoC?=br21
 #export SoC?=br22
 #export SoC?=br23
-export SoC?=br25
+#export SoC?=br25
 #export SoC?=br25_r
 #export SoC?=br26
 #export SoC?=bd29
@@ -43,7 +44,7 @@ export SoC?=br25
 #export SoC?=br30c
 #export SoC?=br34
 #export SoC?=br28
-#export SoC?=bd19
+export SoC?=bd19
 #export SoC?=br36
 
 
@@ -59,6 +60,7 @@ export APP_CASE?=hid
 #export APP_CASE?=iot
 #export APP_CASE?=bt_udisk
 #export APP_CASE?=multi_link
+# export APP_CASE?=le_audio
 
 
 # --------------common var begin-----------------------

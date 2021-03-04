@@ -18,6 +18,9 @@ const int support_vm_data_keep = 0;
 //是否支持外挂flash升级,需要打开Board.h中的TCFG_NOR_FS_ENABLE
 const int support_norflash_update_en  = 0;
 
+//支持从外挂flash读取ufw文件升级使能
+const int support_norflash_ufw_update_en = 0;
+
 #if OTA_TWS_SAME_TIME_NEW       //使用新的同步升级流程
 const int support_ota_tws_same_time_new =  1;
 #else

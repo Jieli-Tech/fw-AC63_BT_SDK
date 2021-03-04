@@ -6,6 +6,8 @@
 #include "clock_cfg.h"
 #include "audio_dec.h"
 
+#define AUDIO_DEC_TONE_AT_CODE_EVENT_CB		AT(.audio_dec_tone_event_callback)
+
 #define AUDIO_DEC_TONE_WAIT_USE_PRIO			0 // 采用优先级顺序播放方式
 
 extern struct audio_dac_hdl dac_hdl;
@@ -288,12 +290,15 @@ static void tone_dec_end_ctrl(struct tone_dec_handle *dec)
    @note
 */
 /*----------------------------------------------------------------------------*/
-static int tone_dec_file_app_evt_cb(void *priv, int event, int *param)
+AUDIO_DEC_TONE_AT_CODE_EVENT_CB
+static int tone_dec_file_app_evt_cb(void *priv, enum audio_dec_app_event event, int *param)
 {
     /* log_i("audio_dec_file_app_evt_cb, priv:0x%x, event:%d \n", priv, event); */
     int ret ;
     struct audio_dec_file_app_hdl *file_dec = priv;
     struct tone_dec_handle *dec = file_dec->priv;
+    void *dvol_entry = NULL;
+    struct audio_dec_stream_entries_hdl *entries_hdl = (struct audio_dec_stream_entries_hdl *)param;
     switch (event) {
     case AUDIO_DEC_APP_EVENT_DEC_PROBE:
         break;
@@ -334,6 +339,38 @@ static int tone_dec_file_app_evt_cb(void *priv, int event, int *param)
         log_i("tone_file play end\n");
         tone_dec_end_ctrl(dec);
         break;
+    case AUDIO_DEC_APP_EVENT_STREAM_OPEN:
+
+#if SYS_DIGVOL_GROUP_EN
+
+        audio_dig_vol_param temp_digvol_param = {
+            .vol_start = get_max_sys_vol(),
+            .vol_max =  get_max_sys_vol(),
+            .ch_total = 2,
+            .fade_en = 0,   //提示音不能淡入淡出
+            .fade_points_step = 5,
+            .fade_gain_step = 10,
+            .vol_list = NULL,
+        };
+
+        if (dec->cur_list->stream_handler == NULL) {
+            dvol_entry = sys_digvol_group_ch_open("tone_tone", -1, &temp_digvol_param);
+            (entries_hdl->entries_addr)[entries_hdl->entries_cnt++] = dvol_entry;
+        }
+#endif // SYS_DIGVOL_GROUP_EN
+
+        break;
+    case AUDIO_DEC_APP_EVENT_STREAM_CLOSE:
+
+#if SYS_DIGVOL_GROUP_EN
+        sys_digvol_group_ch_close("tone_tone");
+#endif // SYS_DIGVOL_GROUP_EN
+
+        break;
+
+    default :
+        break;
+
     }
     return 0;
 }
@@ -347,11 +384,14 @@ static int tone_dec_file_app_evt_cb(void *priv, int event, int *param)
    @note
 */
 /*----------------------------------------------------------------------------*/
-static int tone_dec_sine_app_evt_cb(void *priv, int event, int *param)
+AUDIO_DEC_TONE_AT_CODE_EVENT_CB
+static int tone_dec_sine_app_evt_cb(void *priv, enum audio_dec_app_event event, int *param)
 {
     /* log_i("audio_dec_sine_app_evt_cb, priv:0x%x, event:%d \n", priv, event); */
     struct audio_dec_sine_app_hdl *sine_dec = priv;
     struct tone_dec_handle *dec = sine_dec->priv;
+    struct audio_dec_stream_entries_hdl *entries_hdl = (struct audio_dec_stream_entries_hdl *)param;
+    void *dvol_entry = NULL;
     switch (event) {
     case AUDIO_DEC_APP_EVENT_DEC_PROBE:
         if (sine_dec->sin_maker) {
@@ -395,6 +435,26 @@ static int tone_dec_sine_app_evt_cb(void *priv, int event, int *param)
         /* audio_dec_sine_app_play_end(sine_dec); */
         tone_dec_end_ctrl(dec);
         break;
+    case AUDIO_DEC_APP_EVENT_STREAM_OPEN:
+
+#if SYS_DIGVOL_GROUP_EN
+        if (dec->cur_list->stream_handler == NULL) {
+            dvol_entry = sys_digvol_group_ch_open("tone_tone", -1, NULL);
+            (entries_hdl->entries_addr)[entries_hdl->entries_cnt++] = dvol_entry;
+        }
+#endif // SYS_DIGVOL_GROUP_EN
+        break;
+    case AUDIO_DEC_APP_EVENT_STREAM_CLOSE:
+
+#if SYS_DIGVOL_GROUP_EN
+        sys_digvol_group_ch_close("tone_tone");
+#endif // SYS_DIGVOL_GROUP_EN
+
+        break;
+
+    default :
+        break;
+
     }
     return 0;
 }

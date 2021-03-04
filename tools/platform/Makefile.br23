@@ -38,9 +38,7 @@ export CC_DEFINE += \
 
 export CONFIG_BLUETOOTH_EN = y
 
-ifeq ($(APP_CASE),watch)
-CC_DEFINE += -DCONFIG_WATCH_APP
-endif
+export MIDI_DEC_ADDR = n
 
 export cibuild ?= n
 ifeq ($(cibuild),y)
@@ -61,6 +59,10 @@ endif
 CC_DEFINE += -DCONFIG_EQ_SUPPORT_ASYNC
 
 CC_DEFINE += -DCONFIG_MIXER_CYCLIC
+
+ifeq ($(MIDI_DEC_ADDR),y)
+CC_DEFINE += -DCONFIG_MIDI_DEC_ADDR
+endif
 
 ifeq ($(MP3_WMA_LIB_SPECIAL),y)
 CC_DEFINE += -DCONFIG_MP3_WMA_LIB_SPECIAL

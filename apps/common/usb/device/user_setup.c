@@ -22,6 +22,8 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+#if TCFG_USB_SLAVE_ENABLE
+
 static const u8 user_stirng[] = {
     24,
     0x03,
@@ -63,17 +65,17 @@ u32 check_ep_vaild(u32 ep)
     case 0:
         en = 1;
         break;
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
+#if TCFG_USB_SLAVE_MSD_ENABLE
     case 1:
         en = 1;
         break;
 #endif
-#if USB_DEVICE_CLASS_CONFIG & HID_CLASS
+#if TCFG_USB_SLAVE_HID_ENABLE
     case 2:
         en = 1;
         break;
 #endif
-#if USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
     case 3:
         en = 1;
         break;
@@ -89,7 +91,7 @@ static u32 setup_endpoint(struct usb_device_t *usb_device, struct usb_ctrlreques
     u32 tx_len = 0;
     u8 *tx_payload = usb_get_setup_buffer(usb_device);
 
-#if USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
     if (uac_setup_endpoint(usb_device, req)) {
         return 1;
     }
@@ -112,7 +114,7 @@ static u32 setup_device(struct usb_device_t *usb_device, struct usb_ctrlrequest 
         switch (HIBYTE(req->wValue)) {
         case USB_DT_STRING:
             switch (LOBYTE(req->wValue)) {
-#if USB_SLAVE_SUPPORT_AUDIO
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
             case SPEAKER_STR_INDEX:
             case MIC_STR_INDEX:
                 if (usb_device->bDeviceStates == USB_DEFAULT) {
@@ -197,3 +199,4 @@ void user_setup_filter_install(struct usb_device_t *usb_device)
 {
     usb_set_setup_hook(usb_device, user_setup_filter);
 }
+#endif

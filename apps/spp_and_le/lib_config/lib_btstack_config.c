@@ -37,3 +37,12 @@ const u8 adt_profile_support = 0;
 
 //协议栈接收到命令是否自动退出sniff
 const int config_btstask_auto_exit_sniff = 1;
+
+
+#if SMART_BOX_EN
+const int config_rcsp_stack_enable = 1;
+#else
+const int config_rcsp_stack_enable = 0;
+#endif
+
+

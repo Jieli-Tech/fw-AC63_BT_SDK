@@ -69,7 +69,7 @@ int audio_dec_init();
 // mix out后 做高低音
 void mix_out_high_bass(u32 cmd, struct high_bass *hb);
 // mix out后 是否做高低音处理
-void mix_out_high_bass_dis(u32 cmd, u8 dis);
+void mix_out_high_bass_dis(u32 cmd, u32 dis);
 // 切换频响计算
 void spectrum_switch_demo(u8 en);
 

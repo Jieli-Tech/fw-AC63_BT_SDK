@@ -161,6 +161,14 @@ void mcpwm_set_duty(pwm_ch_num_type pwm_ch, pwm_timer_num_type timer_ch, u16 dut
         pwm_reg->ch_cmpl = timer_reg->tmr_pr * duty / 10000;
         pwm_reg->ch_cmph = pwm_reg->ch_cmpl;
         timer_reg->tmr_cnt = 0;
+        timer_reg->tmr_con |= 0b01;
+        if (duty == 10000) {
+            timer_reg->tmr_cnt = 0;
+            timer_reg->tmr_con &= ~(0b11);
+        } else if (duty == 0) {
+            timer_reg->tmr_cnt = pwm_reg->ch_cmpl;
+            timer_reg->tmr_con &= ~(0b11);
+        }
     }
 }
 
@@ -212,8 +220,8 @@ void mcpwm_open(pwm_ch_num_type pwm_ch, pwm_timer_num_type timer_ch)
     pwm_reg->ch_con1 &= ~(0b111 << 8);
     pwm_reg->ch_con1 |= (timer_ch << 8); //sel mctmr
 
-    mctimer_ch_open_or_close(timer_ch, 1);
     mcpwm_ch_open_or_close(pwm_ch, 1);
+    mctimer_ch_open_or_close(timer_ch, 1);
 }
 
 
@@ -243,14 +251,12 @@ void log_pwm_info(pwm_ch_num_type pwm_ch, pwm_timer_num_type timer_ch)
 
 void mcpwm_init(struct pwm_platform_data *arg)
 {
+    u8 h_output_channel = 0;
+    u8 l_output_channel = 0;
     u8 use_output_ch_flag = 0;
 
     //set mctimer frequency
     mcpwm_set_frequency(arg->pwm_timer_num, arg->pwm_aligned_mode, arg->frequency);
-
-    //set duty
-    mcpwm_set_duty(arg->pwm_ch_num, arg->pwm_timer_num, arg->duty);
-
     //set output IO
     PWM_CH_REG *pwm_reg = get_pwm_ch_reg(arg->pwm_ch_num);
     if (pwm_reg == NULL) {
@@ -271,7 +277,8 @@ void mcpwm_init(struct pwm_platform_data *arg)
                 printf("error: mcpwm ch %d not support output_channel", arg->pwm_ch_num);
                 goto _CH_L_SET;
             }
-            gpio_output_channle(arg->h_pin, CHx_CHx_PWM_H[arg->h_pin_output_ch_num][arg->pwm_ch_num]);
+            h_output_channel = 1;
+            /* gpio_output_channle(arg->h_pin, CHx_CHx_PWM_H[arg->h_pin_output_ch_num][arg->pwm_ch_num]); */
             use_output_ch_flag = 1;
         }
     }
@@ -295,7 +302,8 @@ _CH_L_SET:
                     arg->l_pin_output_ch_num = 0;
                 }
             }
-            gpio_output_channle(arg->l_pin, CHx_CHx_PWM_L[arg->l_pin_output_ch_num][arg->pwm_ch_num]);
+            l_output_channel = 1;
+            /* gpio_output_channle(arg->l_pin, CHx_CHx_PWM_L[arg->l_pin_output_ch_num][arg->pwm_ch_num]); */
         }
     }
 
@@ -308,7 +316,16 @@ _CH_L_SET:
 
 _PWM_OPEN:
     mcpwm_open(arg->pwm_ch_num, arg->pwm_timer_num); 	 //mcpwm enable
-    log_pwm_info(arg->pwm_ch_num, arg->pwm_timer_num);
+    if (h_output_channel) {
+        gpio_output_channle(arg->h_pin, CHx_CHx_PWM_H[arg->h_pin_output_ch_num][arg->pwm_ch_num]);
+    }
+    if (l_output_channel) {
+        gpio_output_channle(arg->l_pin, CHx_CHx_PWM_L[arg->l_pin_output_ch_num][arg->pwm_ch_num]);
+    }
+    //set duty
+    mcpwm_set_duty(arg->pwm_ch_num, arg->pwm_timer_num, arg->duty);
+
+    /* log_pwm_info(arg->pwm_ch_num, arg->pwm_timer_num); */
 }
 
 
@@ -568,5 +585,4 @@ void set_timer_pwm_duty(JL_TIMER_TypeDef *JL_TIMERx, u32 duty)
 /*     timer_pwm_init(JL_TIMER3, 10000, 5000, IO_PORTB_05, 0); */
 /*     timer_pwm_init(JL_TIMER5, 10000, 8000, IO_PORTB_07, 0); */
 /* } */
-
 

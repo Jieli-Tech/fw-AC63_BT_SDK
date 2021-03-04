@@ -1,3 +1,5 @@
+#ifndef __USB_STD_CLASS_DEF_H__
+#define __USB_STD_CLASS_DEF_H__
 
 #define     USB_MALLOC_ENABLE           0
 #define     USB_HOST_ASYNC              1
@@ -41,7 +43,7 @@
 
 #define     SPK_ISO_EP_OUT              3
 
-#define     SPEAKER_STR_INDEX           0
+#define     SPEAKER_STR_INDEX           5
 
 #define     SPK_INPUT_TERMINAL_ID       1
 #define     SPK_FEATURE_UNIT_ID         2
@@ -77,9 +79,23 @@
 
 #define     MIC_ISO_EP_IN               3
 
-#define     MIC_STR_INDEX               0
+#define     MIC_STR_INDEX               6
 
 #define     MIC_INPUT_TERMINAL_ID       4
 #define     MIC_FEATURE_UNIT_ID         5
 #define     MIC_OUTPUT_TERMINAL_ID      6
 #define     MIC_SELECTOR_UNIT_ID        7
+
+
+////////////CDC Class
+#define     CDC_DATA_EP_IN              2
+#define     CDC_DATA_EP_OUT             2
+#define     CDC_INTR_EP_IN              3
+
+#define     MAXP_SIZE_CDC_BULKIN        64
+#define     MAXP_SIZE_CDC_BULKOUT       64
+#define     MAXP_SIZE_CDC_INTRIN        8
+
+#define     CDC_INTR_EP_ENABLE          0
+
+#endif

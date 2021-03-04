@@ -182,6 +182,7 @@ struct vfs_operations {
     int (*fpos)(FILE *);
     int (*fcopy)(FILE *, FILE *);
     int (*fget_name)(FILE *, u8 *name, int len);
+    int (*fget_path)(FILE *, u8 *name, int len, u8 is_relative_path);
     int (*frename)(FILE *, const char *path);
     int (*fclose)(FILE *);
     int (*fdelete)(FILE *);
@@ -274,6 +275,8 @@ int fdelete_by_name(const char *fname);
 
 int fget_free_space(const char *path, u32 *space);
 
+int fget_path(FILE *file, u8 *name, int len, u8 is_relative_path);
+
 /* arg:
  * -t  文件类型
  * -r  包含子目录
@@ -335,8 +338,6 @@ int fget_disp_info(FILE *file, void *arg); //用于长文件名获取
 int fmk_dir(const char *path, char *folder, u8 mode); //创建目录
 
 int fget_encfolder_info(const char *path, char *folder, char *ext, u32 *last_num, u32 *total_num); //获取录音文件信息
-
-int fget_name_type(char *path, int len); //判断是不是unicode码
 
 int fname_to_path(char *result, const char *path, const char *fname, int len); //把路径和文件名拼接
 

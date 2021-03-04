@@ -1,11 +1,9 @@
 #ifndef _EQ_CONFIG_H_
 #define _EQ_CONFIG_H_
 
-#include "typedef.h"
-#include "asm/hw_eq.h"
-#include "spinlock.h"
 #include "application/audio_eq.h"
 #include "application/audio_drc.h"
+#include "spinlock.h"
 #include "math.h"
 
 /*-----------------------------------------------------------*/
@@ -70,9 +68,9 @@ typedef struct eq_seg_info EQ_ONLINE_PARAMETER_SEG;
 typedef struct eq_seg_info EQ_CFG_SEG;
 
 typedef struct {
-    float global_gain;
-    int seg_num;
-    int enable_section;
+    float global_gain;    //总增益
+    int seg_num;          //eq效果文件存储的段数
+    int enable_section;   //
 } CFG_PARM;
 
 #ifdef CONFIG_CPU_BR23
@@ -80,48 +78,45 @@ typedef struct {
 #else
 #define SECTION_MAX 10
 #endif
-// #define MODE_NUM_MAX  6
 typedef struct {
     CFG_PARM par;
-    // EQ_CFG_SEG *seg;//[EQ_SECTION_MAX];
-    EQ_CFG_SEG seg[SECTION_MAX];
+    EQ_CFG_SEG seg[SECTION_MAX];   //eq系数存储地址
 } EQ_CFG_PARAMETER;
 
 
 typedef struct {
-    struct drc_ch drc;
+    struct drc_ch drc;    //drc系数地址
 } DRC_CFG_PARAMETER;
 
 
 typedef struct {
     /* unsigned short crc; */
-    unsigned short id;
-    unsigned short len;
+    unsigned short id;    //eq效果文件存储的标识
+    unsigned short len;   //当前标识结构长度
 } EQ_FILE_HEAD;
 
 typedef struct {
     EQ_FILE_HEAD head;
     EQ_CFG_PARAMETER parm;
-}  EQ_CFG_PARM;
+}  EQ_CFG_PARM;           //效果文件中，eq存储结构
 
 typedef struct {
     EQ_FILE_HEAD head;
     DRC_CFG_PARAMETER parm;
-}  DRC_CFG_PARM;
+}  DRC_CFG_PARM;          //效果文件中，drc存储结构
 
 typedef struct {
     EQ_CFG_PARM song_eq_parm;
     DRC_CFG_PARM drc_parm;
     u8 cur_mode;
-} EQ_FILE_PARM;
+} EQ_FILE_PARM;           //eq drc效果系数，统一管理
 
 typedef struct {
     u16 tmr;
     u8 *fade_stu;
-    u32 *sr/* [eq_mode_num] */;
-    // EQ_CFG_SEG seg[MODE_NUM_MAX][SECTION_MAX];
+    u32 *sr;
     EQ_CFG_SEG *seg;
-} EQ_FADE_CFG;
+} EQ_FADE_CFG;            //系数eq系数调节,支持淡入淡出，防止增益跳跃过大，造成哒哒音
 
 typedef struct _eq_tool_cfg {
     u8 mode_index;       //模式序号
@@ -130,48 +125,47 @@ typedef struct _eq_tool_cfg {
     u8 section;          //每个模式下eq的段数
     u8 fun_num;          //模式下有多少种功能
     u16 fun_type[2];     //模式下拥有哪些功能
-} eq_tool_cfg;
+} eq_tool_cfg;           //调试工具支持的功能
 
 typedef struct {
-    u32 eq_type : 3;
-    u32 *mode_updata;
-    u32 *drc_updata;
-    u32 *online_updata;
-    u32 *design_mask;
-    u32 *seg_num;
-    EQ_FILE_PARM *cfg_parm;
-    u32 *cur_sr;
-    spinlock_t lock;
-    u8 mode_id;
+    u32 eq_type : 3;      //系数调试所处模式：在线模式、效果文件（离线）模式、默认系数表模式
+    u32 *mode_updata;     //默认系数表切换更新标志
+    u32 *drc_updata;      //drc系数更新标志
+    u32 *online_updata;   //在线调试系数更新标志
+    u32 *design_mask;     //在线调试，哪一段eq需要更新标志
+    u32 *seg_num;         //当前模式(播歌、通话宽频、窄频上下行模式标号),所拥有的eq段数
+    EQ_FILE_PARM *cfg_parm;//eq drc效果系数，统一管理
+    u32 *cur_sr;          //当前模式(播歌、通话宽频、窄频上下行模式标号),记录的采样率
+    spinlock_t lock;      //自旋锁
+    u8 mode_id;           //当前模式(播歌、通话宽频、窄频上下行模式标号),在线调试时，内部使用
 
-    u8 mode_num;
-    u8 online_en: 1;
-    u8 fade_en: 1;
-    u8 stero: 1;
-    u8 drc: 1;
-    u8 tws: 1;
-    u8 app: 1;
-    u8 limit_zero: 1;
-    u8 eq_file_ver_err: 1;
-    u8 eq_file_section_err : 1;
-    u8 type_num;
-    u8 section_max;
-    u8 eq_mode;//默认eq系数表的类型
-    u8 parse_seq;
-    uint8_t password_ok;
-    // int eq_coeff_tab[MODE_NUM_MAX][SECTION_MAX * 5];//eq在线多模式系数表
-    int *eq_coeff_tab;//eq在线多模式系数表
+    u8 mode_num;          //模式总数(播歌、通话宽频、窄频上下行模式标号)
+    u8 online_en: 1;      //是否支持在线调试
+    u8 fade_en: 1;        //是否支持淡入淡出
+    u8 stero: 1;          //左右声道效果是否支持拆分
+    u8 drc: 1;            //是否支持drc调试
+    u8 tws: 1;            //是否支持tws调试
+    u8 app: 1;            //是否支持app调试
+    u8 limit_zero: 1;     //是否将系数限制到0
+    u8 eq_file_ver_err: 1;//记录效果文件版本是否匹配
+    u8 eq_file_section_err : 1;//记录效果文件eq段数是否匹配
+    u8 type_num;          //默认eq系数表总个数
+    u8 section_max;       //eq最大段数
+    u8 eq_mode;           //记录当前使用哪个eq系数表
+    u8 parse_seq;         //记录app调试的seq
+    uint8_t password_ok;  //在线调试记录密码是否正确
+    int *eq_coeff_tab;    //eq在线多模式系数表,[MODE_NUM_MAX][SECTION_MAX * 5];
 
-    void *tws_ci;
-    int tws_tmr;
-    u16 *tws_pack;
-    u8 pack_id;
+    void *tws_ci;         //tws收发句柄
+    int tws_tmr;          //系数收发timer
+    u16 *tws_pack;        //收发的数据包地址
+    u8 pack_id;           //收发数据包标识
 
-    EQ_FADE_CFG *fade_cfg;
-    int *eq_type_tab;//[EQ_MODE_MAX];
-    float *type_gain_tab;//song_eq_mode eq 默认系数表的对应的总增益
-    u8 *eq_mode_use_idx;//10段内抽取部分段数
-    eq_tool_cfg *eq_tool_tab;
+    EQ_FADE_CFG *fade_cfg;//系数淡入淡出句柄
+    int *eq_type_tab;     //eq 默认系数表,计算前seg信息存储地址[EQ_MODE_MAX];
+    float *type_gain_tab; //song_eq_mode eq 默认系数表的对应的总增益
+    u8 *eq_mode_use_idx;  //10段内抽取部分段数
+    eq_tool_cfg *eq_tool_tab;//在线调试工具支持的功能配置结构
 
     void *phone_eq_tab;//通话下行 eq系数表
     u8 phone_eq_tab_size;//通话下行eq系数表段数
@@ -179,73 +173,327 @@ typedef struct {
     u8 ul_eq_tab_size;//通话上行eq系数表段数
 
 
+    void *priv;
+    int (*send_cmd)(void *priv, u32 id, u8 *packet, int size);//在线调试，命令应答
 } EQ_CFG;
 
 typedef struct _eq_parm {
-    u8 mode_num;
-    u8 online_en: 1;
-    u8 fade_en: 1;
-    u8 file_en: 1;
-    u8 stero: 1; //是否左右声道做不同eq
-    // u8 four: 1; //是否四声道
-    u8 drc: 1; //是否有drc
-    u8 tws: 1; //是否tws
-    u8 app: 1; //是否手机app在线调试
-    u8 limit_zero: 1;
-    u8 type_num: 4;
-    u8 section_max;
-    void *eq_type_tab;//eq 默认系数表
-    float *type_gain_tab;//song_eq_mode eq 默认系数表的对应的总增益
-    u8 *eq_mode_use_idx;//10段内抽取部分段数
-    eq_tool_cfg *eq_tool_tab;
+    u8 mode_num;           //模式总数(播歌、通话宽频、窄频上下行模式标号)
+    u8 online_en: 1;       //是否支持在线调试
+    u8 fade_en: 1;         //是否支持淡入淡出
+    u8 file_en: 1;         //是否支持效果文件解析
+    u8 stero: 1;           //是否左右声道做不同eq
+    u8 drc: 1;             //是否有drc
+    u8 tws: 1;             //是否tws
+    u8 app: 1;             //是否手机app在线调试
+    u8 limit_zero: 1;      //是否将系数限制到0
+    u8 type_num: 4;        //默认eq系数表总个数
+    u8 section_max;        //eq最大段数
+    void *eq_type_tab;     //eq 默认系数表,计算前seg信息存储地址[EQ_MODE_MAX];
+    float *type_gain_tab;  //song_eq_mode eq 默认系数表的对应的总增益
+    u8 *eq_mode_use_idx;   //10段内抽取部分段数
+    eq_tool_cfg *eq_tool_tab;//在线调试工具支持的功能配置结构
 
-    void *phone_eq_tab;//通话下行 eq系数表
-    u8 phone_eq_tab_size;//通话下行eq系数表段数
-    void *ul_eq_tab;//通话上行 eq系数表
-    u8 ul_eq_tab_size;//通话上行eq系数表段数
+    void *phone_eq_tab;    //通话下行 eq系数表
+    u8 phone_eq_tab_size;  //通话下行eq系数表段数
+    void *ul_eq_tab;       //通话上行 eq系数表
+    u8 ul_eq_tab_size;     //通话上行eq系数表段数
 
 } eq_adjust_parm;
 
 
 /*模式序号*/
-#define call_eq_mode  		 0
-#define call_narrow_eq_mode  1
-#define aec_eq_mode          2
-#define aec_narrow_eq_mode   3
-#define song_eq_mode  		 4
-#define fr_eq_mode    		 5
-#define rl_eq_mode           6
-#define rr_eq_mode           7
-#define mic_eq_mode          8
-
-int *get_eq_coeff_tab(EQ_CFG *eq_cfg, u8 mode);
+typedef enum {
+    call_eq_mode  		=  0,
+    call_narrow_eq_mode =  1,
+    aec_eq_mode        =  2,
+    aec_narrow_eq_mode =  3,
+    song_eq_mode  		=  4,
+    fr_eq_mode    		=  5,
+    rl_eq_mode         =  6,
+    rr_eq_mode         =  7,
+    mic_eq_mode        =  8,
+} MUSIC_MODE;
+/*----------------------------------------------------------------------------*/
+/**@brief   eq系数表存放顺序
+   @param   *eq_cfg:配置句柄
+   @param   mode:播歌、通话宽频、窄频上下行模式标号
+   @return
+   @note  call_eq_mode|call_narrow_eq_mode|aec_eq_mode|aec_narrow_eq_mode|song_eq_mode|fr_eq_mode|rl_eq_mode|rr_eq_mode
+*/
+/*----------------------------------------------------------------------------*/
+int *get_eq_coeff_tab(EQ_CFG *eq_cfg, MUSIC_MODE mode);
+/*----------------------------------------------------------------------------*/
+/**@brief    获取配置句柄
+   @param
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 void *get_eq_cfg_hdl();
+/*----------------------------------------------------------------------------*/
+/**@brief    seg值，限制到0
+   @param
+   @param
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 void eq_seg_limit_zero(EQ_CFG_SEG *seg, u8 seg_num);
-float get_glbal_gain(EQ_CFG *eq_cfg, u8 mode);
-void eq_coeff_set(EQ_CFG *eq_cfg, u32 sr, u8 mode, EQ_CFG_SEG *seg, int *tar_tab);
+/*----------------------------------------------------------------------------*/
+/**@brief    eq根据seg值，计算系数的并放到tar_tab
+   @param    *eq_cfg:配置句柄
+   @param    sr:采样率
+   @param    mode:播歌、通话宽频、窄频上下行模式标号
+   @param    *seg:计算前系数
+   @param    *tar_tab:计算后系数存放地址
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void eq_coeff_set(EQ_CFG *eq_cfg, u32 sr, MUSIC_MODE mode, EQ_CFG_SEG *seg, int *tar_tab);
+
+/*----------------------------------------------------------------------------*/
+/**@brief    打开eq系数配置解析、在线调试配置等
+   @param    *parm:系数解析、在线调试功能配置数据结构
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 void *eq_cfg_open(eq_adjust_parm *parm);
+/*----------------------------------------------------------------------------*/
+/**@brief    手机app 在线调时，数据解析的回调
+   @param    *packet
+   @param
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 int eq_app_online_parse(u8 *packet, u8 size, u8 *ext_data, u16 ext_size);
-void set_global_gain(EQ_CFG *eq_cfg, u8 mode, float global_gain);
-float get_glbal_gain(EQ_CFG *eq_cfg, u8 mode);
+/*----------------------------------------------------------------------------*/
+/**@brief    设置 eq总增益
+   @param    *eq_cfg:*eq_cfg:配置句柄
+   @param    mode:播歌、通话宽频、窄频上下行模式标号
+   @param   global_gain:总增益
+   @return
+   @note     call_eq_mode|call_narrow_eq_mode|aec_eq_mode|aec_narrow_eq_mode|song_eq_mode|fr_eq_mode|rl_eq_mode|rr_eq_mode
+*/
+/*----------------------------------------------------------------------------*/
+void set_global_gain(EQ_CFG *eq_cfg, MUSIC_MODE mode, float global_gain);
+/*----------------------------------------------------------------------------*/
+/**@brief    获取 eq总增益
+   @param    *eq_cfg:*eq_cfg:配置句柄
+   @param    mode:播歌、通话宽频、窄频上下行模式标号
+   @return
+   @note     call_eq_mode|call_narrow_eq_mode|aec_eq_mode|aec_narrow_eq_mode|song_eq_mode|fr_eq_mode|rl_eq_mode|rr_eq_mode
+*/
+/*----------------------------------------------------------------------------*/
+float get_glbal_gain(EQ_CFG *eq_cfg, MUSIC_MODE mode);
 
-s8 eq_mode_get_gain(u8 mode, u16 index);
+/*----------------------------------------------------------------------------*/
+/**@brief   普通音频eq,无离线文件时，获取某eq效果模式的增益
+   @param   mode:哪个模式
+   @param   index:哪一段
+   @return  增益
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
+s8 eq_mode_get_gain(EQ_MODE mode, u16 index);
+/*----------------------------------------------------------------------------*/
+/**@brief   普通音频eq,无离线文件时，设置用户自定义eq效果模式时的增益
+   @param   index:哪一段
+   @param   gain:增益
+   @return
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
 int eq_mode_set_custom_param(u16 index, int gain);
+/*----------------------------------------------------------------------------*/
+/**@brief   普通音频eq,无离线文件时，获取用户自定义eq效果模式时的增益、频率
+   @param   index:哪一段
+   @param   freq:中心截止频率
+   @param   gain:增益
+   @return
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
 int eq_mode_set_custom_info(u16 index, int freq, int gain);
-int eq_mode_set(u8 mode);
-int eq_mode_get_cur(void);
+/*----------------------------------------------------------------------------*/
+/**@brief   普通音频eq,无离线文件时，用默认eq系数表的eq效果模式设置
+   @param   mode:EQ_MODE_NORMAL, EQ_MODE_ROCK,EQ_MODE_POP,EQ_MODE_CLASSIC,EQ_MODE_JAZZ,EQ_MODE_COUNTRY, EQ_MODE_CUSTOM
+   @return
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
+int eq_mode_set(EQ_MODE mode);
+/*----------------------------------------------------------------------------*/
+/**@brief   普通音频eq,无离线文件时，获取eq效果模式
+   @param
+   @return
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
+EQ_MODE eq_mode_get_cur(void);
 
+/*----------------------------------------------------------------------------*/
+/**@brief   普通音频eq,无离线文件时，获取某eq效果模式的中心截止频率
+   @param   mode:EQ_MODE_NORMAL, EQ_MODE_ROCK,EQ_MODE_POP,EQ_MODE_CLASSIC,EQ_MODE_JAZZ,EQ_MODE_COUNTRY, EQ_MODE_CUSTOM
+   @param   index:哪一段
+   @return  中心截止频率
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
+int eq_mode_get_freq(u8 mode, u16 index);
 
-
+/*----------------------------------------------------------------------------*/
+/**@brief    解析eq效果文件的系数
+   @param    *eq_cfg:*eq_cfg:配置句柄
+   @param    *path:eq效果文件路径
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 s32 eq_file_get_cfg(EQ_CFG *eq_cfg, u8 *path);
+
+/*----------------------------------------------------------------------------*/
+/**@brief    在线调试的回调
+   @param    *packet:数据包
+   @param    size:数据包长度
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void eq_online_callback(uint8_t *packet, uint16_t size);//
+/*----------------------------------------------------------------------------*/
+/**@brief   eq系数回调
+   @param    *eq:eq句柄
+   @param    sr:采样率
+   @param    info:系数结构
+   @return
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
 int eq_get_filter_info(void *_eq, int sr, struct audio_eq_filter_info *info);
+
+/*----------------------------------------------------------------------------*/
+/**@brief   drc系数回调
+   @param    *drc:drc句柄
+   @param    info:系数结构
+   @return
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
 int drc_get_filter_info(void *_drc, struct audio_drc_filter_info *info);
+/*----------------------------------------------------------------------------*/
+/**@brief   aec eq系数 回调
+   @param    *eq:eq句柄
+   @param    sr:采样率
+   @param    info:系数结构
+   @return
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
 int aec_ul_eq_filter(void *_eq, int sr, struct audio_eq_filter_info *info);
+/*----------------------------------------------------------------------------*/
+/**@brief   通话eq系数 的回调函数
+   @param    *eq:eq句柄
+   @param    sr:采样率
+   @param    info:系数结构
+   @return
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
 int eq_phone_get_filter_info(void *_eq, int sr, struct audio_eq_filter_info *info);
+/*----------------------------------------------------------------------------*/
+/**@brief   drc系数更新检测
+   @param    *drc:drc句柄
+   @return
+   @note    内部使用
+*/
+/*----------------------------------------------------------------------------*/
+void drc_app_run_check(struct audio_drc *drc);
+
+/*----------------------------------------------------------------------------*/
+/**@brief   eq系数更新检测
+   @param    *eq:eq句柄
+   @return
+   @note    内部使用
+*/
+/*----------------------------------------------------------------------------*/
+void eq_app_run_check(struct audio_eq *eq);
 
 extern const int config_audio_eq_online_en;
 extern const int config_audio_eq_file_en;
 extern const int config_audio_eq_file_sw_en;
 extern const int config_filter_coeff_fade_en;
 extern const int config_filter_coeff_limit_zero;
+
+#if 0
+static const struct eq_seg_info your_audio_out_eq_tab[] = {
+    {0, EQ_IIR_TYPE_BAND_PASS, 125,   0 << 20, (int)(0.7f * (1 << 24))},
+    {1, EQ_IIR_TYPE_BAND_PASS, 12000, 0 << 20, (int)(0.3f * (1 << 24))},
+};
+
+/*----------------------------------------------------------------------------*/
+/**@brief    用户自定义eq的系数回调
+   @param    eq:句柄
+   @param    sr:采样率
+   @param    info: 系数地址
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+int audio_eq_get_filter_info_demo(void *_eq, int sr, struct audio_eq_filter_info *info)
+{
+    struct audio_eq *eq = (struct audio_eq *)_eq;
+    local_irq_disable();
+    u8 nsection = ARRAY_SIZE(your_audio_out_eq_tab);
+    if (!eq->eq_seg_tab) {
+        int size = sizeof(your_audio_out_eq_tab);
+        eq->eq_seg_tab = zalloc(size);
+        memcpy(eq->eq_seg_tab, your_audio_out_eq_tab, size);
+    }
+    if (!eq->eq_coeff_tab) {
+        eq->eq_coeff_tab = zalloc(sizeof(int) * 5 * nsection);
+    }
+    for (int i = 0; i < nsection; i++) {
+        eq_seg_design(&eq->eq_seg_tab[i], sr, &eq->eq_coeff_tab[5 * i]);
+    }
+    local_irq_enable();
+    info->L_coeff = info->R_coeff = (void *)eq->eq_coeff_tab;
+    info->L_gain = info->R_gain = 0;
+    info->nsection = nsection;
+    return 0;
+}
+
+struct drc_ch drc_fliter = {0};
+#define your_threshold  (0)
+/*----------------------------------------------------------------------------*/
+/**@brief    自定义限幅器系数回调
+   @param    *drc: 句柄
+   @param    *info: 系数结构地址
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+int drc_get_filter_info_demo(void *drc, struct audio_drc_filter_info *info)
+{
+    int th = your_threshold;//-60 ~0db
+    int threshold = round(pow(10.0, th / 20.0) * 32768); // 0db:32768, -60db:33
+
+    drc_fliter.nband = 1;
+    drc_fliter.type = 1;
+    drc_fliter._p.limiter[0].attacktime = 5;
+    drc_fliter._p.limiter[0].releasetime = 300;
+    drc_fliter._p.limiter[0].threshold[0] = threshold;
+    drc_fliter._p.limiter[0].threshold[1] = 32768;
+
+    info->pch = info->R_pch = &drc_fliter;
+    return 0;
+}
+
+
+#endif
+
 #endif
 

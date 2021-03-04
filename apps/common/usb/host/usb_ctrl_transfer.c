@@ -22,7 +22,7 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
-#if TCFG_UDISK_ENABLE || TCFG_ADB_ENABLE ||TCFG_AOA_ENABLE||TCFG_HOST_AUDIO_ENABLE
+#if USB_HOST_ENABLE
 
 _WEAK_
 void usb_dis_ep0_txdly(const usb_dev id)

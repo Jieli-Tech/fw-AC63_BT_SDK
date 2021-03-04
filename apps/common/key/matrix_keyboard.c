@@ -7,7 +7,7 @@
 #include "asm/power_interface.h"
 #include "asm/power/p33.h"
 
-#define MATRIX_NO_KEY           0x0         //没有按键时的IO电平
+#define MATRIX_NO_KEY           0x1         //没有按键时的IO电平
 #define MATRIX_LONG_TIME        35
 #define MATRIX_HOLD_TIME        35+10
 #define MATRIX_KEY_FILTER_TIME  2
@@ -145,29 +145,37 @@ void matrix_key_set_io_state(u8 state, u32 *io_table, u8 len)
         break;
     case IO_STATUS_INPUT_PULL_DOWN:
         JL_PORTA->DIR |= porta_value;
+        JL_PORTA->DIE |= porta_value;
         JL_PORTA->PU  &= ~porta_value;
         JL_PORTA->PD  |= porta_value;
         JL_PORTB->DIR |= portb_value;
+        JL_PORTB->DIE |= portb_value;
         JL_PORTB->PU  &= ~portb_value;
         JL_PORTB->PD  |= portb_value;
         JL_PORTC->DIR |= portc_value;
+        JL_PORTC->DIE |= portc_value;
         JL_PORTC->PU  &= ~portc_value;
         JL_PORTC->PD  |= portc_value;
         JL_PORTD->DIR |= portd_value;
+        JL_PORTD->DIE |= portd_value;
         JL_PORTD->PU  &= ~portd_value;
         JL_PORTD->PD  |= portd_value;
         break;
     case IO_STATUS_INPUT_PULL_UP:
         JL_PORTA->DIR |= porta_value;
+        JL_PORTA->DIE |= porta_value;
         JL_PORTA->PU  |= porta_value;
         JL_PORTA->PD  &= ~porta_value;
         JL_PORTB->DIR |= portb_value;
+        JL_PORTB->DIE |= portb_value;
         JL_PORTB->PU  |= portb_value;
         JL_PORTB->PD  &= ~portb_value;
         JL_PORTC->DIR |= portc_value;
+        JL_PORTC->DIE |= portc_value;
         JL_PORTC->PU  |= portc_value;
         JL_PORTC->PD  &= ~portc_value;
         JL_PORTD->DIR |= portd_value;
+        JL_PORTD->DIE |= portd_value;
         JL_PORTD->PU  |= portd_value;
         JL_PORTD->PD  &= ~portd_value;
         break;
@@ -182,8 +190,6 @@ void matrix_key_scan(void)
     u8 row, col;
     u8 cur_key_value = MATRIX_NO_KEY, notify = 0;
     static u8 wk_toggle = 0;
-    JL_PORTC->DIR &= ~(BIT(4));
-    JL_PORTC->OUT |= (BIT(4));
 
     //g_printf("scan...\n");
     //P33_LEVEL_WKUP_EN(0);
@@ -195,7 +201,8 @@ void matrix_key_scan(void)
 
     is_key_active = 0;
     for (col = 0; col < this->col_num; col ++) {
-        gpio_direction_output(this->col_pin_list[col], !MATRIX_NO_KEY);
+        matrix_key_set_io_state((MATRIX_NO_KEY) ? IO_STATUS_OUTPUT_LOW : IO_STATUS_OUTPUT_HIGH, &(this->col_pin_list[col]), 1);
+        //gpio_direction_output(this->col_pin_list[col], !MATRIX_NO_KEY);
         for (row = 0; row < this->row_num; row ++) {
             cur_key_value = gpio_read(this->row_pin_list[row]);
             if (cur_key_value != MATRIX_NO_KEY) {
@@ -205,13 +212,15 @@ void matrix_key_scan(void)
                 if (cur_key_value == MATRIX_NO_KEY) { //按键抬起判断
                     (key_st[row][col]).press_cnt = 0;
                     //printf("row:%d  col:%d   [UP]\n", row, col);
-                    P33_AND_WKUP_EDGE(row);
+                    (MATRIX_NO_KEY) ? P33_OR_WKUP_EDGE(row) : P33_AND_WKUP_EDGE(row);
+                    //P33_AND_WKUP_EDGE(row);
                     full_key_map(row, col, 0);
                     notify = 1;
                 } else {            //按键初次按下
-                    //printf("row:%d  col:%d   [SHORT]\n", row, col);
+                    printf("row:%d  col:%d   [SHORT]\n", row, col);
                     full_key_map(row, col, 1);
-                    P33_OR_WKUP_EDGE(row);
+                    (MATRIX_NO_KEY) ? P33_AND_WKUP_EDGE(row) : P33_OR_WKUP_EDGE(row);
+                    //P33_OR_WKUP_EDGE(row);
                     notify = 1;
                 }
             } else {        //判断是否按键抬起
@@ -229,7 +238,8 @@ void matrix_key_scan(void)
             }
             (key_st[row][col]).last_st = cur_key_value;
         }
-        gpio_direction_input(this->col_pin_list[col]);
+        //gpio_direction_input(this->col_pin_list[col]);
+        matrix_key_set_io_state(IO_STATUS_HIGH_DRIVER, &(this->col_pin_list[col]), 1);
     }
 
     matrix_key_set_io_state((MATRIX_NO_KEY == 1) ? IO_STATUS_OUTPUT_LOW : IO_STATUS_OUTPUT_HIGH, this->col_pin_list, this->col_num);
@@ -306,6 +316,7 @@ int matrix_key_init(matrix_key_param *param)
     this = param;
     u8 row, col;
     for (row = 0; row < this->row_num; row ++) {
+        (MATRIX_NO_KEY) ? P33_OR_WKUP_EDGE(row) : P33_AND_WKUP_EDGE(row);
         for (col = 0; col < this->col_num; col ++) {
             (key_st[row][col]).last_st = MATRIX_NO_KEY;
             (key_st[row][col]).press_cnt = 0;
@@ -315,15 +326,10 @@ int matrix_key_init(matrix_key_param *param)
     if (matrix_key_timer) {
         sys_s_hi_timer_del(matrix_key_timer);
     }
-    for (row = 0; row < this->row_num; row ++) {
-        gpio_direction_input(this->row_pin_list[row]);
-        gpio_set_die(this->row_pin_list[row], 1);
-        gpio_set_pull_up(this->row_pin_list[row], MATRIX_NO_KEY);
-        gpio_set_pull_down(this->row_pin_list[row], !MATRIX_NO_KEY);
-    }
-    for (col = 0; col < this->col_num; col ++) {
-        gpio_direction_output(this->col_pin_list[col], !MATRIX_NO_KEY);
-    }
+
+    matrix_key_set_io_state((MATRIX_NO_KEY) ? IO_STATUS_OUTPUT_LOW : IO_STATUS_OUTPUT_HIGH, this->col_pin_list, this->col_num);
+    matrix_key_set_io_state((MATRIX_NO_KEY) ? IO_STATUS_INPUT_PULL_UP : IO_STATUS_INPUT_PULL_DOWN, this->row_pin_list, this->row_num);
+
 
     port_edge_wkup_set_callback(matrix_key_wakeup);
     matrix_key_timer = sys_s_hi_timer_add(NULL, matrix_key_scan, 10);

@@ -85,4 +85,8 @@ extern u32 adc_get_occupy_value();
 u32 adc_sample(u32 ch);
 u32 adc_value_to_voltage(u32 adc_vbg, u32 adc_ch_val);
 
+char get_vddiom_trim();
+char get_vddiow_trim();
+void check_pmu_voltage(u8 tieup);
+
 #endif

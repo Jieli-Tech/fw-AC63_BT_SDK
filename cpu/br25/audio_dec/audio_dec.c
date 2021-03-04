@@ -29,7 +29,7 @@
 #include "audio_link.h"
 #include "audio_sbc_codec.h"
 #include "fm_emitter/fm_emitter_manage.h"
-#include "audio_iis.h"
+#include "audio_common/audio_iis.h"
 #endif /*CONFIG_LITE_AUDIO*/
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DONGLE)
@@ -37,7 +37,7 @@ void *dongle_digvol_last = NULL;
 void *dongle_digvol_last_entry = NULL;
 #endif
 
-#if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_IIS)
+#if AUDIO_OUTPUT_INCLUDE_IIS
 void *iis_digvol_last = NULL;
 void *iis_digvol_last_entry = NULL;
 struct audio_stream_entry *iis_last_entry = NULL;
@@ -86,11 +86,7 @@ static u8 audio_dec_inited = 0;
 
 struct audio_eq_drc *mix_eq_drc = NULL;
 
-#if (TCFG_PREVENT_TASK_FILL)
-struct prevent_task_fill *prevent_fill = NULL;
-#endif
-
-u8  audio_src_hw_filt[SRC_FILT_POINTS * SRC_CHI * 2 * MAX_SRC_NUMBER];
+u8  audio_src_hw_filt[SRC_FILT_POINTS * SRC_CHI * 2 * MAX_SRC_NUMBER] ALIGNED(4); /*SRC的滤波器必须4个byte对齐*/
 s16 mix_buff[AUDIO_MIXER_LEN / 2] SEC(.dec_mix_buff);
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DAC)
@@ -252,9 +248,13 @@ void audio_mode_main_dec_open(u32 state)
 /*----------------------------------------------------------------------------*/
 u32 audio_output_nor_rate(void)
 {
-#if TCFG_IIS_ENABLE
+#if AUDIO_OUTPUT_INCLUDE_IIS
     return TCFG_IIS_OUTPUT_SR;
 #endif
+#if TCFG_SPDIF_ENABLE
+    return 44100;
+#endif
+
 #if AUDIO_OUTPUT_INCLUDE_DAC
 
 #if (TCFG_MIC_EFFECT_ENABLE)
@@ -535,6 +535,24 @@ void audio_mixer_reset_sample_rate(u32 sr)
 }
 
 /*----------------------------------------------------------------------------*/
+/**@brief 	 audio解码任务cpu跟踪回调
+   @param    idle_total 跟踪周期内的空闲时间统计
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+int audio_dec_occupy_trace_hdl(void *priv, u32 idle_total)
+{
+    struct audio_decoder_occupy *occupy = priv;
+    if (idle_total < occupy->idle_expect) {
+        if (occupy->pend_time) {
+            os_time_dly(occupy->pend_time);
+        }
+    }
+    return 0;
+}
+
+/*----------------------------------------------------------------------------*/
 /**@brief    音频解码初始化
    @param
    @return
@@ -551,18 +569,15 @@ int audio_dec_init()
 
     // 创建解码任务
     err = audio_decoder_task_create(&decode_task, "audio_dec");
+#if TCFG_AUDIO_DECODER_OCCUPY_TRACE
+    decode_task.occupy.pend_time = 1;
+    decode_task.occupy.idle_expect = 4;
+    decode_task.occupy.trace_period = 200;
+    //decode_task.occupy.trace_hdl = audio_dec_occupy_trace_hdl;
+#endif/*TCFG_AUDIO_DECODER_OCCUPY_TRACE*/
 
 #if TCFG_AUDIO_DEC_OUT_TASK
     audio_decoder_out_task_create(&decode_task, "audio_out");
-#endif
-
-#if (TCFG_PREVENT_TASK_FILL)
-    // 初始化防task占满功能
-    prevent_fill = prevent_task_fill_create(100);
-    if (prevent_fill) {
-        // 解码任务加入防task占满功能
-        decode_task.prevent_fill = prevent_task_fill_ch_open(prevent_fill, 200);
-    }
 #endif
 
 #if TCFG_DEC2TWS_TASK_ENABLE
@@ -572,11 +587,16 @@ int audio_dec_init()
 
     // 初始化音频输出
     app_audio_output_init();
-
 #if TCFG_KEY_TONE_EN
     // 按键音初始化
     audio_key_tone_init();
 #endif
+
+
+#if SYS_DIGVOL_GROUP_EN
+    sys_digvol_group_open();
+#endif // SYS_DIGVOL_GROUP_EN
+
 
     /*硬件SRC模块滤波器buffer设置，可根据最大使用数量设置整体buffer*/
     audio_src_base_filt_init(audio_src_hw_filt, sizeof(audio_src_hw_filt));
@@ -706,7 +726,7 @@ int audio_dec_init()
 #endif
 
 
-#if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_IIS)
+#if AUDIO_OUTPUT_INCLUDE_IIS
     // iis。从倒数第二个节点分流
     audio_dig_vol_param iis_digvol_last_param = {
         .vol_start = app_var.music_volume,
@@ -720,7 +740,7 @@ int audio_dec_init()
     iis_digvol_last = audio_dig_vol_open(&iis_digvol_last_param);
     iis_digvol_last_entry = audio_dig_vol_entry_get(iis_digvol_last);
 
-    iis_last_entry = audio_iis_output_start(0);
+    iis_last_entry = audio_iis_output_start(TCFG_IIS_OUTPUT_PORT, TCFG_IIS_OUTPUT_DATAPORT_SEL);
     struct audio_stream_entry *iis_entries_start = entries[entry_cnt - 2];
     entry_cnt = 0;
     entries[entry_cnt++] = iis_entries_start;
@@ -791,7 +811,7 @@ __mixer_init_end:
     app_audio_volume_init();
     audio_output_set_start_volume(APP_AUDIO_STATE_MUSIC);
 
-#if TCFG_IIS_ENABLE
+#if AUDIO_OUTPUT_INCLUDE_DAC
     /* audio_link_init(); */
     /* #if TCFG_IIS_OUTPUT_EN */
     /* audio_link_open(TCFG_IIS_OUTPUT_PORT, ALINK_DIR_TX); */
@@ -875,7 +895,7 @@ int high_bass_drc_set_filter_info(int th)
    @note
 */
 /*----------------------------------------------------------------------------*/
-int high_bass_drc_get_filter_info(struct audio_drc *drc, struct audio_drc_filter_info *info)
+int high_bass_drc_get_filter_info(void *drc, struct audio_drc_filter_info *info)
 {
     int th = high_bass_th;//-60 ~0db
     int threshold = round(pow(10.0, th / 20.0) * 32768); // 0db:32768, -60db:33
@@ -994,7 +1014,7 @@ void mix_out_high_bass(u32 cmd, struct high_bass *hb)
    @note    该接口可用于控制某些模式不做高低音
 */
 /*----------------------------------------------------------------------------*/
-void mix_out_high_bass_dis(u32 cmd, u8 dis)
+void mix_out_high_bass_dis(u32 cmd, u32 dis)
 {
     if (mix_eq_drc) {
         audio_eq_drc_parm_update(mix_eq_drc, cmd, (void *)dis);
@@ -1088,4 +1108,113 @@ void vocal_remove_close()
 
 #endif
 
+
+/*****************************************************************************
+ *
+ *  数字音量分组管理
+ *
+ ****************************************************************************/
+
+#if SYS_DIGVOL_GROUP_EN
+
+char *music_dig_logo[] = {
+
+    "music_a2dp",
+    "music_file",
+    "music_fm",
+    "music_linein",
+    "music_pc",
+    "NULL"
+
+};
+
+
+void *sys_digvol_group = NULL;
+
+int sys_digvol_group_open(void)
+{
+    if (sys_digvol_group == NULL) {
+        sys_digvol_group = audio_dig_vol_group_open();
+        return 0;
+    }
+    return -1;
+}
+
+int sys_digvol_group_close(void)
+{
+    if (sys_digvol_group != NULL) {
+        return audio_dig_vol_group_close(sys_digvol_group);
+    }
+    return -1;
+}
+
+// 根据每个解码通道的logo来决定启动时候的数字音量等级
+u16 __attribute__((weak)) get_ch_digvol_start(char *logo)
+{
+#if 0
+    if (!strcmp(logo, "music_a2dp")) {
+        return 100;
+    } else if (!strcmp(logo, "music_fm")) {
+        return 100;
+    }
+#endif
+    return get_max_sys_vol();
+}
+
+
+/*******************************************************
+* Function name	: sys_digvol_group_ch_open
+* Description	: 解码通道数字音量打开且加入分组管理
+* Parameter		:
+*   @logo           解码通道的标识
+*   @vol_start      解码通道数字音量启动等级, 传 -1 时会调用 get_ch_digvol_start 获取
+* Return        : digvol audio stream entry
+*******************************************************/
+void *sys_digvol_group_ch_open(char *logo, int vol_start, audio_dig_vol_param *parm)
+{
+
+    if (sys_digvol_group == NULL || logo == NULL) {
+        return NULL;
+    }
+
+    if (vol_start == -1) {
+        vol_start = get_ch_digvol_start(logo);
+    }
+
+    audio_dig_vol_param temp_digvol_param = {
+        .vol_start = vol_start,
+        .vol_max =  get_max_sys_vol(),
+        .ch_total = 2,
+        .fade_en = 1,
+        .fade_points_step = 5,
+        .fade_gain_step = 10,
+        .vol_list = NULL,
+    };
+
+
+    if (parm == NULL) {
+        parm = &temp_digvol_param;
+    }
+    void *digvol_hdl = audio_dig_vol_open(parm);
+    if (digvol_hdl) {
+
+        audio_dig_vol_group_add(sys_digvol_group, digvol_hdl, logo);
+
+        return audio_dig_vol_entry_get(digvol_hdl);
+    }
+
+    return NULL;
+}
+
+int sys_digvol_group_ch_close(char *logo)
+{
+    if (sys_digvol_group == NULL || logo == NULL) {
+        return -1;
+    }
+    audio_dig_vol_close(audio_dig_vol_group_hdl_get(sys_digvol_group, logo));
+    audio_dig_vol_group_del(sys_digvol_group, logo);
+    return 0;
+}
+
+#endif // SYS_DIGVOL_GROUP_EN
 

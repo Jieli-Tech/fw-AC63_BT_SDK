@@ -12,6 +12,7 @@ tws_sync_call
 tws_link_sync
 tws_afh_sync
 tws_power_balance
+tws_data_trans
 #endif
 
 
@@ -87,6 +88,10 @@ aac_decoder
 
 #if TCFG_DEC_G726_ENABLE
 g726_decoder
+#endif
+
+#if TCFG_DEC_WTGV2_ENABLE
+wtgv2_decoder
 #endif
 
 #if TCFG_DEC_MIDI_ENABLE

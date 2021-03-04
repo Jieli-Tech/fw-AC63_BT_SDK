@@ -1,12 +1,10 @@
 #ifndef _EQ_APPLY_H_
 #define _EQ_APPLY_H_
 
-#include "typedef.h"
-#include "asm/hw_eq.h"
-#include "application/audio_eq.h"
-#include "application/audio_drc.h"
-#include "application/eq_config.h"
+
+#include "system/includes.h"
 #include "media/audio_stream.h"
+#include "application/eq_config.h"
 
 #define DECREASE_MEM  1  //减少输出buf占用
 struct audio_eq_drc_parm {
@@ -18,7 +16,7 @@ struct audio_eq_drc_parm {
     u8 divide_en: 1;        //各个声道eq drc效果是否独立，0：使用同个效果
     u8 mode_en: 1;          //没离线文件时，是否支持使用默认系数表做eq
     u8 online_en: 1;        //是否支持在线调试 1：支持  0：不支持
-    u8 ch_num: 3;           //dac通道数
+    u8 ch_num: 3;           //输入数据通道数
     u8 eq_name;             //FL FR通道的eq_name 普通音乐eq 使用song_eq_mode,通话下行eq 使用call_eq_mode
     u32 sr;                 //采样率
 

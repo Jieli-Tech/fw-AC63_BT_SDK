@@ -20,5 +20,9 @@
 #define     CFG_CUR_BT_IDX                   (CFG_EDR_ADDRESS_BEGIN + CFG_BT_IDX_NUM)
 #define     CFG_HID_MODE_BEGIN               (CFG_CUR_BT_IDX + 1)
 
+#define     CFG_AAP_MODE_EDR_ADDR            40
+#define     CFG_AAP_MODE_BLE_ADDR            41
+#define     CFG_AAP_MODE_24G_ADDR            42
+
 #define     VM_USB_MIC_GAIN             	 5
 #endif /* #ifndef _USER_CFG_ID_H_ */

@@ -21,6 +21,7 @@
 <Add option="-fallow-pointer-null" />
 <Add option="-fprefer-gnu-section" />
 <Add option="-Wno-shift-negative-value" />
+<Add option="-Wundef" />
 <Add option="-fms-extensions" />
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
 <Add option="-DCONFIG_CPU_BR30" />
@@ -98,10 +99,9 @@
 <Add option="--plugin-opt=-pi32v2-merge-max-offset=4096" />
 <Add option="--plugin-opt=-pi32v2-enable-simd=true" />
 <Add option="--plugin-opt=mcpu=r3" />
-<Add option="--plugin-opt=-enable-movable-region=true" />
-<Add option="--plugin-opt=-movable-region-section-prefix=movable.slot." />
 <Add option="--plugin-opt=-global-merge-on-const" />
-<Add option="--plugin-opt=-inline-threshold=10" />
+<Add option="--plugin-opt=-inline-threshold=5" />
+<Add option="--plugin-opt=-inline-max-allocated-size=32" />
 <Add option="--plugin-opt=-inline-normal-into-special-section=true" />
 <Add option="--plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar" />
 <Add option="--plugin-opt=save-temps" />
@@ -220,7 +220,13 @@
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/tinycrypt/source/utils.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/transport.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/sig_mesh/transport.h" />
+<Unit filename="../../../../apps/common/update/testbox_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/update.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/mesh/MshMDL/generic_level_srv.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/mesh/MshMDL/generic_onoff_cli.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/mesh/MshMDL/generic_onoff_srv.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/mesh/MshMDL/generic_power_onoff_srv.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/mesh/MshMDL/lightness_srv.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/api/feature_correct.h" />
 <Unit filename="../../../../apps/mesh/api/mesh_config_common.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/api/model_api.c"><Option compilerVer="CC"/></Unit>
@@ -242,6 +248,7 @@
 <Unit filename="../../../../apps/mesh/examples/AliGenie_socket.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/generic_onoff_client.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/generic_onoff_server.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/mesh/examples/light_lightness_server.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/vendor_client.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/vendor_server.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/include/app_action.h" />
@@ -285,6 +292,7 @@
 <Unit filename="../../../../include_lib/btctrler/classic/hci_lmp.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/lmp_config.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/tws_api.h" />
+<Unit filename="../../../../include_lib/btctrler/classic/tws_data_trans.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/tws_event.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/tws_local_media_sync.h" />
 <Unit filename="../../../../include_lib/btctrler/hci_transport.h" />
@@ -440,6 +448,7 @@
 <Unit filename="../../../../include_lib/system/timer.h" />
 <Unit filename="../../../../include_lib/system/user_cfg.h" />
 <Unit filename="../../../../include_lib/system/wait.h" />
+<Unit filename="../../../../include_lib/update/dual_bank_updata_api.h" />
 <Unit filename="../../../../include_lib/update/uart_update.h" />
 <Unit filename="../../../../include_lib/update/update.h" />
 <Unit filename="../../../../include_lib/update/update_loader_download.h" />

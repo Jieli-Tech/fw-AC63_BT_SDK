@@ -163,6 +163,7 @@ const struct clock_type  clock_enum[] = {
     {SPECTRUM_CLK, (5),	"SPECTRUM_CLK"   },
 
     {AI_SPEECH_CLK, (120),	"AI_SPEECH_CLK"   },
+    {SMARTBOX_ACTION_CLK, (160),	"SMARTBOX_ACTION_CLK"   },
 };
 
 

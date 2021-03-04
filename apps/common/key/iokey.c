@@ -98,8 +98,6 @@ static void key_io_reset(void)
 
         case DOUBLE_PORT_TO_IO:
             break;
-        case CUST_DOUBLE_PORT_TO_IO:
-            break;
 
         default:
             ASSERT(0, "IO KEY CONNECT ERR!!!");
@@ -232,40 +230,6 @@ u8 io_get_key_value(void)
         if (connect_way == DOUBLE_PORT_TO_IO) {//标准双io
             press_value = 0;
             read_io = __this->port[i].key_type.two_io.in_port;
-            key_io_output_low(__this->port[i].key_type.two_io.out_port);  //输出低
-            key_io_pull_up_input(read_io); 	//上拉
-            read_value = get_io_key_value(read_io);
-            key_io_reset(); //按键初始化为单IO检测状态
-            if (read_value == press_value) {
-                ret_value = __this->port[i].key_value;
-#if MULT_KEY_ENABLE
-                MARK_BIT_VALUE(bit_mark, ret_value);	//标记被按下的按键
-#else
-                goto _iokey_get_value_end;
-#endif
-            }
-        } else if (connect_way == CUST_DOUBLE_PORT_TO_IO) { //自定义双io,可根据需求修改
-            press_value = 0;
-            write_io = __this->port[i].key_type.two_io.out_port;
-            read_io = __this->port[i].key_type.two_io.in_port;
-            if (write_io == IO_PORTB_10 && read_io == IO_PORTA_01) { //KEY3
-                key_io_output_high(IO_PORTB_01);
-                key_io_pull_down_input(IO_PORTA_01);
-                read_value = get_io_key_value(IO_PORTA_01);
-                key_io_reset(); //按键初始化为单IO检测状态
-                if (read_value) {
-                    continue;
-                }
-            }
-            if (write_io == IO_PORTB_10 && read_io == IO_PORTB_01) { //KEY4
-                key_io_output_high(IO_PORTA_01);
-                key_io_pull_down_input(IO_PORTB_01);
-                read_value = get_io_key_value(IO_PORTB_01);
-                key_io_reset(); //按键初始化为单IO检测状态
-                if (read_value) {
-                    continue;
-                }
-            }
             key_io_output_low(__this->port[i].key_type.two_io.out_port);  //输出低
             key_io_pull_up_input(read_io); 	//上拉
             read_value = get_io_key_value(read_io);

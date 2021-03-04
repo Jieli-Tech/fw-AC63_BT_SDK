@@ -339,6 +339,22 @@ u32 get_jl_rcsp_update_status()
 {
     return rcsp_update_status;
 }
+
+extern u32 ex_cfg_fill_content_api(void);
+static void rcsp_update_private_param_fill(UPDATA_PARM *p)
+{
+    u32 exif_addr;
+
+    exif_addr = ex_cfg_fill_content_api();
+    memcpy(p->parm_priv, (u8 *)&exif_addr, sizeof(exif_addr));
+}
+
+static void rcsp_update_before_jump_handle(int type)
+{
+    cpu_reset();
+}
+
+
 void JL_rcsp_msg_deal(RCSP_MSG msg, int argc, int *argv)
 {
     u16 remote_file_version;
@@ -428,11 +444,22 @@ void JL_rcsp_msg_deal(RCSP_MSG msg, int argc, int *argv)
 
         if (RCSP_BLE == get_curr_device_type()) {
             rcsp_printf("BLE_APP_UPDATE\n");
-            update_mode_api(BLE_APP_UPDATA);
+            update_mode_api_v2(BLE_APP_UPDATA,
+                               rcsp_update_private_param_fill,
+                               rcsp_update_before_jump_handle);
         } else {
             rcsp_printf("SPP_APP_UPDATA\n");
-            update_mode_api(SPP_APP_UPDATA);
+            update_mode_api_v2(SPP_APP_UPDATA,
+                               rcsp_update_private_param_fill,
+                               rcsp_update_before_jump_handle);
         }
+        /* if (RCSP_BLE == get_curr_device_type()) { */
+        /*     rcsp_printf("BLE_APP_UPDATE\n"); */
+        /*     update_mode_api(BLE_APP_UPDATA); */
+        /* } else { */
+        /*     rcsp_printf("SPP_APP_UPDATA\n"); */
+        /*     update_mode_api(SPP_APP_UPDATA); */
+        /* } */
         break;
 
     case MSG_JL_ENTER_UPDATE_MODE:

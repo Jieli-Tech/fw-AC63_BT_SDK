@@ -9,6 +9,35 @@
 #define AT_VOLATILE_RAM             AT(.volatile_ram)
 #define AT_VOLATILE_RAM_CODE        AT(.volatile_ram_code)
 
+/*复位原因*/
+enum {
+    /*主系统*/
+    MSYS_P11_RST = 0,
+    MSYS_DVDD_POR_RST = 1,
+    MSYS_DVDD_OK_RST = 2,
+    MSYS_SOFT_RST = 5,
+    MSYS_P2M_RST = 6,
+    MSYS_POWER_RETURN = 7,
+    /*P11*/
+    P11_PVDD_POR_RST = 8,
+    P11_IVS_RST = 9,
+    P11_P33_RST = 10,
+    P11_WDT_RST = 11,
+    P11_SOFT_RST = 12,
+    P11_MSYS_RST = 13,
+    P11_POWER_RETURN = 15,
+    /*P33*/
+    P33_VDDIO_POR_RST = 16,
+    P33_VDDIO_LVD_RST = 17,
+    P33_VCM_RST = 18,
+    P33_PPINR_RST = 19,
+    P33_P11_RST = 20,
+    P33_SOFT_RST = 21,
+    P33_POWER_RETURN = 23,
+    /*SUB*/
+    P33_EXCEPTION_SOFT_RST = 24,
+};
+
 enum {
     OSC_TYPE_LRC = 0,
     OSC_TYPE_BT_OSC,
@@ -278,6 +307,19 @@ void lrc_debug(u8 a, u8 b);
 void sdpg_config(int enable);
 
 void p11_init(void);
+/*-----------------------------------------------------------*/
+u8 get_wvdd_trim_level();
+
+u8 get_pvdd_trim_level();
+
+void update_wvdd_trim_level(u8 wvdd_level);
+
+void update_pvdd_trim_level(u8 pvdd_level);
+
+u8 check_pmu_voltage(u8 tieup);
+
+u32 get_reset_source_value(void);
+
 /*-----------------------------------------------------------*/
 
 

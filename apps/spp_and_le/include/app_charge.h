@@ -6,7 +6,7 @@
 
 extern void charge_close_deal(void);
 extern void charge_start_deal(void);
-extern void charge_err_deal(void);
+extern void ldo5v_keep_deal(void);
 extern void charge_full_deal(void);
 extern void charge_ldo5v_in_deal(void);
 extern void charge_ldo5v_off_deal(void);

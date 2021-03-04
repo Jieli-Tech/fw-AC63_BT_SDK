@@ -219,6 +219,7 @@ DAC硬件上的连接方式,可选的配置：
 #define AUDIO_DATA_EXPORT_USE_SD	1
 #define AUDIO_DATA_EXPORT_USE_SPP 	2
 #define TCFG_AUDIO_DATA_EXPORT_ENABLE		DISABLE_THIS_MOUDLE
+// #define AUDIO_PCM_DEBUG					  //通话数据串口导出
 /*
  *支持省电容MIC模块
  *(1)要使能省电容mic,首先要支持该模块:TCFG_SUPPORT_MIC_CAPLESS
@@ -350,6 +351,10 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_AUTO_STOP_PAGE_SCAN_TIME             0 //配置一拖二第一台连接后自动关闭PAGE SCAN的时间(单位分钟)
 #endif
 
+#ifdef AUDIO_PCM_DEBUG
+#undef TCFG_CHARGESTORE_ENABLE
+#define TCFG_CHARGESTORE_ENABLE		DISABLE_THIS_MOUDLE 	//使用通话数据导出，关闭智能充电仓功能
+#endif/*AUDIO_PCM_DEBUG*/
 
 //*********************************************************************************//
 //                                 电源切换配置                                    //

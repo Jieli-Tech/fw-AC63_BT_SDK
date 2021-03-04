@@ -41,3 +41,13 @@ const int config_btstask_auto_exit_sniff = 0;
 #else
 const int config_btstask_auto_exit_sniff = 1;
 #endif
+
+
+
+#if SMART_BOX_EN
+const int config_rcsp_stack_enable = 1;
+#else
+const int config_rcsp_stack_enable = 0;
+#endif
+
+

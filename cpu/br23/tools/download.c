@@ -32,7 +32,7 @@ ${OBJDUMP} -section-headers -address-mask=0x1ffffff $1.elf
 ${OBJSIZEDUMP} -lite -skip-zero -enable-dbg-info $1.elf | sort -k 1 >  symbol_tbl.txt
 
 
-files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe packres.exe json_to_res.exe md5sum.exe "
+files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota_all.bin ota_all_debug.bin ota_nor.bin ota_nor_debug.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe packres.exe json_to_res.exe md5sum.exe"
 
 #if(CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE)
 #if RCSP_UPDATE_EN
@@ -40,12 +40,14 @@ files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_
 NICKNAME="br23_app_ota"
 
 cp bluetooth/app_ota/isd_config.ini ./
+cp bluetooth/app_ota/download.bat ./
 
 #else
 
 NICKNAME="br23_sdk"
 
 cp bluetooth/standard/isd_config.ini ./
+cp bluetooth/standard/download.bat ./
 
 #endif
 
@@ -54,10 +56,18 @@ cat text.bin data.bin data_code.bin \
 
 #else
 
-#ifdef CONFIG_WATCH_APP
+NICKNAME="br23_sdk"
+
+#if  CONFIG_WATCH_CASE_ENABLE
+#if  CONFIG_DOUBLE_BANK_ENABLE
+cp download/watch/isd_config_double_bank.ini ./isd_config.ini
+#else
 cp download/watch/isd_config.ini ./
+#endif
+cp download/watch/download.bat ./
 #else
 cp download/standard/isd_config.ini ./
+cp download/standard/download.bat ./
 #endif
 
 cat text.bin data.bin data_code.bin \
@@ -95,7 +105,7 @@ set OBJDUMP=C:\JL\pi32\bin\llvm-objdump.exe
 set OBJCOPY=C:\JL\pi32\bin\llvm-objcopy.exe
 set ELFFILE=sdk.elf
 
-REM %OBJDUMP% -D -address-mask=0x1ffffff -print-dbg $1.elf > $1.lst
+REM %OBJDUMP% -D -address-mask=0x1ffffff -print-dbg %ELFFILE% > sdk.lst
 %OBJCOPY% -O binary -j .text %ELFFILE% text.bin
 %OBJCOPY% -O binary -j .data %ELFFILE% data.bin
 %OBJCOPY% -O binary -j .data_code %ELFFILE% data_code.bin
@@ -163,7 +173,7 @@ del *.bc
 
 download\soundcard\download.bat
 
-#elif defined CONFIG_WATCH_APP
+#elif  CONFIG_WATCH_CASE_ENABLE
 
 download\watch\download.bat
 

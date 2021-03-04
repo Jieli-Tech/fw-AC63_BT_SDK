@@ -42,11 +42,19 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/log_config.o \
 	$(ROOT)/apps/$(APP_CASE)/user_cfg.o \
 	$(ROOT)/apps/common/update/update.o \
+    $(ROOT)/apps/common/update/testbox_update.o \
 
 objs += \
 	$(ROOT)/apps/common/key/iokey.o \
 	$(ROOT)/apps/common/key/adkey.o \
     $(ROOT)/apps/common/key/key_driver.o \
+
+objs += \
+	$(ROOT)/apps/mesh/MshMDL/lightness_srv.o \
+	$(ROOT)/apps/mesh/MshMDL/generic_power_onoff_srv.o \
+	$(ROOT)/apps/mesh/MshMDL/generic_level_srv.o \
+	$(ROOT)/apps/mesh/MshMDL/generic_onoff_srv.o \
+	$(ROOT)/apps/mesh/MshMDL/generic_onoff_cli.o \
 
 mesh_dir = sig_mesh
 

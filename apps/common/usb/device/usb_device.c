@@ -4,6 +4,7 @@
 #include "usb/scsi.h"
 #include "usb/device/hid.h"
 #include "usb/device/uac_audio.h"
+#include "usb/device/cdc.h"
 #include "irq.h"
 #include "init.h"
 #include "gpio.h"
@@ -18,6 +19,9 @@
 #define LOG_CLI_ENABLE
 
 #include "debug.h"
+
+#if TCFG_USB_SLAVE_ENABLE
+
 static void usb_device_init(const usb_dev usb_id)
 {
 
@@ -48,6 +52,7 @@ static void usb_device_hold(const usb_dev usb_id)
 }
 
 
+static int usb_ep_conflict_check(const usb_dev usb_id);
 int usb_device_mode(const usb_dev usb_id, const u32 class)
 {
     /* usb_device_set_class(CLASS_CONFIG); */
@@ -68,42 +73,60 @@ int usb_device_mode(const usb_dev usb_id, const u32 class)
         gpio_set_die(IO_PORT_DM + 2 * usb_id, 1);
         gpio_set_die(IO_PORT_DP + 2 * usb_id, 1);
 
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
+#if TCFG_USB_SLAVE_MSD_ENABLE
         msd_release(usb_id);
 #endif
-#if USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
         uac_release(usb_id);
+#endif
+#if TCFG_USB_SLAVE_CDC_ENABLE
+        cdc_release(usb_id);
 #endif
         usb_device_hold(usb_id);
         return 0;
     }
 
+    int ret = usb_ep_conflict_check(usb_id);
+    if (ret) {
+        return ret;
+    }
     usb_add_desc_config(usb_id, MAX_INTERFACE_NUM, NULL);
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
+#if TCFG_USB_SLAVE_MSD_ENABLE
     if ((class & MASSSTORAGE_CLASS) == MASSSTORAGE_CLASS) {
-        msd_register(usb_id);
-        usb_add_desc_config(usb_id, class_index++, msd_desc_config);
         log_info("add desc msd");
+        usb_add_desc_config(usb_id, class_index++, msd_desc_config);
+        msd_register(usb_id);
     }
 #endif
 
-#if USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
     if ((class & AUDIO_CLASS) == AUDIO_CLASS) {
+        log_info("add audio desc");
         usb_add_desc_config(usb_id, class_index++, uac_audio_desc_config);
-        log_info("add desc audio");
+        uac_register();
     } else if ((class & SPEAKER_CLASS) == SPEAKER_CLASS) {
-        usb_add_desc_config(usb_id, class_index++, uac_spk_desc_config);
         log_info("add desc speaker");
+        usb_add_desc_config(usb_id, class_index++, uac_spk_desc_config);
+        uac_register();
     } else if ((class & MIC_CLASS) == MIC_CLASS) {
-        usb_add_desc_config(usb_id, class_index++, uac_mic_desc_config);
         log_info("add desc mic");
+        usb_add_desc_config(usb_id, class_index++, uac_mic_desc_config);
+        uac_register();
     }
 #endif
 
-#if USB_DEVICE_CLASS_CONFIG & HID_CLASS
+#if TCFG_USB_SLAVE_HID_ENABLE
     if ((class & HID_CLASS) == HID_CLASS) {
-        usb_add_desc_config(usb_id, class_index++, hid_desc_config);
         log_info("add desc std hid");
+        usb_add_desc_config(usb_id, class_index++, hid_desc_config);
+    }
+#endif
+
+#if TCFG_USB_SLAVE_CDC_ENABLE
+    if ((class & CDC_CLASS) == CDC_CLASS) {
+        log_info("add desc cdc");
+        usb_add_desc_config(usb_id, class_index++, cdc_desc_config);
+        cdc_register(usb_id);
     }
 #endif
 
@@ -111,6 +134,73 @@ int usb_device_mode(const usb_dev usb_id, const u32 class)
     user_setup_filter_install(usb_id2device(usb_id));
     return 0;
 }
+/* module_initcall(usb_device_mode); */
+
+static int usb_ep_conflict_check(const usb_dev usb_id)
+{
+    u8 usb_ep_tx_list[] = {
+#if TCFG_USB_SLAVE_MSD_ENABLE
+        MSD_BULK_EP_IN,
+#endif
+#if TCFG_USB_SLAVE_HID_ENABLE
+        HID_EP_IN,
+#endif
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
+        MIC_ISO_EP_IN,
+#endif
+#if TCFG_USB_SLAVE_CDC_ENABLE
+        CDC_DATA_EP_IN,
+#if CDC_INTR_EP_ENABLE
+        CDC_INTR_EP_IN,
+#endif
+#endif
+    };
+    u8 usb_ep_rx_list[] = {
+#if TCFG_USB_SLAVE_MSD_ENABLE
+        MSD_BULK_EP_OUT,
+#endif
+#if TCFG_USB_SLAVE_HID_ENABLE
+        HID_EP_OUT,
+#endif
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
+        SPK_ISO_EP_OUT,
+#endif
+#if TCFG_USB_SLAVE_CDC_ENABLE
+        CDC_DATA_EP_OUT,
+#endif
+    };
+    int ret = 0;
+    int i, j;
+
+    for (i = 0; i < sizeof(usb_ep_tx_list) - 1; i++) {
+        for (j = i + 1; j < sizeof(usb_ep_tx_list); j++) {
+            if (usb_ep_tx_list[i] == usb_ep_tx_list[j]) {
+                ret = -1;
+                ASSERT(0, "ep%d conflict, dir in\n", usb_ep_tx_list[i]);
+                goto __exit;
+            }
+        }
+    }
+    for (i = 0; i < sizeof(usb_ep_rx_list) - 1; i++) {
+        for (j = i + 1; j < sizeof(usb_ep_rx_list); j++) {
+            if (usb_ep_rx_list[i] == usb_ep_rx_list[j]) {
+                ret = -1;
+                ASSERT(0, "ep%d conflict, dir out\n", usb_ep_rx_list[i]);
+                goto __exit;
+            }
+        }
+    }
+__exit:
+    return ret;
+}
+
+#endif
+
+/*
+ * @brief otg检测中sof初始化，不要放在TCFG_USB_SLAVE_ENABLE里
+ * @parm id usb设备号
+ * @return null
+ */
 void usb_otg_sof_check_init(const usb_dev id)
 {
     u32 ep = 0;
@@ -125,4 +215,3 @@ void usb_otg_sof_check_init(const usb_dev id)
     }
     usb_sof_clr_pnd(id);
 }
-/* module_initcall(usb_device_mode); */

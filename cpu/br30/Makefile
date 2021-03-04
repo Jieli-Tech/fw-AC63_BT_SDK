@@ -49,8 +49,7 @@ endif
 	  # $(ROOT)/cpu/$(CPU)/mcpwm.o \
 
 ifeq ($(APP_CASE),earphone)
-objs += \
-  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_file.o \
+include $(ROOT)/cpu/$(CPU)/audio_dec/Makefile
 
 endif
 

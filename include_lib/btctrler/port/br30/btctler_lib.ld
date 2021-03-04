@@ -211,6 +211,8 @@ SECTIONS
         *(.tws_sync_channel.11)
         *(.tws_sync_channel.12)
         *(.tws_sync_channel.13)
+        *(.tws_sync_channel.14)
+        *(.tws_sync_channel.15)
         tws_sync_channel_end = .;
 
         btctler_code_end = .;

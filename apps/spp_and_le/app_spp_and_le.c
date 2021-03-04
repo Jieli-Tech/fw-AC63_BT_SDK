@@ -26,6 +26,7 @@
 #include "rcsp_bluetooth.h"
 #include "rcsp_user_update.h"
 #include "app_charge.h"
+#include "app_chargestore.h"
 #include "app_power_manage.h"
 #include "le_client_demo.h"
 
@@ -37,6 +38,7 @@
 /* #define LOG_DUMP_ENABLE */
 #define LOG_CLI_ENABLE
 #include "debug.h"
+
 
 #if CONFIG_APP_SPP_LE
 
@@ -262,6 +264,11 @@ static void bt_function_select_init()
 
     }
 #endif
+
+#if(TCFG_USER_EDR_ENABLE && TRANS_DATA_EN)
+    transport_spp_flow_cfg();
+#endif
+
 }
 
 
@@ -293,6 +300,11 @@ void app_set_soft_poweroff(void)
 
 #if TCFG_USER_BLE_ENABLE
     ble_module_enable(0);
+#endif
+
+#if(TCFG_USER_EDR_ENABLE && TRANS_DATA_EN)
+    bt_wait_phone_connect_control_ext(0, 0);
+    transport_spp_disconnect();
 #endif
 
     //延时300ms，确保BT退出链路断开
@@ -344,6 +356,12 @@ static void led_timer_handle(void)
     }
 }
 
+static void spple_timer_handle_test(void)
+{
+    log_info("not_bt");
+}
+
+
 static void app_start()
 {
     log_info("=======================================");
@@ -351,6 +369,8 @@ static void app_start()
     log_info("=======================================");
 
     clk_set("sys", BT_NORMAL_HZ);
+
+#if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
     u32 sys_clk =  clk_get("sys");
     bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
 
@@ -364,6 +384,10 @@ static void app_start()
     sys_auto_sniff_controle(1, NULL);
 #endif /* SIG_MESH_EN */
 
+#else
+//no bt,to for test
+    sys_timer_add(NULL, spple_timer_handle_test, 1000);
+#endif
     /* 按键消息使能 */
     sys_key_event_enable();
     /* sys_auto_shut_down_enable(); */
@@ -886,6 +910,15 @@ static void app_key_event_handler(struct sys_event *event)
             /* tone_play(TONE_SIN_NORMAL, 1); */
         }
 #endif/*TCFG_AUDIO_ENABLE*/
+
+
+        if (event_type == KEY_EVENT_TRIPLE_CLICK
+            && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {
+            app_set_soft_poweroff();
+            return;
+        }
+
+
     }
 }
 
@@ -897,11 +930,13 @@ static int event_handler(struct application *app, struct sys_event *event)
         return 0;
 
     case SYS_BT_EVENT:
+#if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
         if ((u32)event->arg == SYS_BT_EVENT_TYPE_CON_STATUS) {
             bt_connction_status_event_handler(&event->u.bt);
         } else if ((u32)event->arg == SYS_BT_EVENT_TYPE_HCI_STATUS) {
             bt_hci_event_handler(&event->u.bt);
         }
+#endif
         return 0;
 
     case SYS_DEVICE_EVENT:

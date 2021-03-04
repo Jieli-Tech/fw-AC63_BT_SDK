@@ -54,6 +54,7 @@ MEMORY
 #include "maskrom_stubs_os.ld"
 
 EXTERN(
+_start
 #include "sdk_used_list.c"
 );
 
@@ -227,8 +228,10 @@ SECTIONS
             *(.usb_msd_dma)
             *(.usb_hid_dma)
             *(.usb_iso_dma)
+            *(.usb_cdc_dma)
             *(.uac_var)
             *(.usb_config_var)
+            *(.cdc_var)
 		}
     } > ram0
 

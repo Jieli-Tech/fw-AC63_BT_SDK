@@ -61,6 +61,9 @@ typedef struct __JL_PACKET JL_PACKET;
 #define JL_WAIT_RESP_POOL_SIZE      (JL_MTU_SEND*2)
 #endif
 
+void set_jl_rcsp_recieve_buf_size(u16 size);
+u16 rcsp_packet_write_alloc_len(void);
+
 u32 rcsp_packet_need_buf_size(void);
 u32 rcsp_packet_buf_init(u8 *buf, u32 len);
 

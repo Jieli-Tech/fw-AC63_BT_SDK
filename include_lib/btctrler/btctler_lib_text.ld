@@ -69,7 +69,7 @@
 
 		. = ALIGN(4);
         tws_func_stub_begin = .;
-        *(.tws_func_stub)
+        KEEP(*(.tws_func_stub))
         tws_func_stub_end = .;
 
         *(.lmp_irq_code)
@@ -89,26 +89,26 @@
 
 		. = ALIGN(4);
         tws_sync_call_begin = .;
-        *(.tws_sync_call)
+        KEEP(*(.tws_sync_call))
         tws_sync_call_end = .;
 
 
 		. = ALIGN(4);
         tws_sync_channel_begin = .;
-        *(.tws_sync_channel.0)
-        *(.tws_sync_channel.1)
-        *(.tws_sync_channel.2)
-        *(.tws_sync_channel.3)
-        *(.tws_sync_channel.4)
-        *(.tws_sync_channel.5)
-        *(.tws_sync_channel.6)
-        *(.tws_sync_channel.7)
-        *(.tws_sync_channel.8)
-        *(.tws_sync_channel.9)
-        *(.tws_sync_channel.10)
-        *(.tws_sync_channel.11)
-        *(.tws_sync_channel.12)
-        *(.tws_sync_channel.13)
+        KEEP(*(.tws_sync_channel.0))
+        KEEP(*(.tws_sync_channel.1))
+        KEEP(*(.tws_sync_channel.2))
+        KEEP(*(.tws_sync_channel.3))
+        KEEP(*(.tws_sync_channel.4))
+        KEEP(*(.tws_sync_channel.5))
+        KEEP(*(.tws_sync_channel.6))
+        KEEP(*(.tws_sync_channel.7))
+        KEEP(*(.tws_sync_channel.8))
+        KEEP(*(.tws_sync_channel.9))
+        KEEP(*(.tws_sync_channel.10))
+        KEEP(*(.tws_sync_channel.11))
+        KEEP(*(.tws_sync_channel.12))
+        KEEP(*(.tws_sync_channel.13))
         tws_sync_channel_end = .;
 
         btctler_code_end = .;

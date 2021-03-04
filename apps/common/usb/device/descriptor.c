@@ -11,6 +11,17 @@
 
 #include "app_config.h"
 
+#define LOG_TAG_CONST       USB
+#define LOG_TAG             "[USB]"
+#define LOG_ERROR_ENABLE
+#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+/* #define LOG_DUMP_ENABLE */
+#define LOG_CLI_ENABLE
+#include "debug.h"
+
+#if TCFG_USB_SLAVE_ENABLE
+
 static const u8 sDeviceDescriptor[] = { //<Device Descriptor
     USB_DT_DEVICE_SIZE,      // bLength: Size of descriptor
     USB_DT_DEVICE,       // bDescriptorType: Device
@@ -40,20 +51,30 @@ static const u8 LANGUAGE_STR[] = {
 
 
 static const u8 product_string[] = {
-    24,
+    42,
     0x03,
     'U', 0x00,
-    'A', 0x00,
+    'S', 0x00,
+    'B', 0x00,
+    ' ', 0x00,
     'C', 0x00,
+    'o', 0x00,
+    'm', 0x00,
+    'p', 0x00,
+    'o', 0x00,
+    's', 0x00,
+    'i', 0x00,
+    't', 0x00,
+    'e', 0x00,
+    ' ', 0x00,
     'D', 0x00,
     'e', 0x00,
-    'm', 0x00,
-    'o', 0x00,
-    'V', 0x00,
-    '1', 0x00,
-    '.', 0x00,
-    '0', 0x00,
+    'v', 0x00,
+    'i', 0x00,
+    'c', 0x00,
+    'e', 0x00,
 };
+
 static const u8 MANUFACTURE_STR[] = {
     34,         //该描述符的长度为34字节
     0x03,       //字符串描述符的类型编码为0x03
@@ -74,6 +95,7 @@ static const u8 MANUFACTURE_STR[] = {
     0x67, 0x00, //g
     0x79, 0x00, //y
 };
+
 static const u8 sConfigDescriptor[] = {	//<Config Descriptor
 //ConfiguraTIon
     USB_DT_CONFIG_SIZE,    //bLength
@@ -89,23 +111,28 @@ static const u8 sConfigDescriptor[] = {	//<Config Descriptor
 #endif
     50,     //MaxPower * 2ma
 };
+
 static const u8 serial_string[] = {
     0x22, 0x03, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x36, 0x00, 0x46, 0x00, 0x36, 0x00,
     0x34, 0x00, 0x30, 0x00, 0x39, 0x00, 0x36, 0x00, 0x42, 0x00, 0x32, 0x00, 0x32, 0x00, 0x45, 0x00,
     0x37, 0x00
 };
+
 void get_device_descriptor(u8 *ptr)
 {
     memcpy(ptr, sDeviceDescriptor, USB_DT_DEVICE_SIZE);
 }
+
 void get_language_str(u8 *ptr)
 {
     memcpy(ptr, LANGUAGE_STR, LANGUAGE_STR[0]);
 }
+
 void get_manufacture_str(u8 *ptr)
 {
     memcpy(ptr, MANUFACTURE_STR, MANUFACTURE_STR[0]);
 }
+
 void get_iserialnumber_str(u8 *ptr)
 {
 #if USB_ROOT2
@@ -142,6 +169,7 @@ void get_iserialnumber_str(u8 *ptr)
     }
 #endif
 }
+
 #if USB_ROOT2
 static const u8 ee_string[] = {0x12, 0x03, 0x4D, 0x00, 0x53, 0x00, 0x46, 0x00, 0x54,
                                0x00, 0x31, 0x00, 0x30, 0x00, 0x30, 0x00, 0x90, 0x00
@@ -151,14 +179,17 @@ void get_string_ee(u8 *ptr)
     memcpy(ptr, ee_string, ee_string[0]);
 }
 #endif
+
 void get_product_str(u8 *ptr)
 {
     memcpy(ptr, product_string, product_string[0]);
 }
+
 const u8 *usb_get_config_desc()
 {
     return sConfigDescriptor;
 }
+
 const u8 *usb_get_string_desc(u32 id)
 {
     const u8 *pstr = uac_get_string(id);
@@ -168,3 +199,4 @@ const u8 *usb_get_string_desc(u32 id)
     return NULL;
 }
 
+#endif

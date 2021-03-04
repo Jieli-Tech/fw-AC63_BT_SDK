@@ -26,7 +26,7 @@ void charge_start_deal(void)
     power_set_mode(PWR_LDO15);
 }
 
-void charge_err_deal(void)
+void ldo5v_keep_deal(void)
 {
     log_info("%s\n", __func__);
 }
@@ -67,11 +67,11 @@ int app_charge_event_handler(struct device_event *dev)
     case CHARGE_EVENT_CHARGE_CLOSE:
         charge_close_deal();
         break;
-    case CHARGE_EVENT_CHARGE_ERR:
-        charge_err_deal();
-        break;
     case CHARGE_EVENT_CHARGE_FULL:
         charge_full_deal();
+        break;
+    case CHARGE_EVENT_LDO5V_KEEP:
+        ldo5v_keep_deal();
         break;
     case CHARGE_EVENT_LDO5V_IN:
         charge_ldo5v_in_deal();

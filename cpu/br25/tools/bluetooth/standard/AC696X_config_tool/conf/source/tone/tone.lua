@@ -78,7 +78,7 @@ cfg:addToneNameMapLang("en", {
 local tone_file_list = cfg:tones("提示音", tone_defaults);
 
 --tone_file_list:setBinInfer(false);
-local tv = cfg:tonesView(tone_file_list, {"mp3", "wav", "wtg", "msbc", "sbc", "mty"});
+local tv = cfg:tonesView(tone_file_list, {"mp3", "wav", "wtg", "wts", "msbc", "sbc", "sst", "mty"});
 if open_by_program == "fw_edit" then
 	-- 如果在 fw 编辑中打开，则不要添加提示音等功能
 	tv:setFlags{"no-load", "no-add", "no-edit-name", "no-delete"};
@@ -86,11 +86,12 @@ end
 -- tv:setMainFormat("wtg");
 tv:setMainFormatSelector({
 	{"wtg (低音质)", "wtg"},
+	{"wts (低音质)", "wts"},
 	{"msbc(中音质)", "msbc"},
 	{"sbc (高音质)", "sbc"},
 	{"sin (正弦波)", "sin"},
 	{"mty (全音质) 请设置输出采样率和码率", "mty"},
-});
+	{"sst (简易合成,低音质)",          "sst"},	{"保留原有格式", "*"},});
 
 local tone_list_view = cfg:vBox{
 	tv
@@ -176,6 +177,25 @@ local to_wtg_format = function (frompath, topath)
 	return true; -- good
 end; 
 
+-- wtgv2 (wts) format convertor
+
+local wts_to_wav_format = function(frompath, topath)
+	cfg:runProg{srcdir .. '/tone/wtgv2_decode.exe', frompath, topath, srcdir .. '/tone/wtgv2_icdftabs.rbin'};
+	return true;
+end;
+
+local to_wts_format = function(frompath, topath)
+	local pcmtmp = os.tmpname();
+	local pcmtmp2 = os.tmpname();
+	
+	cfg:runProg{cfg.rootDir .. '/3rd/ffmpeg', '-i', frompath, '-ar', math.floor(tv:getFormatSampleRate() * 2), '-ac', '1', '-f', 's16le', '-acodec', 'pcm_s16le', pcmtmp};
+	cfg:runProg{srcdir .. '/tone/wtgv2_resample.exe', pcmtmp, pcmtmp2};
+	cfg:runProg{srcdir .. '/tone/wtgv2_encode.exe', pcmtmp2, topath, "o.raw", math.floor(tv:getFormatSampleRate()), math.floor(tv:getFormatBitRate()), '20', '0.35'};
+	os.remove(pcmtmp);
+	os.remove(pcmtmp2);
+	return true;
+end;
+
 -- .msbc format convertor
 
 local msbc_to_wav_format = function (frompath, topath)
@@ -249,6 +269,18 @@ tv:setFormatSampleRateList("mty", {
     {44100, {48, 56, 64, 80, 96, 112, 128}},
     {48000, {48, 56, 64, 80, 96, 112, 128}},
 });
+
+tv:setFormatSampleRateRange("wts", {
+-- {sr_out, {val, min, max}},
+    { 8000, { 8000, 5000, 60000}},
+    {11025, {11000, 5000, 60000}},
+    {12000, {12000, 5000, 60000}},
+
+    {16000, {16000, 5000, 60000}},
+    {22050, {20000, 5000, 60000}},
+    {24000, {22000, 5000, 60000}},
+});
+
 ---------------------- mty - >wav, 播放
 local mty_to_wav_format = function(frompath, topath)
     cfg:runProg{srcdir .. "/tone/mty2wav.exe", frompath, topath};
@@ -273,21 +305,44 @@ local wav_to_mty_format = function(frompath, topath)
 	return true; -- good
 end
 
+---------------------- sst ->wav, 播放
+local sst_to_wav_format = function(frompath, topath)
+	local pcmtmp = os.tmpname() .. ".pcm";
+	cfg:runProg{srcdir .. "/tone/simple_syn_dec.exe", frompath, pcmtmp};
+	cfg:runProg{cfg.rootDir .. "/3rd/ffmpeg.exe", "-f", "s16le", "-v", "8", "-y", "-ar", "44100", "-ac", "2", "-i", pcmtmp, topath};
+	os.remove(pcmtmp);
+	return true;
+end
+
+local to_sst_format = function(frompath, topath)
+	local pcmtmp = os.tmpname() .. ".pcm";
+	local pcmtmp2 = os.tmpname() .. ".2.pcm";
+	cfg:runProg{cfg.rootDir .. "/3rd/ffmpeg.exe", "-i", frompath, "-ar", "88200", "-ac", "1", "-f", "s16le", "-acodec", "pcm_s16le", pcmtmp};
+	cfg:runProg{srcdir .. "/tone/simple_syn_enc.exe", pcmtmp, pcmtmp2, topath};
+	os.remove(pcmtmp);
+	os.remove(pcmtmp2);
+	return true;
+end
+
 -- 转换成 wav，用于播放
 cfg:setFormatConverter("sin",  "wav", sin_to_wav_format);
 cfg:setFormatConverter("wtg",  "wav", wtg_to_wav_format);
+cfg:setFormatConverter("wts",  "wav", wts_to_wav_format);
 cfg:setFormatConverter("msbc", "wav", msbc_to_wav_format);
 cfg:setFormatConverter("sbc",  "wav", sbc_to_wav_format);
 cfg:setFormatConverter("mty",  "wav", mty_to_wav_format);
 cfg:setFormatConverter("aac",  "wav", aac_to_wav_format);
+cfg:setFormatConverter("sst",  "wav", sst_to_wav_format);
 
 -- 格式互相转换
 cfg:setFormatConverter("mp3",  "mty", mp3_to_mty_format);
 cfg:setFormatConverter("wav",  "mty", wav_to_mty_format);
 cfg:setFormatConverter("sbc",  "mty", make_chain_cvt{ sbc_to_wav_format, wav_to_mty_format});
 cfg:setFormatConverter("wtg",  "mty", make_chain_cvt{ wtg_to_wav_format, wav_to_mty_format});
+cfg:setFormatConverter("wts",  "mty", make_chain_cvt{ wts_to_wav_format, wav_to_mty_format});
 cfg:setFormatConverter("aac",  "mty", make_chain_cvt{ aac_to_wav_format, wav_to_mty_format});
 cfg:setFormatConverter("msbc", "mty", make_chain_cvt{msbc_to_wav_format, wav_to_mty_format});
+cfg:setFormatConverter("sst",  "mty", make_chain_cvt{ sst_to_wav_format, wav_to_mty_format});
 
 cfg:setFormatConverter("mp3",  "wtg", to_wtg_format);
 cfg:setFormatConverter("wav",  "wtg", to_wtg_format);
@@ -295,6 +350,18 @@ cfg:setFormatConverter("mty",  "wtg", make_chain_cvt{ mty_to_wav_format, to_wtg_
 cfg:setFormatConverter("sbc",  "wtg", make_chain_cvt{ sbc_to_wav_format, to_wtg_format});
 cfg:setFormatConverter("aac",  "wtg", make_chain_cvt{ aac_to_wav_format, to_wtg_format});
 cfg:setFormatConverter("msbc", "wtg", make_chain_cvt{msbc_to_wav_format, to_wtg_format});
+cfg:setFormatConverter("sst",  "wtg", make_chain_cvt{ sst_to_wav_format, to_wtg_format});
+cfg:setFormatConverter("wts",  "wtg", make_chain_cvt{ wts_to_wav_format, to_wtg_format});
+
+
+cfg:setFormatConverter("mp3",  "wts", to_wts_format);
+cfg:setFormatConverter("wav",  "wts", to_wts_format);
+cfg:setFormatConverter("mty",  "wts", make_chain_cvt{ mty_to_wav_format, to_wts_format});
+cfg:setFormatConverter("sbc",  "wts", make_chain_cvt{ sbc_to_wav_format, to_wts_format});
+cfg:setFormatConverter("aac",  "wts", make_chain_cvt{ aac_to_wav_format, to_wts_format});
+cfg:setFormatConverter("msbc", "wts", make_chain_cvt{msbc_to_wav_format, to_wts_format});
+cfg:setFormatConverter("sst",  "wts", make_chain_cvt{ sst_to_wav_format, to_wts_format});
+cfg:setFormatConverter("wtg",  "wts", make_chain_cvt{ wtg_to_wav_format, to_wts_format});
 
 cfg:setFormatConverter("mp3", "msbc", to_msbc_format);
 cfg:setFormatConverter("wav", "msbc", to_msbc_format);
@@ -302,6 +369,8 @@ cfg:setFormatConverter("mty", "msbc", make_chain_cvt{mty_to_wav_format, to_msbc_
 cfg:setFormatConverter("wtg", "msbc", make_chain_cvt{wtg_to_wav_format, to_msbc_format});
 cfg:setFormatConverter("sbc", "msbc", make_chain_cvt{sbc_to_wav_format, to_msbc_format});
 cfg:setFormatConverter("aac", "msbc", make_chain_cvt{aac_to_wav_format, to_msbc_format});
+cfg:setFormatConverter("sst", "msbc", make_chain_cvt{sst_to_wav_format, to_msbc_format});
+cfg:setFormatConverter("wts", "msbc", make_chain_cvt{wts_to_wav_format, to_msbc_format});
 
 cfg:setFormatConverter("mp3",  "sbc", to_sbc_format);
 cfg:setFormatConverter("wav",  "sbc", to_sbc_format);
@@ -309,6 +378,8 @@ cfg:setFormatConverter("mty",  "sbc", make_chain_cvt{ mty_to_wav_format, to_sbc_
 cfg:setFormatConverter("wtg",  "sbc", make_chain_cvt{ wtg_to_wav_format, to_sbc_format});
 cfg:setFormatConverter("aac",  "sbc", make_chain_cvt{ aac_to_wav_format, to_sbc_format});
 cfg:setFormatConverter("msbc", "sbc", make_chain_cvt{msbc_to_wav_format, to_sbc_format});
+cfg:setFormatConverter("sst",  "sbc", make_chain_cvt{ sst_to_wav_format, to_sbc_format});
+cfg:setFormatConverter("wts",  "sbc", make_chain_cvt{ wts_to_wav_format, to_sbc_format});
 
 cfg:setFormatConverter("mp3", "aac", to_aac_format);
 cfg:setFormatConverter("wav", "aac", to_aac_format);
@@ -316,3 +387,14 @@ cfg:setFormatConverter("wtg", "aac", make_chain_cvt{ wtg_to_wav_format, to_aac_f
 cfg:setFormatConverter("sbc", "aac", make_chain_cvt{ sbc_to_wav_format, to_aac_format});
 cfg:setFormatConverter("mty", "aac", make_chain_cvt{ mty_to_wav_format, to_aac_format});
 cfg:setFormatConverter("msbc","aac", make_chain_cvt{msbc_to_wav_format, to_aac_format});
+cfg:setFormatConverter("sst", "aac", make_chain_cvt{ sst_to_wav_format, to_aac_format});
+cfg:setFormatConverter("wts", "aac", make_chain_cvt{ wts_to_wav_format, to_aac_format});
+
+cfg:setFormatConverter("mp3",  "sst", to_sst_format);
+cfg:setFormatConverter("wav",  "sst", to_sst_format);
+cfg:setFormatConverter("wtg",  "sst", make_chain_cvt{ wtg_to_wav_format, to_sst_format});
+cfg:setFormatConverter("sbc",  "sst", make_chain_cvt{ sbc_to_wav_format, to_sst_format});
+cfg:setFormatConverter("mty",  "sst", make_chain_cvt{ mty_to_wav_format, to_sst_format});
+cfg:setFormatConverter("msbc", "sst", make_chain_cvt{msbc_to_wav_format, to_sst_format});
+cfg:setFormatConverter("aac",  "sst", make_chain_cvt{ aac_to_wav_format, to_sst_format});
+cfg:setFormatConverter("wts",  "sst", make_chain_cvt{ wts_to_wav_format, to_sst_format});

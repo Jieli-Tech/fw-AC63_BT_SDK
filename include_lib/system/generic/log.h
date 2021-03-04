@@ -19,6 +19,10 @@ struct logbuf {
 
 #define __LOG_ENABLE
 
+#ifndef __LOG_LEVEL
+#define __LOG_LEVEL 0
+#endif
+
 #ifdef CONFIG_RELEASE_ENABLE
 #undef __LOG_LEVEL
 #define __LOG_LEVEL 0xff

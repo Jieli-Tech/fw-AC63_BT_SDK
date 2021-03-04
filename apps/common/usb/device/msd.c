@@ -14,7 +14,7 @@
 #include "apple_dock/iAP.h"
 #endif
 
-#if TCFG_PC_ENABLE && (USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS)
+#if TCFG_USB_SLAVE_MSD_ENABLE
 
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB]"

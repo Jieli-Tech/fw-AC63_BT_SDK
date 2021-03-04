@@ -67,10 +67,12 @@ chip_name=CONFIG_CHIP_NAME
 #if(CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE)
 #if RCSP_UPDATE_EN
 NICKNAME="br30_single_bank"
-/* cp bluetooth/ai_single_bank/isd_config_AD697N.ini ./isd_config.ini */
+cp bluetooth/app_ota/isd_config_AD697N.ini ./isd_config.ini
+cp bluetooth/app_ota/download.bat ./
 #else
 NICKNAME="br30_standard"
-/* cp bluetooth/standard/isd_config_AD697N.ini ./isd_config.ini */
+cp bluetooth/standard/isd_config_AD697N.ini ./isd_config.ini
+cp bluetooth/standard/download.bat ./
 #endif
 #endif      //通用蓝牙设备
 
@@ -129,6 +131,10 @@ cp QCY/isd_config_XM.ini ./isd_config.ini
 
 
 #endif //CONFIG_QCY_CASE_ENABLE
+
+#if TCFG_CLOCK_SYS_SRC_IS_LRC
+cp isd_config_lrc.ini isd_config.ini
+#endif
 
 host-client -project ${NICKNAME}$2 -f ${files} $1.elf
 

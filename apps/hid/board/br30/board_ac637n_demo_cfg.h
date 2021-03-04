@@ -19,6 +19,25 @@
 #define NO_CONFIG_PORT						(-1)
 
 //*********************************************************************************//
+//                                  app 配置                                       //
+//*********************************************************************************//
+#define TCFG_APP_BT_EN			            1
+#define TCFG_APP_MUSIC_EN			        1
+#define TCFG_APP_LINEIN_EN					1
+#define TCFG_APP_FM_EN					    0
+#define TCFG_APP_PC_EN					    1
+#define TCFG_APP_RTC_EN					    0
+#define TCFG_APP_RECORD_EN				    0
+#define TCFG_APP_SPDIF_EN                   0
+
+
+#define LINEIN_INPUT_WAY_ANALOG      0
+#define LINEIN_INPUT_WAY_ADC         1
+
+#define NO_CONFIG_PORT						(-1)
+
+
+//*********************************************************************************//
 //                                 UART配置                                        //
 //*********************************************************************************//
 #define TCFG_UART0_ENABLE					ENABLE_THIS_MOUDLE                     //串口打印模块使能
@@ -49,9 +68,9 @@
 //*********************************************************************************//
 #define TCFG_PC_ENABLE                      DISABLE_THIS_MOUDLE//PC模块使能
 #define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE //U盘模块使能
-#define TCFG_HID_HOST_ENABLE                DISABLE_THIS_MOUDLE  //游戏盒子模式
-#define TCFG_ADB_ENABLE                     DISABLE_THIS_MOUDLE
-#define TCFG_AOA_ENABLE                     DISABLE_THIS_MOUDLE
+#define TCFG_HID_HOST_ENABLE                DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE  //游戏盒子模式
+#define TCFG_ADB_ENABLE                     DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
+#define TCFG_AOA_ENABLE                     DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
 
 #define TCFG_OTG_USB_DEV_EN                 (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
 
@@ -204,6 +223,7 @@
 #define TCFG_DEC_SBC_HWACCEL_CLOSE
 #define TCFG_DEC_PCM_ENABLE                 ENABLE
 #define TCFG_DEC_G729_ENABLE                ENABLE
+#define TCFG_DEC_WTGV2_ENABLE               DISABLE
 #define TCFG_DEC_CVSD_CLOSE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
@@ -331,6 +351,12 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_CLOCK_OSC_HZ					24000000                     //外界晶振频率设置
 #endif
 #define TCFG_CLOCK_MODE                     CLOCK_MODE_ADAPTIVE
+
+#define TCFG_CLOCK_SYS_SRC_IS_LRC           DISABLE_THIS_MOUDLE
+#if TCFG_CLOCK_SYS_SRC_IS_LRC
+#undef TCFG_CLOCK_SYS_SRC
+#define TCFG_CLOCK_SYS_SRC                  SYS_CLOCK_INPUT_PLL_RCL
+#endif
 
 //*********************************************************************************//
 //                                  低功耗配置                                     //

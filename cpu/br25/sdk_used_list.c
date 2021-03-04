@@ -105,6 +105,10 @@ dts_decoder
 g729_decoder
 #endif
 
+#if TCFG_DEC_WTGV2_ENABLE
+wtgv2_decoder
+#endif
+
 #if TCFG_DEC_AAC_ENABLE
 aac_decoder
 #endif
@@ -119,6 +123,49 @@ midi_decoder
 
 #if TCFG_DEC_WAV_ENABLE
 wav_decoder
+#endif
+
+#if AUDIO_MIDI_CTRL_CONFIG
+midi_ctrl_decoder
+#endif
+
+
+
+
+#if TCFG_ENC_CVSD_ENABLE
+cvsd_encoder
+#endif
+
+#if TCFG_ENC_MSBC_ENABLE
+msbc_encoder
+#endif
+
+#if TCFG_ENC_MP3_ENABLE
+mp3_encoder
+#endif
+
+#if TCFG_ENC_G726_ENABLE
+g726_encoder
+#endif
+
+#if TCFG_ENC_ADPCM_ENABLE
+adpcm_encoder
+#endif
+
+#if TCFG_ENC_PCM_ENABLE
+pcm_encoder
+#endif
+
+#if TCFG_ENC_OPUS_ENABLE
+opus_encoder
+#endif
+
+#if TCFG_ENC_SPEEX_ENABLE
+speex_encoder
+#endif
+
+#if TCFG_ENC_SBC_ENABLE
+sbc_encoder
 #endif
 
 

@@ -50,6 +50,7 @@ enum tws_detach_reason {
 #define TWS_CI_DATA_SYNC_CHANNEL             11
 #define TWS_LOCAL_MEIDA_SYNC_CHANNEL         12
 #define TWS_LMP_SLOT_CHANNEL                 13
+#define TWS_DATA_TRANS_CHANNEL               14
 
 enum {
     TWS_EVENT_SEARCH_TIMEOUT = 1,
@@ -67,6 +68,10 @@ enum {
     TWS_EVENT_ESCO_ADD_CONNECT,
     TWS_EVENT_SETUP_MONITOR_LINK,
     TWS_EVENT_MONITOR_START,
+    TWS_EVENT_DATA_TRANS_OPEN,
+    TWS_EVENT_DATA_TRANS_START,
+    TWS_EVENT_DATA_TRANS_STOP,
+    TWS_EVENT_DATA_TRANS_CLOSE,
 
     TWS_EVENT_MODE_CHANGE,      //sniff without phone
 

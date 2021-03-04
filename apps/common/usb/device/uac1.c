@@ -10,7 +10,7 @@
 #include "usb/device/uac_audio.h"
 #include "app_config.h"
 
-#if TCFG_PC_ENABLE && (USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS)
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
 
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB]"
@@ -582,9 +582,6 @@ u32 uac_setup_endpoint(struct usb_device_t *usb_device, struct usb_ctrlrequest *
 static u32 audio_ac_itf_handler(struct usb_device_t *usb_device, struct usb_ctrlrequest *setup)
 {
     u8 mute;
-    if (uac_info == NULL) {
-        uac_register();
-    }
 
     const usb_dev usb_id = usb_device2id(usb_device);
     u32 tx_len;
@@ -810,9 +807,7 @@ static u32 spk_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
     u8 *tx_payload = usb_get_setup_buffer(usb_device);
     u32 bRequestType = setup->bRequestType & USB_TYPE_MASK;
     u32 ret = 0;
-    if (uac_info == NULL) {
-        uac_register();
-    }
+
     switch (setup->bRequest) {
     case USB_REQ_SET_INTERFACE:
         if (usb_device->bDeviceStates == USB_DEFAULT) {
@@ -934,9 +929,7 @@ static u32 mic_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
     u32 tx_len;
     u32 bRequestType = setup->bRequestType & USB_TYPE_MASK;
     u32 ret = 0;
-    if (uac_info == NULL) {
-        uac_register();
-    }
+
     switch (setup->bRequest) {
     case USB_REQ_SET_INTERFACE:
         if (usb_device->bDeviceStates == USB_DEFAULT) {
@@ -1009,7 +1002,7 @@ void spk_reset(struct usb_device_t *usb_device, u32 ift_num)
     log_debug("%s", __func__);
 #if USB_ROOT2
     usb_disable_ep(usb_id, SPK_ISO_EP_OUT);
-    uac_release(usb_id);
+    /* uac_release(usb_id); */
 #else
     u8 *ep_buffer;
     ep_buffer = usb_get_ep_buffer(usb_id, SPK_ISO_EP_OUT);
@@ -1077,7 +1070,7 @@ void mic_reset(struct usb_device_t *usb_device, u32 ift_num)
     log_error("%s", __func__);
 #if USB_ROOT2
     usb_disable_ep(usb_id, SPK_ISO_EP_OUT);
-    uac_release(usb_id);
+    /* uac_release(usb_id); */
 #else
     u8 *ep_buffer;
     ep_buffer = usb_get_ep_buffer(usb_id, MIC_ISO_EP_IN | USB_DIR_IN);
@@ -1170,7 +1163,7 @@ void audio_reset(struct usb_device_t *usb_device, u32 ift_num)
     log_debug("%s", __func__);
 #if USB_ROOT2
     usb_disable_ep(usb_id, SPK_ISO_EP_OUT);
-    uac_release(usb_id);
+    /* uac_release(usb_id); */
 #else
     u8 *ep_buffer;
     ep_buffer = usb_get_ep_buffer(usb_id, SPK_ISO_EP_OUT);

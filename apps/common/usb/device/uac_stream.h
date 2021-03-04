@@ -26,4 +26,6 @@ void set_uac_mic_tx_handler(void *priv, int (*tx_handler)(int, void *, int));
 int uac_speaker_stream_sample_rate(void);
 
 int uac_speaker_read(void *priv, void *data, u32 len);
+u32 uac_speaker_get_alive();
+void uac_speaker_set_alive(u8 alive);
 #endif

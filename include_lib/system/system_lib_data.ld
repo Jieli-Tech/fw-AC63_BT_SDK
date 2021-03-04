@@ -102,6 +102,10 @@
 	    *(.uECC_data)
 	    *(.ECDH_sample_data)
 
+         __movable_slot_start = .;
+         *(movable.slot.*);
+         __movable_slot_end = .;
+
         system_data_end = .;
 
 

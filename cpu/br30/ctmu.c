@@ -25,8 +25,7 @@ static u8 port_index_mapping_talbe[CTMU_KEY_CH_MAX] = {0};
 static u32 Touchkey_pre_value[CTMU_KEY_CH_MAX] = {0};
 static u32 Touchkey_normal_value[CTMU_KEY_CH_MAX] = {0};
 
-#define CALIBRATE_CYCLE 50//周期大约两秒
-static u8 Touchkey_start_cnt[CTMU_KEY_CH_MAX] = {0};
+#define CALIBRATE_CYCLE 200//周期大约1秒
 static u32 Touchkey_calibrate_cnt[CTMU_KEY_CH_MAX] = {0};
 static u32 Touchkey_calibrate_tmp_value[CTMU_KEY_CH_MAX] = {0};
 
@@ -115,7 +114,7 @@ static u32 ctm_flt(u8 ch, u32 value)
         Touchkey_pre_value[ch] = value;
     }
     if (value >= Touchkey_pre_value[ch]) {
-        value = Touchkey_pre_value[ch] + ((value - Touchkey_pre_value[ch]) * 0.2f);
+        value = Touchkey_pre_value[ch] + ((value - Touchkey_pre_value[ch]) * 0.5f);
     } else {
         value = Touchkey_pre_value[ch] - ((Touchkey_pre_value[ch] - value) * 0.2f);
     }
@@ -133,12 +132,6 @@ static void scan_capkey(u8 ch_index, u32 *ctmu_buf)
     u32 Touchkey_flt_value = ctm_flt(ch_index, Touchkey_cur_value);     //滤波后的值
     /* printf("ch: %d  val: %d\n", ch_index, Touchkey_flt_value); */
 
-    //拿滤波后的值做处理
-    if (Touchkey_start_cnt[ch_index] < 3) {
-        Touchkey_start_cnt[ch_index] ++;
-        Touchkey_normal_value[ch_index] = Touchkey_flt_value;
-        return;
-    }
     if (Touchkey_flt_value > (Touchkey_normal_value[ch_index] + user_data->port_list[ch_index].press_delta)) {
         Touchkey_state |=  BIT(ch_index);
         Touchkey_calibrate_cnt[ch_index] = 0;
@@ -147,12 +140,21 @@ static void scan_capkey(u8 ch_index, u32 *ctmu_buf)
         Touchkey_calibrate_cnt[ch_index] ++;
     }
     //定期更新常态下的基准值
-    if (Touchkey_calibrate_cnt[ch_index] == (CALIBRATE_CYCLE / 2)) {
-        Touchkey_calibrate_tmp_value[ch_index] = Touchkey_flt_value;
-    } else if (Touchkey_calibrate_cnt[ch_index] > CALIBRATE_CYCLE) {
-        Touchkey_normal_value[ch_index] = Touchkey_calibrate_tmp_value[ch_index];
+    if (Touchkey_calibrate_cnt[ch_index] > CALIBRATE_CYCLE) {
+        Touchkey_normal_value[ch_index] = Touchkey_calibrate_tmp_value[ch_index] / 20;
+        Touchkey_calibrate_tmp_value[ch_index] = 0;
         Touchkey_calibrate_cnt[ch_index] = 0;
+    } else if (Touchkey_calibrate_cnt[ch_index] >= (CALIBRATE_CYCLE / 2)) {
+        if (Touchkey_calibrate_cnt[ch_index] < ((CALIBRATE_CYCLE / 2) + 20)) {
+            Touchkey_calibrate_tmp_value[ch_index] += Touchkey_flt_value;
+        }
+    } else {
+        Touchkey_calibrate_tmp_value[ch_index] = 0;
     }
+
+    /* if (ch_index == 2) { */
+    /* printf("%d  %d  %d\n", Touchkey_cur_value, Touchkey_flt_value, Touchkey_normal_value[ch_index]); */
+    /* } */
 }
 
 ___interrupt
@@ -224,11 +226,11 @@ static void touch_ctmu_init(const struct ctmu_key_port *port, u8 num)
     //充电时钟选择
     CTMU_CON0 |= (CHARGE_SOURCE_PLL192M << 10);
     //放电时钟分频选择, 时钟源固定是lsb
-    CTMU_CON0 |= (DISCHARGE_SOURCE_PRE_DIV64 << 12); //要求 > 2uS
+    CTMU_CON0 |= (DISCHARGE_SOURCE_PRE_DIV128 << 12); //要求 > 2uS
 
     //闸门时钟选择
-    CTMU_CON0 |= (GATE_SOURCE_LRC << 4); //24 MHz
-    CTMU_CON0 |= (GATE_SOURCE_PRE_DIV64 << 1); //1.36ms
+    CTMU_CON0 |= (GATE_SOURCE_PLL192M << 4); //192 MHz
+    CTMU_CON0 |= (GATE_SOURCE_PRE_DIV65536 << 1); //0.34ms
 
     //充电电流
     CTMU_CON0 |= 3 << 18;  //0 ~ 7
@@ -268,6 +270,10 @@ int ctmu_init(void *_data)
 
     request_irq(IRQ_CTM_IDX, 1, ctmu_isr_handle, 0);
 
+    for (u8 i = 0; i < user_data->num; i++) {
+        Touchkey_normal_value[i] = 0 - (2 * user_data->port_list[i].press_delta);
+    }
+
     touch_ctmu_enable(1);
 
     log_ctmu_info();
@@ -277,9 +283,15 @@ int ctmu_init(void *_data)
 
 u8 get_ctmu_value(void)
 {
+    static u8 pre_i = 0;
+    if (Touchkey_state & BIT(pre_i)) {
+        /* printf("i:%d\n", pre_i); */
+        return pre_i;
+    }
     for (u8 i = 0; i < user_data->num; i++) {
         if (Touchkey_state & BIT(i)) {
             /* printf("i:%d\n", i); */
+            pre_i = i;
             return i;
         }
     }

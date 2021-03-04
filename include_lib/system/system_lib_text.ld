@@ -156,6 +156,14 @@
         *(.os_port_code)
         *(.os_port_const)
 
+        __movable_function_start = .;
+        *(movable.text.*);
+        *(movable.stub.*);
+        *(movable.region.*);
+        /* *(.movable.code*) */
+        __movable_function_end = .;
+        __movable_function_size = __movable_function_end - __movable_function_start;
+
         system_text_end = .;
 
 

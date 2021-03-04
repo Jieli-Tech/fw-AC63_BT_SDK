@@ -505,6 +505,26 @@ void audio_fade_in_fade_out(u8 left_gain, u8 right_gain)
 #endif/*SYS_VOL_TYPE*/
 }
 
+/*level:0~15*/
+static const u16 phone_call_dig_vol_tab[] = {
+    0,	//0
+    111,//1
+    161,//2
+    234,//3
+    338,//4
+    490,//5
+    708,//6
+    1024,//7
+    1481,//8
+    2142,//9
+    3098,//10
+    4479,//11
+    6477,//12
+    9366,//13
+    14955,//14
+    16384 //15
+};
+
 void app_audio_set_volume(u8 state, s8 volume, u8 fade)
 {
     switch (state) {
@@ -520,6 +540,8 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
     case APP_AUDIO_STATE_CALL:
         app_var.call_volume = volume;
 #if TCFG_CALL_USE_DIGITAL_VOLUME
+        __this->digital_volume = phone_call_dig_vol_tab[volume];
+        audio_dac_set_volume(&dac_hdl, volume);
         dac_digital_vol_set(volume, volume, 1);
         return;
 #endif
@@ -709,26 +731,6 @@ void app_audio_volume_down(u8 value)
     app_audio_set_volume(__this->state, volume, 1);
 }
 
-/*level:0~15*/
-static const u16 phone_call_dig_vol_tab[] = {
-    0,	//0
-    111,//1
-    161,//2
-    234,//3
-    338,//4
-    490,//5
-    708,//6
-    1024,//7
-    1481,//8
-    2142,//9
-    3098,//10
-    4479,//11
-    6477,//12
-    9366,//13
-    14955,//14
-    16384 //15
-};
-
 void app_audio_state_switch(u8 state, s16 max_volume)
 {
     r_printf("audio state old:%s,new:%s,vol:%d\n", audio_state[__this->state], audio_state[state], max_volume);
@@ -767,6 +769,7 @@ void app_audio_state_switch(u8 state, s16 max_volume)
         dac_digital_vol_open();
         dac_digital_vol_tab_register(phone_call_dig_vol_tab, ARRAY_SIZE(phone_call_dig_vol_tab));
         /*调数字音量的时候，模拟音量定最大*/
+        audio_dac_set_volume(&dac_hdl, max_volume);
         audio_dac_set_analog_vol(&dac_hdl, max_volume);
 #elif (SYS_VOL_TYPE == VOL_TYPE_AD)
         /*通话联合音量调节的时候，最大音量为15，和手机的等级一致*/

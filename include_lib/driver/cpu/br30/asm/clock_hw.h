@@ -522,5 +522,75 @@ enum {
 };
 
 
+#define lrc_con1_init                                 \
+    /*                               */    ((0 << 7) |\
+    /*                               */     (0 << 6) |\
+    /*                               */     (0 << 5) |\
+    /*RC32K_CAP_S2_33v               */     (1 << 4) |\
+    /*RC32K_CAP_S1_33v               */     (0 << 3) |\
+    /*RC32K_CAP_S0_33v               */     (0 << 2) |\
+    /*                               */     (0 << 1) |\
+    /*RC32K_RNPS_S1_33v              */     (1 << 0))
+
+#define lrc_con0_init                                 \
+    /*RC32K_RNPS_S0_33v              */    ((0 << 7) |\
+    /*                               */     (0 << 6) |\
+    /*RC32K_RPPS_S1_33v              */     (1 << 5) |\
+    /*RC32K_RPPS_S0_33v              */     (0 << 4) |\
+    /*                               */     (0 << 3) |\
+    /*                               */     (0 << 2) |\
+    /*RC32K_RN_TRIM_33v              */     (0 << 1) |\
+    /*RC32K_EN_33v                   */     (1 << 0))
+
+
+#define lrc_pll_con2                                     \
+    /*reserved                      5 bit*/    ((   0b00000 << 27 ) |\
+    /*SYSPLL_DIVS_BTADC(2-0)        3 bit*/     (     0b000 << 24 ) |\
+    /*SYSPLL_CKOE_BTADC             1 bit*/     (         0 << 23 ) |\
+    /*SYSPLL_CKOUT_D4P5_OE          1 bit*/     (         1 << 22 ) |\
+    /*SYSPLL_CKOUT_D3P5_OE          1 bit*/     (         1 << 21 ) |\
+    /*SYSPLL_CKOUT_D2P5_OE          1 bit*/     (         1 << 20 ) |\
+    /*SYSPLL_CKOUT_D1P5_OE          1 bit*/     (         1 << 19 ) |\
+    /*SYSPLL_CKOUT_D1_OE            1 bit*/     (         1 << 18 ) |\
+    /*SYSPLL_96M_DIV(1-0)           2 bit*/     (      0b10 << 16 ) |\
+    /*SYSPLL_96M_SEL(1-0)           2 bit*/     (      0b11 << 14 ) |\
+    /*SYSPLL_48M_MUX                1 bit*/     (         0 << 13 ) |\
+    /*SYSPLL_48M_SEL                1 bit*/     (         0 << 12 ) |\
+    /*SYSPLL_ALNK0_DIV(1-0)         2 bit*/     (      0b11 << 10 ) |\
+    /*SYSPLL_ALNK0_SEL(1-0)         2 bit*/     (      0b11 <<  8 ) |\
+    /*SYSPLL_SYS_DIV(3-0)           4 bit*/     (    0b1000 <<  4 ) |\
+    /*SYSPLL_SYS_SEL(3-0)           4 bit*/     (      0b11 <<  0 ))
+
+#define lrc_pll_con1                                     \
+    /*SYSPLL_CKE                    1 bit*/    ((         1 << 31 ) |\
+    /*reserved                      1 bit*/     (         0 << 30 ) |\
+    /*SYSPLL_REFMOD(1-0)            2 bit*/     (      0b00 << 28 ) |\
+    /*SYSPLL_REFDSEN(1-0)           2 bit*/     (      0b01 << 26 ) |\
+    /*SYSPLL_LDO12D_S(2-0)          3 bit*/     (     0b101 << 23 ) |\
+    /*SYSPLL_LDO12A_S(2-0)          3 bit*/     (     0b101 << 20 ) |\
+    /*reserved                      1 bit*/     (         0 << 19 ) |\
+    /*SYSPLL_TEST_EN                1 bit*/     (         0 << 18 ) |\
+    /*SYSPLL_TEST_S(1-0)            2 bit*/     (      0b00 << 16 ) |\
+    /*SYSPLL_LDO_BYPASS             1 bit*/     (         0 << 15 ) |\
+    /*SYSPLL_IVCOS(2-0)             3 bit*/     (     0b011 << 12 ) |\
+    /*SYSPLL_DS(11-0)              12 bit*/     (((192000000/(32000*8))-2)<< 0))
+
+#define lrc_pll_con0                                     \
+    /*ref_sel                       2 bit*/    ((      0b00 << 30 ) |\
+    /*SYSPLL_LPFR2S(2-0)            3 bit*/     (     0b111 << 27 ) |\
+    /*SYSPLL_ICPS(2-0)              3 bit*/     (     0b000 << 24 ) |\
+    /*SYSPLL_PFDS(1-0)              2 bit*/     (      0b01 << 22 ) |\
+    /*SYSPLL_MODE                   1 bit*/     (         0 << 21 ) |\
+    /*RST                           1 bit*/     (         0 << 20 ) |\
+    /*SYSPLL_MSEL(1-0)              2 bit*/     (      0b00 << 18 ) |\
+    /*SYSPLL_RSEL(1-0)              2 bit*/     (      0b00 << 16 ) |\
+    /*SYSPLL_TSEL(3-0)              4 bit*/     (    0b0000 << 12 ) |\
+    /*SYSPLL_DSMS                   1 bit*/     (         0 << 11 ) |\
+    /*SYSPLL_TSCK480M_OE            1 bit*/     (         0 << 10 ) |\
+    /*SYSPLL_REFSEL                 1 bit*/     (         1 << 9  ) |\
+    /*SYSPLL_REFDS(6-0)             7 bit*/     (         0 << 2  ) |\
+    /*SYSPLL_RN                     1 bit*/     (         0 << 1  ) |\
+    /*SYSPLL_EN                     1 bit*/     (         0 << 0  ))
+
 #endif
 #endif

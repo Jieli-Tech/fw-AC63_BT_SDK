@@ -17,11 +17,7 @@
 #include "app_main.h"
 #include "clock_cfg.h"
 #include "media/pcm_decoder.h"
-
-#if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
-#endif
-
 #include "media/audio_stream.h"
 
 #if (SOUNDCARD_ENABLE)
@@ -54,6 +50,8 @@ struct uac_dec_hdl {
     u32 id;				// 唯一标识符，随机值
     u32 start : 1;		// 正在解码
     u32 source : 8;		// 音频源
+    u32 cnt: 8;
+    u32 state: 1;
     int check_data_timer;
     volatile u8 rrrl_output_en;
 };
@@ -256,6 +254,40 @@ static void uac_dec_event_handler(struct audio_decoder *decoder, int argc, int *
 /*----------------------------------------------------------------------------*/
 static void audio_pc_check_timer(void *priv)
 {
+#if 1
+    u8 alive = uac_speaker_get_alive();
+    if (alive) {
+        uac_dec->cnt++;
+        if (uac_dec->cnt > 5) {
+            if (!uac_dec->state) {
+#if TCFG_DEC2TWS_ENABLE
+                if (uac_dec->pcm_dec.dec_no_out_sound) {
+                    localtws_decoder_pause(1);
+                }
+#endif
+                audio_mixer_ch_pause(&uac_dec->mix_ch, 1);
+                audio_decoder_resume_all(&decode_task);
+                uac_dec->state = 1;
+            }
+        }
+    } else {
+        if (uac_dec->cnt) {
+            uac_dec->cnt--;
+        }
+        if (uac_dec->state) {
+            uac_dec->state = 0;
+            uac_dec->cnt = 0;
+#if TCFG_DEC2TWS_ENABLE
+            if (uac_dec->pcm_dec.dec_no_out_sound) {
+                localtws_decoder_pause(0);
+            }
+#endif
+            audio_mixer_ch_pause(&uac_dec->mix_ch, 0);
+            audio_decoder_resume_all(&decode_task);
+        }
+    }
+    uac_speaker_set_alive(1);
+#else
     static u8 cnt = 0;
     if (uac_speaker_stream_size(NULL) == 0) {
         if (cnt < 20) {
@@ -282,6 +314,7 @@ static void audio_pc_check_timer(void *priv)
         }
         cnt = 0;
     }
+#endif
 }
 
 void pc_rrrl_output_enable(u8 onoff)
@@ -433,7 +466,7 @@ static int uac_audio_start(void)
         audio_mixer_ch_set_sync(&dec->mix_ch, &info, 1, 1);
     }
 #else
-    audio_mixer_ch_follow_resample_enable(&dec->mix_ch, dec, audio_pc_input_sample_rate);//--
+    audio_mixer_ch_follow_resample_enable(&dec->mix_ch, dec, audio_pc_input_sample_rate);
 #endif
 
     /* audio_mixer_ch_set_no_wait(&dec->mix_ch, 1, 10); // 超时自动丢数 */
@@ -518,6 +551,9 @@ static int uac_audio_start(void)
     if (err) {
         goto __err3;
     }
+
+    dec->state = 0;
+    dec->cnt = 0;
     dec->check_data_timer = sys_hi_timer_add(NULL, audio_pc_check_timer, 10);
     clock_set_cur();
     return 0;

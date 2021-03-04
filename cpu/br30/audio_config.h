@@ -39,6 +39,12 @@
  *让收敛平缓进行(前提是预收敛成功的情况下)
  */
 #define TCFG_MC_DTB_STEP_LIMIT			15  //最大收敛步进值
+/*
+ *省电容mic使用固定收敛值
+ *可以用来测试默认偏置是否合理：设置固定收敛值7000左右，让mic的偏置维持在1.5v左右即为合理
+ *正常使用应该设置为0,让程序动态收敛
+ */
+#define TCFG_MC_DTB_FIXED				0
 
 #define TCFG_AEC_SIMPLEX				0  //通话单工模式配置
 #define TCFG_ESCO_PLC					1  //通话丢包修复

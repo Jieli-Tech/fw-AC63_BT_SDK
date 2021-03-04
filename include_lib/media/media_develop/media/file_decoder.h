@@ -56,6 +56,7 @@ int file_decoder_FR(struct file_decoder *file_dec, int step);
 int file_decoder_get_breakpoint(struct file_decoder *file_dec, struct audio_dec_breakpoint *bp);
 int file_decoder_get_total_time(struct file_decoder *file_dec);
 int file_decoder_get_cur_time(struct file_decoder *file_dec);
+int file_decoder_get_cur_ms_time(struct file_decoder *file_dec);
 int file_decoder_get_decoder_type(struct file_decoder *file_dec);
 
 #endif /*FILE_DECODER_H*/

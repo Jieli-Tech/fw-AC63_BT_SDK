@@ -236,9 +236,13 @@ void setup_arch()
 
     power_reset_src = power_reset_source_dump();
 
+    //Register debugger interrupt
+    request_irq(0, 2, exception_irq_handler, 0);
+
     request_irq(1, 2, exception_irq_handler, 0);
 
     debug_init();
+
 
     sys_timer_init();
 

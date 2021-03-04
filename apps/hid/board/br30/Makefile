@@ -30,8 +30,9 @@ LIBS += \
 	$(AR_DIR)/media.a \
 	$(AR_DIR)/media_app.a \
 	$(AR_DIR)/wtg_dec_lib.a \
+	$(AR_DIR)/wtgv2_dec_lib.a \
 	$(AR_DIR)/opus_enc_lib.a \
-    	$(AR_DIR)/speex_enc_lib.a \
+   	$(AR_DIR)/speex_enc_lib.a \
 --end-group
 endif
 
@@ -41,6 +42,7 @@ objs += \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6373b_mouse.o \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6379b_mouse.o \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6379b_keyfob.o \
+	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6376f_mouse.o \
 
 #algorithm in mask
 #$(AR_DIR)/libOpcore_maskrom_pi32v2_OnChip.a \

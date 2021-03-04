@@ -10,56 +10,57 @@
 #include "Resample_api.h"
 #if TCFG_AUDIO_ANC_ENABLE
 #include "audio_anc.h"
-#endif
+#endif/*TCFG_AUDIO_ANC_ENABLE*/
+#if TCFG_AUDIO_INPUT_IIS
 #include "audio_link.h"
-
+#endif/*TCFG_AUDIO_INPUT_IIS*/
+#if (defined(TCFG_PHONE_MESSAGE_ENABLE) && (TCFG_PHONE_MESSAGE_ENABLE))
 #include "phone_message/phone_message.h"
+#endif/*TCFG_PHONE_MESSAGE_ENABLE*/
 
 extern struct adc_platform_data adc_data;
-
-extern int msbc_encoder_init();
-extern int cvsd_encoder_init();
-extern int opus_encoder_preinit();
-extern int speex_encoder_preinit();
 
 audio_plnk_t *audio_plnk_mic = NULL;
 struct audio_adc_hdl adc_hdl;
 struct esco_enc_hdl *esco_enc = NULL;
 struct audio_encoder_task *encode_task = NULL;
 
-#define ESCO_ADC_BUF_NUM        3
-#define ESCO_ADC_IRQ_POINTS     256
+#define ESCO_ADC_BUF_NUM        3	//mic_adc采样buf个数
+#define ESCO_ADC_IRQ_POINTS     256 //mic_adc采样长度（单位：点数）
 #if TCFG_AUDIO_DUAL_MIC_ENABLE
-#define ESCO_ADC_CH			    2
+#define ESCO_ADC_CH			    2	//双mic通话
 #else
-#define ESCO_ADC_CH			    1
+#define ESCO_ADC_CH			    1	//单mic通话
 #endif
 #define ESCO_ADC_BUFS_SIZE      (ESCO_ADC_BUF_NUM * ESCO_ADC_IRQ_POINTS * ESCO_ADC_CH)
-
 
 struct esco_enc_hdl {
     struct audio_encoder encoder;
     struct audio_adc_output_hdl adc_output;
     struct adc_mic_ch mic_ch;
     //OS_SEM pcm_frame_sem;
-    s16 output_frame[30];               //align 4Bytes
-    int pcm_frame[60];                 //align 4Bytes
-    s16 adc_buf[ESCO_ADC_BUFS_SIZE];    //align 4Bytes
+    s16 output_frame[30];               //align 2Bytes
+    int pcm_frame[60];                 	//align 2Bytes
+    s16 adc_buf[ESCO_ADC_BUFS_SIZE];    //align 2Bytes
 #if (ESCO_ADC_CH == 2)
     s16 tmp_buf[ESCO_ADC_IRQ_POINTS];
-#endif
+#endif/*ESCO_ADC_CH*/
 #if TCFG_AUDIO_INPUT_IIS
     u32 in_sample_rate;
     u32 out_sample_rate;
     int sr_cal_timer;
     u32 points_total;
-#endif
+    u32 iis_inbuf_idx;
+    short iis_inbuf[3][256];
+    u8 iis_buf[1024];
+    cbuffer_t iis_cbuf;
+#endif/*TCFG_AUDIO_INPUT_IIS*/
 };
 
 #if TCFG_AUDIO_INPUT_IIS
 static RS_STUCT_API *sw_src_api = NULL;
 static u8 *sw_src_buf = NULL;
-#endif
+#endif/*TCFG_AUDIO_INPUT_IIS*/
 
 /*
  *mic电源管理
@@ -107,7 +108,6 @@ void audio_mic_pwr_ctl(u8 state)
 }
 
 void esco_enc_resume(void);
-
 static void adc_mic_output_handler(void *priv, s16 *data, int len)
 {
     //printf("buf:%x,data:%x,len:%d",esco_enc->adc_buf,data,len);
@@ -118,7 +118,7 @@ static void adc_mic_output_handler(void *priv, s16 *data, int len)
             esco_enc_resume();
             return ;
         }
-#endif
+#endif/*TCFG_PHONE_MESSAGE_ENABLE*/
 
 #if (ESCO_ADC_CH == 2)/*DualMic*/
         s16 *mic0_data = data;
@@ -170,7 +170,7 @@ static void audio_plnk_mic_output(void *buf, u16 len)
             esco_enc_resume();
             return ;
         }
-#endif
+#endif/*TCFG_PHONE_MESSAGE_ENABLE*/
         audio_aec_inbuf(mic0, len << 1);
     }
 }
@@ -196,8 +196,19 @@ static void audio_iis_mic_output(s16 *data, u32 len)
             esco_enc_resume();
             return ;
         }
-#endif
-        audio_aec_inbuf(data, len);
+#endif/*TCFG_PHONE_MESSAGE_ENABLE*/
+
+        wlen = cbuf_write(&esco_enc->iis_cbuf, data, len);
+        if (wlen != len) {
+            printf("wlen:%d,len:%d\n", wlen, len);
+        }
+        if (esco_enc->iis_cbuf.data_len >= 512) {
+            cbuf_read(&esco_enc->iis_cbuf, &esco_enc->iis_inbuf[esco_enc->iis_inbuf_idx][0], 512);
+            audio_aec_inbuf(&esco_enc->iis_inbuf[esco_enc->iis_inbuf_idx][0], 512);
+            if (++esco_enc->iis_inbuf_idx > 2) {
+                esco_enc->iis_inbuf_idx = 0;
+            }
+        }
     }
 }
 void audio_iis_enc_sr_cal_timer(void *param)
@@ -212,6 +223,7 @@ void audio_iis_enc_sr_cal_timer(void *param)
     }
 }
 #endif  //TCFG_AUDIO_INPUT_IIS
+
 __attribute__((weak)) int audio_aec_output_read(s16 *buf, u16 len)
 {
     return 0;
@@ -220,8 +232,6 @@ __attribute__((weak)) int audio_aec_output_read(s16 *buf, u16 len)
 void esco_enc_resume(void)
 {
     if (esco_enc) {
-        //os_sem_set(&esco_enc->pcm_frame_sem, 0);
-        //os_sem_post(&esco_enc->pcm_frame_sem);
         audio_encoder_resume(&esco_enc->encoder);
     }
 }
@@ -246,7 +256,7 @@ static int esco_enc_pcm_get(struct audio_encoder *encoder, s16 **frame, u16 fram
         } else if (rlen == 0) {
             return 0;
         }
-#endif
+#endif/*TCFG_PHONE_MESSAGE_ENABLE*/
         rlen = audio_aec_output_read(enc->pcm_frame, frame_len);
         if (rlen == frame_len) {
             /*esco编码读取数据正常*/
@@ -254,12 +264,6 @@ static int esco_enc_pcm_get(struct audio_encoder *encoder, s16 **frame, u16 fram
         } else if (rlen == 0) {
             /*esco编码读不到数，返回0*/
             return 0;
-            /*esco编码读不到数，pend住*/
-            /* int ret = os_sem_pend(&enc->pcm_frame_sem, 100);
-            if (ret == OS_TIMEOUT) {
-                r_printf("esco_enc pend timeout\n");
-                break;
-            } */
         } else {
             /*通话结束，aec已经释放*/
             printf("audio_enc end:%d\n", rlen);
@@ -284,7 +288,7 @@ static int esco_enc_probe_handler(struct audio_encoder *encoder)
 {
 #if (defined(TCFG_PHONE_MESSAGE_ENABLE) && (TCFG_PHONE_MESSAGE_ENABLE))
     phone_message_call_api_start();
-#endif
+#endif/*TCFG_PHONE_MESSAGE_ENABLE*/
     return 0;
 }
 
@@ -337,7 +341,6 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
     if (!esco_enc) {
         esco_enc = zalloc(sizeof(*esco_enc));
     }
-    //os_sem_create(&esco_enc->pcm_frame_sem, 0);
 
     audio_encoder_open(&esco_enc->encoder, &esco_enc_input, encode_task);
     audio_encoder_set_handler(&esco_enc->encoder, &esco_enc_handler);
@@ -350,17 +353,18 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
 
 #if TCFG_AUDIO_ANC_ENABLE
     app_var.aec_mic_gain = anc_mic_gain_get();
-#endif
+#endif/*TCFG_AUDIO_ANC_ENABLE*/
 
     printf("esco sample_rate: %d,mic_gain:%d\n", fmt.sample_rate, app_var.aec_mic_gain);
 
-
 #if TCFG_AUDIO_INPUT_IIS
-
-
+#if TCFG_IIS_MODE/*slave mode*/
     esco_enc->in_sample_rate =  TCFG_IIS_SAMPLE_RATE;
     esco_enc->out_sample_rate = fmt.sample_rate;
-
+#else/*master mode*/
+    esco_enc->in_sample_rate =  625 * 20;
+    esco_enc->out_sample_rate = 624 * 20;
+#endif/*TCFG_IIS_MODE*/
     sw_src_api = get_rs16_context();
     printf("sw_src_api:0x%x\n", sw_src_api);
     ASSERT(sw_src_api);
@@ -376,8 +380,18 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
     printf("sw src,in = %d,out = %d\n", rs_para_obj.new_insample, rs_para_obj.new_outsample);
     sw_src_api->open(sw_src_buf, &rs_para_obj);
 
-
+#if TCFG_IIS_MODE/*slave mode*/
     esco_enc->sr_cal_timer = sys_hi_timer_add(NULL, audio_iis_enc_sr_cal_timer, 1000);
+#endif/*TCFG_IIS_MODE*/
+
+    /*使用wm8978模块做iis输入*/
+#if 0
+    extern u8 WM8978_Init(u8 dacen, u8 adcen);
+    WM8978_Init(0, 1);
+#endif
+
+    esco_enc->iis_inbuf_idx = 0;
+    cbuf_init(&esco_enc->iis_cbuf, esco_enc->iis_buf, sizeof(esco_enc->iis_buf));
 
     audio_link_init();
     alink_channel_init(0, 1, audio_iis_mic_output);
@@ -494,11 +508,11 @@ void esco_enc_close()
     }
 #else
     audio_mic_pwr_ctl(MIC_PWR_OFF);
-#endif
+#endif/*TCFG_AUDIO_ANC_ENABLE*/
     //os_sem_post(&esco_enc->pcm_frame_sem);
     audio_encoder_close(&esco_enc->encoder);
     audio_adc_del_output_handler(&adc_hdl, &esco_enc->adc_output);
-#endif
+#endif/*PLNK_MIC*/
 
     local_irq_disable();
     free(esco_enc);
@@ -711,7 +725,7 @@ void pcm2tws_enc_resume(void)
     }
 }
 
-#endif
+#endif/*TCFG_PCM_ENC2TWS_ENABLE*/
 
 //////////////////////////////////////////////////////////////////////////////
 int audio_enc_init()
@@ -732,7 +746,6 @@ int audio_enc_init()
 }
 
 extern struct audio_dac_hdl dac_hdl;
-extern struct audio_adc_hdl adc_hdl;
 
 #define ADC_DEMO_BUF_NUM        2
 #define ADC_DEMO_IRQ_POINTS     256

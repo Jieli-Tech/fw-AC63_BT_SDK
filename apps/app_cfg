@@ -14,6 +14,8 @@ export CONFIG_UI_ENABLE ?= n
 export CONFIG_MEDIA_ENABLE = y
 export APP_OTA_EN = n
 
+export MOVABLE_ENABLE = n
+
 
 export CONFIG_USB_ENABLE ?= n
 

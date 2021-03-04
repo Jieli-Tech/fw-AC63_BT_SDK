@@ -32,6 +32,7 @@
 #include "maskrom_stubs.ld"
 
 EXTERN(
+_start
 #include "sdk_used_list.c"
 );
 
@@ -86,13 +87,9 @@ SECTIONS
 
         *(.startup.text)
 
-        *(.text*)
         bank_stub_start = .;
         *(.bank.stub.*)
         bank_stub_size = . - bank_stub_start;
-
-        *(.LOG_TAG_CONST*)
-        *(.rodata*)
 
         . = ALIGN(4);
         *(.dts_dec_const)
@@ -110,7 +107,7 @@ SECTIONS
         *(.m4a_dec_code)
         *(.m4a_dec_sparse_code)
         *(.m4a_dec_sparse_const)
-        *(.m4a_dec_ff_const)
+		*(.m4a_dec_ff_const)
 
         . = ALIGN(4);
         *(.aac_const)
@@ -149,6 +146,18 @@ SECTIONS
         fm_emitter_dev_begin = .;
         KEEP(*(.fm_emitter_dev))
         fm_emitter_dev_end = .;
+
+#if (!TCFG_CODE_RUN_RAM_FM_MODE)
+ 	    *(.usr_timer_const)
+		*(.usr_timer_code)
+    	*(.timer_const)
+		*(.timer_code)
+    	*(.cbuf_const)
+		*(.cbuf_code)
+		*(.fm_data_code)
+		*(.fm_data_const)
+		. = ALIGN(4);
+#endif
 
 		/* . = ALIGN(4); */
         /* storage_device_begin = .; */
@@ -192,20 +201,7 @@ SECTIONS
 		. = ALIGN(4);
         #include "ui/ui/ui.ld"
 		. = ALIGN(4);
-		*(.mp2_encode_code)
-		*(.mp2_encode_const)
-		*(.mp2_encode_sparse_code)
-		*(.mp2_encode_sparse_code)
-		. = ALIGN(4);
-		*(.mp3_enc_code)
-		*(.mp3_enc_const)
-		*(.mp3_enc_sparse_code)
-		*(.mp3_enc_sparse_const)
-		. = ALIGN(4);
-		*(.adpcm_encode_code)
-		*(.adpcm_encode_const)
-		*(.adpcm_encode_sparse_code)
-		*(.adpcm_encode_sparse_const)
+		#include "media/cpu/br25/media_lib_text.ld"
 		. = ALIGN(4);
         *(.wav_dec_sparse_code)
         *(.wav_dec_sparse_const)
@@ -239,6 +235,12 @@ SECTIONS
         . = ALIGN(4);
     	*(.alac_dec_code)
         . = ALIGN(4);
+
+        *(.text*)
+        *(.LOG_TAG_CONST*)
+        *(.rodata*)
+        . = ALIGN(4);
+
         PROVIDE(flash_code_end = flash_code_begin + 1M);
 
     } > code0
@@ -283,6 +285,7 @@ SECTIONS
         . = ALIGN(4);
 		#include "system/system_lib_data.ld"
 		. = ALIGN(4);
+		#include "media/cpu/br25/media_lib_data.ld"
 
         . = ALIGN(4);
 		EQ_COEFF_BASE = . ;
@@ -304,6 +307,8 @@ SECTIONS
 		#include "btstack/btstack_lib_bss.ld"
         . = ALIGN(4);
 		#include "system/system_lib_bss.ld"
+        . = ALIGN(4);
+		#include "media/cpu/br25/media_lib_bss.ld"
         . = ALIGN(4);
 
         *(.bss)
@@ -333,8 +338,10 @@ SECTIONS
         *(.usb_msd_dma)
         *(.usb_hid_dma)
         *(.usb_iso_dma)
+        *(.usb_cdc_dma)
         *(.uac_var)
         *(.usb_config_var)
+        *(.cdc_var)
         . = ALIGN(32);
 #endif
 
@@ -348,11 +355,21 @@ SECTIONS
         *(.common*)
         . = ALIGN(4);
 
-		media_code_begin = .;
-        *(.media.*.text)
-		media_code_end = .;
-        media_code_size = media_code_end - media_code_begin;
-        . = ALIGN(4);
+		#include "media/cpu/br25/media_lib_data_text.ld"
+
+#if (TCFG_CODE_RUN_RAM_FM_MODE)
+ 	    *(.usr_timer_const)
+		*(.usr_timer_code)
+    	*(.timer_const)
+		*(.timer_code)
+    	*(.cbuf_const)
+		*(.cbuf_code)
+		*(.fm_data_code)
+		*(.fm_data_const)
+		. = ALIGN(4);
+#endif
+
+
 
 		*(.flushinv_icache)
         *(.os_critical_code)
@@ -390,7 +407,8 @@ SECTIONS
 			*(.cvsd_const)
 			*(.cvsd_code)
 
-			KEEP(*(.aec_bss_id))
+			LONG(0xFFFFFFFF);
+			/* KEEP(*(.aec_bss_id)) */
 			o_aec_end = .;
 
             *(.cvsd_codec)
@@ -456,7 +474,8 @@ SECTIONS
 			*(.mp3_const)
 			*(.mp3_code)
 #endif
-			KEEP(*(.mp3_bss_id))
+			LONG(0xFFFFFFFF);
+			/* KEEP(*(.mp3_bss_id)) */
 			o_mp3_end = .;
 
 			*(.mp3_mem)
@@ -477,7 +496,8 @@ SECTIONS
 			*(.wma_const)
 			*(.wma_code)
 #endif
-			KEEP(*(.wma_bss_id))
+			LONG(0xFFFFFFFF);
+			/* KEEP(*(.wma_bss_id)) */
 			o_wma_end = .;
 
 			*(.wma_mem)
@@ -488,7 +508,8 @@ SECTIONS
 		.overlay_wav
 		{
 
-			KEEP(*(.wav_bss_id))
+			LONG(0xFFFFFFFF);
+			/* KEEP(*(.wav_bss_id)) */
 			o_wav_end = .;
 
 			*(.wav_dec_data)
@@ -504,7 +525,8 @@ SECTIONS
 		}
 		.overlay_ape
         {
-			KEEP(*(.ape_bss_id))
+			LONG(0xFFFFFFFF);
+			/* KEEP(*(.ape_bss_id)) */
 			o_ape_end = .;
 
             *(.ape_mem)
@@ -516,7 +538,8 @@ SECTIONS
 		}
 		.overlay_flac
         {
-			KEEP(*(.flac_bss_id))
+			LONG(0xFFFFFFFF);
+			/* KEEP(*(.flac_bss_id)) */
 			o_flac_end = .;
 
             *(.flac_mem)
@@ -529,7 +552,8 @@ SECTIONS
 		}
 		.overlay_m4a
         {
-			KEEP(*(.m4a_bss_id))
+			LONG(0xFFFFFFFF);
+			/* KEEP(*(.m4a_bss_id)) */
 			o_m4a_end = .;
 
             *(.m4a_mem)
@@ -550,7 +574,8 @@ SECTIONS
 
 		.overlay_amr
         {
-			KEEP(*(.amr_bss_id))
+			LONG(0xFFFFFFFF);
+			/* KEEP(*(.amr_bss_id)) */
 			o_amr_end = .;
 
             *(.amr_mem)
@@ -558,7 +583,8 @@ SECTIONS
 		}
 		.overlay_dts
         {
-			KEEP(*(.dts_bss_id))
+			LONG(0xFFFFFFFF);
+			/* KEEP(*(.dts_bss_id)) */
 			o_dts_end = .;
 
             *(.dts_mem)
@@ -570,7 +596,8 @@ SECTIONS
 		.overlay_fm
 		{
 			*(.fm_code)
-			KEEP(*(.fm_bss_id))
+			LONG(0xFFFFFFFF);
+			/* KEEP(*(.fm_bss_id)) */
 			o_fm_end = .;
 			*(.fm_mem)
 			*(.linein_pcm_mem)
@@ -586,8 +613,10 @@ SECTIONS
             *(.usb_msd_dma)
             *(.usb_hid_dma)
             *(.usb_iso_dma)
+            *(.usb_cdc_dma)
             *(.uac_var)
             *(.usb_config_var)
+            *(.cdc_var)
 #endif
 		}
 
@@ -671,7 +700,6 @@ SECTIONS
 }
 
 #include "update/update.ld"
-#include "media/media.ld"
 #include "driver/cpu/br25/driver_lib.ld"
 #include "btctrler/port/br25/btctler_lib.ld"
 

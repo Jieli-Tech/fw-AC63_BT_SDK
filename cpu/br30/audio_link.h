@@ -7,7 +7,7 @@
 #define ALINK_CH2    	2
 #define ALINK_CH3    	3
 
-#define ALNK_BUF_POINTS_NUM 		128
+#define ALNK_BUF_POINTS_NUM 		256
 
 #define ALINK_CLK_OUPUT_DISABLE 	0xFF
 //ch_dir

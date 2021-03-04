@@ -37,9 +37,6 @@ struct ctlXfer {
 };
 
 
-#if USB_INTERRUPT_ENABLE
-void usb_ctl_isr_init(const usb_dev usb_id, u32 ep);
-#endif
 int usb_clear_feature(struct usb_host_device *usb_dev, u32 ep);
 int set_address(struct usb_host_device *usb_dev, u8 devnum);
 int usb_get_device_descriptor(struct usb_host_device *usb_dev, struct usb_device_descriptor *desc);

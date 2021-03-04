@@ -38,10 +38,12 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/log_config.o \
 	$(ROOT)/apps/$(APP_CASE)/user_cfg.o \
 	$(ROOT)/apps/$(APP_CASE)/app_charge.o \
+	$(ROOT)/apps/$(APP_CASE)/app_chargestore.o \
 	$(ROOT)/apps/$(APP_CASE)/app_power_manage.o \
 	$(ROOT)/apps/$(APP_CASE)/rtc_alarm.o \
 	$(ROOT)/apps/$(APP_CASE)/usb_hid_devices.o \
 	$(ROOT)/apps/common/update/update.o \
+    $(ROOT)/apps/common/update/testbox_update.o \
 	$(ROOT)/apps/common/third_party_profile/common/custom_cfg.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/spp_at_com.o \
@@ -81,11 +83,9 @@ objs += \
 	$(ROOT)/apps/common/audio/sine_make.o \
 	$(ROOT)/apps/common/audio/decode/decode.o \
 
-ifneq ($(CPU),br30)
-	objs += \
+objs += \
 	$(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_pc.o \
 	$(ROOT)/cpu/$(CPU)/audio_dec/audio_usb_mic.o
-endif
 
 ifeq ($(MEDIA_NEW_ENABLE),y)
 objs += \

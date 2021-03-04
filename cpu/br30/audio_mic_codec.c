@@ -5,6 +5,9 @@
 #include "aec_user.h"
 #include "asm/audio_src.h"
 #include "audio_enc.h"
+#if TCFG_AUDIO_ANC_ENABLE
+#include "audio_anc.h"
+#endif
 #include "app_main.h"
 #include "btstack/avctp_user.h"
 
@@ -150,20 +153,20 @@ static void adc_mic_output_handler(void *priv, s16 *data, int len)
 
 
 #define HIGHT_COMPLEX		0
-#define LOW_COMPLEX			(BIT(4))	
+#define LOW_COMPLEX			(BIT(4))
 
 
 extern struct audio_adc_hdl adc_hdl;
-int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 code_type,u8 ai_type)
+int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 code_type, u8 ai_type)
 {
     int err;
     struct audio_fmt fmt;
 
     switch (code_type) {
     case AUDIO_CODING_OPUS:
-        //1. quality:bitrate     0:16kbps    1:32kbps    2:64kbps           
+        //1. quality:bitrate     0:16kbps    1:32kbps    2:64kbps
         //   quality: MSB_2:(bit7_bit6)     format_mode    //0:百度_无头.                   1:酷狗_eng+range.
-        //   quality:LMSB_2:(bit5_bit4)     low_complexity //0:高复杂度,高质量.兼容之前库.  1:低复杂度,低质量.  
+        //   quality:LMSB_2:(bit5_bit4)     low_complexity //0:高复杂度,高质量.兼容之前库.  1:低复杂度,低质量.
         //2. sample_rate         sample_rate=16k         ignore
         fmt.quality = 0 | ai_type/*| LOW_COMPLEX*/;
         fmt.sample_rate = 16000;
@@ -209,10 +212,12 @@ int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 co
 
 #if MIC_USE_MIC_CHANNEL
     fmt.sample_rate = 16000;
-	audio_mic_pwr_ctl(MIC_PWR_ON);
+    audio_mic_pwr_ctl(MIC_PWR_ON);
     audio_adc_mic_open(&mic_enc->mic_ch, AUDIO_ADC_MIC_CH, &adc_hdl);
     audio_adc_mic_set_sample_rate(&mic_enc->mic_ch, fmt.sample_rate);
-    app_var.aec_mic_gain = 15;
+#if TCFG_AUDIO_ANC_ENABLE
+    app_var.aec_mic_gain = anc_mic_gain_get();
+#endif
     printf(">>>>>>>>>mic gain:%d \n", app_var.aec_mic_gain);
     audio_adc_mic_set_gain(&mic_enc->mic_ch, app_var.aec_mic_gain);
     audio_adc_mic_set_buffs(&mic_enc->mic_ch, mic_enc->adc_buf,
@@ -243,7 +248,13 @@ int audio_mic_enc_close()
     printf("audio_mic_enc_close\n");
 #if MIC_USE_MIC_CHANNEL
     audio_adc_mic_close(&mic_enc->mic_ch);
-	audio_mic_pwr_ctl(MIC_PWR_OFF);
+#if TCFG_AUDIO_ANC_ENABLE
+    if (anc_status_get() == 0) {
+        audio_mic_pwr_ctl(MIC_PWR_OFF);
+    }
+#else
+    audio_mic_pwr_ctl(MIC_PWR_OFF);
+#endif
     audio_adc_del_output_handler(&adc_hdl, &mic_enc->adc_output);
 #endif
     mic_enc_resume();

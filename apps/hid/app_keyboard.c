@@ -32,6 +32,7 @@
 #include "rcsp_bluetooth.h"
 #include "app_charge.h"
 #include "app_power_manage.h"
+#include "app_chargestore.h"
 
 #if(CONFIG_APP_KEYBOARD)
 
@@ -253,9 +254,10 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
     }
 
 
-    if (key_type == KEY_EVENT_LONG
-        && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE6)) {
+    if (key_type == KEY_EVENT_TRIPLE_CLICK
+        && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {
         hid_set_soft_poweroff();
+        return;
     }
 
     if (key_type == KEY_EVENT_DOUBLE_CLICK && key_value == TCFG_ADKEY_VALUE0) {
@@ -385,6 +387,8 @@ void hid_set_soft_poweroff(void)
 {
     log_info("hid_set_soft_poweroff\n");
     is_hid_active = 1;
+
+#if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
     //必须先主动断开蓝牙链路,否则要等链路超时断开
     if (bt_hid_mode == HID_MODE_EDR) {
         user_hid_enable(0);
@@ -393,10 +397,16 @@ void hid_set_soft_poweroff(void)
         ble_module_enable(0);
 #endif
     }
+#endif
+
     //延时300ms，确保BT退出链路断开
     sys_timeout_add(NULL, power_set_soft_poweroff, WAIT_DISCONN_TIME_MS);
 }
 
+static void hid_timer_handle_test(void)
+{
+    log_info("not_bt");
+}
 
 extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
 static void app_start()
@@ -406,9 +416,10 @@ static void app_start()
     log_info("=======================================");
 
     clk_set("sys", BT_NORMAL_HZ);
+
+#if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
     u32 sys_clk =  clk_get("sys");
     bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
-
 
     bt_function_select_init();
     bredr_handle_register();
@@ -416,6 +427,12 @@ static void app_start()
 
 #if TCFG_USER_EDR_ENABLE
     sys_auto_sniff_controle(1, NULL);
+#endif
+
+#else
+    //no bt,to for test
+    sys_timer_add(NULL, hid_timer_handle_test, 1000);
+
 #endif
     /* 按键消息使能 */
     sys_key_event_enable();
@@ -928,11 +945,13 @@ static int event_handler(struct application *app, struct sys_event *event)
         return 0;
 
     case SYS_BT_EVENT:
+#if (TCFG_USER_EDR_ENABLE || TCFG_USER_EDR_ENABLE)
         if ((u32)event->arg == SYS_BT_EVENT_TYPE_CON_STATUS) {
             bt_connction_status_event_handler(&event->u.bt);
         } else if ((u32)event->arg == SYS_BT_EVENT_TYPE_HCI_STATUS) {
             bt_hci_event_handler(&event->u.bt);
         }
+#endif
         return 0;
 
     case SYS_DEVICE_EVENT:
@@ -1029,7 +1048,7 @@ static void app_select_btmode(u8 mode)
 
     }
 
-    trace_run_debug_val(0);
+    /* trace_run_debug_val(0); */
     hid_vm_deal(1);
 }
 

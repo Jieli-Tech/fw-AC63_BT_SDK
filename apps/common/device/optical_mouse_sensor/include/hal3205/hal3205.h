@@ -1,13 +1,12 @@
-
 //===========================================================================
 //	For PixArt Mouse Sensor		//Hill, 2009.12.11
 //===========================================================================
 #ifndef _PAW3205_H_
 #define _PAW3205_H_
-
 #include "asm/cpu.h"
 #include <stdint.h>
 #include <stdbool.h>
+#ifdef OMSensor_HAL3205_ENABLE
 
 #define EN_PAW3205
 // PixArt Register Addresses
@@ -33,4 +32,6 @@
 #define pixart_READ       0x00
 
 #endif //_HAL3205_H_
+#endif //_HAL3205_H_
+
 

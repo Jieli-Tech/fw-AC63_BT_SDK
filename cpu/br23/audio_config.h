@@ -16,6 +16,9 @@
 #define AUDIO_SYNTHESIS_LEN     (AUDIO_MIXER_LEN * 2)
 #endif
 
+/*解码任务cpu占用率跟踪*/
+#define TCFG_AUDIO_DECODER_OCCUPY_TRACE		1
+
 #if BT_SUPPORT_MUSIC_VOL_SYNC
 #define TCFG_MAX_VOL_PROMPT						 0
 #else
@@ -76,12 +79,16 @@
 #define MAX_COM_VOL             (22)    // 具体数值应小于联合音量等级的数组大小 (combined_vol_list)
 #define MAX_DIG_VOL             (100)
 
+#define MAX_DIG_GR_VOL          (30)//数字音量组的最大值
+
 #if ((SYS_VOL_TYPE == VOL_TYPE_DIGITAL) || (SYS_VOL_TYPE == VOL_TYPE_DIGITAL_HW))
 #define SYS_MAX_VOL             MAX_DIG_VOL
 #elif (SYS_VOL_TYPE == VOL_TYPE_ANALOG)
 #define SYS_MAX_VOL             MAX_ANA_VOL
 #elif (SYS_VOL_TYPE == VOL_TYPE_AD)
 #define SYS_MAX_VOL             MAX_COM_VOL
+#elif (SYS_VOL_TYPE == VOL_TYPE_DIGGROUP)
+#define SYS_MAX_VOL             MAX_DIG_GR_VOL
 #else
 #error "SYS_VOL_TYPE define error"
 #endif
@@ -95,7 +102,10 @@
 #define APP_AUDIO_STATE_MUSIC       1
 #define APP_AUDIO_STATE_CALL        2
 #define APP_AUDIO_STATE_WTONE       3
-#define APP_AUDIO_CURRENT_STATE     4
+#define APP_AUDIO_STATE_LINEIN      4
+#define APP_AUDIO_CURRENT_STATE     5
+
+#define APP_AUDIO_MAX_STATE    (APP_AUDIO_CURRENT_STATE + 1)
 
 #ifdef TCFG_IIS_ENABLE
 #define AUDIO_OUTPUT_ONLY_IIS \

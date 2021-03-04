@@ -94,6 +94,7 @@ MEMORY
 #include "maskrom_stubs.ld"
 
 EXTERN(
+_start
 #include "sdk_used_list.c"
 );
 
@@ -133,15 +134,9 @@ SECTIONS
 		*(.bank.stub.*)
 		bank_stub_size = . - bank_stub_start;
 
-        *(.text*)
-        *(.LOG_TAG_CONST*)
-        *(.rodata*)
-
-		*(.aac_data)
 		*(.aac_const)
 		*(.aac_code)
 
-		*(.alac_data)
 		*(.alac_const)
 		*(.alac_code)
 		*(.alac_dec_code)
@@ -153,13 +148,25 @@ SECTIONS
 
 		*(.dts_dec_const)
 
-#ifndef TCFG_GPIO_RAM_ENABLE
+#if  (!TCFG_LED7_RUN_RAM)
         *(.gpio_ram)
         *(.LED_code)
         *(.LED_const)
+		. = ALIGN(4);
 #endif
 
-		*(.cvsd_data)
+
+#if (!TCFG_CODE_RUN_RAM_FM_MODE)
+ 	    *(.usr_timer_const)
+		*(.usr_timer_code)
+    	*(.timer_const)
+		*(.timer_code)
+    	*(.cbuf_const)
+		*(.cbuf_code)
+		*(.fm_data_code)
+		*(.fm_data_const)
+		. = ALIGN(4);
+#endif
 		*(.cvsd_const)
 		*(.cvsd_code)
 
@@ -215,6 +222,7 @@ SECTIONS
         . = ALIGN(4);
         #include "ui/ui/ui.ld"
         . = ALIGN(4);
+		#include "media/cpu/br23/media_lib_text.ld"
 
 		. = ALIGN(4);
 	    update_target_begin = .;
@@ -222,6 +230,11 @@ SECTIONS
 	    KEEP(*(.update_target))
 	    update_target_end = .;
 	    PROVIDE(update_target_end = .);
+		. = ALIGN(4);
+
+        *(.text*)
+        *(.LOG_TAG_CONST*)
+        *(.rodata*)
 		. = ALIGN(4);
 
         text_code_end = .;
@@ -303,10 +316,23 @@ SECTIONS
         *(.ui_ram)
 
         *(.fat_data_code)
-#ifdef TCFG_GPIO_RAM_ENABLE
+#if  (TCFG_LED7_RUN_RAM)
         *(.gpio_ram)
         *(.LED_code)
         *(.LED_const)
+		. = ALIGN(4);
+#endif
+
+#if (TCFG_CODE_RUN_RAM_FM_MODE)
+ 	    *(.usr_timer_const)
+		*(.usr_timer_code)
+    	*(.timer_const)
+		*(.timer_code)
+    	*(.cbuf_const)
+		*(.cbuf_code)
+		*(.fm_data_code)
+		*(.fm_data_const)
+		. = ALIGN(4);
 #endif
 
 #if TCFG_FM_INSIDE_ENABLE
@@ -314,23 +340,7 @@ SECTIONS
 #endif
 
         . = ALIGN(4);
-
-#if (SOUNDCARD_ENABLE)
-		*(.mix_ram_code)
-        . = ALIGN(4);
-		*(.dvol_ram_code)
-        . = ALIGN(4);
-		*(.reverb_cal_const)
- . = ALIGN(4);
-			*(.reverb_cal_code)
-
-        . = ALIGN(4);
-		*(.stream_ram_code)
-        . = ALIGN(4);
-			*(.mp3_code)
-        . = ALIGN(4);
-
-#endif
+		#include "media/cpu/br23/media_lib_data_text.ld"
         . = ALIGN(4);
 
     	_data_code_end = . ;
@@ -339,11 +349,16 @@ SECTIONS
 		. = ALIGN(4);
         *(.data*)
 
+		*(.cvsd_data)
+
 		. = ALIGN(4);
 		dec_board_param_mem_begin = .;
 		*(.dec_board_param_mem)
 		dec_board_param_mem_end = .;
 
+        . = ALIGN(4);
+		*(.sbc_eng_code)
+        . = ALIGN(4);
 
         . = ALIGN(32);
 		#include "btstack/btstack_lib_data.ld"
@@ -351,6 +366,8 @@ SECTIONS
 		#include "btctrler/btctler_lib_data.ld"
         . = ALIGN(4);
 		#include "system/system_lib_data.ld"
+		. = ALIGN(4);
+		#include "media/cpu/br23/media_lib_data.ld"
 		. = ALIGN(4);
 
 	  } > ram0
@@ -382,11 +399,13 @@ SECTIONS
 
         *(.bss)
         *(COMMON)
+		*(.cvsd_bss)
 
         *(.volatile_ram)
 		#include "btctrler/btctler_lib_bss.ld"
 		#include "btstack/btstack_lib_bss.ld"
 		#include "system/system_lib_bss.ld"
+		#include "media/cpu/br23/media_lib_bss.ld"
 
 		. = (( . + 31) / 32 * 32);
 
@@ -428,14 +447,12 @@ SECTIONS
 
 		.overlay_aec
 		{
-
-			*(.aec_bss_id)
+			LONG(0xFFFFFFFF);
+			/* *(.aec_bss_id) */
 			o_aec_end = .;
 
-            *(.cvsd_codec)
 			*(.aec_mem)
             *(.msbc_enc)
-			*(.cvsd_bss)
 		}
 		.overlay_mp3
 		{
@@ -458,7 +475,8 @@ SECTIONS
 			*(.mp3_const)
 			*(.mp3_code)
 #endif
-			*(.mp3_bss_id)
+			LONG(0xFFFFFFFF);
+			/* *(.mp3_bss_id) */
 			o_mp3_end = .;
 
 			*(.mp3_mem)
@@ -479,7 +497,8 @@ SECTIONS
 			/* *(.wma_bss) */
 			/* *(.wma_data) */
 #endif
-			*(.wma_bss_id)
+			LONG(0xFFFFFFFF);
+			/* *(.wma_bss_id) */
 			o_wma_end = .;
 
 			*(.wma_mem)
@@ -501,7 +520,8 @@ SECTIONS
 			*(.wav_code)
 
 
-			*(.wav_bss_id)
+			LONG(0xFFFFFFFF);
+			/* *(.wav_bss_id) */
 
 			*(.wav_bss)
 			*(.wav_dec_bss)
@@ -522,7 +542,8 @@ SECTIONS
 			*(.ape_dec_data)
 			*(.ape_dec_bss)
 
-			*(.ape_bss_id)
+			LONG(0xFFFFFFFF);
+			/* *(.ape_bss_id) */
 
 			*(.ape_bss)
 			*(.ape_data)
@@ -543,7 +564,8 @@ SECTIONS
 			*(.flac_const)
 			*(.flac_code)
 
-			*(.flac_bss_id)
+			LONG(0xFFFFFFFF);
+			/* *(.flac_bss_id) */
 
             *(.flac_mem)
             *(.flac_ctrl_mem)
@@ -564,7 +586,8 @@ SECTIONS
 			*(.m4apick_mem)
 			*(.m4apick_ctrl_mem)
 
-			*(.m4a_bss_id)
+			LONG(0xFFFFFFFF);
+			/* *(.m4a_bss_id) */
 
             *(.m4a_mem)
             *(.m4a_ctrl_mem)
@@ -586,7 +609,8 @@ SECTIONS
 
 			*(.amr_dec_data)
 
-			*(.amr_bss_id)
+			LONG(0xFFFFFFFF);
+			/* *(.amr_bss_id) */
 
             *(.amr_mem)
             *(.amr_ctrl_mem)
@@ -601,7 +625,8 @@ SECTIONS
 			*(.dts_const)
 			*(.dts_code)
 
-			*(.dts_bss_id)
+			LONG(0xFFFFFFFF);
+			/* *(.dts_bss_id) */
 
             *(.dts_mem)
             *(.dts_ctrl_mem)
@@ -614,7 +639,8 @@ SECTIONS
 
 		.overlay_fm
 		{
-			*(.fm_bss_id)
+			LONG(0xFFFFFFFF);
+			/* *(.fm_bss_id) */
 			o_fm_end = .;
 
 			*(.fm_mem)
@@ -631,8 +657,10 @@ SECTIONS
             *(.usb_msd_dma)
             *(.usb_hid_dma)
             *(.usb_iso_dma)
+            *(.usb_cdc_dma)
             *(.uac_var)
             *(.usb_config_var)
+            *(.cdc_var)
 #endif
 		}
     } > ram0
@@ -677,7 +705,6 @@ SECTIONS
 
 
 #include "update/update.ld"
-#include "media/media.ld"
 #include "driver/cpu/br23/driver_lib.ld"
 
 text_begin  = ADDR(.text) ;

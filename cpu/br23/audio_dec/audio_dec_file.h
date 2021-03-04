@@ -20,6 +20,8 @@
 
 #define FILE_DEC_AB_REPEAT_EN		1 // AB点复读
 
+#define FILE_DEC_DEST_PLAY			0 // 指定时间播放
+
 enum {
     FILE_DEC_STREAM_CLOSE = 0,
     FILE_DEC_STREAM_OPEN,
@@ -47,7 +49,7 @@ struct file_dec_hdl {
     void *file;				// 文件句柄
     u32 pick_flag : 1;		// 挑出数据帧发送（如MP3等)。不是输出pcm，后级不能接任何音效处理等
     u32 pcm_enc_flag : 1;	// pcm压缩成数据帧发送（如WAV等）
-    u32 read_err : 1;		// 读数出错
+    u32 read_err : 2;		// 读数出错 0:no err， 1:fat err,  2:disk err
     u32 ab_repeat_status : 3;	// AB复读状态
 
 #if TCFG_DEC_DECRYPT_ENABLE
@@ -119,6 +121,15 @@ int file_dec_ab_repeat_close(void);
 #define file_dec_ab_repeat_switch()
 #define file_dec_ab_repeat_close()
 #endif/*FILE_DEC_AB_REPEAT_EN*/
+
+#if (FILE_DEC_DEST_PLAY)
+int file_dec_set_start_play(u32 start_time);
+int file_dec_set_start_dest_play(u32 start_time, u32 dest_time, u32(*cb)(void *), void *cb_priv);
+#else
+#define file_dec_set_start_play(a)
+#define file_dec_set_start_dest_play(a,b,c,d)
+#endif/*FILE_DEC_DEST_PLAY*/
+
 
 #endif /*TCFG_APP_MUSIC_EN*/
 

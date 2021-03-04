@@ -136,7 +136,11 @@ const struct clock_type  clock_enum[] = {
     { DEC_IIS_CLK, (64),	"DEC_IIS_CLK"   },
     { DEC_UI_CLK, (8),	"DEC_UI_CLK"   },
 
-    { DEC_MIDI_CLK, (32),	"DEC_MIDI_CLK"   },
+    /* { DEC_MIDI_CLK, (32),	"DEC_MIDI_CLK"   }, */
+    //midi音色文件跳转读取频繁，外挂flash baud 调到6000000L, midi_clk 80M就够
+    { DEC_MIDI_CLK, (110),	"DEC_MIDI_CLK"   },
+    /* { DEC_MIDI_CLK, (80),	"DEC_MIDI_CLK"   }, */
+
     { CHARGE_BOX_CLK, (18),	"CHARGE_BOX_CLK"   },
 
     { DEC_3D_CLK, (24),	"DEC_3D_CLK"   },
@@ -153,6 +157,7 @@ const struct clock_type  clock_enum[] = {
     {SPECTRUM_CLK, (5),	"SPECTRUM_CLK"   },
 
     {AI_SPEECH_CLK, (120),	"AI_SPEECH_CLK"   },
+    {SMARTBOX_ACTION_CLK, (160),	"SMARTBOX_ACTION_CLK"   },
 };
 
 

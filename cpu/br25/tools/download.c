@@ -72,10 +72,12 @@ files="app.bin br25loader.bin br25loader.uart uboot.boot uboot.boot_debug uboot_
 
 NICKNAME="br25_app_ota"
 cp bluetooth/app_ota/isd_config.ini ./
+cp bluetooth/app_ota/download.bat ./
 #else
 
 NICKNAME="br25_sdk"
 cp bluetooth/standard/isd_config.ini ./
+cp bluetooth/standard/download.bat ./
 #endif
 
 #endif

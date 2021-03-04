@@ -19,9 +19,11 @@ files="app.bin bd29loader.bin uboot.boot uboot.boot_debug uboot_no_ota.boot uboo
 #if RCSP_UPDATE_EN
 NICKNAME="bd29_app_ota"
 cp bluetooth/app_ota/isd_config.ini ./
+cp bluetooth/app_ota/download.bat ./
 #else
 NICKNAME="bd29_sdk"
 cp bluetooth/standard/isd_config.ini ./
+cp bluetooth/standard/download.bat ./
 #endif
 #endif
 

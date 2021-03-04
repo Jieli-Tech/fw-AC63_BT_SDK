@@ -4,7 +4,8 @@ cd %~dp0
 
 copy ..\..\script.ver .
 copy ..\..\uboot.boot .
-copy ..\..\ota.bin .
+copy ..\..\ota_all.bin .
+copy ..\..\ota_nor.bin .
 copy ..\..\tone.cfg .
 copy ..\..\cfg_tool.bin .
 copy ..\..\app.bin .
@@ -30,15 +31,22 @@ if exist *.sty del *.sty
 
 
 @rem 生成固件升级文件
-..\..\fw_add.exe -noenc -fw jl_isd.fw  -add ota.bin -type 100 -out jl_isd.fw
+copy ota_all.bin ota.bin
+..\..\fw_add.exe -noenc -fw jl_isd.fw  -add ota.bin -type 100 -out jl_isd_all.fw
+copy ota_nor.bin ota.bin
+..\..\fw_add.exe -noenc -fw jl_isd.fw  -add ota.bin -type 100 -out jl_isd_nor.fw
 @rem 添加配置脚本的版本信息到 FW 文件中
-..\..\fw_add.exe -noenc -fw jl_isd.fw -add script.ver -out jl_isd.fw
+..\..\fw_add.exe -noenc -fw jl_isd_all.fw -add script.ver -out jl_isd_all.fw
+..\..\fw_add.exe -noenc -fw jl_isd_nor.fw -add script.ver -out jl_isd_nor.fw
 
 if exist update_*.ufw del update_*.ufw
 
-..\..\ufw_maker.exe -fw_to_ufw jl_isd.fw
-copy jl_isd.ufw update_%themd5%.ufw
-del jl_isd.ufw
+..\..\ufw_maker.exe -fw_to_ufw jl_isd_all.fw
+..\..\ufw_maker.exe -fw_to_ufw jl_isd_nor.fw
+copy jl_isd_all.ufw update_%themd5%.ufw
+copy jl_isd_nor.ufw nor_update.ufw
+copy jl_isd_all.fw jl_isd.fw
+del jl_isd_all.ufw jl_isd_nor.ufw jl_isd_all.fw jl_isd_nor.fw
 
 
 @REM 生成配置文件升级文件

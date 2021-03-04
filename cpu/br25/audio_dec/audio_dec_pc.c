@@ -17,10 +17,7 @@
 #include "app_main.h"
 #include "clock_cfg.h"
 #include "media/pcm_decoder.h"
-
-#if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
-#endif
 
 #if TCFG_UI_ENABLE
 #include "ui/ui_api.h"
@@ -40,6 +37,9 @@ struct uac_dec_hdl {
     u32 id;				// 唯一标识符，随机值
     u32 start : 1;		// 正在解码
     u32 source : 8;		// 音频源
+
+    u32 cnt: 8;
+    u32 state: 1;
     int check_data_timer;
 };
 
@@ -188,6 +188,12 @@ static int uac_audio_close(void)
         uac_dec->stream = NULL;
     }
 
+
+#if SYS_DIGVOL_GROUP_EN
+    sys_digvol_group_ch_close("music_pc");
+#endif // SYS_DIGVOL_GROUP_EN
+
+
     clock_set_cur();
     return 0;
 }
@@ -229,6 +235,40 @@ static void uac_dec_event_handler(struct audio_decoder *decoder, int argc, int *
 /*----------------------------------------------------------------------------*/
 static void audio_pc_check_timer(void *priv)
 {
+#if 1
+    u8 alive = uac_speaker_get_alive();
+    if (alive) {
+        uac_dec->cnt++;
+        if (uac_dec->cnt > 5) {
+            if (!uac_dec->state) {
+#if TCFG_DEC2TWS_ENABLE
+                if (uac_dec->pcm_dec.dec_no_out_sound) {
+                    localtws_decoder_pause(1);
+                }
+#endif
+                audio_mixer_ch_pause(&uac_dec->mix_ch, 1);
+                audio_decoder_resume_all(&decode_task);
+                uac_dec->state = 1;
+            }
+        }
+    } else {
+        if (uac_dec->cnt) {
+            uac_dec->cnt--;
+        }
+        if (uac_dec->state) {
+            uac_dec->state = 0;
+            uac_dec->cnt = 0;
+#if TCFG_DEC2TWS_ENABLE
+            if (uac_dec->pcm_dec.dec_no_out_sound) {
+                localtws_decoder_pause(0);
+            }
+#endif
+            audio_mixer_ch_pause(&uac_dec->mix_ch, 0);
+            audio_decoder_resume_all(&decode_task);
+        }
+    }
+    uac_speaker_set_alive(1);
+#else
     static u8 cnt = 0;
     if (uac_speaker_stream_size(NULL) == 0) {
         if (cnt < 6) {
@@ -255,6 +295,7 @@ static void audio_pc_check_timer(void *priv)
         }
         cnt = 0;
     }
+#endif
 }
 
 /*----------------------------------------------------------------------------*/
@@ -273,18 +314,18 @@ static int audio_pc_input_sample_rate(void *priv)
     if (dec->pcm_dec.dec_no_out_sound) {
         /*TWS的上限在uac输入buffer，下限在tws push buffer*/
         if (buf_size >= uac_speaker_stream_length() / 2) {
-            sample_rate += (sample_rate * 1 / 10000);
+            sample_rate += (sample_rate * 5 / 10000);
         } else if (tws_api_local_media_trans_check_ready_total() < 1024) {
-            sample_rate -= (sample_rate * 1 / 10000);
+            sample_rate -= (sample_rate * 5 / 10000);
         }
         return sample_rate;
     }
 #endif
     if (buf_size >= (uac_speaker_stream_length() * 3 / 4)) {
-        sample_rate += (sample_rate * 1 / 10000);
+        sample_rate += (sample_rate * 5 / 10000);
     }
     if (buf_size <= (uac_speaker_stream_length() / 4)) {
-        sample_rate -= (sample_rate * 1 / 10000);
+        sample_rate -= (sample_rate * 5 / 10000);
     }
     return sample_rate;
 }
@@ -351,6 +392,14 @@ static int uac_audio_start(void)
         entries[entry_cnt++] = &dec->eq_drc->entry;
     }
 #endif
+
+#if SYS_DIGVOL_GROUP_EN
+    void *dvol_entry = sys_digvol_group_ch_open("music_pc", -1, NULL);
+    entries[entry_cnt++] = dvol_entry;
+#endif // SYS_DIGVOL_GROUP_EN
+
+
+
     entries[entry_cnt++] = &dec->mix_ch.entry;
     // 创建数据流，把所有节点连接起来
     dec->stream = audio_stream_open(dec, uac_dec_out_stream_resume);
@@ -373,7 +422,10 @@ static int uac_audio_start(void)
     if (err) {
         goto __err3;
     }
-    /*dec->check_data_timer = sys_hi_timer_add(NULL, audio_pc_check_timer, 5);*/
+
+    dec->state = 0;
+    dec->cnt = 0;
+    dec->check_data_timer = sys_hi_timer_add(NULL, audio_pc_check_timer, 10);
     clock_set_cur();
     return 0;
 
@@ -392,6 +444,13 @@ __err3:
         audio_stream_close(dec->stream);
         dec->stream = NULL;
     }
+
+
+#if SYS_DIGVOL_GROUP_EN
+    sys_digvol_group_ch_close("music_pc");
+#endif // SYS_DIGVOL_GROUP_EN
+
+
     pcm_decoder_close(&dec->pcm_dec);
 __err1:
     uac_dec_relaese();

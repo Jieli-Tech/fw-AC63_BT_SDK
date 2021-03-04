@@ -181,8 +181,10 @@ static struct pwm_led _led;
 #define P3_CLK_CON0             0xa6
 extern void p33_tx_1byte(u16 addr, u8 data0);
 extern u8 p33_rx_1byte(u16 addr);
+extern void set_timer_pwm_duty(JL_TIMER_TypeDef *JL_TIMERx, u32 duty);
 static void _pwm_led_display_mode(u8 display);
 static void _led_pwm1_duty_set(u8 duty_prd, u8 duty0, u8 duty1, u8 duty2, u8 breathe);
+
 
 static void pwm_clock_set(u8 _clock)
 {
@@ -614,7 +616,16 @@ static void _led_pwm_bright_set(u16 bri_max, u16 bri_duty0, u16 bri_duty1)
     LED_BRI_DUTY1_SET(bri_duty1);
 }
 
-
+void set_led_duty(u16 duty)
+{
+#if defined(CONFIG_CPU_BR23)
+    set_timer_pwm_duty(JL_TIMER3, duty);
+#elif defined(CONFIG_CPU_BR25)
+    set_timer_pwm_duty(JL_TIMER5, duty);
+#elif defined(CONFIG_CPU_BR30)
+    set_timer_pwm_duty(JL_TIMER5, duty);
+#endif
+}
 /**
  * @brief: 设置PWM输出逻辑,
  * @param: pwm_inv_en, 最后pwm波形输出逻辑(默认是高电平灯亮),

@@ -6,6 +6,7 @@
 #include "rcsp_user_update.h"
 #include "JL_rcsp_protocol.h"
 #include "le_rcsp_adv_module.h"
+#include "os/os_error.h"
 
 #include <string.h>
 
@@ -65,7 +66,7 @@ typedef struct _rcsp_update_param_t {
     u32 need_rx_len;
     u8 *read_buf;
     void (*resume_hdl)(void *priv);
-    void (*sleep_hdl)(void *priv);
+    int (*sleep_hdl)(void *priv);
     u32(*data_send_hdl)(void *priv, u32 offset, u16 len);
     u32(*send_update_status_hdl)(void *priv, u8 state);
     u32 file_offset;
@@ -234,14 +235,20 @@ static u16 rcsp_f_stop(u8 err)
     /* bt_updata_clr_flag(updata_start);    //clr flag */
 
     err = update_result_handle(err);
-    deg_puts(">>>rcsp_stop\n");
     __this->state = UPDATA_STOP;
+    printf(">>>rcsp_stop:%x\n", __this->state);
 
-    __this->data_send_hdl(NULL, 0, 0);
+    if (__this->data_send_hdl) {
+        __this->data_send_hdl(NULL, 0, 0);
+    }
 
     while (!(0 == __this->state)) {
-        if (__this->sleep_hdl) {
-            __this->sleep_hdl(NULL);
+        if (__this->sleep_hdl && get_rcsp_connect_status()) {
+            if (__this->sleep_hdl(NULL) == OS_TIMEOUT) {
+                break;
+            }
+        } else {
+            break;
         }
     }
 
@@ -315,7 +322,7 @@ void rcsp_resume(void)
     }
 }
 
-static void rcsp_update_resume_hdl_register(void (*resume_hdl)(void *priv), void (*sleep_hdl)(void *priv))
+static void rcsp_update_resume_hdl_register(void (*resume_hdl)(void *priv), int (*sleep_hdl)(void *priv))
 {
     __this->resume_hdl = resume_hdl;
     __this->sleep_hdl = sleep_hdl;
@@ -325,6 +332,12 @@ void rcsp_update_data_api_register(u32(*data_send_hdl)(void *priv, u32 offset, u
 {
     __this->data_send_hdl = data_send_hdl;
     __this->send_update_status_hdl = send_update_status_hdl;
+}
+
+void rcsp_update_data_api_unregister(void)
+{
+    __this->data_send_hdl = NULL;
+    __this->send_update_status_hdl = NULL;
 }
 
 void rcsp_ch_update_init(void (*resume_hdl)(void *priv), int (*sleep_hdl)(void *priv))
@@ -367,6 +380,33 @@ const update_op_api_t rcsp_update_op = {
 /* }; */
 /* #endif */
 
+extern void set_jl_update_flag(u8 flag);
+static void rcsp_update_state_cbk(int type, u32 state, void *priv)
+{
+    update_ret_code_t *ret_code = (update_ret_code_t *)priv;
+    if (ret_code) {
+        printf("state:%x err:%x\n", ret_code->stu, ret_code->err_code);
+    }
+    switch (state) {
+    case UPDATE_CH_EXIT:
+        if (UPDATE_DUAL_BANK_IS_SUPPORT()) {
+            if ((0 == ret_code->stu) && (0 == ret_code->err_code)) {
+                set_jl_update_flag(1);
+                printf(">>>rcsp update succ\n");
+                update_result_set(UPDATA_SUCC);
+
+            } else {
+                update_result_set(UPDATA_DEV_ERR);
+                printf(">>>rcsp update succ\n");
+            }
+        } else {
+            if ((0 == ret_code->stu) && (0 == ret_code->err_code)) {
+                set_jl_update_flag(1);
+            }
+        }
+        break;
+    }
+}
 
 void rcsp_update_loader_download_init(int update_type, void (*result_cbk)(void *priv, u8 type, u8 cmd))
 {
@@ -384,12 +424,21 @@ void rcsp_update_loader_download_init(int update_type, void (*result_cbk)(void *
     /*     } else */
     /* #endif//TCFG_USER_TWS_ENABLE */
     /* #endif */
+    /* { */
+    /*     app_update_loader_downloader_init( */
+    /*         update_type, */
+    /*         result_cbk, */
+    /*         NULL, */
+    /*         &rcsp_update_op); */
+    /* } */
     {
-        app_update_loader_downloader_init(
-            update_type,
-            result_cbk,
-            NULL,
-            &rcsp_update_op);
+        update_mode_info_t info = {
+            .type = update_type,
+            .state_cbk = rcsp_update_state_cbk,
+            .p_op_api = &rcsp_update_op,
+            .task_en = 1,
+        };
+        app_active_update_task_init(&info);
     }
 
 }

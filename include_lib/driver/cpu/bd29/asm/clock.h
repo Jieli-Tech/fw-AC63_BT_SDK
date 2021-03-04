@@ -5,19 +5,20 @@
 
 #include "clock_hw.h"
 
-typedef enum {
-    ///原生时钟源作系统时钟源
-    SYS_CLOCK_INPUT_RC,
-    SYS_CLOCK_INPUT_BT_OSC,          //BTOSC 双脚(12-26M)
-    SYS_CLOCK_INPUT_RTOSCH,
-    SYS_CLOCK_INPUT_RTOSCL,
-    SYS_CLOCK_INPUT_PAT,
+///原生时钟源作系统时钟源
+#define    SYS_CLOCK_INPUT_RC      0
+#define    SYS_CLOCK_INPUT_BT_OSC  1          //BTOSC 双脚(12-26M)
+#define    SYS_CLOCK_INPUT_RTOSCH  2
+#define    SYS_CLOCK_INPUT_RTOSCL  3
+#define    SYS_CLOCK_INPUT_PAT     4
 
-    ///衍生时钟源作系统时钟源
-    SYS_CLOCK_INPUT_PLL_BT_OSC,
-    SYS_CLOCK_INPUT_PLL_RTOSCH,
-    SYS_CLOCK_INPUT_PLL_PAT,
-} SYS_CLOCK_INPUT;
+///衍生时钟源作系统时钟源
+#define    SYS_CLOCK_INPUT_PLL_BT_OSC  5
+#define    SYS_CLOCK_INPUT_PLL_RTOSCH  6
+#define    SYS_CLOCK_INPUT_PLL_PAT     7
+
+typedef int SYS_CLOCK_INPUT;
+
 
 typedef enum {
     SYS_ICLOCK_INPUT_BTOSC,          //BTOSC 双脚(12-26M)

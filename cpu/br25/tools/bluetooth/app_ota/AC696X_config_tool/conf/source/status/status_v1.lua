@@ -97,7 +97,7 @@ local status_cfg_table = {
     [8] = {name = "去电",           ui_item = {cfg_item, default = 0xFF},   tone_item = {cfg_item, default = 0xFF}, ui_tone_sel_view},
     [9] = {name = "通话中",         ui_item = {cfg_item, default = 0xFF},   tone_item = {cfg_item, default = 0xFF}, ui_tone_sel_view},
     [10] = {name = "蓝牙初始化完成", ui_item = {cfg_item, default = 16},     tone_item = {cfg_item, default = 10},   ui_tone_sel_view},
-    [11] = {name = "蓝牙连接成功",   ui_item = {cfg_item, default = 8},      tone_item = {cfg_item, default = 11},   ui_tone_sel_view},
+    [11] = {name = "蓝牙连接成功",   ui_item = {cfg_item, default = 1},      tone_item = {cfg_item, default = 11},   ui_tone_sel_view},
     [12] = {name = "蓝牙断开连接",   ui_item = {cfg_item, default = 15},     tone_item = {cfg_item, default = 12},   ui_tone_sel_view},
     [13] = {name = "对耳连接成功",   ui_item = {cfg_item, default = 15},     tone_item = {cfg_item, default = 13},   ui_tone_sel_view},
     [14] = {name = "对耳断开连接",   ui_item = {cfg_item, default = 16},     tone_item = {cfg_item, default = 14},   ui_tone_sel_view},

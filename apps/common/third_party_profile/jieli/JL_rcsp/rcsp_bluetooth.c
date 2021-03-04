@@ -141,6 +141,7 @@ extern int eq_mode_get_cur(void);
 
 
 static u32 JL_auto_update_sys_info(u8 fun_type, u32 mask);
+extern void rcsp_update_data_api_unregister(void);
 
 #if RCSP_UPDATE_EN
 static volatile u8 JL_bt_chl = 0;
@@ -291,9 +292,9 @@ static u32 JL_opcode_get_target_info(void *priv, u8 OpCode, u8 OpCode_SN, u8 *da
 
     if (mask & BIT(ATTR_TYPE_UBOOT_VERSION)) {
         /* rcsp_printf("ATTR_TYPE_UBOOT_VERSION\n"); */
-        u8 *uboot_ver_flag = (u8 *)(0x1C000 - 0x8);
-        u8 uboot_version[2] = {uboot_ver_flag[0], uboot_ver_flag[1]};
-        offset += add_one_attr(buf, sizeof(buf), offset, ATTR_TYPE_UBOOT_VERSION, uboot_version, sizeof(uboot_version));
+        /* u8 *uboot_ver_flag = (u8 *)(0x1C000 - 0x8); */
+        /* u8 uboot_version[2] = {uboot_ver_flag[0], uboot_ver_flag[1]}; */
+        /* offset += add_one_attr(buf, sizeof(buf), offset, ATTR_TYPE_UBOOT_VERSION, uboot_version, sizeof(uboot_version)); */
     }
 
     if (mask & BIT(ATTR_TYPE_DOUBLE_PARITION)) {
@@ -1128,7 +1129,7 @@ static int rcsp_ble_data_send(void *priv, u8 *buf, u16 len)
 
 }
 
-extern const u8 link_key_data[16];
+static const u8 link_key_data[16] = {0x06, 0x77, 0x5f, 0x87, 0x91, 0x8d, 0xd4, 0x23, 0x00, 0x5d, 0xf1, 0xd8, 0xcf, 0x0c, 0x14, 0x2b};
 void JL_rcsp_recieve_handle(void *priv, void *buf, u16 len)
 {
     //put_buf(buf, len > 0x20 ? 0x20 : len);
@@ -1141,7 +1142,7 @@ void JL_rcsp_recieve_handle(void *priv, void *buf, u16 len)
 
     JL_protocol_data_recieve(priv, buf, len);
 }
-void rcsp_dev_select(u8 type)
+void rcsp_dev_select_v1(u8 type)
 {
 #if RCSP_UPDATE_EN
     set_jl_update_flag(0);
@@ -1228,7 +1229,7 @@ void rcsp_init()
     int err = task_create(rcsp_process_task, NULL, "rcsp_task");
 
     //default use ble , can switch spp anytime
-    rcsp_dev_select(RCSP_BLE);
+    rcsp_dev_select_v1(RCSP_BLE);
 
     __this->rcsp_run_flag = 1;
 #if (0 != BT_CONNECTION_VERIFY)
@@ -1258,6 +1259,7 @@ void rcsp_exit(void)
         free(rcsp_buffer);
         rcsp_buffer = 0;
     }
+    rcsp_update_data_api_unregister();
     task_kill("rcsp_task");
     __this->rcsp_run_flag = 0;
     return;

@@ -23,6 +23,10 @@
 #define CONFIG_APP_KEYPAGE                  0//翻页器
 #define CONFIG_APP_GAMEBOX                  0//吃鸡王座
 
+#if CONFIG_APP_MOUSE
+#define  CONFIG_APP_MOUSE_SINGLE            1 //单模切换
+#define  CONFIG_APP_MOUSE_DUAL              0 //同时开双模
+#endif
 
 #include "board_config.h"
 

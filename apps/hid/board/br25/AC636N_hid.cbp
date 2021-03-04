@@ -21,6 +21,7 @@
 <Add option="-fallow-pointer-null" />
 <Add option="-fprefer-gnu-section" />
 <Add option="-Wno-shift-negative-value" />
+<Add option="-Wundef" />
 <Add option="-fms-extensions" />
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
 <Add option="-DCONFIG_CPU_BR25" />
@@ -94,7 +95,6 @@
 <Add directory="../../../../cpu/br25" />
 <Add directory="../../../../apps/common/code_switch/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include" />
-<Add directory="../../../../apps/common/device/optical_mouse_sensor/include/hal3205" />
 <Add directory="../../../../apps/common/touch_pad" />
 <Add directory="../../../../apps/common/audio" />
 <Add directory="../../../../cpu/br25/audio_dec" />
@@ -108,10 +108,9 @@
 <Add option="--plugin-opt=-pi32v2-merge-max-offset=4096" />
 <Add option="--plugin-opt=-pi32v2-enable-simd=true" />
 <Add option="--plugin-opt=mcpu=r3" />
-<Add option="--plugin-opt=-enable-movable-region=true" />
-<Add option="--plugin-opt=-movable-region-section-prefix=movable.slot." />
 <Add option="--plugin-opt=-global-merge-on-const" />
-<Add option="--plugin-opt=-inline-threshold=10" />
+<Add option="--plugin-opt=-inline-threshold=5" />
+<Add option="--plugin-opt=-inline-max-allocated-size=32" />
 <Add option="--plugin-opt=-inline-normal-into-special-section=true" />
 <Add option="--plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar" />
 <Add option="--plugin-opt=save-temps" />
@@ -130,14 +129,15 @@
 <Add option="../../../../include_lib/liba/br25/rcsp_stack.a" />
 <Add option="--end-group" />
 <Add option="../../../../include_lib/liba/br25/update.a" />
-<Add option="--start-group" />
+<Add option="--start-group " />
 <Add option="../../../../include_lib/liba/br25/media.a" />
 <Add option="../../../../include_lib/liba/br25/media_app.a" />
 <Add option="../../../../include_lib/liba/br25/opus_enc_lib.a" />
 <Add option="../../../../include_lib/liba/br25/speex_enc_lib.a" />
 <Add option="../../../../include_lib/liba/br25/bfilterfun_lib.a" />
 <Add option="../../../../include_lib/liba/br25/wtg_dec_lib.a" />
-<Add option="--end-group" />
+<Add option="../../../../include_lib/liba/br25/wtgv2_dec_lib.a" />
+<Add option="--end-group " />
 <Add option="-T../../../../cpu/br25/sdk.ld" />
 <Add option="-M=../../../../cpu/br25/tools/sdk.map" />
 <Add library="C:\JL\pi32\pi32v2-lib\r3\libm.a" />
@@ -161,8 +161,11 @@
 <Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/optical_mouse_sensor/OMSensor_manage.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/optical_mouse_sensor/hal3205/hal3205.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/optical_mouse_sensor/hal3212/hal3212.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/optical_mouse_sensor/include/OMSensor_config.h" />
 <Unit filename="../../../../apps/common/device/optical_mouse_sensor/include/OMSensor_manage.h" />
 <Unit filename="../../../../apps/common/device/optical_mouse_sensor/include/hal3205/hal3205.h" />
+<Unit filename="../../../../apps/common/device/optical_mouse_sensor/include/hal3212/hal3212.h" />
 <Unit filename="../../../../apps/common/include/bt_common.h" />
 <Unit filename="../../../../apps/common/include/matrix_keyboard.h" />
 <Unit filename="../../../../apps/common/include/standard_hid.h" />
@@ -197,7 +200,11 @@
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.h" />
 <Unit filename="../../../../apps/common/touch_pad/SYD9557M.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/touch_pad/SYD9557M.h" />
+<Unit filename="../../../../apps/common/update/testbox_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/update.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/cdc.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/cdc.h" />
+<Unit filename="../../../../apps/common/usb/device/cdc_defs.h" />
 <Unit filename="../../../../apps/common/usb/device/descriptor.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/hid.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/msd.c"><Option compilerVer="CC"/></Unit>
@@ -230,6 +237,7 @@
 <Unit filename="../../../../apps/common/usb/usb_host_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/usb_std_class_def.h" />
 <Unit filename="../../../../apps/hid/app_charge.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/hid/app_chargestore.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_gamebox.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_idle.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_keyboard.c"><Option compilerVer="CC"/></Unit>
@@ -237,6 +245,7 @@
 <Unit filename="../../../../apps/hid/app_keypage.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_main.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_mouse.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/hid/app_mouse_dual.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_power_manage.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_standard_keyboard.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/board/br25/board_ac6363f_mouse.c"><Option compilerVer="CC"/></Unit>
@@ -258,6 +267,7 @@
 <Unit filename="../../../../apps/hid/gamebox/key_mapping.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/include/app_action.h" />
 <Unit filename="../../../../apps/hid/include/app_charge.h" />
+<Unit filename="../../../../apps/hid/include/app_chargestore.h" />
 <Unit filename="../../../../apps/hid/include/app_config.h" />
 <Unit filename="../../../../apps/hid/include/app_main.h" />
 <Unit filename="../../../../apps/hid/include/app_power_manage.h" />
@@ -281,6 +291,8 @@
 <Unit filename="../../../../apps/hid/version.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/adc_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/audio_common/app_audio.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br25/audio_common/audio_iis.h" />
+<Unit filename="../../../../cpu/br25/audio_common/audio_link.h" />
 <Unit filename="../../../../cpu/br25/audio_config.h" />
 <Unit filename="../../../../cpu/br25/audio_dec/audio_dec.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br25/audio_dec/audio_dec.h" />
@@ -333,6 +345,7 @@
 <Unit filename="../../../../include_lib/btctrler/classic/hci_lmp.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/lmp_config.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/tws_api.h" />
+<Unit filename="../../../../include_lib/btctrler/classic/tws_data_trans.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/tws_event.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/tws_local_media_sync.h" />
 <Unit filename="../../../../include_lib/btctrler/hci_transport.h" />
@@ -449,7 +462,6 @@
 <Unit filename="../../../../include_lib/media/media_develop/media/mixer.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/mixer_cyclic.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/pcm_decoder.h" />
-<Unit filename="../../../../include_lib/media/media_develop/media/prevent_task_fill.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/SpectrumShow_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/coeff_calculate_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/rms_api.h" />
@@ -538,6 +550,7 @@
 <Unit filename="../../../../include_lib/system/timer.h" />
 <Unit filename="../../../../include_lib/system/user_cfg.h" />
 <Unit filename="../../../../include_lib/system/wait.h" />
+<Unit filename="../../../../include_lib/update/dual_bank_updata_api.h" />
 <Unit filename="../../../../include_lib/update/uart_update.h" />
 <Unit filename="../../../../include_lib/update/update.h" />
 <Unit filename="../../../../include_lib/update/update_loader_download.h" />

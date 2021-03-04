@@ -189,7 +189,7 @@
 //*********************************************************************************//
 //                                  LED 配置                                       //
 //*********************************************************************************//
-#define TCFG_PWMLED_ENABLE					DISABLE_THIS_MOUDLE			//是否支持PMW LED推灯模块
+#define TCFG_PWMLED_ENABLE					ENABLE_THIS_MOUDLE			//是否支持PMW LED推灯模块
 #define TCFG_PWMLED_IOMODE					LED_ONE_IO_MODE				//LED模式，单IO还是两个IO推灯
 #define TCFG_PWMLED_PIN						IO_PORTB_06					//LED使用的IO口
 //*********************************************************************************//

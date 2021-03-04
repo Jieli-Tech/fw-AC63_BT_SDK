@@ -185,6 +185,7 @@ DAC硬件上的连接方式,可选的配置：
 #define AUDIO_OUTPUT_WAY_HDMI       3
 #define AUDIO_OUTPUT_WAY_SPDIF      4
 #define AUDIO_OUTPUT_WAY_BT      	5	// bt emitter
+#define AUDIO_OUTPUT_WAY_DAC_IIS    6
 #define AUDIO_OUTPUT_WAY_DONGLE		7
 #define AUDIO_OUTPUT_WAY            AUDIO_OUTPUT_WAY_DAC
 #define LINEIN_INPUT_WAY            LINEIN_INPUT_WAY_ANALOG

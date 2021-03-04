@@ -314,7 +314,7 @@ static void ldo5v_detect(void *priv)
                 charge_flag = BIT_LDO5V_ERR;
                 power_wakeup_set_edge(IO_VBTCH_DET, RISING_EDGE);
                 if (__this->data->ldo5v_off_filter) {
-                    charge_event_to_user(CHARGE_EVENT_CHARGE_ERR);
+                    charge_event_to_user(CHARGE_EVENT_LDO5V_KEEP);
                 }
             }
         }

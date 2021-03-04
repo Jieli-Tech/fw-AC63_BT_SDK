@@ -461,6 +461,10 @@ void board_init()
 	 CHGBG_EN(0);
 #endif
 
+#ifdef AUDIO_PCM_DEBUG
+	extern void uartSendInit();
+	uartSendInit();
+#endif/*AUDIO_PCM_DEBUG*/
 }
 
 

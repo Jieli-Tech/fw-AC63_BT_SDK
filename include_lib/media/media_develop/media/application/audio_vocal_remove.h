@@ -2,6 +2,8 @@
 #ifndef _AUDIO_VOCAL_REMOVE_API_H_
 #define _AUDIO_VOCAL_REMOVE_API_H_
 
+#include "system/includes.h"
+#include "media/includes.h"
 
 typedef struct _vocal_remove_open_parm {
     u8 channel;//输入音频声道数

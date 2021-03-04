@@ -5,6 +5,7 @@
 
 #include "classic/tws_event.h"
 #include "classic/tws_local_media_sync.h"
+#include "classic/tws_data_trans.h"
 
 #define TWS_ROLE_MASTER   			0
 #define TWS_ROLE_SLAVE    			1

@@ -78,5 +78,8 @@ int ui_unlock_layer(int id);
 
 int ui_get_disp_status_by_id(int id);
 
+int create_control_by_id(char *tabfile, int page_id, int id, int parent_id);
+int delete_control_by_id(int id);
+
 #endif
 

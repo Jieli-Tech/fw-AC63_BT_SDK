@@ -1508,7 +1508,7 @@ static void app_select_btmode(u8 mode)
 #if TCFG_USER_EDR_ENABLE
         //close edr
 
-#ifndef CONFIG_CPU_BR30
+#ifndef CONFIG_NEW_BREDR_ENABLE
         radio_set_eninv(0);
 #endif
         bredr_power_put();

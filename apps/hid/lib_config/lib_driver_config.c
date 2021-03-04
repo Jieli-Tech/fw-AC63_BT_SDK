@@ -23,6 +23,12 @@ const int config_dcdc_mode = 0;
 
 #if(TCFG_CLOCK_SYS_SRC == SYS_CLOCK_INPUT_PLL_RCL) //系统时钟源选择
 const int  clock_sys_src_use_lrc_hw = 1; //当使用lrc时timer.c需要特殊设置
+
+#if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
+//不支持使用蓝牙，需要关闭宏
+#error "CLOCK_SYS_SRC NOT SUPPORT BT MODE!!!!!!"
+#endif
+
 #else
 const int  clock_sys_src_use_lrc_hw = 0;
 #endif

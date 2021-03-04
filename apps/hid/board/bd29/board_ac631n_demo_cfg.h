@@ -30,9 +30,9 @@
 //*********************************************************************************//
 #define TCFG_PC_ENABLE						DISABLE_THIS_MOUDLE //PC模块使能
 #define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE //U盘模块使能
-#define TCFG_HID_HOST_ENABLE                0//ENABLE_THIS_MOUDLE  //游戏盒子模式
-#define TCFG_ADB_ENABLE                     0//ENABLE_THIS_MOUDLE
-#define TCFG_AOA_ENABLE                     0//ENABLE_THIS_MOUDLE
+#define TCFG_HID_HOST_ENABLE                DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE  //游戏盒子模式
+#define TCFG_ADB_ENABLE                     DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
+#define TCFG_AOA_ENABLE                     DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
 
 #define TCFG_OTG_USB_DEV_EN                 (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
 //*********************************************************************************//

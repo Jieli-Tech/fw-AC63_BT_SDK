@@ -193,4 +193,27 @@ extern void bredr_set_dut_enble(u8 en, u8 phone);
 
 extern int a2dp_media_clear_packet_before_seqn(u16 seqn_number);
 
+
+struct link_fix_rx_result {
+    u32 rx_err_b;  //接收到err bit
+    u32 rx_sum_b;  //接收到正确bit
+    u32 rx_perr_p;  //接收到crc 错误 包数
+    u32 rx_herr_p;  //接收到crc 以外其他错误包数
+    u32 rx_invail_p; //接收到crc错误bit太多的包数，丢弃不统计到err bit中
+};
+
+#define DH1_1        0
+#define DH3_1        1
+#define DH5_1        2
+#define DH1_2        3
+#define DH3_2        4
+#define DH5_2        5
+
+int link_fix_tx_enable(u8 *remote_addr, u8 fre, u8 packet_type, u16 payload);
+int link_fix_rx_enable(u8 *remote_addr, u8 fre, u8 packet_type, u16 payload);
+void link_fix_txrx_disable();
+void link_fix_rx_update_result(struct link_fix_rx_result *result);
+void link_fix_rx_dump_result();
+
+
 #endif

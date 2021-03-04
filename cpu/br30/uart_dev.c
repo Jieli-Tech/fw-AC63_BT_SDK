@@ -137,7 +137,9 @@ static void UT0_isr_fun(void)
         }
     }
     if ((JL_UART0->CON0 & BIT(3)) && (JL_UART0->CON0 & BIT(14))) {
+        JL_UART0->CON0 |= BIT(7);                     //DMA模式
         JL_UART0->CON0 |= BIT(12);           //清RX PND
+        rx_len = JL_UART0->HRXCNT;             //读当前串口接收数据的个数
         uart0.kfifo.buf_in += uart0.frame_length; //每满frame_length字节则产生一次中断
         UT_OSSemPost(&uart0.sem_rx);
         if (uart0.isr_cbfun) {
@@ -353,7 +355,9 @@ static void UT1_isr_fun(void)
         }
     }
     if ((JL_UART1->CON0 & BIT(3)) && (JL_UART1->CON0 & BIT(14))) {
+        JL_UART1->CON0 |= BIT(7);                     //DMA模式
         JL_UART1->CON0 |= BIT(12);           //清RX PND
+        rx_len = JL_UART1->HRXCNT;             //读当前串口接收数据的个数
         uart1.kfifo.buf_in += uart1.frame_length; //每满32字节则产生一次中断
         UT_OSSemPost(&uart1.sem_rx);
         if (uart1.isr_cbfun) {
@@ -573,7 +577,9 @@ static void UT2_isr_fun(void)
         }
     }
     if ((JL_UART2->CON0 & BIT(3)) && (JL_UART2->CON0 & BIT(14))) {
+        JL_UART2->CON0 |= BIT(7);                     //DMA模式
         JL_UART2->CON0 |= BIT(12);           //清RX PND
+        rx_len = JL_UART2->HRXCNT;             //读当前串口接收数据的个数
         uart2.kfifo.buf_in += uart2.frame_length; //每满32字节则产生一次中断
         UT_OSSemPost(&uart2.sem_rx);
         if (uart2.isr_cbfun) {
@@ -763,17 +769,6 @@ static u8 uart_config(const struct uart_platform_data_t *arg, u8 tx_ch, enum PFI
     return 0;
 }
 
-#if FLOW_CONTROL
-void flow_ctl_hw_init(void)
-{
-    struct uart_platform_data_t arg;
-    arg.tx_pin = IO_PORTA_06;
-    arg.rx_pin = IO_PORTA_05;
-    uart_config(&arg, FO_UART1_RTS, PFI_UART1_CTS);
-    JL_UART1->CON1 = BIT(14) | BIT(13) | BIT(3) | BIT(2) | BIT(1) | BIT(0);
-}
-#endif
-
 /**
  * @brief ut模块初始const struct uart_platform_data_t *arg化函数，供外部调用
  *
@@ -879,8 +874,47 @@ void uart_disable_for_ota()
     JL_UART2->CON0 = BIT(13) | BIT(12) | BIT(10);
 }
 
+static u8 _rts_io = -1;
+static u8 _cts_io = -1;
+void uart1_flow_ctl_init(u8 rts_io, u8 cts_io)
+{
+    JL_UART1->CON1 = 0;
+    //RTS
+    if (rts_io < IO_PORT_MAX) {
+        _rts_io = rts_io;
+        gpio_set_die(rts_io, 1);
+        gpio_set_direction(rts_io, 0);
+        gpio_set_pull_up(rts_io, 0);
+        gpio_set_pull_down(rts_io, 0);
+        gpio_write(rts_io, 0);
+        /* gpio_set_fun_output_port(rts_io, FO_UART1_RTS, 1, 1); */
+        /* JL_UART1->CON1 |= BIT(13) | BIT(0); */
+    }
+    //CTS
+    if (cts_io < IO_PORT_MAX) {
+        _cts_io = cts_io;
+        gpio_set_die(cts_io, 1);
+        gpio_set_direction(cts_io, 1);
+        gpio_set_pull_up(cts_io, 0);
+        gpio_set_pull_down(cts_io, 1);
+        gpio_set_fun_input_port(cts_io, PFI_UART1_CTS);
+        JL_UART1->CON1 |= BIT(14) | BIT(2);
+    }
+}
 
+void uart1_flow_ctl_rts_suspend(void)
+{
+    gpio_write(_rts_io, 1);      //告诉对方，自己忙碌
+    JL_UART1->CON1 |= BIT(4);   //硬件停止接收
+}
 
-
-
+void uart1_flow_ctl_rts_resume(void)
+{
+    JL_UART1->CON1 &= ~BIT(4);  //硬件可以接收
+    if (JL_UART1->CON1 & BIT(0)) {
+        JL_UART1->CON1 |= BIT(13);
+    } else {
+        gpio_write(_rts_io, 0);      //表示可以继续接收数据
+    }
+}
 

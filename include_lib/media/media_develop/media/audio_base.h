@@ -26,6 +26,8 @@
 #define AUDIO_CODING_OPUS         0x00100000
 #define AUDIO_CODING_SPEEX        0x00200000
 #define AUDIO_CODING_ALAC         0x00400000
+#define AUDIO_CODING_MIDI_CTRL    0x00800000
+#define AUDIO_CODING_WTGV2        0x01000000
 
 #define AUDIO_CODING_STU_PICK     0x10000000
 #define AUDIO_CODING_STU_APP      0x20000000
@@ -50,6 +52,7 @@ enum audio_channel {
 };
 
 #define AUDIO_CH_IS_MONO(ch)	(((ch)==AUDIO_CH_L) || ((ch)==AUDIO_CH_R) || ((ch)==AUDIO_CH_DIFF))
+#define AUDIO_CH_IS_DUAL(ch)	(((ch)==AUDIO_CH_LR) || ((ch)==AUDIO_CH_DUAL_L) || ((ch)==AUDIO_CH_DUAL_R))
 #define AUDIO_CH_IS_QUAD(ch)	(((ch)==AUDIO_CH_QUAD))
 
 

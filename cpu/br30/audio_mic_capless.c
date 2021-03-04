@@ -31,6 +31,7 @@
 #define MC_LOG_I(...)
 #endif/*MC_LOG_ENABLE*/
 
+const int const_mic_capless_dtb = TCFG_MC_DTB_FIXED;
 #if TCFG_AUDIO_MC_ENABLE
 extern struct adc_platform_data adc_data;
 extern void delay_2ms(int cnt);

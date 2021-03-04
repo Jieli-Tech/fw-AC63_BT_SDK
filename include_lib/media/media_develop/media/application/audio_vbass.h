@@ -1,28 +1,30 @@
 
 #ifndef _AUDIO_VBASS_API_H_
 #define _AUDIO_VBASS_API_H_
+#include "system/includes.h"
+#include "media/audio_stream.h"
 #include "vbass/vbass_api.h"
 
 typedef struct _vbass_open_parm {
-    u16 sr; //输入音频采样率
-    u8 channel;//输入音频声道数
+    u16 sr;                   //输入音频采样率
+    u8 channel;               //输入音频声道数
 } vbass_open_parm;
 
 typedef struct _vbass_update_parm {
-    int bass_f;//外放的低音截止频率
-    int level;//增强强度(4096 等于 1db， 建议范围：4096 到 16384)
+    int bass_f;               //外放的低音截止频率
+    int level;                //增强强度(4096 等于 1db， 建议范围：4096 到 16384)
 } vbass_update_parm;
 
 
 typedef struct _vbass_hdl {
-    VBASS_FUNC_API *ops;
-    void *work_buf;
-    OS_MUTEX mutex;
-    u8 vbass_en: 1;
-    u8 update: 1;
+    VBASS_FUNC_API *ops;      //vbass 底层io
+    void *work_buf;           //vbass 运行句柄及buf
+    OS_MUTEX mutex;           //互斥锁
+    u8 vbass_en: 1;           //模块使能 1:使能 0：不是能
+    u8 update: 1;             //参数是否需要更新 1：是 0：否
 
-    vbass_open_parm o_parm;
-    vbass_update_parm u_parm;
+    vbass_open_parm o_parm;   //打开传入的参数
+    vbass_update_parm u_parm; //需要更新的参数
     struct audio_stream_entry entry;	// 音频流入口
 } vbass_hdl;
 

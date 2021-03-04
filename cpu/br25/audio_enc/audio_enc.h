@@ -39,6 +39,7 @@ enum enc_source {
     ENCODE_SOURCE_USER,
 };
 
+void esco_enc_resume(void);
 u32 recorder_get_encoding_time();
 int recorder_is_encoding(void);
 void recorder_device_offline_check(char *logo);

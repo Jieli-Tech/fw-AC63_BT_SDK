@@ -21,14 +21,22 @@
 
 #if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
-#endif
+#endif/*TCFG_USER_TWS_ENABLE*/
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
 #include "audio_digital_vol.h"
-#endif
+#endif/*VOL_TYPE_DIGITAL*/
 
 #include "audio_plc.h"
+
+/*限幅器/噪声门限*/
 #if TCFG_AUDIO_NOISE_GATE
 #include "audio_noise_gate.h"
+/*限幅器上限*/
+#define LIMITER_THR	 		-10000 /*-12000 = -12dB,放大1000倍,(-10000参考)*/
+/*小于CONST_NOISE_GATE的当成噪声处理*/
+#define LIMITER_NOISE_GATE  -40000 /*-12000 = -12dB,放大1000倍,(-30000参考)*/
+/*低于噪声门限阈值的增益 */
+#define LIMITER_NOISE_GAIN  (0 << 30) /*(0~1)*2^30*/
 #endif/*TCFG_AUDIO_NOISE_GATE*/
 
 #if TCFG_AUDIO_ANC_ENABLE
@@ -37,7 +45,7 @@
 
 #if TCFG_APP_FM_EMITTER_EN
 #include "fm_emitter/fm_emitter_manage.h"
-#endif
+#endif/*TCFG_APP_FM_EMITTER_EN*/
 
 #include "phone_message/phone_message.h"
 
@@ -216,7 +224,11 @@ void *audio_sync = NULL;
 #define AUDIO_DAC_DELAY_TIME    50
 #endif
 
+#if TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_LR
 s16 dac_buff[4 * 1024];
+#else
+s16 dac_buff[2 * 1024];
+#endif
 #if AUDIO_CODEC_SUPPORT_SYNC
 #define DEC_RUN_BY_ITSELF               0
 #define DEC_PREEMTED_BY_PRIORITY        1
@@ -259,24 +271,6 @@ extern const int CONFIG_A2DP_SBC_DELAY_TIME_LO;
 
 struct a2dp_dec_hdl *a2dp_dec = NULL;
 struct esco_dec_hdl *esco_dec = NULL;
-
-extern int pcm_decoder_enable();
-extern int cvsd_decoder_init();
-extern int msbc_decoder_init();
-extern int g729_decoder_init();
-extern int sbc_decoder_init();
-extern int mp3_decoder_init();
-extern int wma_decoder_init();
-extern int wav_decoder_init();
-extern int mty_decoder_init();
-extern int flac_decoder_init();
-extern int ape_decoder_init();
-extern int m4a_decoder_init();
-extern int amr_decoder_init();
-extern int dts_decoder_init();
-extern int mp3pick_decoder_init();
-extern int wmapick_decoder_init();
-extern int aac_decoder_init();
 
 extern int platform_device_sbc_init();
 
@@ -1833,6 +1827,10 @@ int a2dp_dec_start()
         goto __err2;
     }
 
+    if (fmt->sample_rate == 0) {
+        log_w("A2DP stream maybe error\n");
+        goto __err2;
+    }
     //dac_hdl.dec_channel_num = fmt->channel;
     dec->sample_rate = fmt->sample_rate;
 
@@ -2482,7 +2480,7 @@ static int esco_dec_rx_delay_monitor(struct audio_decoder *decoder, struct rt_st
                 audio_dac_sound_reset(&dac_hdl, 150);
             }
         }
-#endif
+#endif/*TCFG_USER_TWS_ENABLE*/
         dec->sync_step = 2;
     }
 
@@ -2549,13 +2547,11 @@ static int esco_dec_probe_handler(struct audio_decoder *decoder)
 }
 
 #if TCFG_PHONE_EQ_ENABLE
-
 static int esco_eq_output(void *priv, void *data, u32 len)
 {
     return len;
 }
-
-#endif
+#endif/*TCFG_PHONE_EQ_ENABLE*/
 
 static int audio_esco_int2short_convert_output(void *priv, s16 *data, int len)
 {
@@ -2600,7 +2596,7 @@ static const u16 esco_dvol_tab[] = {
 };
 #if TCFG_AUDIO_OUTPUT_IIS
 static u8 t_esco_buf[480];
-#endif
+#endif/*TCFG_AUDIO_OUTPUT_IIS*/
 
 #if TCFG_ESCO_DL_NS_ENABLE
 #include "commproc_ns.h"
@@ -2663,6 +2659,22 @@ int esco_dl_ns_close(void)
 }
 #endif/*TCFG_ESCO_DL_NS_ENABLE*/
 
+#define MONO_TO_DUAL_POINTS 30
+
+
+//////////////////////////////////////////////////////////////////////////////
+static inline void audio_pcm_mono_to_dual(s16 *dual_pcm, s16 *mono_pcm, int points)
+{
+    s16 *mono = mono_pcm;
+    int i = 0;
+    u8 j = 0;
+
+    for (i = 0; i < points; i++, mono++) {
+        *dual_pcm++ = *mono;
+        *dual_pcm++ = *mono;
+    }
+}
+
 static int esco_dec_output_handler(struct audio_decoder *decoder, s16 *buf, int size, void *priv)
 {
     int wlen = 0;
@@ -2694,13 +2706,13 @@ static int esco_dec_output_handler(struct audio_decoder *decoder, s16 *buf, int 
     if (!dec->remain) {
 #if (defined(TCFG_PHONE_MESSAGE_ENABLE) && (TCFG_PHONE_MESSAGE_ENABLE))
         phone_message_call_api_esco_out_data(data, len);
-#endif
+#endif/*TCFG_PHONE_MESSAGE_ENABLE*/
 
 #if AUDIO_CODEC_SUPPORT_SYNC
         if (audio_sync) {
             audio_wireless_sync_after_dec(audio_sync, data, len);
         }
-#endif
+#endif/*AUDIO_CODEC_SUPPORT_SYNC*/
         if (priv) {
             audio_plc_run(data, len, *(u8 *)priv);
         }
@@ -2718,7 +2730,7 @@ static int esco_dec_output_handler(struct audio_decoder *decoder, s16 *buf, int 
             }
             data[i] = tmp_data;
         }
-#endif
+#endif/*VOL_TYPE_DIGITAL*/
 
 #if TCFG_AUDIO_NOISE_GATE
         /*来电去电铃声不做处理*/
@@ -2745,7 +2757,38 @@ static int esco_dec_output_handler(struct audio_decoder *decoder, s16 *buf, int 
     wlen = audio_mixer_ch_write(&dec->mix_ch, tdata, len << 1);
     wlen >>= 1;
 #else
-    wlen = audio_mixer_ch_write(&dec->mix_ch, data, len);
+    s16 two_ch_data[MONO_TO_DUAL_POINTS * 2];
+    s16 point_num = 0;
+    u8 mono_to_dual = 0;
+    s16 *mono_data = (s16 *)data;
+    u16 remain_points = (len >> 1);
+    /*
+     *如果dac输出是双声道，因为esco解码出来时单声道
+     *所以这里要根据dac通道确定是否做单变双
+     */
+
+#if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_LR)
+    mono_to_dual = 1;
+#endif
+    if (mono_to_dual) {
+        do {
+            point_num = MONO_TO_DUAL_POINTS;
+            if (point_num >= remain_points) {
+                point_num = remain_points;
+            }
+            audio_pcm_mono_to_dual(two_ch_data, mono_data, point_num);
+            int tmp_len = audio_mixer_ch_write(&dec->mix_ch, two_ch_data, point_num << 2);
+            wlen += tmp_len;
+            remain_points -= (tmp_len >> 2);
+            if (tmp_len < (point_num << 2)) {
+                break;
+            }
+            mono_data += point_num;
+        } while (remain_points);
+        wlen >>= 1;
+    } else {
+        wlen = audio_mixer_ch_write(&dec->mix_ch, data, len);
+    }
 #endif
 
     int remain_len = len - wlen;
@@ -2799,10 +2842,6 @@ static void esco_dec_event_handler(struct audio_decoder *decoder, int argc, int 
 static void esco_dec_set_output_channel(struct esco_dec_hdl *dec)
 {
     u8 dac_connect_mode = audio_dac_get_channel(&dac_hdl);
-
-    if (dac_connect_mode == DAC_OUTPUT_LR) {
-        dac_hdl.dec_channel_num = 1;
-    }
 }
 
 u16 source_sr;
@@ -2826,7 +2865,7 @@ void esco_digital_vol_set(u8 vol)
         audio_digital_vol_set(esco_dec->dvol, vol);
     }
 }
-#endif
+#endif/*VOL_TYPE_DIGITAL*/
 
 int esco_dec_dac_gain_set(u8 gain)
 {
@@ -2888,19 +2927,13 @@ int esco_dec_start()
     app_audio_state_switch(APP_AUDIO_STATE_CALL, app_var.aec_dac_gain);
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
     esco_dec->dvol = audio_digital_vol_open(app_audio_get_volume(APP_AUDIO_STATE_CALL), 15, 4);
-#endif
+#endif/*VOL_TYPE_DIGITAL*/
     printf("max_vol:%d,call_vol:%d", app_var.aec_dac_gain, app_audio_get_volume(APP_AUDIO_STATE_CALL));
     app_audio_set_volume(APP_AUDIO_STATE_CALL, app_var.call_volume, 1);
 
     audio_plc_open(f.sample_rate);
 
 #if TCFG_AUDIO_NOISE_GATE
-    /*限幅器上限*/
-#define LIMITER_THR	 -10000 /*-12000 = -12dB,放大1000倍,(-10000参考)*/
-    /*小于CONST_NOISE_GATE的当成噪声处理,防止清0近端声音*/
-#define LIMITER_NOISE_GATE  -40000 /*-12000 = -12dB,放大1000倍,(-30000参考)*/
-    /*低于噪声门限阈值的增益 */
-#define LIMITER_NOISE_GAIN  (0 << 30) /*(0~1)*2^30*/
     audio_noise_gate_open(f.sample_rate, LIMITER_THR, LIMITER_NOISE_GATE, LIMITER_NOISE_GAIN);
 #endif/*TCFG_AUDIO_NOISE_GATE*/
 
@@ -2921,7 +2954,7 @@ int esco_dec_start()
         audio_eq_set_output_handle(esco_eq, esco_eq_output, dec);
         audio_eq_start(esco_eq);
     }
-#endif
+#endif/*TCFG_PHONE_EQ_ENABLE*/
 
 
 #if AUDIO_CODEC_SUPPORT_SYNC
@@ -2933,8 +2966,7 @@ int esco_dec_start()
         audio_mixer_ch_set_event_handler(&dec->mix_ch, dec, bt_audio_mixer_ch_event_handler);
         audio_wireless_sync_info_init(audio_sync, f.sample_rate, f.sample_rate, f.channel);
     }
-#endif
-
+#endif/*AUDIO_CODEC_SUPPORT_SYNC*/
 
     audio_dac_set_delay_time(&dac_hdl, 30, 50);
     lmp_private_esco_suspend_resume(2);
@@ -3152,7 +3184,7 @@ int audio_dec_init()
 
 #if TCFG_WAV_TONE_MIX_ENABLE
     wav_decoder_init();
-#endif
+#endif/*TCFG_WAV_TONE_MIX_ENABLE*/
 
     tone_play_init();
 
@@ -3160,12 +3192,12 @@ int audio_dec_init()
     err = audio_decoder_task_create(&decode_task, "audio_dec");
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
     audio_digital_vol_init();
-#endif
+#endif/*VOL_TYPE_DIGITAL*/
     audio_dac_init(&dac_hdl, &dac_data);
 
 #if TCFG_AUDIO_ANC_ENABLE
     audio_dac_anc_set(&dac_hdl, 1);
-#endif
+#endif/*TCFG_AUDIO_ANC_ENABLE*/
     u32 dacr32 = read_capless_DTB();
 
     audio_dac_set_capless_DTB(&dac_hdl, dacr32);
@@ -3174,7 +3206,7 @@ int audio_dec_init()
     audio_dac_set_delay_time(&dac_hdl, 20, AUDIO_DAC_DELAY_TIME);
 #else
     audio_dac_set_delay_time(&dac_hdl, 30, AUDIO_DAC_DELAY_TIME);
-#endif
+#endif/*A2DP_RX_AND_AUDIO_DELAY*/
     audio_dac_set_analog_vol(&dac_hdl, 0);
 
     request_irq(IRQ_AUDIO_IDX, 2, audio_irq_handler, 0);
@@ -3321,4 +3353,75 @@ void vbass_udate_parm_test(void *p)
 #endif
 }
 
+/*----------------------------------------------------------------------------*/
+/**@brief    获取输出默认采样率
+   @param
+   @return   0: 采样率可变
+   @return   非0: 固定采样率
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+u32 audio_output_nor_rate(void)
+{
+#if TCFG_IIS_ENABLE
+    return TCFG_IIS_OUTPUT_SR;
+#endif
+#if AUDIO_OUTPUT_INCLUDE_DAC
+
+#if (TCFG_MIC_EFFECT_ENABLE)
+    return TCFG_REVERB_SAMPLERATE_DEFUAL;
+#endif
+    /* return  app_audio_output_samplerate_select(input_rate, 1); */
+#elif (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT)
+
+#elif (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
+    return 41667;
+#else
+    return 44100;
+#endif
+
+    /* #if TCFG_VIR_UDISK_ENABLE */
+    /*     return 44100; */
+    /* #endif */
+
+    return 0;
+}
+
+
+/*******************************************************
+* Function name	: app_audio_output_samplerate_select
+* Description	: 将输入采样率与输出采样率进行匹配对比
+* Parameter		:
+*   @sample_rate    输入采样率
+*   @high:          0 - 低一级采样率，1 - 高一级采样率
+* Return        : 匹配后的采样率
+********************* -HB ******************************/
+int app_audio_output_samplerate_select(u32 sample_rate, u8 high)
+{
+    return audio_dac_sample_rate_select(&dac_hdl, sample_rate, high);
+}
+
+
+
+/*----------------------------------------------------------------------------*/
+/**@brief    获取输出采样率
+   @param    input_rate: 输入采样率
+   @return   输出采样率
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+u32 audio_output_rate(int input_rate)
+{
+    u32 out_rate = audio_output_nor_rate();
+    if (out_rate) {
+        return out_rate;
+    }
+
+#if (TCFG_REVERB_ENABLE || TCFG_MIC_EFFECT_ENABLE)
+    if (input_rate > 48000) {
+        return 48000;
+    }
+#endif
+    return  app_audio_output_samplerate_select(input_rate, 1);
+}
 

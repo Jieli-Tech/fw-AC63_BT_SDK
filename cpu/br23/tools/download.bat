@@ -16,7 +16,7 @@ set OBJDUMP=C:\JL\pi32\bin\llvm-objdump.exe
 set OBJCOPY=C:\JL\pi32\bin\llvm-objcopy.exe
 set ELFFILE=sdk.elf
 
-REM %OBJDUMP% -D -address-mask=0x1ffffff -print-dbg $1.elf > $1.lst
+REM %OBJDUMP% -D -address-mask=0x1ffffff -print-dbg %ELFFILE% > sdk.lst
 %OBJCOPY% -O binary -j .text %ELFFILE% text.bin
 %OBJCOPY% -O binary -j .data %ELFFILE% data.bin
 %OBJCOPY% -O binary -j .data_code %ELFFILE% data_code.bin

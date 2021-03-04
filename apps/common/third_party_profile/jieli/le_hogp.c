@@ -64,7 +64,7 @@ static void hid_timer_mouse_handler(void);
 #define EIR_TAG_STRING   0xd6, 0x05, 0x08, 0x00, 'J', 'L', 'A', 'I', 'S', 'D','K'
 static const char user_tag_string[] = {EIR_TAG_STRING};
 //用户可配对的，这是样机跟客户开发的app配对的秘钥
-const u8 link_key_data[16] = {0x06, 0x77, 0x5f, 0x87, 0x91, 0x8d, 0xd4, 0x23, 0x00, 0x5d, 0xf1, 0xd8, 0xcf, 0x0c, 0x14, 0x2b};
+//const u8 link_key_data[16] = {0x06, 0x77, 0x5f, 0x87, 0x91, 0x8d, 0xd4, 0x23, 0x00, 0x5d, 0xf1, 0xd8, 0xcf, 0x0c, 0x14, 0x2b};
 /* #define LOG_TAG_CONST       BT_BLE */
 /* #define LOG_TAG             "[LE_S_DEMO]" */
 /* #define LOG_ERROR_ENABLE */
@@ -352,11 +352,13 @@ static void cbk_sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
             memcpy(conn_pair_info.peer_address_info, &packet[4], 7);
             conn_pair_info.pair_flag = 0;
             ble_op_latency_skip(con_handle, LATENCY_SKIP_INTERVAL_KEEP); //
+            ble_state_to_user(BLE_PRIV_MSG_PAIR_CONFIRM, 0);
             break;
         case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
             log_info_hexdump(packet, size);
             memcpy(&tmp32, event->data, 4);
             log_info("Passkey display: %06u.\n", tmp32);
+            ble_state_to_user(BLE_PRIV_MSG_PAIR_CONFIRM, 1);
             break;
         }
         break;
@@ -453,12 +455,12 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     con_handle = little_endian_read_16(packet, 4);
                     log_info("HCI_SUBEVENT_LE_CONNECTION_COMPLETE: %0x\n", con_handle);
                     ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_PAYLOAD_SIZE);
-                    set_ble_work_state(BLE_ST_CONNECT, 0);
 
                     log_info_hexdump(packet + 7, 7);
                     memcpy(cur_peer_addr_info, packet + 7, 7);
                     ble_op_latency_skip(con_handle, LATENCY_SKIP_INTERVAL_KEEP); //
 
+                    set_ble_work_state(BLE_ST_CONNECT, 0);
                     connection_update_complete_success(packet + 8, 1);
 
                     //清除PC端历史键值
@@ -579,6 +581,7 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     att_check_remote_result(con_handle, remote_type);
                 }
                 check_report_map_change();
+                ble_state_to_user(BLE_PRIV_PAIR_ENCRYPTION_CHANGE, first_pair_flag);
             }
             break;
         }
@@ -835,6 +838,10 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 
 #if RCSP_BTMATE_EN
     case ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE:
+#if (0 == BT_CONNECTION_VERIFY)
+        JL_rcsp_auth_reset();       //hid设备试能nofity的时候reset auth保证APP可以重新连接
+#endif
+
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
         auto_shutdown_disable();
 #endif
@@ -1371,6 +1378,11 @@ void le_hogp_set_pair_allow(void)
 int ble_hid_is_connected(void)
 {
     return con_handle;
+}
+
+u8 *ble_cur_connect_addrinfo(void)
+{
+    return cur_peer_addr_info;
 }
 
 static const u16 report_id_handle_table[] = {

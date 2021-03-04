@@ -8,6 +8,8 @@
 #include "asm/audio_src.h"
 #include "audio_digital_vol.h"
 #include "application/audio_eq_drc_apply.h"
+#include "application/audio_dig_vol.h"
+
 
 
 #ifndef RB16
@@ -75,7 +77,7 @@ int audio_dec_init();
 // mix out后 做高低音
 void mix_out_high_bass(u32 cmd, struct high_bass *hb);
 // mix out后 是否做高低音处理
-void mix_out_high_bass_dis(u32 cmd, u8 dis);
+void mix_out_high_bass_dis(u32 cmd, u32 dis);
 // 切换频响计算
 void spectrum_switch_demo(u8 en);
 
@@ -91,6 +93,15 @@ static inline void audio_pcm_mono_to_dual(s16 *dual_pcm, s16 *mono_pcm, int poin
         *dual_pcm++ = *mono;
     }
 }
+
+
+extern void *sys_digvol_group;
+extern int sys_digvol_group_open(void);
+extern int sys_digvol_group_close(void);
+extern void *sys_digvol_group_ch_open(char *logo, int vol_start, audio_dig_vol_param *parm);
+extern int sys_digvol_group_ch_close(char *logo);
+
+
 
 
 //////////////////////////////////////////////////////////////////////////////

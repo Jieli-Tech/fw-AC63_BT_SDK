@@ -21,6 +21,7 @@
 <Add option="-fallow-pointer-null" />
 <Add option="-fprefer-gnu-section" />
 <Add option="-Wno-shift-negative-value" />
+<Add option="-Wundef" />
 <Add option="-fms-extensions" />
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
 <Add option="-DCONFIG_CPU_BR23" />
@@ -105,10 +106,9 @@
 <Add option="--plugin-opt=-pi32v2-merge-max-offset=4096" />
 <Add option="--plugin-opt=-pi32v2-enable-simd=true" />
 <Add option="--plugin-opt=mcpu=r3" />
-<Add option="--plugin-opt=-enable-movable-region=true" />
-<Add option="--plugin-opt=-movable-region-section-prefix=movable.slot." />
 <Add option="--plugin-opt=-global-merge-on-const" />
-<Add option="--plugin-opt=-inline-threshold=10" />
+<Add option="--plugin-opt=-inline-threshold=5" />
+<Add option="--plugin-opt=-inline-max-allocated-size=32" />
 <Add option="--plugin-opt=-inline-normal-into-special-section=true" />
 <Add option="--plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar" />
 <Add option="--plugin-opt=save-temps" />
@@ -135,6 +135,7 @@
 <Add option="../../../../include_lib/liba/br23/speex_enc_lib.a" />
 <Add option="../../../../include_lib/liba/br23/bfilterfun_lib.a" />
 <Add option="../../../../include_lib/liba/br23/wtg_dec_lib.a" />
+<Add option="../../../../include_lib/liba/br23/wtgv2_dec_lib.a" />
 <Add option="--end-group " />
 <Add option="../../../../include_lib/liba/br23/update.a" />
 <Add option="-T../../../../cpu/br23/sdk.ld" />
@@ -195,7 +196,11 @@
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/le_trans_data.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.h" />
+<Unit filename="../../../../apps/common/update/testbox_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/update.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/cdc.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/usb/device/cdc.h" />
+<Unit filename="../../../../apps/common/usb/device/cdc_defs.h" />
 <Unit filename="../../../../apps/common/usb/device/descriptor.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/hid.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/msd.c"><Option compilerVer="CC"/></Unit>
@@ -228,6 +233,7 @@
 <Unit filename="../../../../apps/common/usb/usb_std_class_def.h" />
 <Unit filename="../../../../apps/spp_and_le/app_at_com.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_charge.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/app_chargestore.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_dongle.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_idle.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_main.c"><Option compilerVer="CC"/></Unit>
@@ -240,12 +246,12 @@
 <Unit filename="../../../../apps/spp_and_le/board/br23/board_config.h" />
 <Unit filename="../../../../apps/spp_and_le/include/app_action.h" />
 <Unit filename="../../../../apps/spp_and_le/include/app_charge.h" />
+<Unit filename="../../../../apps/spp_and_le/include/app_chargestore.h" />
 <Unit filename="../../../../apps/spp_and_le/include/app_config.h" />
 <Unit filename="../../../../apps/spp_and_le/include/app_main.h" />
 <Unit filename="../../../../apps/spp_and_le/include/app_power_manage.h" />
 <Unit filename="../../../../apps/spp_and_le/include/at.h" />
 <Unit filename="../../../../apps/spp_and_le/include/bt_tws.h" />
-<Unit filename="../../../../apps/spp_and_le/include/common/Resample_api.h" />
 <Unit filename="../../../../apps/spp_and_le/include/lib_profile_cfg.h" />
 <Unit filename="../../../../apps/spp_and_le/include/rtc_alarm.h" />
 <Unit filename="../../../../apps/spp_and_le/include/tone_player.h" />
@@ -265,6 +271,7 @@
 <Unit filename="../../../../apps/spp_and_le/version.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br23/adc_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br23/audio_common/app_audio.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br23/audio_common/audio_iis.h" />
 <Unit filename="../../../../cpu/br23/audio_common/audio_link.h" />
 <Unit filename="../../../../cpu/br23/audio_config.h" />
 <Unit filename="../../../../cpu/br23/audio_dec/audio_dec.c"><Option compilerVer="CC"/></Unit>
@@ -307,6 +314,7 @@
 <Unit filename="../../../../include_lib/btctrler/classic/hci_lmp.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/lmp_config.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/tws_api.h" />
+<Unit filename="../../../../include_lib/btctrler/classic/tws_data_trans.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/tws_event.h" />
 <Unit filename="../../../../include_lib/btctrler/classic/tws_local_media_sync.h" />
 <Unit filename="../../../../include_lib/btctrler/hci_transport.h" />
@@ -399,6 +407,7 @@
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_pitchspeed.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_surround.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_vbass.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/application/audio_vocal_remove.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/audio_vocal_tract_synthesis.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/eq_config.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/application/reverb_api.h" />
@@ -408,7 +417,6 @@
 <Unit filename="../../../../include_lib/media/media_develop/media/audio_encoder.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/audio_resample.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/audio_splicing.h" />
-<Unit filename="../../../../include_lib/media/media_develop/media/audio_track.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/automute.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/channel_switch.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/asm/audio_adc.h" />
@@ -423,13 +431,11 @@
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/asm/ps_cal_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/pitchshifter/pitchshifter_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/effectrs_sync.h" />
-<Unit filename="../../../../include_lib/media/media_develop/media/equalloudness/loudness_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/file_decoder.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/includes.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/mixer.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/mixer_cyclic.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/pcm_decoder.h" />
-<Unit filename="../../../../include_lib/media/media_develop/media/prevent_task_fill.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/SpectrumShow_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/coeff_calculate_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/rms_api.h" />
@@ -518,6 +524,7 @@
 <Unit filename="../../../../include_lib/system/timer.h" />
 <Unit filename="../../../../include_lib/system/user_cfg.h" />
 <Unit filename="../../../../include_lib/system/wait.h" />
+<Unit filename="../../../../include_lib/update/dual_bank_updata_api.h" />
 <Unit filename="../../../../include_lib/update/uart_update.h" />
 <Unit filename="../../../../include_lib/update/update.h" />
 <Unit filename="../../../../include_lib/update/update_loader_download.h" />

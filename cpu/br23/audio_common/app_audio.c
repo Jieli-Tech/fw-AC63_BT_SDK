@@ -57,13 +57,14 @@ struct app_audio_config {
     s16 digital_volume_rl;
     s16 digital_volume_rr;
     atomic_t ref;
-    s16 max_volume[APP_AUDIO_STATE_WTONE + 1];
+    s16 max_volume[APP_AUDIO_MAX_STATE];
 };
 static const char *audio_state[] = {
     "idle",
     "music",
     "call",
     "tone",
+    "linein",
     "err",
 };
 
@@ -83,7 +84,7 @@ OS_SEM dac_sem;
 #endif
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_IIS)
-s16 dac_buff[4 * 1024] SEC(.dac_buff);
+s16 dac_buff[4 * 1024 * BNUM] SEC(.dac_buff);
 #elif AUDIO_OUTPUT_INCLUDE_DAC
 s16 dac_buff[4 * 1024 * BNUM] SEC(.dac_buff);
 #endif
@@ -426,11 +427,20 @@ void audio_fade_in_fade_out(u8 left_gain, u8 right_gain, u8 fade)
 #endif
 }
 
+extern char *music_dig_logo[];
+
+extern void *sys_digvol_group;
+
 void app_audio_set_volume(u8 state, s8 volume, u8 fade)
 {
+    char *digvol_type = NULL ;
     switch (state) {
     case APP_AUDIO_STATE_IDLE:
     case APP_AUDIO_STATE_MUSIC:
+    case APP_AUDIO_STATE_LINEIN:
+#if SYS_DIGVOL_GROUP_EN
+        digvol_type = "music_type";
+#endif
         app_var.music_volume = volume;
         if (app_var.music_volume > get_max_sys_vol()) {
             app_var.music_volume = get_max_sys_vol();
@@ -439,6 +449,10 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
 
         break;
     case APP_AUDIO_STATE_CALL:
+#if SYS_DIGVOL_GROUP_EN
+        digvol_type = "call_esco";
+#endif
+
         app_var.call_volume = volume;
         if (app_var.call_volume > 15) {
             app_var.call_volume = 15;
@@ -450,6 +464,11 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
 #endif
         break;
     case APP_AUDIO_STATE_WTONE:
+#if SYS_DIGVOL_GROUP_EN
+        digvol_type = "tone_tone";
+#endif
+
+
 #if (TONE_MODE_DEFAULE_VOLUME != 0)
         app_var.wtone_volume = TONE_MODE_DEFAULE_VOLUME;
         volume = app_var.wtone_volume;
@@ -471,12 +490,53 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
     default:
         return;
     }
+
     if (state == __this->state) {
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
         fm_emitter_manage_set_vol(volume);
 #else
+#if defined (VOL_TYPE_DIGGROUP) && defined (SYS_DIGVOL_GROUP_EN)
+        if (state == APP_AUDIO_STATE_LINEIN) {
+            //printf("linein analog vol:%d\n",volume);
+            audio_fade_in_fade_out(volume, volume, fade);
+            return;
+        }
+
+        if (SYS_VOL_TYPE == VOL_TYPE_DIGGROUP && SYS_DIGVOL_GROUP_EN) {
+            if (sys_digvol_group == NULL) {
+                /* printf("the sys_digvol_group is NULL\n-------------------------------------------------------------"); */
+                return;
+            }
+            if (strcmp(digvol_type, "music_type") == 0) {
+                for (int i = 0; music_dig_logo[i] != "NULL"; i++) {
+                    /* printf("%s\n", music_dig_logo[i]); */
+                    if (audio_dig_vol_group_hdl_get(sys_digvol_group, music_dig_logo[i]) == NULL) {
+                        continue;
+                    }
+
+
+                    audio_dig_vol_set(audio_dig_vol_group_hdl_get(sys_digvol_group, music_dig_logo[i]),  AUDIO_DIG_VOL_ALL_CH, volume);
+                }
+            } else {
+                if (audio_dig_vol_group_hdl_get(sys_digvol_group, digvol_type) == NULL) {
+                    return;
+                }
+
+
+                audio_dig_vol_set(audio_dig_vol_group_hdl_get(sys_digvol_group, digvol_type),  AUDIO_DIG_VOL_ALL_CH, volume);
+            }
+        }
+
+        else {
+            audio_fade_in_fade_out(volume, volume, fade);
+        }
+
+#else
         audio_fade_in_fade_out(volume, volume, fade);
-#endif
+#endif  //vol_type_diggroup
+
+#endif  //audio_output_way
+
     }
     app_audio_volume_change();
 }
@@ -492,6 +552,7 @@ s8 app_audio_get_volume(u8 state)
     switch (state) {
     case APP_AUDIO_STATE_IDLE:
     case APP_AUDIO_STATE_MUSIC:
+    case APP_AUDIO_STATE_LINEIN:
         volume = app_var.music_volume;
         break;
     case APP_AUDIO_STATE_CALL:
@@ -545,7 +606,7 @@ static const char *audio_mute_string[] = {
 void app_audio_mute(u8 value)
 {
     u8 volume = 0;
-    printf("audio_mute:%s", audio_mute_string[value]);
+    /* printf("audio_mute:%s", audio_mute_string[value]); */
     switch (value) {
     case AUDIO_MUTE_DEFAULT:
 
@@ -573,6 +634,7 @@ void app_audio_volume_up(u8 value)
     switch (__this->state) {
     case APP_AUDIO_STATE_IDLE:
     case APP_AUDIO_STATE_MUSIC:
+    case APP_AUDIO_STATE_LINEIN:
         app_var.music_volume += value;
         if (app_var.music_volume > get_max_sys_vol()) {
             app_var.music_volume = get_max_sys_vol();
@@ -621,6 +683,7 @@ void app_audio_volume_down(u8 value)
     switch (__this->state) {
     case APP_AUDIO_STATE_IDLE:
     case APP_AUDIO_STATE_MUSIC:
+    case APP_AUDIO_STATE_LINEIN:
         app_var.music_volume -= value;
         if (app_var.music_volume < 0) {
             app_var.music_volume = 0;
@@ -677,7 +740,29 @@ void app_audio_state_switch(u8 state, s16 max_volume)
         audio_dac_vol_set(TYPE_DAC_DGAIN, BIT(0) | BIT(1), DEFAULT_DIGTAL_VOLUME, 1);
     }
 #else
+
+#if (SYS_VOL_TYPE ==VOL_TYPE_DIGGROUP)
+    u8 dac_connect_mode =  app_audio_output_mode_get();
+    switch (dac_connect_mode) {
+    case DAC_OUTPUT_MONO_L :
+        audio_dac_vol_set(TYPE_DAC_AGAIN, BIT(0), 30, 1);
+        audio_dac_vol_set(TYPE_DAC_AGAIN, BIT(1), 0, 1);
+        audio_dac_vol_set(TYPE_DAC_DGAIN, BIT(0) | BIT(1), 16384, 1);
+        break;
+    case DAC_OUTPUT_MONO_R :
+        audio_dac_vol_set(TYPE_DAC_AGAIN, BIT(1), 30, 1);
+        audio_dac_vol_set(TYPE_DAC_AGAIN, BIT(0), 0, 1);
+        audio_dac_vol_set(TYPE_DAC_DGAIN, BIT(0) | BIT(1), 16384, 1);
+        break;
+
+    default :
+        audio_dac_vol_set(TYPE_DAC_AGAIN, BIT(0) | BIT(1), 30, 1);
+        audio_dac_vol_set(TYPE_DAC_DGAIN, BIT(0) | BIT(1), 16384, 1);
+
+    }
+#endif
     app_audio_set_volume(__this->state, app_audio_get_volume(__this->state), 1);
+
 #endif
 
     /*限制最大音量*/
@@ -1028,6 +1113,7 @@ void mic_capless_auto_adjust_exit()
 #define ADC_MIC_IO			IO_PORTC_06
 #define ADC_MIC_CH			AD_CH_PC6
 #define MIC_BIAS_RSEL(x) 	SFR(JL_ANA->ADA_CON2, 21, 5, x)
+#define MIC_LDO_SEL(x)		SFR(JL_ANA->ADA_CON2, 16, 2, x)
 
 
 /*
@@ -1157,7 +1243,7 @@ s8 mic_capless_auto_adjust(void)
                 break;
             }
             log_info("mic_ldo_idx:%d", mic_ldo_idx);
-            JL_ANA->ADA_CON0 = BIT(0) | BIT(1) | (mic_ldo_idx << 2); //MICLDO_EN,MICLDO_ISEL,MIC_LDO_VSEL
+            MIC_LDO_SEL(mic_ldo_idx);
             /*修改MICLDO电压档，等待电压稳定*/
             os_time_dly(20);
             /*复位偏置电阻档位*/
@@ -1325,9 +1411,11 @@ void _audio_adc_irq_hook(void)
 ********************* -HB ******************************/
 void app_audio_output_init(void)
 {
-#if AUDIO_OUTPUT_INCLUDE_DAC //	AUDIO_OUTPUT_ONLY_DAC
+#if (AUDIO_OUTPUT_INCLUDE_DAC|| TCFG_AUDIO_ADC_ENABLE)
     audio_dac_init(&dac_hdl, &dac_data);
+#endif
 
+#if AUDIO_OUTPUT_INCLUDE_DAC //	AUDIO_OUTPUT_ONLY_DAC
     s16 dacr32 = read_capless_DTB();
 
     audio_dac_set_capless_DTB(&dac_hdl, dacr32);

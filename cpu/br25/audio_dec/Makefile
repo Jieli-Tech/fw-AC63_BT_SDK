@@ -19,6 +19,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_bt.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_file.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_midi_file.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_midi_ctrl.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_fm.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_linein.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_pc.o \
@@ -39,6 +40,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_bt.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_file.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_midi_file.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_midi_ctrl.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_fm.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_linein.o \
 	  $(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_pc.o \

@@ -11,6 +11,19 @@ enum {
 
 };
 
+
+enum enc_source {
+    ENCODE_SOURCE_MIX = 0x0,
+    ENCODE_SOURCE_MIC,
+    ENCODE_SOURCE_LINE0_LR,
+    ENCODE_SOURCE_LINE1_LR,
+    ENCODE_SOURCE_LINE2_LR,
+    ENCODE_SOURCE_USER,
+};
+
+
+
+
 int esco_enc_open(u32 coding_type, u8 frame_len);
 void esco_enc_close();
 void audio_mic_pwr_ctl(u8 state);

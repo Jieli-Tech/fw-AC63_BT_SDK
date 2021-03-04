@@ -174,7 +174,7 @@ static u32 led_timer_ms;
 static u32 led_timer_id = 0;
 static u32 led_timeout_count;
 static u8 reconnect_mode = 0;
-
+static u8 ble_connect = 0;
 static u32 auto_reconnect_timer = 0;
 
 static void led_timer_stop(void);
@@ -194,6 +194,7 @@ static void led_on_off(u8 state, u8 res);
 #if TCFG_PWMLED_ENABLE
 
 #if TCFG_PWMLED_IO_PUSH
+
 //bd29 没有pwm模块,用io反转推灯
 #define KEYF_LED_ON()    gpio_direction_output(TCFG_PWMLED_PIN, 1)
 #define KEYF_LED_OFF()   gpio_direction_output(TCFG_PWMLED_PIN, 0)
@@ -327,7 +328,7 @@ static void led_on_off(u8 state, u8 res)
         case LED_KEY_UP:
             led_timeout_count = 1;//
             led_timer_start(100);
-            if (edr_hid_is_connected()) {
+            if (edr_hid_is_connected() | ble_connect != 0) {
                 led_next_state = LED_CLOSE;
             } else {
                 led_next_state = LED_WAIT_CONNECT;
@@ -441,6 +442,9 @@ void auto_shutdown_disable(void)
 static const u8 key_a_big_press[3] = {0x00, 0x02, 0x00};
 static const u8 key_a_big_null[3] =  {0x00, 0x00, 0x00};
 
+static const u8 key_a_small_press[3] = {0x00, 0x01, 0x00};
+static const u8 key_a_small_null[3] =  {0x00, 0x00, 0x00};
+
 /* static const u8 key_b_small_press[4] = {0x28,0x00,0x00,0x00}; */
 /* static const u8 key_b_small_null[4] =  {0x00,0x00,0x00,0x00}; */
 
@@ -483,11 +487,11 @@ static void key_value_send(u8 key_value, u8 mode)
     } else if (key_value == KEY_SMALL_ID) {
         if (mode == 0 || mode == 1) {
             /* hid_data_send_pt(1,key_b_small_press,8); */
-            hid_data_send_pt(3, key_a_big_press, 3);
+            hid_data_send_pt(3, key_a_small_press, 3);
         }
         if (mode == 0 || mode == 2) {
             /* hid_data_send_pt(1,key_b_small_null,8); */
-            hid_data_send_pt(3, key_a_big_null, 3);
+            hid_data_send_pt(3, key_a_small_null, 3);
         }
     }
 
@@ -1031,6 +1035,36 @@ static void bt_hci_event_disconnect(struct bt_event *bt)
 static void bt_hci_event_linkkey_missing(struct bt_event *bt)
 {
 }
+static void hogp_ble_status_callback(ble_state_e status, u8 reason)
+{
+    log_info("hogp_ble_status_callback==================== %d   reason:0x%x\n", status, reason);
+    switch (status) {
+    case BLE_ST_IDLE:
+        break;
+    case BLE_ST_ADV:
+        break;
+    case BLE_ST_CONNECT:
+        ble_connect++;
+        led_on_off(LED_CLOSE, 0);
+        bt_hid_mode = HID_MODE_BLE;
+        break;
+    case BLE_ST_SEND_DISCONN:
+        break;
+    case BLE_ST_DISCONN:
+        if (reason == ERROR_CODE_CONNECTION_TERMINATED_BY_LOCAL_HOST) {
+            led_on_off(LED_CLOSE, 0);
+            printf("BLE_ST_DISCONN BY LOCAL...\n");
+        } else {
+            led_on_off(LED_WAIT_CONNECT, 0);
+        }
+        break;
+    case BLE_ST_NOTIFY_IDICATE:
+        break;
+    default:
+        break;
+    }
+}
+
 
 static void bt_hci_event_page_timeout(struct bt_event *bt)
 {
@@ -1295,7 +1329,15 @@ static int event_handler(struct application *app, struct sys_event *event)
             bt_connction_status_event_handler(&event->u.bt);
         } else if ((u32)event->arg == SYS_BT_EVENT_TYPE_HCI_STATUS) {
             bt_hci_event_handler(&event->u.bt);
-        } else if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+        } else if ((u32)event->arg == SYS_BT_EVENT_BLE_STATUS) {
+
+            hogp_ble_status_callback(event->u.bt.event, event->u.bt.value);
+
+        }
+
+
+
+        else if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
             return app_power_event_handler(&event->u.dev);
         }
 #if TCFG_CHARGE_ENABLE
@@ -1355,7 +1397,7 @@ static void app_select_btmode(u8 mode)
 #if TCFG_USER_EDR_ENABLE
         //close edr
 
-#ifndef CONFIG_CPU_BR30
+#ifndef CONFIG_NEW_BREDR_ENABLE
         radio_set_eninv(0);
 #endif
         bredr_power_put();
@@ -1421,4 +1463,6 @@ REGISTER_APPLICATION(app_hid) = {
 };
 
 #endif
+
+
 

@@ -12,15 +12,53 @@
                                    HID    AUDIO  SPEAKER   Mass Storage
 */
 /**************************************************************************/
-#define     MASSSTORAGE_CLASS   BIT(0)
-#define     SPEAKER_CLASS       BIT(1)
-#define     MIC_CLASS           BIT(2)
-#define     HID_CLASS           BIT(3)
+#define     MASSSTORAGE_CLASS   0x00000001
+#define     SPEAKER_CLASS       0x00000002
+#define     MIC_CLASS           0x00000004
+#define     HID_CLASS           0x00000008
+#define     CDC_CLASS           0x00000010
 
 #define     AUDIO_CLASS         (SPEAKER_CLASS|MIC_CLASS)
 
 
 #define     USB_ROOT2   0
+
+/// board文件没有定义的宏,在这里定义,防止编译报warning
+#ifndef TCFG_UDISK_ENABLE
+#define TCFG_UDISK_ENABLE     0
+#endif
+#ifndef TCFG_HID_HOST_ENABLE
+#define TCFG_HID_HOST_ENABLE  0
+#endif
+#ifndef TCFG_AOA_ENABLE
+#define TCFG_AOA_ENABLE  0
+#endif
+#ifndef TCFG_ADB_ENABLE
+#define TCFG_ADB_ENABLE   0
+#endif
+#ifndef TCFG_USB_APPLE_DOCK_EN
+#define TCFG_USB_APPLE_DOCK_EN 0
+#endif
+#ifndef TCFG_HOST_AUDIO_ENABLE
+#define TCFG_HOST_AUDIO_ENABLE  0
+#endif
+#ifndef TCFG_CHARGE_ENABLE
+#define TCFG_CHARGE_ENABLE     0
+#endif
+#ifndef TCFG_USB_PORT_CHARGE
+#define TCFG_USB_PORT_CHARGE   0
+#endif
+#ifndef TCFG_USB_MIC_ECHO_ENABLE
+#define TCFG_USB_MIC_ECHO_ENABLE   0
+#endif
+#ifndef TCFG_USB_MIC_DATA_FROM_MICEFFECT
+#define TCFG_USB_MIC_DATA_FROM_MICEFFECT   0
+#endif
+#ifndef TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0
+#define TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0   0
+#endif
+
+/********************************/
 
 #ifdef AUDIO_PCM_DEBUG
 #undef TCFG_PC_ENABLE
@@ -56,6 +94,40 @@
 #define TCFG_OTG_MODE_HOST                  (OTG_HOST_MODE)
 #else
 #define TCFG_OTG_MODE_HOST                  0
+#endif
+
+#if TCFG_PC_ENABLE
+#define TCFG_USB_SLAVE_ENABLE               1
+#if (USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS)
+#define TCFG_USB_SLAVE_MSD_ENABLE           1
+#else
+#define TCFG_USB_SLAVE_MSD_ENABLE           0
+#endif
+
+#if (USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS)
+#define TCFG_USB_SLAVE_AUDIO_ENABLE         1
+#else
+#define TCFG_USB_SLAVE_AUDIO_ENABLE         0
+#endif
+
+#if (USB_DEVICE_CLASS_CONFIG & HID_CLASS)
+#define TCFG_USB_SLAVE_HID_ENABLE           1
+#else
+#define TCFG_USB_SLAVE_HID_ENABLE           0
+#endif
+
+#if (USB_DEVICE_CLASS_CONFIG & CDC_CLASS)
+#define TCFG_USB_SLAVE_CDC_ENABLE           1
+#else
+#define TCFG_USB_SLAVE_CDC_ENABLE           0
+#endif
+
+#else  /* TCFG_PC_ENABLE == 0*/
+#define TCFG_USB_SLAVE_ENABLE               0
+#define TCFG_USB_SLAVE_MSD_ENABLE           0
+#define TCFG_USB_SLAVE_AUDIO_ENABLE         0
+#define TCFG_USB_SLAVE_HID_ENABLE           0
+#define TCFG_USB_SLAVE_CDC_ENABLE           0
 #endif
 
 #define TCFG_OTG_SLAVE_ONLINE_CNT           2

@@ -17,6 +17,7 @@ struct adc_info_t {
     u16 value;
 };
 
+extern u8 is_lcd_on();
 #define     ENABLE_OCCUPY_MODE 1
 
 static struct adc_info_t adc_queue[ADC_MAX_CH + ENABLE_OCCUPY_MODE];
@@ -505,11 +506,19 @@ void adc_init()
 
     JL_CLOCK->PLL_CON1 &= ~BIT(18); //pll
 
-    //trim wvdd
-#if TCFG_LOWPOWER_VDDIOM_LEVEL == VDDIOM_VOL_34V
-    vddiom_trim();
-#endif
+    if (!is_lcd_on()) {
+        //trim wvdd
+        if (GET_VDDIOM_VOL() == VDDIOM_VOL_34V) {
+            vddiom_trim();
+        }
+    }
+
     wvdd_trim();
+    if (is_lcd_on()) {
+        /*lcd_driver : power_down use vddiow, trim vddiow=vddiom*/
+        /*参数为vddio和vbat是否绑定在一起*/
+        check_pmu_voltage(0);
+    }
     _adc_init(1);
 
 }

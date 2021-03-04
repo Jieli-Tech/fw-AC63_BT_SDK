@@ -84,10 +84,9 @@ export LD_ARGS = \
 --plugin-opt=-pi32v2-merge-max-offset=4096 \
 --plugin-opt=-pi32v2-enable-simd=true \
 --plugin-opt=mcpu=r3 \
---plugin-opt=-enable-movable-region=true\
---plugin-opt=-movable-region-section-prefix=movable.slot.\
 --plugin-opt=-global-merge-on-const \
---plugin-opt=-inline-threshold=10 \
+--plugin-opt=-inline-threshold=5 \
+--plugin-opt=-inline-max-allocated-size=32 \
 --plugin-opt=-inline-normal-into-special-section=true \
 --plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar \
 --plugin-opt=save-temps \
@@ -114,6 +113,18 @@ export LD_ARGS += \
 
 endif
 
+ifeq ($(MOVABLE_ENABLE),y)
+export LD_ARGS += \
+--plugin-opt=-enable-movable-region=true\
+--plugin-opt=-movable-region-section-prefix=movable.slot.\
+--plugin-opt=-movable-region-stub-prefix=__movable_stub_ \
+--plugin-opt=-movable-region-stub-section-prefix=movable.stub. \
+--plugin-opt=-movable-region-stub-swi-number=-2 \
+--plugin-opt=-movable-region-section-map-file-list=$(ROOT)/apps/$(APP_CASE)/movable_region_sec_map.list \
+--plugin-opt=-movable-region-prefix=movable.region. \
+
+endif
+
 # --gc-sections \
 
 # --plugin-opt=-pi32-const-spill \
@@ -122,6 +133,8 @@ export CC_ARGS = \
 -target pi32v2 -mcpu=r3 \
 -mllvm -pi32v2-merge-max-offset=4096 \
 -mllvm -pi32v2-enable-simd=true \
+-mllvm -inline-threshold=5 \
+-mllvm -inline-max-allocated-size=32 \
 -Wuninitialized \
 -Wno-invalid-noreturn \
 -fno-common \
@@ -133,6 +146,7 @@ export CC_ARGS = \
 -fallow-pointer-null \
 -fprefer-gnu-section \
 -Wno-shift-negative-value \
+-Wundef \
 
 ifeq ($(CONFIG_PSRAM_ENABLE),y)
 LD_ARGS +=\

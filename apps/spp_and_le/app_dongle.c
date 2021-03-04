@@ -201,7 +201,9 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
             packet[0] = 2;
         }
         memcpy(&packet[1], report_data->blob, report_data->blob_length);
+#if TCFG_PC_ENABLE
         hid_send_data(packet, sizeof(packet));
+#endif
         putchar('&');
     }
     break;

@@ -8,7 +8,13 @@
 #include "syscfg_id.h"
 #include "vm.h"
 #include "btcontroller_modules.h"
+#include "system/includes.h"
 #include "uart_update.h"
+#include "dual_bank_updata_api.h"
+#if SMART_BOX_EN
+#include "smartbox_extra_flash_opt.h"
+#endif
+
 
 #if TCFG_UI_ENABLE
 #include "ui/ui_api.h"
@@ -25,13 +31,11 @@
 #include "update_tws.h"
 
 
-#define LOG_TAG "[UPDATE]"
+#define LOG_TAG "[APP-UPDATE]"
 #define LOG_INFO_ENABLE
 #define LOG_ERROR_ENABLE
 #include "system/debug.h"
 
-extern void reset_bt_bredrexm_addr(void);
-extern void enter_sys_soft_poweroff();
 extern void *dev_update_get_parm(int type);
 extern u8 get_ota_status();
 extern void get_nor_update_param(void *buf);
@@ -81,6 +85,7 @@ u16 update_result_get(void)
 
     return ret;
 }
+
 void update_result_set(u16 result)
 {
     if (!UPDATE_SUPPORT_DEV_IS_NULL()) {
@@ -104,7 +109,6 @@ bool update_success_boot_check(void)
     return false;
 }
 
-
 bool device_is_first_start()
 {
     log_info("g_updata_flag=0x%x\n", g_updata_flag);
@@ -114,6 +118,7 @@ bool device_is_first_start()
     }
     return false;
 }
+
 void led_update_start(void)
 {
 #ifdef UPDATE_LED_REMIND
@@ -121,6 +126,7 @@ void led_update_start(void)
     pwm_led_mode_set(PWM_LED_ALL_OFF);
 #endif
 }
+
 void led_update_finish(void)
 {
 #ifdef UPDATE_LED_REMIND
@@ -145,7 +151,6 @@ __retry:
     }
 #endif
 }
-
 
 extern void delay_2ms(int cnt);
 extern void app_audio_set_wt_volume(s16 volume);
@@ -176,10 +181,15 @@ int update_result_deal()
         u8 clear_update_flag = 0;
         vm_write(VM_UPDATE_FLAG, &clear_update_flag, 1);
 #endif
+#if(JL_SMART_BOX_EXTRA_FLASH_OPT && RCSP_UPDATE_EN)
+        smartbox_eflash_update_flag_set(0);
+        smartbox_eflash_flag_set(0);
+#endif
 #ifdef UPDATE_LED_REMIND
         led_update_finish();
 #endif
     }
+
     extern u8 get_max_sys_vol(void);
     while (1) {
         wdt_clear();
@@ -241,6 +251,7 @@ void update_close_hw(void)
     }
 }
 
+//write(buf,len);
 void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
 {
     UPDATA_PARM *p = UPDATA_FLAG_ADDR;
@@ -251,7 +262,7 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
     memset((u8 *)p, 0x00, sizeof(UPDATA_PARM));
     p->parm_type = (u16)up_type;
     p->parm_result = (u16)UPDATA_READY;
-    memcpy(p->file_patch, updata_file_name, strlen(updata_file_name));
+    memcpy(p->file_path, updata_file_name, strlen(updata_file_name));
     if (priv) {
         if (support_norflash_update_en) {
             printf("p->parm_priv:0x%x\n len:%d\n", p->parm_priv, len);
@@ -262,7 +273,7 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
         }
     } else {
         memset(p->parm_priv, 0x00, sizeof(p->parm_priv));
-        if (up_type == BLE_TEST_UPDATA && UPDATE_MODULE_IS_SUPPORT(UPDATE_BLE_TEST_EN)) {
+        if ((up_type == BLE_TEST_UPDATA) && UPDATE_MODULE_IS_SUPPORT(UPDATE_BLE_TEST_EN)) {
             extern int le_controller_get_mac(void *addr);
             le_controller_get_mac(addr);
             memcpy(p->parm_priv, addr, 6);
@@ -287,6 +298,7 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
         }
     }
 #endif
+
 #ifdef CONFIG_USB_UPDATE_ENABLE
     if (up_type == USB_UPDATA) {
         log_info("usb updata ");
@@ -308,6 +320,7 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
         p->parm_type = NORFLASH_UPDATA;
         *((u16 *)((u8 *)p + sizeof(UPDATA_PARM) + 32)) = up_type;         //将实际的升级类型保存到ram
     }
+
     p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);	//2 : crc_val
     printf("UPDATA_PARM_ADDR = 0x%x\n", p);
     printf_buf((void *)p, sizeof(UPDATA_PARM));
@@ -319,27 +332,42 @@ void updata_enter_reset(UPDATA_TYPE up_type)
 {
     log_info("updata_enter_reset\n\n\n");
     cpu_reset();
-    //reser
+    //reset
     //JL_POWER->CON |= BIT(4);
     /* JL_CLOCK->PWR_CON |= BIT(4); */
 }
 
-extern void __bt_updata_reset_bt_bredrexm_addr(void);
-extern int __bt_updata_save_connection_info(void);
 
 #define LOADER_NAME		"LOADER.BIN"
 const u8 loader_file_path[] = "mnt/norflash/C/"LOADER_NAME"";
 
-_WEAK_
-void ram_protect_close(void)
-{
-    printf("ERROR:%s is no implementation!\n", __FUNCTION__);
-}
-
 extern void ll_hci_destory(void);
 extern void hci_controller_destory(void);
 extern const int support_norflash_update_en;
+extern void ram_protect_close(void);
 
+extern void hwi_all_close(void);
+static void update_before_jump_common_handle(UPDATA_TYPE up_type)
+{
+    dev_update_close_ui();
+
+#if TCFG_AUDIO_ANC_ENABLE
+    extern void audio_anc_hw_close();
+    audio_anc_hw_close();
+#endif
+
+    local_irq_disable();
+    hwi_all_close();
+
+    /* local_irq_disable();
+    for (i = 0; i < 64; i++) {
+        bit_clr_ie(i);
+    } */
+
+}
+
+extern void __bt_updata_reset_bt_bredrexm_addr(void);
+extern int __bt_updata_save_connection_info(void);
 void update_mode_api(UPDATA_TYPE up_type, ...)
 {
     u8 i;
@@ -382,12 +410,6 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
         break;
 #endif
 
-#if 0
-    case PC_UPDATA:
-        updata_parm_set(up_type, NULL, 0);
-        break;
-
-#endif
     case UART_UPDATA:
         /* uart_updata_io_ctrl(&parm); */
         //log_info("up_io = %x\nup_baud = %d\nup_timeout = %dms\n", ((UPDATA_UART *)parm)->control_io, ((UPDATA_UART *)parm)->control_baud, ((UPDATA_UART *)parm)->control_timeout * 10);
@@ -416,6 +438,7 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
             //note:last func no return;
         }
         break;
+
     case BLE_TEST_UPDATA:
         if (BT_MODULES_IS_SUPPORT(BT_MODULE_LE)) {
             ll_hci_destory();
@@ -447,22 +470,6 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
     hci_controller_destory();
 #endif
     update_close_hw();
-    /*     switch (up_type) { */
-    /* #ifdef CONFIG_SD_UPDATE_ENABLE */
-    /*     case SD0_UPDATA: */
-    /*     case SD1_UPDATA: */
-    /*         sd1_unmount(); */
-    /*         break; */
-    /* #endif      //CONFIG_SD_UPDATE_ENABLE */
-    /* #ifdef CONFIG_USB_UPDATE_ENABLE */
-    /*     case USB_UPDATA: */
-    /*         usb_sie_close_all(); */
-    /*         break; */
-    /* #endif      //CONFIG_USB_UPDATE_ENABLE */
-    /*     default: */
-    /*  */
-    /*         break; */
-    /*     } */
     ram_protect_close();
     save_spi_port();
 
@@ -477,9 +484,16 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
 #endif      //DEV_UPDATE_SUPPORT_JUMP
 }
 
+/* void update_param_setting()
+{
+	u32 saddr
+	void (*
+} */
+
 void update_parm_set_and_get_buf(int type, u32 loader_saddr, void **buf_addr, u16 *len)
 {
     u32 exif_addr;
+
     int total_len = sizeof(UPDATA_PARM);
     if ((type == SD0_UPDATA) || (type == SD1_UPDATA) || (type == USB_UPDATA)) {
         total_len += UPDATE_PRIV_PARAM_LEN;
@@ -506,8 +520,81 @@ void update_parm_set_and_get_buf(int type, u32 loader_saddr, void **buf_addr, u1
     *buf_addr = UPDATA_FLAG_ADDR;
     *len = total_len;
 }
+//fill common content
+//fill private content
+//fill crc16
+
+static succ_report_t succ_report;
+/* static void (*update_param_private_fill_handle)(UPDATA_PARM *p) = NULL;
+static void (*update_before_jump_private_handle)(void) = NULL;
+void update_param_private_fill_handle_register(void (*handle)(UPDATA_PARM *p))
+{
+	update_param_private_fill_handle = handle;
+}
+
+void update_before_jump_private_handle_register(void (*handle)(u16 type))
+{
+	update_before_jump_private_handle = handle;
+} */
+
+static void update_param_content_fill(int type, UPDATA_PARM *p, void (*priv_param_fill_hdl)(UPDATA_PARM *P))
+{
+    memset((u8 *)p, 0x00, sizeof(UPDATA_PARM));
+    p->parm_type = (u16)type;
+    p->parm_result = (u16)UPDATA_READY;
+    p->magic = UPDATE_PARAM_MAGIC;
+    p->ota_addr = succ_report.loader_saddr;
+
+    if (0 == p->ota_addr) {
+        log_error("ota addr err\n");
+        return;
+    }
+
+    if (priv_param_fill_hdl) {
+        priv_param_fill_hdl(p);
+    }
+
+    p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);	//2 : crc_val
+}
+
+static void update_param_ram_set(u8 *buf, u16 len)
+{
+    u8 *update_ram = UPDATA_FLAG_ADDR;
+    memcpy(update_ram, (u8 *)buf, len);
+}
+
+void update_mode_api_v2(UPDATA_TYPE type, void (*priv_param_fill_hdl)(UPDATA_PARM *p), void (*priv_update_jump_handle)(int type))
+{
+    u16 update_param_len = sizeof(UPDATA_PARM) + UPDATE_PRIV_PARAM_LEN;
+
+    UPDATA_PARM *p = malloc(update_param_len);
+
+    if (p) {
+        update_param_content_fill(type, p, priv_param_fill_hdl);
+
+        if (succ_report.update_param_write_hdl) {
+            succ_report.update_param_write_hdl(succ_report.priv_param, p, update_param_len);
+        }
+
+#ifdef UPDATE_LED_REMIND
+        led_update_start();
+#endif
+        update_before_jump_common_handle(type);
+
+        update_param_ram_set((u8 *)p, update_param_len);
+
+        if (priv_update_jump_handle) {
+            priv_update_jump_handle(type);
+        }
+
+        free(p);
+    } else {
+        ASSERT(p, "malloc update param err \n");
+    }
+}
 
 int update_check_sniff_en(void)
+
 {
     if (!UPDATE_SUPPORT_DEV_IS_NULL()) {
 #if (OTA_TWS_SAME_TIME_ENABLE && RCSP_ADV_EN && !OTA_TWS_SAME_TIME_NEW)
@@ -524,3 +611,103 @@ int update_check_sniff_en(void)
     }
     return 1;
 }
+
+static volatile u8 ota_status = 0;
+
+u8 get_ota_status()
+{
+    return ota_status;
+}
+
+static u8 ota_idle_query(void)
+{
+    return !ota_status;
+}
+
+REGISTER_LP_TARGET(ota_lp_target) = {
+    .name = "ota",
+    .is_idle = ota_idle_query,
+};
+
+extern void tws_sync_update_api_register(const update_op_tws_api_t *op);
+extern update_op_tws_api_t *get_tws_update_api(void);
+
+extern const int support_dual_bank_update_en;
+extern int tws_ota_init(void);
+extern void sys_auto_shut_down_disable(void);
+extern void sys_auto_shut_down_enable(void);
+extern void tws_api_auto_role_switch_disable();
+extern void tws_api_auto_role_switch_enable();
+
+static void update_init_common_handle(int type)
+{
+    ota_status = 1;
+    if (UPDATE_DUAL_BANK_IS_SUPPORT()) {
+#if TCFG_AUTO_SHUT_DOWN_TIME
+        sys_auto_shut_down_disable();
+#endif
+
+#if OTA_TWS_SAME_TIME_ENABLE
+        tws_api_auto_role_switch_disable();
+        tws_sync_update_api_register(get_tws_update_api());
+        tws_ota_init();
+#endif
+    }
+}
+
+static void update_exit_common_handle(int type, void *priv)
+{
+    update_ret_code_t *ret_code = (update_ret_code_t *)priv;
+
+#if TCFG_AUTO_SHUT_DOWN_TIME
+    sys_auto_shut_down_enable();
+#endif
+
+#if OTA_TWS_SAME_TIME_ENABLE
+    if (UPDATE_DUAL_BANK_IS_SUPPORT()) {
+        tws_api_auto_role_switch_enable();
+    }
+#endif
+
+    ota_status = 0;
+}
+
+static void update_common_state_cbk(update_mode_info_t *info, u32 state, void *priv)
+{
+    int type = info->type;
+
+    log_info("type:%x state:%x code:%x\n", type, state, priv);
+
+    switch (state) {
+    case UPDATE_CH_INIT:
+        memset((u8 *)&succ_report, 0x00, sizeof(succ_report_t));
+        update_init_common_handle(info->type);
+        break;
+
+    case UPDATE_CH_SUCESS_REPORT:
+        log_info("succ report stored\n");
+        memcpy((u8 *)&succ_report, (u8 *)priv, sizeof(succ_report_t));
+        break;
+    }
+
+    if (info->state_cbk) {
+        info->state_cbk(type, state, priv);
+    }
+
+    switch (state) {
+    case UPDATE_CH_EXIT:
+        update_exit_common_handle(info->type, priv);
+        break;
+    }
+}
+
+extern void update_module_init(void (*cbk)(update_mode_info_t *, u32, void *));
+extern void testbox_update_init(void);
+static void app_update_init(void)
+{
+    update_module_init(update_common_state_cbk);
+    testbox_update_init();
+}
+
+__initcall(app_update_init);
+

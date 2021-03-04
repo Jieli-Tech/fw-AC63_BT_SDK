@@ -342,13 +342,13 @@ ndt_max_gain.cfg = cfg:dbf("NDT_MAX_GAIN：", 12.0);
 depend_item_en_show(bluetooth_en, ndt_max_gain.cfg);
 ndt_max_gain.cfg:setOSize(4);
 -- item_htext
-ndt_max_gain.comment_str = "设置范围：0 ~ 24 dB, 默认值：12.0 dB";
+ndt_max_gain.comment_str = "设置范围：-60.0 ~ 40.0 dB, 默认值：12.0 dB";
 ndt_max_gain.htext = item_output_htext(ndt_max_gain.cfg, "TCFG_AEC_NDT_MAX_GAIN", 4, nil, ndt_max_gain.comment_str, 1);
 -- item_view
 ndt_max_gain.hbox_view = cfg:hBox {
     cfg:stLabel(ndt_max_gain.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(ndt_max_gain.cfg, 0.0, 24.0, 0.1, 1),
-    cfg:stLabel("(单端讲话放大上限， 设置范围: 0 ~ 24 dB，默认值：12.0 dB)"),
+    cfg:dspinView(ndt_max_gain.cfg, -60.0, 40.0, 0.1, 1),
+    cfg:stLabel("(单端讲话放大上限， 设置范围: -60.0 ~ 40.0 dB，默认值：12.0 dB)"),
     cfg:stSpacer(),
 };
 
@@ -358,13 +358,13 @@ ndt_min_gain.cfg = cfg:dbf("NDT_MIN_GAIN：", 0.0);
 depend_item_en_show(bluetooth_en, ndt_min_gain.cfg);
 ndt_min_gain.cfg:setOSize(4);
 -- item_htext
-ndt_min_gain.comment_str = "设置范围：-20 ~ 24 dB, 默认值：0 dB";
+ndt_min_gain.comment_str = "设置范围：-60 ~ 40 dB, 默认值：0 dB";
 ndt_min_gain.htext = item_output_htext(ndt_min_gain.cfg, "TCFG_AEC_NDT_MIN_GAIN", 4, nil, ndt_min_gain.comment_str, 1);
 -- item_view
 ndt_min_gain.hbox_view = cfg:hBox {
     cfg:stLabel(ndt_min_gain.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(ndt_min_gain.cfg, -20.0, 24.0, 0.1, 1),
-    cfg:stLabel("(单端讲话放大下限， 设置范围: -20.0 ~ 24.0 dB，默认值：0 dB)"),
+    cfg:dspinView(ndt_min_gain.cfg, -60.0, 40.0, 0.1, 1),
+    cfg:stLabel("(单端讲话放大下限， 设置范围: -60.0 ~ 40.0 dB，默认值：0 dB)"),
     cfg:stSpacer(),
 };
 
@@ -391,13 +391,13 @@ dt_max_gain.cfg = cfg:dbf("DT_MAX_GAIN：", 12.0);
 depend_item_en_show(bluetooth_en, dt_max_gain.cfg);
 dt_max_gain.cfg:setOSize(4);
 -- item_htext
-dt_max_gain.comment_str = "设置范围：0 ~ 24.0 dB, 默认值：12.0 dB";
+dt_max_gain.comment_str = "设置范围：-60 ~ 40.0 dB, 默认值：12.0 dB";
 dt_max_gain.htext = item_output_htext(dt_max_gain.cfg, "TCFG_AEC_DT_MAX_GAIN", 4, nil, dt_max_gain.comment_str, 1);
 -- item_view
 dt_max_gain.hbox_view = cfg:hBox {
     cfg:stLabel(dt_max_gain.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(dt_max_gain.cfg, 0, 24.0, 0.1, 1),
-    cfg:stLabel("(双端讲话放大上限， 设置范围: 0 ~ 24.0 dB，默认值：12.0 dB)"),
+    cfg:dspinView(dt_max_gain.cfg, -60.0, 40.0, 0.1, 1),
+    cfg:stLabel("(双端讲话放大上限， 设置范围: -60 ~ 40.0 dB，默认值：12.0 dB)"),
     cfg:stSpacer(),
 };
 
@@ -407,13 +407,13 @@ dt_min_gain.cfg = cfg:dbf("DT_MIN_GAIN：", 0.0);
 depend_item_en_show(bluetooth_en, dt_min_gain.cfg);
 dt_min_gain.cfg:setOSize(4);
 -- item_htext
-dt_min_gain.comment_str = "设置范围：-20.0 ~ 24.0 dB, 默认值：0 dB";
+dt_min_gain.comment_str = "设置范围：-60.0 ~ 40.0 dB, 默认值：0 dB";
 dt_min_gain.htext = item_output_htext(dt_min_gain.cfg, "TCFG_AEC_DT_MIN_GAIN", 4, nil, dt_min_gain.comment_str, 1);
 -- item_view
 dt_min_gain.hbox_view = cfg:hBox {
     cfg:stLabel(dt_min_gain.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(dt_min_gain.cfg, -20.0, 24.0, 0.1, 1),
-    cfg:stLabel("(双端讲话放大下限， 设置范围: -20.0 ~ 24.0 dB，默认值：0 dB)"),
+    cfg:dspinView(dt_min_gain.cfg, -60.0, 40.0, 0.1, 1),
+    cfg:stLabel("(双端讲话放大下限， 设置范围: -60.0 ~ 40.0 dB，默认值：0 dB)"),
     cfg:stSpacer(),
 };
 

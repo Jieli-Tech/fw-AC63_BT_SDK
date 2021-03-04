@@ -1,31 +1,34 @@
 
 #ifndef _AUDIO_SURROUND_API_H_
 #define _AUDIO_SURROUND_API_H_
+
+#include "system/includes.h"
+#include "media/includes.h"
 #include "surround/effect_sur_api.h"
-// #include "audio_config.h"
+
 typedef struct _surround_update_parm {
-    int surround_type;//音效类型
-    int rotatestep;//旋转速度
-    int damping;//高频衰减速度
-    int feedback;//整体衰减速度
-    int roomsize;//空间大小
+    int surround_type;                  //音效类型
+    int rotatestep;                     //旋转速度
+    int damping;	                    //高频衰减速度
+    int feedback;                       //整体衰减速度
+    int roomsize;                       //空间大小
 } surround_update_parm;
 
 typedef struct _surround_open_parm {
-    u8 channel;
-    u8 surround_effect_type;//默认的环绕音效类型
+    u8 channel;                         //通道数
+    u8 surround_effect_type;            //默认的环绕音效类型
 } surround_open_parm;
 
 
 typedef struct _surround_hdl {
-    SUR_FUNC_API *ops;
-    void *work_buf;
-    OS_MUTEX mutex;
-    u8 surround_en: 1;
-    u8 update: 1;
-    u8 nch_update: 1;
+    SUR_FUNC_API *ops;                  //环绕音效底层io
+    void *work_buf;                     //底层模块运行的句柄及buf
+    OS_MUTEX mutex;                     //互斥锁
+    u8 surround_en: 1;                  //模块运行使能
+    u8 update: 1;                       //模块是否需要更新 1：需要更新， 0：否
+    u8 nch_update: 1;                   //输入通道数切换
 
-    surround_open_parm parm;
+    surround_open_parm parm;            //打开模块传入的参数
 
     struct audio_stream_entry entry;	// 音频流入口
 
@@ -40,14 +43,14 @@ enum {
     EFFECT_FOUR_SENSION_BATTLEFIELD,    //四季战场
 
     /*如使用以下效果，需将const_surround_en|BIT(1), mips占用 55M ram33k*/
-    EFFECT_3D_PANORAMA2,     //3d全景另一种效果
-    EFFECT_KTV,       	      //ktv模式
-    EFFECT_3DTHE,            //3D影院
-    EFFECT_HALL,             //音乐厅
-    EFFECT_VOICE,            //清澈人声
-    EFFECT_SUR,              //全景环绕
+    EFFECT_3D_PANORAMA2,                //3d全景另一种效果
+    EFFECT_KTV,       	                //ktv模式
+    EFFECT_3DTHE,                       //3D影院
+    EFFECT_HALL,                        //音乐厅
+    EFFECT_VOICE,                       //清澈人声
+    EFFECT_SUR,                         //全景环绕
 
-    EFFECT_OFF,               //音效开关
+    EFFECT_OFF,                         //音效开关
 };
 
 

@@ -20,7 +20,6 @@ includes += \
 includes += \
 	-I$(ROOT)/apps/common/code_switch/include/ \
 	-I$(ROOT)/apps/common/device/optical_mouse_sensor/include/ \
-	-I$(ROOT)/apps/common/device/optical_mouse_sensor/include/hal3205 \
 	-I$(ROOT)/apps/common/touch_pad \
 
 objs += \
@@ -40,6 +39,7 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/user_cfg.o \
 	$(ROOT)/apps/$(APP_CASE)/rtc_alarm.o \
 	$(ROOT)/apps/$(APP_CASE)/app_charge.o \
+	$(ROOT)/apps/$(APP_CASE)/app_chargestore.o \
 	$(ROOT)/apps/$(APP_CASE)/app_power_manage.o \
 	$(ROOT)/apps/$(APP_CASE)/gamebox/gamebox.o \
 	$(ROOT)/apps/$(APP_CASE)/gamebox/key_mapping.o \
@@ -48,12 +48,14 @@ objs += \
     $(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_user_update.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_ch_loader_download.o \
 	$(ROOT)/apps/common/update/update.o \
+    $(ROOT)/apps/common/update/testbox_update.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/hid_user.o \
 
 objs += \
 	$(ROOT)/apps/common/code_switch/code_switch.o \
 	$(ROOT)/apps/common/device/optical_mouse_sensor/OMSensor_manage.o \
 	$(ROOT)/apps/common/device/optical_mouse_sensor/hal3205/hal3205.o \
+	$(ROOT)/apps/common/device/optical_mouse_sensor/hal3212/hal3212.o \
 	$(ROOT)/apps/common/key/matrix_keyboard.o \
 	$(ROOT)/apps/common/key/iokey.o \
 	$(ROOT)/apps/common/key/adkey.o \
@@ -70,6 +72,7 @@ objs += \
 objs += \
 	$(ROOT)/apps/$(APP_CASE)/app_keyboard.o \
 	$(ROOT)/apps/$(APP_CASE)/app_mouse.o \
+	$(ROOT)/apps/$(APP_CASE)/app_mouse_dual.o \
 	$(ROOT)/apps/$(APP_CASE)/app_keyfob.o \
 	$(ROOT)/apps/$(APP_CASE)/app_standard_keyboard.o \
 	$(ROOT)/apps/$(APP_CASE)/app_keypage.o \
@@ -87,11 +90,11 @@ objs += \
 	$(ROOT)/apps/common/audio/sine_make.o \
 	$(ROOT)/apps/common/audio/decode/decode.o \
 
-ifneq ($(CPU),br30)
 objs += \
 	$(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_pc.o \
 	$(ROOT)/cpu/$(CPU)/audio_dec/audio_usb_mic.o
-endif
+
+
 
 ifeq ($(MEDIA_NEW_ENABLE),y)
 objs += \

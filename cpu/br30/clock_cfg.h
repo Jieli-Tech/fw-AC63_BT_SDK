@@ -95,9 +95,17 @@ enum {
 };
 
 
+void clock_pause_play(u8 mode);
 
+
+void clock_idle(u32 type);
+void clock_add(u32 type);
+void clock_remove(u32 type);
+void clock_set_cur(void);
 void clock_add_set(u32 type);
 void clock_remove_set(u32 type);
+
+
 
 
 #endif

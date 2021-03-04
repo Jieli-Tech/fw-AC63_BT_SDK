@@ -439,7 +439,7 @@ static void ldo5v_detect(void *priv)
                 //only for br23 fix charge wkup bug (ldoin 3.3v to 5v)
                 power_wakeup_index_enable(7);
                 if (__this->data->ldo5v_off_filter) {
-                    charge_event_to_user(CHARGE_EVENT_CHARGE_ERR);
+                    charge_event_to_user(CHARGE_EVENT_LDO5V_KEEP);
                 }
             }
         }

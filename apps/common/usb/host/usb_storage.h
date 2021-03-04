@@ -7,10 +7,13 @@
 #include "usb_bulk_transfer.h"
 #include "usb/host/usb_host.h"
 
-#define  UDISK_READ_ASYNC_ENABLE    1   //使能u盘预读功能
-#if UDISK_READ_ASYNC_ENABLE
+/* u盘预读功能配置, 二选一
+ * 当两种方式都不使能，则表示不开启预读 */
+#define  UDISK_READ_BIGBLOCK_ASYNC_ENABLE    0   //使能大扇区预读方式(不需要额外buf,速度比512预读慢10%)
+#define  UDISK_READ_512_ASYNC_ENABLE         1   //使能512Byte预读方式(需要额外的512byte buffer,速度比大扇区预读快10%)
+/****************************/
+
 #define UDISK_READ_ASYNC_BLOCK_NUM  (16) //预读扇区数
-#endif
 
 //设备状态：
 typedef enum usb_sta {
@@ -34,6 +37,7 @@ struct udisk_end_desc {
 #endif
 };
 
+#define ENABLE_DISK_HOTPLUG  0
 struct mass_storage {
     OS_MUTEX mutex;
 
@@ -52,7 +56,10 @@ struct mass_storage {
 
     u32 remain_len;
     u32 prev_lba;
-#if UDISK_READ_ASYNC_ENABLE
+#if (UDISK_READ_BIGBLOCK_ASYNC_ENABLE || UDISK_READ_512_ASYNC_ENABLE)
+    u8 async_en;
+    u8 need_send_csw;
+    u8 *udisk_512_buf;
     u32 async_prev_lba;
 #endif
 #if ENABLE_DISK_HOTPLUG
@@ -63,8 +70,15 @@ struct mass_storage {
 #endif
 };
 
+enum usb_async_mode {
+    BULK_ASYNC_MODE_EXIT = 0, //取消异步模式
+    BULK_ASYNC_MODE_ENTER, //异步512预读
+    BULK_ASYNC_MODE_SEM_PEND, //异步预读等待信号量
+};
+
 #define MASS_LBA_INIT    (-2)
 
 int usb_msd_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 *pBuf);
+int _usb_stor_async_wait_sem(struct usb_host_device *host_dev);
 
 #endif

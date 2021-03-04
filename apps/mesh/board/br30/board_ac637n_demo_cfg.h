@@ -194,7 +194,6 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_CALL_USE_DIGITAL_VOLUME		1
 
 #define TCFG_AUDIO_ANC_ENABLE				0	//0:关闭 1:测试使用 2:正常使用
-#define TCFG_ANC_UART_DEBUG					DISABLE_THIS_MOUDLE
 
 //*********************************************************************************//
 //                                  配编码格式置                                   //

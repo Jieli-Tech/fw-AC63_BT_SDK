@@ -441,22 +441,28 @@ static u32 get_vdd_voltage(u32 ch)
 }
 
 
-static void wvdd_trim()
+static void wvdd_trim(u8 trim)
 {
     u8 wvdd_lev = 0;
     wvdd_lev = 0;
-    P33_CON_SET(P3_ANA_CON13, 0, 4, wvdd_lev);
-    WLDO06_EN(1);
-    delay(2000);//1ms
-    do {
+    if (trim) {
         P33_CON_SET(P3_ANA_CON13, 0, 4, wvdd_lev);
-        delay(2000);//1ms * n
-        if (get_vdd_voltage(AD_CH_WVDD) > 700) {
-            break;
-        }
-        wvdd_lev ++;
-    } while (wvdd_lev < 8);
-    WLDO06_EN(0);
+        WLDO06_EN(1);
+        delay(2000);//1ms
+        do {
+            P33_CON_SET(P3_ANA_CON13, 0, 4, wvdd_lev);
+            delay(2000);//1ms * n
+            if (get_vdd_voltage(AD_CH_WVDD) > 700) {
+                break;
+            }
+            wvdd_lev ++;
+        } while (wvdd_lev < 8);
+        WLDO06_EN(0);
+
+        update_wvdd_trim_level(wvdd_lev);
+    } else {
+        wvdd_lev = get_wvdd_trim_level();
+    }
 
     printf("wvdd_lev: %d\n", wvdd_lev);
 
@@ -469,28 +475,37 @@ static void wvdd_trim()
 #define PVDD_TRIM_VALUE_H 		(TCFG_PVDD_TRIM_VALUE)
 #define PVDD_TRIM_VALUE_L       (TCFG_PVDD_TRIM_VALUE - 50)
 #else
-#define PVDD_TRIM_VALUE_H  		950
-#define PVDD_TRIM_VALUE_L 		900
+#define PVDD_TRIM_VALUE_H  		1050
+#define PVDD_TRIM_VALUE_L 		1000
 #endif /* #ifdef TCFG_PVDD_TRIM_VALUE */
-static void pvdd_trim()
+static void pvdd_trim(u8 trim)
 {
     u32 v = 0;
     u32 lev = 0xf;
-    for (; lev; lev--) {
-        P33_CON_SET(P3_PVDD1_AUTO, 0, 8, (lev | lev << 4));
-        delay(2000);//1ms
-        v = get_vdd_voltage(AD_CH_PVDD);
-        if (v < PVDD_TRIM_VALUE_H) {
-            break;
+    if (trim) {
+        for (; lev; lev--) {
+            P33_CON_SET(P3_PVDD1_AUTO, 0, 8, (lev | lev << 4));
+            delay(2000);//1ms
+            v = get_vdd_voltage(AD_CH_PVDD);
+            if (v < PVDD_TRIM_VALUE_H) {
+                break;
+            }
         }
+        if (v < PVDD_TRIM_VALUE_L) {
+            lev++;
+        }
+
+        update_pvdd_trim_level(lev);
+    } else {
+        lev = get_pvdd_trim_level();
     }
-    if (v < PVDD_TRIM_VALUE_L) {
-        lev++;
-    }
+
+    P33_CON_SET(P3_PVDD1_AUTO, 0, 8, (lev | lev << 4));
+    delay(2000);
 
     P33_CON_SET(P3_PVDD0_AUTO, 0, 8, (7 << 4) | (lev - 3));
 
-    printf("pvdd_lev: %d %d, pvdd_lev_l: %d\n", lev, v, lev - 3);
+    printf("pvdd_lev: %d, pvdd_lev_l: %d\n", lev, lev - 3);
 }
 
 void adc_init()
@@ -512,8 +527,10 @@ void adc_init()
 #endif
 
     //trim wvdd
-    wvdd_trim();
-    pvdd_trim();
+    u8 trim = check_pmu_voltage(0);
+    wvdd_trim(trim);
+    pvdd_trim(trim);
+
     _adc_init(1);
 
 }

@@ -21,6 +21,10 @@ objs += \
 	$(ROOT)/apps/common/usb/device/uac1.o \
 	$(ROOT)/apps/common/usb/device/uac_stream.o \
 
+#cdc
+objs += \
+    $(ROOT)/apps/common/usb/device/cdc.o \
+
 #usb host
 objs += \
 	$(ROOT)/apps/common/usb/usb_host_config.o \

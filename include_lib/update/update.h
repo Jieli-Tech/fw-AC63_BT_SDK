@@ -31,6 +31,8 @@ typedef enum {
     DUAL_BANK_UPDATA,
     BLE_TEST_UPDATA,
     NORFLASH_UPDATA,
+    //NOTE:以上的定义不要调整,新升级方式在此下面定义;
+    USER_NORFLASH_UFW_UPDATA,
 
     NON_DEV = 0xFFFF,
 } UPDATA_TYPE;
@@ -78,12 +80,23 @@ typedef struct _UPDATA_PARM {
     u16 parm_type;              //UPDATA_TYPE:sdk pass parm to uboot
     u16 parm_result;            //UPDATA_TYPE:uboot return result to sdk
     u16 magic;					//0x5441
-    u8  file_patch[32];         //updata file patch
+    //8byte
+    union {
+        struct {
+            u8  file_path[32];         //updata file path
+        };
+        struct {
+            u8  file_patch[32];         //updata file path
+        };
+    };
     u8  parm_priv[32];          //sd updata
+    //64byte
     u32 ota_addr;
     u16 ext_arg_len;
     u16 ext_arg_crc;
+    //8 byte
 } UPDATA_PARM;
+//8+64+8+32 =112;
 #else
 typedef struct _UPDATA_PARM {
     u16 parm_crc;
@@ -96,18 +109,27 @@ typedef struct _UPDATA_PARM {
 #define UPDATE_PRIV_PARAM_LEN	32
 
 void update_mode_api(UPDATA_TYPE type, ...);
+void update_mode_api_v2(UPDATA_TYPE type, void (*priv_param_fill_hdl)(UPDATA_PARM *p), void (*priv_update_jump_handle)(int type));
 u16 update_result_get(void);
 bool device_is_first_start();
 int update_result_deal();
 void update_result_set(u16 result);
 bool update_success_boot_check(void);
-
 typedef u8(*update_handler_t)(void);
+
+typedef enum _UPDATE_STATE_T {
+    UPDATE_TASK_INIT,
+    UPDATE_CH_INIT,
+    UPDATE_CH_SUCESS_REPORT,
+    UPDATE_CH_EXIT,
+} UPDATE_STATE_T;
 
 struct update_target {
     char *name;
     update_handler_t driver_close;
 };
+
+//void update_param_private_fill_handle_register(void (*handle)(UPDATA_PARM *p));
 
 #define REGISTER_UPDATE_TARGET(target) \
         const struct update_target target sec(.update_target)

@@ -81,14 +81,16 @@ struct dac_platform_data {
     u32 keep_vcmo : 1;
     u32 dither_type : 1;        //0:
     u32 dsm_clk : 1;            //0:dsm 6M dither 187.5KHz    1:dsm 12M dither 375KHz
-    u32 vcm_speed : 1;          //0:
+    u32 vcm_risetime : 1;       //VCM上电快慢选择
     u32 zero_cross_detect : 1;  //模拟增益过零检测配置
+    u32 vdd_setting_enable : 1; //通过接口设置DACVDD电压的使能
 };
 
 
 struct analog_module {
     /*模拟相关的变量*/
     u8 inited;
+    u8 vdd_volt;
     u16 dac_test_volt;
 };
 struct audio_dac_trim {
@@ -378,6 +380,20 @@ void audio_dac_zero_detect_onoff(struct audio_dac_hdl *dac, u8 onoff);
 
 int audio_dac_set_RL_digital_vol(struct audio_dac_hdl *dac, u16 vol);
 int audio_dac_set_RR_digital_vol(struct audio_dac_hdl *dac, u16 vol);
+
+/*************************************************************************;
+ * DAC采样率选择
+ *
+ * INPUT    :  dac - DAC设备句柄, volt - DACVDD 电压值(宏定义)
+ *
+ * OUTPUT   :  无.
+ *
+ * WARNINGS :  根据struct dac_platform_data的vdd_setting_enable变量控制，
+ *             该开关为0，则函数无法真正设置电压到dac电源.
+ *
+ * HISTORY  :  2021/2/18 by Lichao.
+ *=======================================================================*/
+void audio_dac_set_vdd_volt(struct audio_dac_hdl *dac, u8 volt);
 
 /*************************************************************************
  * DAC模块电源关闭

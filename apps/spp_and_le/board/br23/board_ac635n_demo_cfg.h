@@ -248,6 +248,7 @@
 #define TCFG_AUDIO_DAC_ENABLE				ENABLE_THIS_MOUDLE
 #define TCFG_DEC_PCM_ENABLE					ENABLE
 #define TCFG_DEC_G729_ENABLE				ENABLE
+#define TCFG_DEC_WTGV2_ENABLE               DISABLE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #define TCFG_LINEIN_LR_CH					AUDIO_LIN0_LR
@@ -311,13 +312,14 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_PC_ENABLE						DISABLE_THIS_MOUDLE //PC模块使能
 #define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE //U盘模块使能
 
-#define TCFG_OTG_USB_DEV_EN                 (BIT(0) )//USB0 = BIT(0)  USB1 = BIT(1)
+#define TCFG_OTG_USB_DEV_EN                 (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
 
 #include "usb_std_class_def.h"
 ///USB 配置重定义
 #undef USB_DEVICE_CLASS_CONFIG
 #define     USB_DEVICE_CLASS_CONFIG (SPEAKER_CLASS|MIC_CLASS|HID_CLASS)
-#define TCFG_APP_PC_EN                      TCFG_PC_ENABLE
+#define TCFG_APP_PC_EN                     TCFG_PC_ENABLE
+
 
 
 //*********************************************************************************//

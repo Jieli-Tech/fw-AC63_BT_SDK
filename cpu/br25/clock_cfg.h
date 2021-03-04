@@ -96,6 +96,7 @@ enum {
     LOCALTWS_CLK,
 
     AI_SPEECH_CLK,
+    SMARTBOX_ACTION_CLK,
 
     ENUM_MAX_CLK = 63	,
 };

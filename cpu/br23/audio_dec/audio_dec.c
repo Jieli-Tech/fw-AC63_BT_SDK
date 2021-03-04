@@ -20,6 +20,7 @@
 #include "application/audio_dig_vol.h"
 #include "application/audio_equalloudness_eq.h"
 #include "audio_spectrum.h"
+#include "application/audio_vocal_remove.h"
 
 #if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
@@ -96,11 +97,7 @@ struct channel_switch *mix_ch_switch = NULL;//声道变换
 #endif
 #endif
 
-#if (TCFG_PREVENT_TASK_FILL)
-struct prevent_task_fill *prevent_fill = NULL;
-#endif
-
-u8  audio_src_hw_filt[SRC_FILT_POINTS * SRC_CHI * 2 * MAX_SRC_NUMBER];
+u8  audio_src_hw_filt[SRC_FILT_POINTS * SRC_CHI * 2 * MAX_SRC_NUMBER] ALIGNED(4); /*SRC的滤波器必须4个byte对齐*/
 s16 mix_buff[AUDIO_MIXER_LEN / 2] SEC(.dec_mix_buff);
 #if (RECORDER_MIX_EN)
 struct audio_mixer recorder_mixer = {0};
@@ -114,6 +111,11 @@ s16 dac_sync_buff[256];
 #endif
 #endif
 
+#if AUDIO_VOCAL_REMOVE_EN
+vocal_remove_hdl *mix_vocal_remove_hdl = NULL;
+void *vocal_remove_open(u8 ch_num);
+struct channel_switch *vocal_remove_mix_ch_switch = NULL;//声道变换,单声道时，先让解码出立体声，做完人声消除，再变单声道
+#endif
 
 
 extern const int config_mixer_en;
@@ -264,9 +266,14 @@ void audio_mode_main_dec_open(u32 state)
 u32 audio_output_nor_rate(void)
 {
 #if TCFG_IIS_ENABLE
-    return 0;
+    /* return 0; */
     return TCFG_IIS_OUTPUT_SR;
 #endif
+#if TCFG_SPDIF_ENABLE
+    return 44100;
+#endif
+
+
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DAC)
 
 #if (TCFG_MIC_EFFECT_ENABLE)
@@ -334,6 +341,9 @@ u32 audio_output_channel_num(void)
     } else if (dac_connect_mode == DAC_OUTPUT_FRONT_LR_REAR_LR) {
         return 2;
     } else {
+#if AUDIO_VOCAL_REMOVE_EN
+        return  2;
+#endif
         return 1;
     }
 #elif (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
@@ -551,11 +561,32 @@ int vol_get_test()
    @note
 */
 /*----------------------------------------------------------------------------*/
-void audio_mixer_reset_sample_rate(u32 sr)
+void audio_mixer_reset_sample_rate(u8 flag, u32 sr)
 {
-    audio_mixer_set_sample_rate(&mixer, MIXER_SR_SPEC, sr);
+    if (flag) {
+        audio_mixer_set_sample_rate(&mixer, MIXER_SR_SPEC, sr);
+    } else {
+        audio_mixer_set_sample_rate(&mixer, MIXER_SR_FIRST, sr);
+    }
 }
 
+/*----------------------------------------------------------------------------*/
+/**@brief 	 audio解码任务cpu跟踪回调
+   @param    idle_total 跟踪周期内的空闲时间统计
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+int audio_dec_occupy_trace_hdl(void *priv, u32 idle_total)
+{
+    struct audio_decoder_occupy *occupy = priv;
+    if (idle_total < occupy->idle_expect) {
+        if (occupy->pend_time) {
+            os_time_dly(occupy->pend_time);
+        }
+    }
+    return 0;
+}
 /*----------------------------------------------------------------------------*/
 /**@brief    音频解码初始化
    @param
@@ -575,17 +606,15 @@ int audio_dec_init()
     // 创建解码任务
     err = audio_decoder_task_create(&decode_task, "audio_dec");
 
+#if TCFG_AUDIO_DECODER_OCCUPY_TRACE
+    decode_task.occupy.pend_time = 1;
+    decode_task.occupy.idle_expect = 4;
+    decode_task.occupy.trace_period = 200;
+    //decode_task.occupy.trace_hdl = audio_dec_occupy_trace_hdl;
+#endif/*TCFG_AUDIO_DECODER_OCCUPY_TRACE*/
+
 #if TCFG_AUDIO_DEC_OUT_TASK
     audio_decoder_out_task_create(&decode_task, "audio_out");
-#endif
-
-#if (TCFG_PREVENT_TASK_FILL)
-    // 初始化防task占满功能
-    prevent_fill = prevent_task_fill_create(100);
-    if (prevent_fill) {
-        // 解码任务加入防task占满功能
-        decode_task.prevent_fill = prevent_task_fill_ch_open(prevent_fill, 200);
-    }
 #endif
 
 #if TCFG_DEC2TWS_TASK_ENABLE
@@ -668,12 +697,14 @@ int audio_dec_init()
 
     struct audio_stream_entry *entries[8] = {NULL};
 
-#if (!TCFG_EQ_DIVIDE_ENABLE) && (!defined(CONFIG_MIXER_CYCLIC))
-    // 高低音
-    mix_eq_drc = mix_out_eq_drc_open(sr, ch_num);
+#if (!TCFG_EQ_DIVIDE_ENABLE)// && (!defined(CONFIG_MIXER_CYCLIC))
+
+    if (ch_num <= 2) {
+        mix_eq_drc = mix_out_eq_drc_open(sr, ch_num);// 高低音
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR)
-    mix_ch_switch = channel_switch_open(AUDIO_CH_QUAD, AUDIO_SYNTHESIS_LEN / 2);
+        mix_ch_switch = channel_switch_open(AUDIO_CH_QUAD, AUDIO_SYNTHESIS_LEN / 2);
 #endif
+    }
 #endif
 
 #if AUDIO_OUTPUT_AUTOMUTE
@@ -702,6 +733,18 @@ int audio_dec_init()
     }
 #endif
 
+#if AUDIO_VOCAL_REMOVE_EN
+    mix_vocal_remove_hdl = vocal_remove_open(ch_num);
+
+    u8 dac_connect_mode =  app_audio_output_mode_get();
+    if ((dac_connect_mode == DAC_OUTPUT_MONO_L)
+        || (dac_connect_mode == DAC_OUTPUT_MONO_R)
+        || (dac_connect_mode == DAC_OUTPUT_MONO_LR_DIFF)) {
+        vocal_remove_mix_ch_switch = channel_switch_open(AUDIO_CH_DIFF, 512);
+    }
+#endif
+
+
     // 数据流串联。可以在mixer和last中间添加其他的数据流，比如eq等
     u8 entry_cnt = 0;
     entries[entry_cnt++] = &mixer.entry;
@@ -724,6 +767,16 @@ int audio_dec_init()
     }
 #endif
 #endif
+
+#if AUDIO_VOCAL_REMOVE_EN
+    if (mix_vocal_remove_hdl) {
+        entries[entry_cnt++] = &mix_vocal_remove_hdl->entry;
+    }
+    if (vocal_remove_mix_ch_switch) {
+        entries[entry_cnt++] = &vocal_remove_mix_ch_switch->entry;
+    }
+#endif
+
 
 #if AUDIO_OUTPUT_AUTOMUTE
     entries[entry_cnt++] = mix_out_automute_entry;
@@ -926,7 +979,7 @@ int high_bass_drc_set_filter_info(int th)
    @note
 */
 /*----------------------------------------------------------------------------*/
-int high_bass_drc_get_filter_info(struct audio_drc *drc, struct audio_drc_filter_info *info)
+int high_bass_drc_get_filter_info(void *drc, struct audio_drc_filter_info *info)
 {
     int th = high_bass_th;//-60 ~0db
     int threshold = round(pow(10.0, th / 20.0) * 32768); // 0db:32768, -60db:33
@@ -1043,7 +1096,7 @@ void mix_out_high_bass(u32 cmd, struct high_bass *hb)
    @note    该接口可用于控制某些模式不做高低音
 */
 /*----------------------------------------------------------------------------*/
-void mix_out_high_bass_dis(u32 cmd, u8 dis)
+void mix_out_high_bass_dis(u32 cmd, u32 dis)
 {
     if (mix_eq_drc) {
         audio_eq_drc_parm_update(mix_eq_drc, cmd, (void *)dis);
@@ -1117,6 +1170,17 @@ void mix_out_automute_close()
 
 #if SYS_DIGVOL_GROUP_EN
 
+char *music_dig_logo[] = {
+
+    "music_a2dp",
+    "music_file",
+    "music_fm",
+    "music_linein",
+    "music_pc",
+    "NULL"
+
+};
+
 void *sys_digvol_group = NULL;
 
 int sys_digvol_group_open(void)
@@ -1146,7 +1210,7 @@ u16 __attribute__((weak)) get_ch_digvol_start(char *logo)
         return 100;
     }
 #endif
-    return 100;
+    return get_max_sys_vol();
 }
 
 
@@ -1168,7 +1232,7 @@ void *sys_digvol_group_ch_open(char *logo, int vol_start, audio_dig_vol_param *p
     }
     audio_dig_vol_param temp_digvol_param = {
         .vol_start = vol_start,
-        .vol_max = 100,
+        .vol_max = get_max_sys_vol(),
         .ch_total = 2,
         .fade_en = 1,
         .fade_points_step = 5,
@@ -1199,5 +1263,37 @@ int sys_digvol_group_ch_close(char *logo)
 #endif // SYS_DIGVOL_GROUP_EN
 
 
+#if AUDIO_VOCAL_REMOVE_EN
+/*----------------------------------------------------------------------------*/
+/**@brief    人声消除打开例子
+   @param    ch_num:通道个数
+   @return   句柄
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void *vocal_remove_open(u8 ch_num)
+{
+    vocal_remove_hdl *hdl = NULL;
+    vocal_remove_open_parm parm = {0};
+    parm.channel = ch_num;
+    hdl = audio_vocal_remove_open(&parm);
+    return hdl;
+}
+/*----------------------------------------------------------------------------*/
+/**@brief    人声消除关闭例子
+   @param
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void vocal_remove_close()
+{
+    if (mix_vocal_remove_hdl) {
+        audio_vocal_remove_close(mix_vocal_remove_hdl);
+        mix_vocal_remove_hdl = NULL;
+    }
+}
+
+#endif
 
 

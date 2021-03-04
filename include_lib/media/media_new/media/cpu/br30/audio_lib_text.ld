@@ -24,6 +24,20 @@
 		*(.fft_const)
         */
 
+    	anc_code_begin = .;
+		*(.anc_code)
+		*(.anc_const)
+		*(.anc_user_code)
+		*(.anc_user_const)
+		*(.anc_box_code)
+		*(.anc_box_const)
+		*(.anc_btspp_code)
+		*(.anc_btspp_const)
+		*(.anc_debug_code)
+		*(.anc_debug_const)
+    	anc_code_end = .;
+		anc_code_size = anc_code_end - anc_code_begin;
+
 		*(.ns_sparse_code )
 		*(.aec_sparse_code)
 		*(.nlp_sparse_code)
@@ -34,6 +48,10 @@
 		*(.bt_audioplc_const)
 		*(.dms_sparse_code)
 
+		*(.sms_const);
+		*(.sms_sparse_code);
+		*(.sms_code);
+
 		. = ALIGN(4);
         *(.pcm_code)
         *(.pcm_const)
@@ -41,6 +59,12 @@
         *(.cvsd_const)
         *(.g729_code)
         *(.g729_const)
+		*(.wtgv2_code)
+		*(.wtgv2_const)
+		*(.wtgv2dec_code)
+		*(.wtgv2dec_const)
+		*(.wtgv2dec_str)
+		*(.wtg_decv2_sparse_code)
         *(.mp3_code)
         *(.mp3_const)
         *(.mp3_dec_code)
@@ -183,6 +207,8 @@
 	*(.lib_pitchshift_code)
 	*(.lib_pitchshift_const)
 	. = ALIGN(4);
+        *(.lc3_decoder_code)
+        *(.lc3_decoder_const)
 
     	media_code_end = .;
 		. = ALIGN(4);

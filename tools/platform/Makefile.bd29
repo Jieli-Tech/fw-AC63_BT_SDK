@@ -83,6 +83,10 @@ ifeq ($(CONFIG_AUDIO_ONCHIP),y)
 CC_DEFINE += -DCONFIG_AUDIO_ONCHIP
 endif
 
+ifeq ($(MEDIA_NEW_ENABLE),n)
+CC_DEFINE += -DCONFIG_MEDIA_ORIGIN_ENABLE
+endif
+
 CC_DEFINE += -D__GCC_Q32S__
 
 ifeq ($(NEW_ECC),y)
@@ -119,7 +123,7 @@ export LINKER = \
 
 #
 # --------------CBP Setting-----------------------
-export CBP_TITLE = AC631X_$(APP_CASE)$(PROJECT_SUFFIX)
+export CBP_TITLE = AC631N_$(APP_CASE)$(PROJECT_SUFFIX)
 export CBP_COMPILER = q32s_lto_compiler
 export CBP_ADD_OPT =
 export CBP_POSITION ?= .

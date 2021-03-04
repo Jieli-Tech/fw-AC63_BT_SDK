@@ -125,10 +125,12 @@ struct stream_codec_info {
     u32  sample_rate;
     u8   channel;
 };
+
+/*! \brief      音频解码器抽象接口 */
 struct audio_decoder_ops {
-    u32 coding_type;
-    void *(*open)(void *priv);
-    int (*start)(void *);
+    u32 coding_type;            /*!<  解码格式*/
+    void *(*open)(void *priv);  /*!<  */
+    int (*start)(void *);       /*!<  */
     int (*get_fmt)(void *, struct audio_fmt *fmt);
     int (*set_output_channel)(void *, enum audio_channel);
     int (*get_play_time)(void *);

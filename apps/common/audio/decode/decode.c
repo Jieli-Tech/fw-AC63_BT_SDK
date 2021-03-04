@@ -34,6 +34,9 @@ const struct audio_dec_format_hdl decode_format_list[] = {
     {"mp3", AUDIO_CODING_MP3},
     {"wma", AUDIO_CODING_WMA},
     {"wav", AUDIO_CODING_WAV},
+#if TCFG_DEC_WTGV2_ENABLE
+    {"wts", AUDIO_CODING_WTGV2},
+#endif
     {0, 0},
 };
 

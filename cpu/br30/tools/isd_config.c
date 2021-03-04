@@ -38,7 +38,7 @@ PID=AC699N;//长度16byte,示例：芯片封装_应用方向_方案名称
 PID=AC897N;//长度16byte,示例：芯片封装_应用方向_方案名称
 #endif
 
-VID=0.01;	
+VID=0.01;
 
 
 RESERVED_OPT=0;
@@ -55,6 +55,9 @@ DOWNLOAD_MODEL=usb;//
 // LOADER_ASK_BAUD_RATE=1000000;
 // BEFORE_LOADER_WAIT_TIME=100;
 // SERIAL_SEND_KEY=yes;
+#if TCFG_AUDIO_ANC_ENABLE
+COMPACT_SETTING=YES;
+#endif
 
 // #####匹配的芯片版本,请勿随意改动 ######
 [CHIP_VERSION]
@@ -69,7 +72,7 @@ SUPPORTED_LIST=B,D,E,M,N,O,P
 // #data_width[0 1 2 3 4] 3的时候uboot自动识别2或者4线
 // #clk [0-255]
 // #mode:
-// #	  0 RD_OUTPUT,		 1 cmd 		 1 addr 
+// #	  0 RD_OUTPUT,		 1 cmd 		 1 addr
 // #	  1 RD_I/O,   		 1 cmd 		 x addr
 // #	  2 RD_I/O_CONTINUE] no_send_cmd x add
 // #port:
@@ -90,15 +93,15 @@ RESET=PB01_08_0; //IO_TIME_LEVEL (TIME OF PRESSING 00、01、02、04、08、16 v
 #endif
 
 // 0:disable
-// 1:PA9 PA10 
+// 1:PA9 PA10
 // 2:USB
 // 3:PB1 PB2
 // 4:PB6 PB7
 
 // #sdtap=2;
-psram=1;
+//psram=1;
 
-VLVD=5;//VDDIO_LVD挡位，0: 1.8V   1: 1.9V   2: 2.0V   3: 2.1V   4: 2.2V   5: 2.3V   6: 2.4V   7: 2.5V
+// VLVD=5;//VDDIO_LVD挡位，0: 1.8V   1: 1.9V   2: 2.0V   3: 2.1V   4: 2.2V   5: 2.3V   6: 2.4V   7: 2.5V
 
 //#############################################################################################################################################
 
@@ -139,7 +142,7 @@ PRCT_LEN=CODE_LEN;
 PRCT_OPT=2;
 
 VM_ADR=0;
-VM_LEN=4K;
+VM_LEN=8K;
 VM_OPT=1;
 
 #if TCFG_AUDIO_ANC_ENABLE
@@ -197,7 +200,7 @@ PID=AC699N;//长度16byte,示例：芯片封装_应用方向_方案名称
 PID=AC897N;//长度16byte,示例：芯片封装_应用方向_方案名称
 #endif
 
-VID=0.01;	
+VID=0.01;
 
 
 RESERVED_OPT=0;
@@ -214,6 +217,9 @@ DOWNLOAD_MODEL=usb;//
 // LOADER_ASK_BAUD_RATE=1000000;
 // BEFORE_LOADER_WAIT_TIME=100;
 // SERIAL_SEND_KEY=yes;
+#if TCFG_AUDIO_ANC_ENABLE
+COMPACT_SETTING=YES;
+#endif
 
 // #####匹配的芯片版本,请勿随意改动 ######
 [CHIP_VERSION]
@@ -228,7 +234,7 @@ SUPPORTED_LIST=B,D,E,M,N,O,P
 // #data_width[0 1 2 3 4] 3的时候uboot自动识别2或者4线
 // #clk [0-255]
 // #mode:
-// #	  0 RD_OUTPUT,		 1 cmd 		 1 addr 
+// #	  0 RD_OUTPUT,		 1 cmd 		 1 addr
 // #	  1 RD_I/O,   		 1 cmd 		 x addr
 // #	  2 RD_I/O_CONTINUE] no_send_cmd x add
 // #port:
@@ -249,15 +255,15 @@ RESET=PB01_08_0; //IO_TIME_LEVEL (TIME OF PRESSING 00、01、02、04、08、16 v
 #endif
 
 // 0:disable
-// 1:PA9 PA10 
+// 1:PA9 PA10
 // 2:USB
 // 3:PB1 PB2
 // 4:PB6 PB7
 
 // #sdtap=2;
-psram=1;
+//psram=1;
 
-VLVD=5;//VDDIO_LVD挡位，0: 1.8V   1: 1.9V   2: 2.0V   3: 2.1V   4: 2.2V   5: 2.3V   6: 2.4V   7: 2.5V
+//VLVD=5;//VDDIO_LVD挡位，0: 1.8V   1: 1.9V   2: 2.0V   3: 2.1V   4: 2.2V   5: 2.3V   6: 2.4V   7: 2.5V
 
 //#############################################################################################################################################
 
@@ -298,7 +304,7 @@ PRCT_LEN=CODE_LEN;
 PRCT_OPT=2;
 
 VM_ADR=0;
-VM_LEN=4K;
+VM_LEN=8K;
 VM_OPT=1;
 
 #if TCFG_AUDIO_ANC_ENABLE

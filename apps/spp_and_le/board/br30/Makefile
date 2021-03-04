@@ -30,6 +30,7 @@ LIBS += \
 	$(AR_DIR)/media.a \
 	$(AR_DIR)/media_app.a \
 	$(AR_DIR)/wtg_dec_lib.a \
+	$(AR_DIR)/wtgv2_dec_lib.a \
 	$(AR_DIR)/opus_enc_lib.a \
     	$(AR_DIR)/speex_enc_lib.a \
 --end-group

@@ -17,19 +17,23 @@
 #include "app_charge.h"
 #include "asm/charge.h"
 
-#if TCFG_PC_ENABLE
+#if TCFG_USB_SLAVE_ENABLE
 #ifndef  USB_PC_NO_APP_MODE
 #include "app_task.h"
 #endif
 #include "usb/usb_config.h"
 #include "usb/device/usb_stack.h"
 
-#if USB_DEVICE_CLASS_CONFIG & HID_CLASS
+#if TCFG_USB_SLAVE_HID_ENABLE
 #include "usb/device/hid.h"
 #endif
 
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
+#if TCFG_USB_SLAVE_MSD_ENABLE
 #include "usb/device/msd.h"
+#endif
+
+#if TCFG_USB_SLAVE_CDC_ENABLE
+#include "usb/device/cdc.h"
 #endif
 
 #if (TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0)
@@ -79,14 +83,15 @@ static void usb_task(void *p)
             continue;
         }
         switch (msg[1]) {
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
+#if TCFG_USB_SLAVE_MSD_ENABLE
         case USBSTACK_MSD_RUN:
             os_mutex_pend(&msd_mutex, 0);
             msd_in_task = 1;
 #if TCFG_USB_APPLE_DOCK_EN
             apple_mfi_link((void *)msg[2]);
-#endif
+#else
             USB_MassStorage((void *)msg[2]);
+#endif
             if (msd_run_reset) {
                 msd_reset((struct usb_device_t *)msg[2], 0);
                 msd_run_reset = 0;
@@ -122,7 +127,7 @@ static void usb_msd_reset_wakeup(struct usb_device_t *usb_device, u32 itf_num)
     if (msd_in_task) {
         msd_run_reset = 1;
     } else {
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
+#if TCFG_USB_SLAVE_MSD_ENABLE
         msd_reset(usb_device, 0);
 #endif
     }
@@ -144,11 +149,10 @@ static void usb_msd_free()
     os_mutex_del(&msd_mutex, 0);
 
     int err;
-    OS_SEM *sem = zalloc(sizeof(OS_SEM));;
-    os_sem_create(sem, 0);
-    os_taskq_post_msg(USB_TASK_NAME, 2, USBSTACK_MSD_RELASE, (int)sem);
-    os_sem_pend(sem, 0);
-    free(sem);
+    OS_SEM sem;
+    os_sem_create(&sem, 0);
+    os_taskq_post_msg(USB_TASK_NAME, 2, USBSTACK_MSD_RELASE, (int)&sem);
+    os_sem_pend(&sem, 0);
 
 
     err = task_kill(USB_TASK_NAME);
@@ -159,19 +163,36 @@ static void usb_msd_free()
     }
 }
 
+#if TCFG_USB_SLAVE_CDC_ENABLE
+static void usb_cdc_wakeup(struct usb_device_t *usb_device)
+{
+    //回调函数在中断里，正式使用不要在这里加太多东西阻塞中断，
+    //或者先post到任务，由任务调用cdc_read_data()读取再执行后续工作
+    const usb_dev usb_id = usb_device2id(usb_device);
+    u8 buf[64] = {0};
+    u32 rlen;
+
+    log_debug("cdc rx hook");
+    rlen = cdc_read_data(usb_id, buf, 64);
+    put_buf(buf, rlen);
+    cdc_write_data(usb_id, buf, rlen);
+}
+#endif
+
 void usb_start()
 {
 
-#if USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
     usb_audio_demo_init();
 #endif
 
 #ifdef USB_DEVICE_CLASS_CONFIG
+    g_printf("USB_DEVICE_CLASS_CONFIG:%x", USB_DEVICE_CLASS_CONFIG);
     usb_device_mode(usbfd, USB_DEVICE_CLASS_CONFIG);
 #endif
 
 
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
+#if TCFG_USB_SLAVE_MSD_ENABLE
     //没有复用时候判断 sd开关
     //复用时候判断是否参与复用
 #if (!TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0 && TCFG_SD0_ENABLE)\
@@ -196,10 +217,14 @@ void usb_start()
     msd_set_reset_wakeup_handle(usb_msd_reset_wakeup);
     usb_msd_init();
 #endif
+
+#if TCFG_USB_SLAVE_CDC_ENABLE
+    cdc_set_wakeup_handler(usb_cdc_wakeup);
+#endif
 }
 static void usb_remove_disk()
 {
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
+#if TCFG_USB_SLAVE_MSD_ENABLE
     os_mutex_pend(&msd_mutex, 0);
     msd_unregister_all();
     os_mutex_post(&msd_mutex);
@@ -211,7 +236,7 @@ void usb_pause()
 
     usb_sie_disable(usbfd);
 
-#if USB_DEVICE_CLASS_CONFIG & MASSSTORAGE_CLASS
+#if TCFG_USB_SLAVE_MSD_ENABLE
     if (msd_set_wakeup_handle(NULL)) {
         usb_remove_disk();
         usb_msd_free();
@@ -219,7 +244,7 @@ void usb_pause()
 #endif
 
 
-#if USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
     usb_audio_demo_exit();
 #endif
 

@@ -25,6 +25,8 @@
 #define AUDIO_CODING_MIDI         0x00080000
 #define AUDIO_CODING_OPUS         0x00100000
 #define AUDIO_CODING_SPEEX        0x00200000
+#define AUDIO_CODING_LC3          0x00400000
+#define AUDIO_CODING_WTGV2        0x01000000
 
 #define AUDIO_CODING_STU_PICK     0x10000000
 #define AUDIO_CODING_STU_APP      0x20000000
@@ -41,7 +43,7 @@ enum audio_channel {
     AUDIO_CH_R,           	//右声道（单声道）
     AUDIO_CH_DIFF,        	//差分（单声道）
     AUDIO_CH_DUAL_L,  		//双声道都为左
-    AUDIO_CH_DUAL_R,  		//双声道都为左右
+    AUDIO_CH_DUAL_R,  		//双声道都为右
     AUDIO_CH_DUAL_LR,  		//双声道为左右混合
 
     AUDIO_CH_MAX = 0xff,
@@ -50,12 +52,13 @@ enum audio_channel {
 #define AUDIO_CH_IS_MONO(ch)	(((ch)==AUDIO_CH_L) || ((ch)==AUDIO_CH_R) || ((ch)==AUDIO_CH_DIFF))
 
 
+/*! \brief      音频处理结构 */
 struct audio_fmt {
-    u8  channel;
-    u8  frame_len;
-    u16 sample_rate;
+    u8  channel;        /*!<  */
+    u8  frame_len;      /*!<  幁长度 (bytes)*/
+    u16 sample_rate;    /*!<  采样率 e.g. 48kHz/44.1kHz/32kHz*/
     u32 coding_type;
-    u32 bit_rate;
+    u32 bit_rate;       /*!<  比特率 (bps)*/
     u32 total_time;
     u32 quality;
     u32 complexity;

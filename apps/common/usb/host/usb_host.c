@@ -2,7 +2,7 @@
 #include "app_config.h"
 #include "device_drive.h"
 /* #include "os/os_compat.h" */
-#if TCFG_UDISK_ENABLE || TCFG_ADB_ENABLE ||TCFG_AOA_ENABLE || TCFG_HID_HOST_ENABLE || TCFG_HOST_AUDIO_ENABLE
+#if USB_HOST_ENABLE
 #include "usb_config.h"
 #include "usb/host/usb_host.h"
 #include "usb/usb_phy.h"
@@ -689,6 +689,9 @@ u32 usb_host_unmount(const usb_dev id)
     struct usb_host_device *host_dev = &host_devices[usb_id];
     struct sys_event event;
 
+#if (TCFG_UDISK_ENABLE && UDISK_READ_512_ASYNC_ENABLE)
+    _usb_stor_async_wait_sem(host_dev);
+#endif
     ret = _usb_host_unmount(usb_id);
     if (ret) {
         goto __exit_fail;

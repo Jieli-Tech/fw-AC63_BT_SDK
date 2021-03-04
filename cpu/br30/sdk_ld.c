@@ -31,6 +31,7 @@
 #include "maskrom_stubs.ld"
 
 EXTERN(
+_start
 #include "sdk_used_list.c"
 );
 
@@ -178,11 +179,6 @@ SECTIONS
 		*( .wtg_dec_sparse_code)
 
 		. = ALIGN(32);
-		m_code_addr = . ;
-		*(.m.code*)
-		*(.movable.code*)
-			m_code_size = ABSOLUTE(. - m_code_addr) ;
-		. = ALIGN(32);
 	  } > code0
 
     . = ORIGIN(ram0);
@@ -218,7 +214,7 @@ SECTIONS
 
 		*(.audio_dec_data)
 		. = ALIGN(4);
-		#include "media/audio_lib_data.ld"
+		#include "media/cpu/br30/audio_lib_data.ld"
 		. = ALIGN(4);
 
 		*(.wav_data)
@@ -249,7 +245,7 @@ SECTIONS
         . = ALIGN(4);
         *(.bss)
         . = ALIGN(4);
-		#include "media/audio_lib_bss.ld"
+		#include "media/cpu/br30/audio_lib_bss.ld"
         . = ALIGN(4);
 
 		*(.wav_bss)
@@ -305,8 +301,6 @@ SECTIONS
 
 	.moveable_slot ALIGN(4):
 	{
-	    *(movable.slot.*)
-
 	} >ram0
 
 #ifdef CONFIG_BR30_C_VERSION

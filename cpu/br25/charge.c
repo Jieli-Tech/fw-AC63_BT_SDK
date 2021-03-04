@@ -379,7 +379,7 @@ static void ldo5v_detect(void *priv)
                     gpio_set_pull_down(IO_PORTB_05, 0);
                 }
                 if (__this->data->ldo5v_off_filter) {
-                    charge_event_to_user(CHARGE_EVENT_CHARGE_ERR);
+                    charge_event_to_user(CHARGE_EVENT_LDO5V_KEEP);
                 }
             }
         }

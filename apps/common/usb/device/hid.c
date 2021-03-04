@@ -5,7 +5,12 @@
 
 #include "app_config.h"
 
-#if TCFG_PC_ENABLE && (USB_DEVICE_CLASS_CONFIG & HID_CLASS) &&(!defined(TCFG_USB_SLAVE_USER_HID))
+#ifdef TCFG_USB_SLAVE_USER_HID
+#undef TCFG_USB_SLAVE_HID_ENABLE
+#define TCFG_USB_SLAVE_HID_ENABLE           0
+#endif
+
+#if TCFG_USB_SLAVE_HID_ENABLE
 
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB]"
@@ -288,5 +293,10 @@ void hid_test(struct usb_device_t *usb_device)
     if (BIT(tx_count) > USB_AUDIO_PAUSE) {
         tx_count = 0;
     }
+}
+#else
+void hid_key_handler(struct usb_device_t *usb_device, u32 hid_key)
+{
+
 }
 #endif

@@ -7,6 +7,7 @@
 #include "clock_cfg.h"
 #include "classic/hci_lmp.h"
 #include "app_config.h"
+#include "audio_common/audio_iis.h"
 
 #ifndef CONFIG_LITE_AUDIO
 #include "app_task.h"
@@ -21,15 +22,6 @@ __attribute__((weak))void audio_aec_inbuf(s16 *buf, u16 len)
 
 /* #include "encode/encode_write.h" */
 extern struct adc_platform_data adc_data;
-
-extern int sbc_encoder_init();
-extern int msbc_encoder_init();
-extern int cvsd_encoder_init();
-extern int mp3_encoder_init();
-extern int adpcm_encoder_init();
-extern int pcm_encoder_init();
-extern int opus_encoder_preinit();
-extern int speex_encoder_preinit();
 
 struct audio_adc_hdl adc_hdl;
 struct esco_enc_hdl *esco_enc = NULL;
@@ -57,6 +49,119 @@ static void adc_mic_output_handler(void *priv, s16 *data, int len)
     /* printf("buf:%x,data:%x,len:%d",esco_enc->adc_buf,data,len); */
     audio_aec_inbuf(data, len);
 }
+
+
+#if TCFG_IIS_INPUT_EN
+#include "Resample_api.h"
+#define IIS_MIC_SRC_DIFF_MAX        (50)
+#define IIS_MIC_BUF_SIZE    (2*1024)
+cbuffer_t *iis_mic_cbuf = NULL;
+static RS_STUCT_API *iis_mic_sw_src_api = NULL;
+static u8 *iis_mic_sw_src_buf = NULL;
+static s16 iis_mic_sw_src_output[ALNK_BUF_POINTS_NUM];
+s32 sw_src_in_sr = 0;
+s32 sw_src_in_sr_top = 0;
+s32 sw_src_in_sr_botton = 0;
+
+int iis_mic_sw_src_init()
+{
+    printf("%s !!\n", __func__);
+    if (iis_mic_sw_src_api) {
+        printf("iis mic sw src is already open !\n");
+        return -1;
+    }
+    iis_mic_sw_src_api = get_rs16_context();
+    g_printf("iis_mic_sw_src_api:0x%x\n", iis_mic_sw_src_api);
+    ASSERT(iis_mic_sw_src_api);
+    u32 iis_mic_sw_src_need_buf = iis_mic_sw_src_api->need_buf();
+    g_printf("iis_mic_sw_src_buf:%d\n", iis_mic_sw_src_need_buf);
+    iis_mic_sw_src_buf = malloc(iis_mic_sw_src_need_buf);
+    ASSERT(iis_mic_sw_src_buf);
+    RS_PARA_STRUCT rs_para_obj;
+    rs_para_obj.nch = 1;
+    rs_para_obj.new_insample = TCFG_IIS_INPUT_SR;
+    rs_para_obj.new_outsample = 16000;
+
+    sw_src_in_sr = rs_para_obj.new_insample;
+    sw_src_in_sr_top = rs_para_obj.new_insample + IIS_MIC_SRC_DIFF_MAX;
+    sw_src_in_sr_botton = rs_para_obj.new_insample - IIS_MIC_SRC_DIFF_MAX;
+    printf("sw src,in = %d,out = %d\n", rs_para_obj.new_insample, rs_para_obj.new_outsample);
+    iis_mic_sw_src_api->open(iis_mic_sw_src_buf, &rs_para_obj);
+    return 0;
+}
+
+int iis_mic_sw_src_uninit()
+{
+    printf("%s !!\n", __func__);
+    if (iis_mic_sw_src_api) {
+        iis_mic_sw_src_api = NULL;
+    }
+    if (iis_mic_sw_src_buf) {
+        free(iis_mic_sw_src_buf);
+        iis_mic_sw_src_buf = NULL;
+    }
+    return 0;
+}
+
+static void iis_mic_output_handler(void *priv, s16 *data, int len)
+{
+    s16 *outdat = NULL;
+    int outlen = 0;
+    int wlen = 0;
+    int i = 0;
+
+    // dual to mono
+    for (i = 0; i < len / 2 / 2; i++) {
+        /* data[i] = ((s32)(data[i*2]) + (s32)(data[i*2-1])) / 2; */
+        data[i] = data[i * 2];
+    }
+    len >>= 1;
+
+
+
+
+
+    if (iis_mic_cbuf) {
+        if (iis_mic_sw_src_api && iis_mic_sw_src_buf) {
+            if (iis_mic_cbuf->data_len > IIS_MIC_BUF_SIZE * 3 / 4) {
+                sw_src_in_sr--;
+                if (sw_src_in_sr < sw_src_in_sr_botton) {
+                    sw_src_in_sr = sw_src_in_sr_botton;
+                }
+            } else if (iis_mic_cbuf->data_len < IIS_MIC_BUF_SIZE / 4) {
+                sw_src_in_sr++;
+                if (sw_src_in_sr > sw_src_in_sr_top) {
+                    sw_src_in_sr = sw_src_in_sr_top;
+                }
+            }
+
+            outlen = iis_mic_sw_src_api->run(iis_mic_sw_src_buf,    \
+                                             data,                  \
+                                             len >> 1,              \
+                                             iis_mic_sw_src_output);
+            ASSERT(outlen <= (sizeof(iis_mic_sw_src_output) >> 1));
+            outlen = outlen << 1;
+            outdat = iis_mic_sw_src_output;
+        }
+        wlen = cbuf_write(iis_mic_cbuf, outdat, outlen);
+        if (wlen != outlen) {
+            putchar('w');
+        }
+        esco_enc_resume();
+    }
+}
+
+static int iis_mic_output_read(s16 *buf, u16 len)
+{
+    int rlen = 0;
+    if (iis_mic_cbuf) {
+        rlen = cbuf_read(iis_mic_cbuf, buf, len);
+    }
+    return rlen;
+}
+
+#endif // TCFG_IIS_INPUT_EN
+
 static void adc_mic_output_handler_downsr(void *priv, s16 *data, int len)
 {
     //printf("buf:%x,data:%x,len:%d",esco_enc->adc_buf,data,len);
@@ -95,7 +200,14 @@ static int esco_enc_pcm_get(struct audio_encoder *encoder, s16 **frame, u16 fram
     }
 
     while (1) {
+
+#if TCFG_IIS_INPUT_EN
+        rlen = iis_mic_output_read(enc->pcm_frame, frame_len);
+#else // TCFG_IIS_INPUT_EN
+
         rlen = audio_aec_output_read(enc->pcm_frame, frame_len);
+#endif // TCFG_IIS_INPUT_EN
+
         if (rlen == frame_len) {
             /*esco编码读取数据正常*/
 #if (RECORDER_MIX_EN)
@@ -202,6 +314,18 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
 
     printf("esco sample_rate: %d,mic_gain:%d\n", fmt.sample_rate, app_var.aec_mic_gain);
 
+#if TCFG_IIS_INPUT_EN
+    if (iis_mic_cbuf == NULL) {
+        iis_mic_cbuf = zalloc(sizeof(cbuffer_t) + IIS_MIC_BUF_SIZE);
+        if (iis_mic_cbuf) {
+            cbuf_init(iis_mic_cbuf, iis_mic_cbuf + 1, IIS_MIC_BUF_SIZE);
+        } else {
+            printf("iis_mic_cbuf zalloc err !!!!!!!!!!!!!!\n");
+        }
+    }
+    iis_mic_sw_src_init();
+    audio_iis_input_start(TCFG_IIS_INPUT_PORT, TCFG_IIS_INPUT_DATAPORT_SEL, iis_mic_output_handler);
+#else // TCFG_IIS_INPUT_EN
 #if 0
     audio_adc_mic_open(&esco_enc->mic_ch, AUDIO_ADC_MIC_CH, &adc_hdl);
     audio_adc_mic_set_sample_rate(&esco_enc->mic_ch, fmt.sample_rate);
@@ -229,6 +353,9 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
     audio_mic_add_output(&esco_enc->adc_output);
     audio_mic_start(&esco_enc->mic_ch);
 #endif
+
+#endif // TCFG_IIS_INPUT_EN
+
     clock_set_cur();
     esco_enc->state = 1;
 
@@ -258,6 +385,15 @@ void esco_enc_close()
     } else if (esco_enc->encoder.fmt.coding_type == AUDIO_CODING_CVSD) {
         clock_remove(ENC_CVSD_CLK);
     }
+#if TCFG_IIS_INPUT_EN
+    audio_iis_input_stop(TCFG_IIS_INPUT_PORT, TCFG_IIS_INPUT_DATAPORT_SEL);
+    if (iis_mic_cbuf) {
+        free(iis_mic_cbuf);
+        iis_mic_cbuf = NULL;
+    }
+    iis_mic_sw_src_uninit();
+    audio_encoder_close(&esco_enc->encoder);
+#else // TCFG_IIS_INPUT_EN
 #if 0
     audio_adc_mic_close(&esco_enc->mic_ch);
     //os_sem_post(&esco_enc->pcm_frame_sem);
@@ -267,6 +403,7 @@ void esco_enc_close()
     audio_mic_close(&esco_enc->mic_ch, &esco_enc->adc_output);
     audio_encoder_close(&esco_enc->encoder);
 #endif
+#endif // TCFG_IIS_INPUT_EN
 
     local_irq_disable();
     free(esco_enc);
@@ -323,40 +460,11 @@ void audio_encoder_task_close(void)
 
 
 //////////////////////////////////////////////////////////////////////////////
-
-int g726_encoder_init();
 int audio_enc_init()
 {
     printf("audio_enc_init\n");
 
-#if TCFG_ENC_CVSD_ENABLE
-    cvsd_encoder_init();
-#endif
-#if TCFG_ENC_MSBC_ENABLE
-    msbc_encoder_init();
-#endif
-#if TCFG_ENC_MP3_ENABLE
-    mp3_encoder_init();
-#endif
-#if TCFG_ENC_G726_ENABLE
-    g726_encoder_init();
-#endif
-#if TCFG_ENC_ADPCM_ENABLE
-    adpcm_encoder_init();
-#endif
-#if TCFG_ENC_PCM_ENABLE
-    pcm_encoder_init();
-#endif
-#if TCFG_ENC_OPUS_ENABLE
-    opus_encoder_preinit();
-#endif
-#if TCFG_ENC_SPEEX_ENABLE
-    speex_encoder_preinit();
-#endif
     audio_adc_init(&adc_hdl, &adc_data);
-#if TCFG_ENC_SBC_ENABLE
-    sbc_encoder_init();
-#endif
 
     init_audio_adc();
     return 0;

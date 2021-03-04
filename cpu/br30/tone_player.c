@@ -504,6 +504,9 @@ static int tone_fread(struct audio_decoder *decoder, void *buf, u32 len)
 
 static int tone_fseek(struct audio_decoder *decoder, u32 offset, int seek_mode)
 {
+    if (!file_dec->file) {
+        return 0;
+    }
     return fseek(file_dec->file, offset, seek_mode);
 }
 
@@ -548,9 +551,15 @@ const struct tone_format tone_fmt_support_list[] = {
     {"sbc", AUDIO_CODING_SBC},
     {"mty", AUDIO_CODING_MTY},
     {"aac", AUDIO_CODING_AAC},
+#if TCFG_DEC_WTGV2_ENABLE
+    {"wts", AUDIO_CODING_WTGV2},
+#endif/*TCFG_DEC_WTGV2_ENABLE*/
+#if TCFG_DEC_MP3_ENABLE
+    {"mp3", AUDIO_CODING_MP3},
+#endif/*TCFG_DEC_MP3_ENABLE*/
 #if TCFG_WAV_TONE_MIX_ENABLE
     {"wav", AUDIO_CODING_WAV},
-#endif
+#endif/*TCFG_WAV_TONE_MIX_ENABLE*/
 };
 
 struct audio_dec_input tone_input = {
@@ -843,14 +852,14 @@ int tone_file_dec_start()
             puts("aac tone play:64M\n");
             clk_set_sys_lock(64 * 1000000L, 1);
         }
-    } else if (tone_input.coding_type == AUDIO_CODING_WAV) {
-        /*当前时钟小于wav提示音播放需要得时钟，则自动提高主频*/
+    } else if ((tone_input.coding_type == AUDIO_CODING_WAV) || (tone_input.coding_type == AUDIO_CODING_MP3)) {
+        /*当前时钟小于wav/mp3提示音播放需要得时钟，则自动提高主频*/
         file_dec->clk_before_dec = clk_get("sys");
         u32 wav_tone_play_clk = 96 * 1000000L;
         if (wav_tone_play_clk < file_dec->clk_before_dec) {
             wav_tone_play_clk = file_dec->clk_before_dec;
         }
-        printf("wav tone play clk:%d->%d\n", file_dec->clk_before_dec, wav_tone_play_clk);
+        printf("wav/mp3 tone play clk:%d->%d\n", file_dec->clk_before_dec, wav_tone_play_clk);
         clk_set_sys_lock(wav_tone_play_clk, 1);
     }
 
@@ -1539,7 +1548,9 @@ int tone_list_play_start(const char **list, u8 preemption, u8 tws)
 #if TONE_FILE_DEC_MIX
             if (tone_dec->wait.preemption == 0) {
                 /*支持叠加的提示音解码文件格式*/
-                if ((ASCII_StrCmpNoCase(format, "wav", 3) == 0) || (ASCII_StrCmpNoCase(format, "wtg", 3) == 0)) {
+                if ((ASCII_StrCmpNoCase(format, "wav", 3) == 0)	|| \
+                    (ASCII_StrCmpNoCase(format, "mp3", 3) == 0)	|| \
+                    (ASCII_StrCmpNoCase(format, "wtg", 3) == 0)) {
                     // 叠加播放
                     file_dec->dec_mix = 1;
                     /*tone_dec->wait.protect = 1;*/ //提示音播放不用来做低优先级的背景音

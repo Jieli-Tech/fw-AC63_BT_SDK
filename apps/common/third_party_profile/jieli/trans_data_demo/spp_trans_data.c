@@ -33,9 +33,14 @@ static u32 spp_timer_handle = 0;
 static u32 spp_test_start;
 #endif
 
+#define SPP_DATA_RECIEVT_FLOW      0//流控功能使能
+
+void rfcomm_change_credits_setting(u16 init_credits, u8 base);
+int rfcomm_send_cretits_by_profile(u16 rfcomm_cid, u16 credit, u8 auto_flag);
 
 static struct spp_operation_t *spp_api = NULL;
 static u8 spp_state;
+static u16 spp_channel;
 
 int transport_spp_send_data(u8 *data, u16 len)
 {
@@ -69,6 +74,7 @@ static void transport_spp_state_cbk(u8 state)
 
     case SPP_USER_ST_DISCONN:
         log_info("SPP_USER_ST_DISCONN ~~~\n");
+        spp_channel = 0;
 
         break;
 
@@ -85,6 +91,7 @@ static void transport_spp_send_wakeup(void)
 
 static void transport_spp_recieve_cbk(void *priv, u8 *buf, u16 len)
 {
+    spp_channel = (u16)priv;
     log_info("spp_api_rx(%d) \n", len);
     log_info_hexdump(buf, len);
     clear_sniff_cnt();
@@ -157,6 +164,36 @@ void transport_spp_init(void)
     spp_timer_handle  = sys_timer_add(NULL, test_timer_handler, SPP_TIMER_MS);
 #endif
 
+}
+
+void transport_spp_disconnect(void)
+{
+    if (SPP_USER_ST_CONNECT == spp_state) {
+        log_info("transport_spp_disconnect\n");
+        user_send_cmd_prepare(USER_CTRL_SPP_DISCONNECT, 0, NULL);
+    }
+}
+
+void transport_spp_flow_cfg(void)
+{
+#if SPP_DATA_RECIEVT_FLOW
+    rfcomm_change_credits_setting(1, 1);
+#endif
+}
+
+//流控使能 EN: 1 or 0
+int transport_spp_flow_enable(u8 en)
+{
+    int ret = -1;
+
+#if SPP_DATA_RECIEVT_FLOW
+    if (spp_channel) {
+        ret = rfcomm_send_cretits_by_profile(spp_channel, 1, !en);
+    }
+#endif
+
+    log_info("transport_spp_flow_enable:%02x,%d,%d\n", spp_channel, en, ret);
+    return ret;
 }
 
 #endif

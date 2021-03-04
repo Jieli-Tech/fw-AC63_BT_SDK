@@ -1,7 +1,7 @@
 /*********************************************************************************************
     *   Filename        : app_mouse.c
 
-    *   Description     :
+    *   Description     :鼠标单模切换
 
     *   Author          :
 
@@ -34,7 +34,7 @@
 #include "app_power_manage.h"
 #include "app_config.h"
 
-#if(CONFIG_APP_MOUSE)
+#if(CONFIG_APP_MOUSE_SINGLE)
 
 #define LOG_TAG_CONST       MOUSE
 #define LOG_TAG             "[MOUSE]"
@@ -1319,7 +1319,7 @@ static void app_select_btmode(u8 mode)
 
 #if TCFG_USER_EDR_ENABLE
         //close edr
-#ifndef CONFIG_CPU_BR30
+#ifndef CONFIG_NEW_BREDR_ENABLE
         radio_set_eninv(0);
 #endif
         bredr_power_put();

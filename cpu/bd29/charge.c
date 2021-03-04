@@ -247,7 +247,7 @@ static void ldo5v_detect(void *priv)
                 LVCMP_EDGE_SEL(0);
                 LDO5V_EDGE_SEL(1);
                 if (__this->data->ldo5v_off_filter) {
-                    charge_event_to_user(CHARGE_EVENT_CHARGE_ERR);
+                    charge_event_to_user(CHARGE_EVENT_LDO5V_KEEP);
                 }
             }
         }

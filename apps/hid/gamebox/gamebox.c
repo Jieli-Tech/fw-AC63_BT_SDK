@@ -231,7 +231,9 @@ static void gamebox_task(void *arg)
             heartbeat_packet[0]++;
             /* uart_write(heartbeat_packet,1); */
             if (check_ota_mode()) {
+#if TCFG_PC_ENABLE
                 usb_stop(0);
+#endif
                 r_printf("%s()", __func__);
                 sys_timer_del(timer_id);
             }

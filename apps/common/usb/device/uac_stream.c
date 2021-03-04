@@ -4,7 +4,7 @@
 #include "usb/usb_config.h"
 #include "usb/device/usb_stack.h"
 
-#if TCFG_PC_ENABLE && (USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS)
+#if TCFG_USB_SLAVE_AUDIO_ENABLE
 #include "usb/device/uac_audio.h"
 #include "uac_stream.h"
 #include "audio_config.h"
@@ -30,6 +30,7 @@ struct uac_speaker_handle {
     cbuffer_t cbuf;
     volatile u8 need_resume;
     u8 channel;
+    u8 alive;
     void *buffer;
     void *audio_track;
     void (*rx_handler)(int, void *, int);
@@ -67,6 +68,22 @@ u32 uac_speaker_stream_size()
     return 0;
 }
 
+u32 uac_speaker_get_alive()
+{
+    if (uac_speaker) {
+        return uac_speaker->alive;
+    }
+    return 0;
+}
+void uac_speaker_set_alive(u8 alive)
+{
+    local_irq_disable();
+    if (uac_speaker) {
+        uac_speaker->alive = alive;
+    }
+    local_irq_enable();
+}
+
 void uac_speaker_stream_buf_clear(void)
 {
     if (speaker_stream_is_open) {
@@ -85,10 +102,18 @@ int uac_speaker_stream_sample_rate(void)
 {
 #ifdef CONFIG_MEDIA_DEVELOP_ENABLE
     if (uac_speaker && uac_speaker->audio_track) {
-        return audio_local_sample_track_rate(uac_speaker->audio_track);
+        int sr = audio_local_sample_track_rate(uac_speaker->audio_track);
+        if ((sr < (SPK_AUDIO_RATE + 500)) && (sr > (SPK_AUDIO_RATE - 500))) {
+            return sr;
+        }
+        /* printf("uac audio_track reset \n"); */
+        local_irq_disable();
+        audio_local_sample_track_close(uac_speaker->audio_track);
+        uac_speaker->audio_track = audio_local_sample_track_open(SPK_CHANNEL, SPK_AUDIO_RATE, 1000);
+        local_irq_enable();
     }
 #endif
-    return 48000;
+    return SPK_AUDIO_RATE;
 }
 
 void uac_speaker_stream_write(const u8 *obuf, u32 len)
@@ -107,13 +132,14 @@ void uac_speaker_stream_write(const u8 *obuf, u32 len)
         if (uac_speaker->rx_handler) {
             if (uac_speaker->cbuf.data_len >= UAC_BUFFER_MAX) {
                 // 马上就要满了，赶紧取走
-                /*uac_speaker->need_resume = 1; //2020-12-22注:无需唤醒*/
+                uac_speaker->need_resume = 1; //2020-12-22注:无需唤醒
             }
             if (uac_speaker->need_resume) {
                 uac_speaker->need_resume = 0;
                 uac_speaker->rx_handler(0, (void *)obuf, len);
             }
         }
+        uac_speaker->alive = 0;
     }
 }
 
@@ -235,7 +261,6 @@ void uac_speaker_stream_close()
 
 int uac_get_spk_vol()
 {
-#if USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS
     int max_vol = get_max_sys_vol();
     int vol = app_audio_get_volume(APP_AUDIO_STATE_MUSIC);
     if (vol * 100 / max_vol < 100) {
@@ -243,7 +268,6 @@ int uac_get_spk_vol()
     } else {
         return 99;
     }
-#endif
     return 0;
 }
 static u32 mic_stream_is_open;
@@ -305,11 +329,11 @@ int uac_mic_stream_read(u8 *buf, u32 len)
     u16 *l_ch = (u16 *)buf;
     u16 *r_ch = (u16 *)buf;
     r_ch++;
-    for (int i = 0; i < len / 4; i++) {
+    for (int i = 0; i < len / 2; i++) {
         *l_ch = sin_48k[i];
         *r_ch = sin_48k[i];
-        l_ch += 2;
-        r_ch += 2;
+        l_ch += 1;
+        r_ch += 1;
     }
     return len;
 #elif   UAC_DEBUG_ECHO_MODE

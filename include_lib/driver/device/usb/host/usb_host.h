@@ -8,6 +8,8 @@
 // #include "usb_config.h"
 
 
+#define HUSB_MODE    0
+#define USB_HUB      0
 struct usb_private_data {
     usb_dev usb_id;
     u8 status;

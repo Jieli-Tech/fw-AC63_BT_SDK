@@ -8,9 +8,9 @@
 //RAM 单声道时：4.4Kbyte
 //RAM 双声道时：5.4Kbyte
 typedef struct _spectrum_fft_open_parm {
-    u32 sr;
-    u32 channel: 4;
-    u32 mode: 4; //模式，双声道起作用，0 计算的是第一声道的频谱值，
+    u32 sr;              //采样率
+    u32 channel: 4;      //通道数
+    u32 mode: 4;         //模式，双声道起作用，0 计算的是第一声道的频谱值，
     //1计算的是第二声道频谱值，2为第一声道与第二声道相加除2的频谱值
 
     float attackFactor;//下降因子[0,1)
@@ -30,12 +30,27 @@ typedef struct _spectrum_fft_hdl {
     struct audio_stream_entry entry;	// 音频流入口
 } spectrum_fft_hdl;
 
-
+/*----------------------------------------------------------------------------*/
+/**@brief   打开
+   @param    *_parm: 始化参数，详见结构体spectrum_fft_open_parm
+   @return   句柄
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 spectrum_fft_hdl *audio_spectrum_fft_open(spectrum_fft_open_parm *parm);
+
+/*----------------------------------------------------------------------------*/
+/**@brief    audio_spectrum_fft_close 关闭处理
+   @param    _hdl:句柄
+   @return  0:成功  -1：失败
+   @note
+*/
+/*----------------------------------------------------------------------------*/
 int audio_spectrum_fft_close(spectrum_fft_hdl *hdl);
+
 /*----------------------------------------------------------------------------*/
 /**@brief    audio_spectrum_fft_switch 运行过程做开关处理
-   @param    _hdl:句柄
+   @param    hdl:句柄
    @param    en:0 关闭频响运算  1 打开频响运算  (通话模式，不支持频谱计算.通话模式已经使用fft， 需关闭频谱计算)
    @return
    @note

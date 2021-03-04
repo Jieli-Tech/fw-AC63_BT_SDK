@@ -17,5 +17,6 @@ int spdif_dec_open(struct audio_fmt fmt);
 void spdif_dec_close(void);
 bool spdif_dec_check(void);
 
+void spdif_dec_init(void);
 #endif
 
