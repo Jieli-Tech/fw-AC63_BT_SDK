@@ -42,6 +42,7 @@ const struct task_info task_info_table[] = {
     {"btstack",             3,     768,  256  },
     {"systimer",		    7,	   128,   0		},
     {"update",				1,	   320,   0		},
+    {"dw_update",           2,     256,   128  },
 #if (RCSP_BTMATE_EN)
     {"rcsp_task",		    2,		640,	128	},
 #endif
