@@ -859,7 +859,7 @@ static int make_set_rsp_data(void)
     log_info("rsp_data(%d):", offset);
     log_info_hexdump(buf, offset);
     scan_rsp_data_len = offset;
-    ble_op_set_adv_data(offset, buf);
+    ble_op_set_rsp_data(offset, buf);
     return 0;
 }
 

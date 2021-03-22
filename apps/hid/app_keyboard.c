@@ -945,7 +945,7 @@ static int event_handler(struct application *app, struct sys_event *event)
         return 0;
 
     case SYS_BT_EVENT:
-#if (TCFG_USER_EDR_ENABLE || TCFG_USER_EDR_ENABLE)
+#if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
         if ((u32)event->arg == SYS_BT_EVENT_TYPE_CON_STATUS) {
             bt_connction_status_event_handler(&event->u.bt);
         } else if ((u32)event->arg == SYS_BT_EVENT_TYPE_HCI_STATUS) {
