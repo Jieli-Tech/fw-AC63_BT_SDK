@@ -5,10 +5,10 @@
 
 |P/N|Core|RAM|内置充电|Flash|电源|功耗|工作电压|工作温度|蓝牙协议|蓝牙版本|蓝牙速率|应用场景|OTA|Package|
 |:-------:|:--------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|
-|AC6311A|32bit@120MHz|48~56KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@30uA<br>Systemoff@1uA<br>TX 0dB@8mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6313A|32bit@120MHz|48~56KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@30uA<br>Systemoff@1uA<br>TX 0dB@8mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6318A|32bit@120MHz|48~56KB|No        |256KB|LDO|Sleep@30uA<br>Systemoff@1uA<br>TX 0dB@8mA<br>RX@|1.8~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6319A|32bit@120MHz|48~56KB|No        |256KB|LDO/DCDC|Sleep@30uA<br>Systemoff@1uA<br>TX 0dB@8mA<br>RX@|1.8~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
+|AC6311A|32bit@120MHz|48~56KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@30uA<br>Systemoff@1uA<br>TX 0dB@8mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[QFN32](./datasheet/AC631N规格书/AC6311A_Datasheet_20V1.1.pdf)|
+|AC6313A|32bit@120MHz|48~56KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@30uA<br>Systemoff@1uA<br>TX 0dB@8mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[QFN20](./datasheet/AC631N规格书/AC6313A_Datasheet_20V1.1.pdf)|
+|AC6318A|32bit@120MHz|48~56KB|No        |256KB|LDO|Sleep@30uA<br>Systemoff@1uA<br>TX 0dB@8mA<br>RX@|1.8~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP8](./datasheet/AC631N规格书/AC6318A_Datasheet_20V1.1.pdf)|
+|AC6319A|32bit@120MHz|48~56KB|No        |256KB|LDO/DCDC|Sleep@30uA<br>Systemoff@1uA<br>TX 0dB@8mA<br>RX@|1.8~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP16](./datasheet/AC631N规格书/AC6319A_Datasheet_20V1.0.pdf)|
 
 
 
@@ -20,12 +20,12 @@
 
 |P/N|Core|RAM|内置充电|Flash|电源|功耗|工作电压|工作温度|蓝牙协议|蓝牙版本|蓝牙速率|应用场景|OTA|Package|
 |:-------:|:--------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|
-|AC6363F|32bit@192MHz|136KB|Yes(250mA)|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6366C|32bit@192MHz|136KB|Yes(250mA)|256KB|LDO|Sleekp@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
+|AC6363F|32bit@192MHz|136KB|Yes(250mA)|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[QFN20](./datasheet/AC636N规格书/AC6363F_Datasheet_V1.0.pdf)|
+|AC6366C|32bit@192MHz|136KB|Yes(250mA)|256KB|LDO|Sleekp@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[LQFN32](./datasheet/AC636N规格书/AC6366C_Datasheet_V1.0.pdf)|
 |AC6369C|32bit@192MHz|136KB|Yes(250mA)|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6369F|32bit@192MHz|136KB|Yes(250mA)|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6368A|32bit@192MHz|136KB|No|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6368B|32bit@192MHz|136KB|No|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
+|AC6369F|32bit@192MHz|136KB|Yes(250mA)|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP16](./datasheet/AC636N规格书/AC6369F_Datasheet_V1.0.pdf)|
+|AC6368A|32bit@192MHz|136KB|No|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~3.6V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP8](./datasheet/AC636N规格书/AC6368A_Datasheet_V1.0.pdf)|
+|AC6368B|32bit@192MHz|136KB|No|256KB|LDO|Sleep@80uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP8](./datasheet/AC636N规格书/AC6368B_Datasheet_V1.0.pdf)|
 
 
 635 Series Brief
@@ -35,7 +35,7 @@
 
 |P/N|Core|RAM|内置充电|Flash|电源|功耗|工作电压|工作温度|蓝牙协议|蓝牙版本|蓝牙速率|应用场景|OTA|Package|
 |:-------:|:--------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|
-|AC6351D|32bit@240MHz|176KB|Yes(250mA)|256KB|LDO|Sleep@150uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
+|AC6351D|32bit@240MHz|176KB|Yes(250mA)|256KB|LDO|Sleep@150uA<br>Systemoff@1uA<br>TX 0dB@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[LQFN48](./datasheet/AC635N规格书/AC6351D_Datasheet_V1.0.pdf)|
 
 637 Series Brief
 --------------
@@ -44,9 +44,9 @@
 
 |P/N|Core|RAM|内置充电|Flash|电源|功耗|工作电压|工作温度|蓝牙协议|蓝牙版本|蓝牙速率|应用场景|OTA|Package|
 |:-------:|:--------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|
-|AC6373B|32bit@160MHz|176KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@50uA<br>Systemoff@1uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6376F|32bit@160MHz|176KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@50uA<br>Systemoff@1uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6379B|32bit@160MHz|176KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@50uA<br>Systemoff@1uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
+|AC6373B|32bit@160MHz|176KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@50uA<br>Systemoff@1uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[QFN20](./datasheet/AC637N规格书/AC6373B_Datasheet_V1.0.pdf)|
+|AC6376F|32bit@160MHz|176KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@50uA<br>Systemoff@1uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[QFN32](./datasheet/AC637N规格书/AC6376F_Datasheet_V1.0.pdf)|
+|AC6379B|32bit@160MHz|176KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@50uA<br>Systemoff@1uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP16](./datasheet/AC637N规格书/AC6379B_Datasheet_V1.0.pdf)|
 
 632 Series Brief
 --------------
@@ -55,11 +55,11 @@
 
 |P/N|Core|RAM|内置充电|Flash|电源|功耗|工作电压|工作温度|蓝牙协议|蓝牙版本|蓝牙速率|应用场景|OTA|Package|
 |:-------:|:--------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|
-|AC6321A|32bit@96MHz|64+8KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6323A|32bit@96MHz|64+8KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6328A|32bit@96MHz|64+8KB|No|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~3.4V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
+|AC6321A|32bit@96MHz|64+8KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[QFN32](./datasheet/AC632N规格书/datasheet/AC6321A_Datasheet_20V1.0.pdf)|
+|AC6323A|32bit@96MHz|64+8KB|Yes(250mA)|256KB|LDO/DCDC|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[QFN20](./datasheet/AC632N规格书/datasheet/AC6323A_Datasheet_20V1.0.pdf)|
+|AC6328A|32bit@96MHz|64+8KB|No|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~3.4V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP8](./datasheet/AC632N规格书/datasheet/AC6328A_Datasheet_20V1.0.pdf)|
 |AC6328B|32bit@96MHz|64+8KB|No|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6329B|32bit@96MHz|64+8KB|No|256KB|LDO/DCDC|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6329C|32bit@96MHz|64+8KB|Yes(250mA)|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6329E|32bit@96MHz|64+8KB|Yes(250mA)|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~3.4V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
-|AC6329F|32bit@96MHz|64+8KB|No|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~3.4V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|
+|AC6329B|32bit@96MHz|64+8KB|No|256KB|LDO/DCDC|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP16](./datasheet/AC632N规格书/datasheet/AC6329B_Datasheet_20V1.0.pdf)|
+|AC6329C|32bit@96MHz|64+8KB|Yes(250mA)|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP16](./datasheet/AC632N规格书/datasheet/AC6329C_Datasheet_20V1.0.pdf)|
+|AC6329E|32bit@96MHz|64+8KB|Yes(250mA)|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~3.4V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP16](./datasheet/AC632N规格书/datasheet/AC6329E_Datasheet_20V1.0.pdf)|
+|AC6329F|32bit@96MHz|64+8KB|No|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dB@5mA<br>RX@|1.8~3.4V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP16](./datasheet/AC632N规格书/datasheet/AC6329F_Datasheet_20V1.0.pdf)|
