@@ -1,4 +1,8 @@
-# fw-AC63_BT_SDK
+
+[tag download]:https://github.com/Jieli-Tech/fw-AC63_BT_SDK/tags
+[tag_badgen]:https://img.shields.io/github/v/tag/Jieli-Tech/fw-AC63_BT_SDK?style=plastic&logo=bluetooth&labelColor=ffffff&color=informational&label=Tag&logoColor=blue
+
+# fw-AC63_BT_SDK   [![tag][tag_badgen]][tag download]
 
 中文 | [EN](./README-en.md)
 
