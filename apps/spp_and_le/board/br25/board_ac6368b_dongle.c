@@ -7,6 +7,8 @@
 #include "device/key_driver.h"
 #include "asm/power/p33.h"
 #include "asm/pwm_led.h"
+#include "usb/otg.h"
+#include "asm/usb.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -153,6 +155,23 @@ LED_PLATFORM_DATA_BEGIN(pwm_led_data)
 LED_PLATFORM_DATA_END()
 #endif
 
+/************************** otg data****************************/
+#if TCFG_OTG_MODE
+struct otg_dev_data otg_data = {
+    .usb_dev_en = 0,
+	.slave_online_cnt = TCFG_OTG_SLAVE_ONLINE_CNT,
+	.slave_offline_cnt = TCFG_OTG_SLAVE_OFFLINE_CNT,
+	.host_online_cnt = TCFG_OTG_HOST_ONLINE_CNT,
+	.host_offline_cnt = TCFG_OTG_HOST_OFFLINE_CNT,
+	.detect_mode = TCFG_OTG_MODE,
+	.detect_time_interval = TCFG_OTG_DET_INTERVAL,
+};
+#endif
+REGISTER_DEVICES(device_table) = {
+#if TCFG_OTG_MODE
+    { "otg",     &usb_dev_ops, (void *) &otg_data},
+#endif
+};
 
 static void board_devices_init(void)
 {
@@ -248,7 +267,9 @@ static void close_gpio(void)
     gpio_dieh(GPIOC, 0,16, ~port_group[PORTC_GROUP], GPIO_AND);
 
     //< close usb io
+#if !USB_SUSPEND_RESUME
     usb_iomode(1);
+#endif
 
 	//dp dm is io_key
 	/* gpio_set_pull_up(IO_PORT_DP, 0); */
@@ -273,7 +294,7 @@ static void close_gpio(void)
 }
 
 /************************** PWR config ****************************/
-struct port_wakeup port0 = {
+struct port_wakeup port1 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
@@ -281,6 +302,13 @@ struct port_wakeup port0 = {
     .filter_enable      = ENABLE,
 };
 
+struct port_wakeup port2 = {
+	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
+	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.attribute          = BLUETOOTH_RESUME,                  //保留参数
+	.iomap              = IO_PORT_DP,                       //唤醒口选择
+    .filter_enable      = ENABLE,
+};
 const struct sub_wakeup sub_wkup = {
 	.attribute  = BLUETOOTH_RESUME,
 };
@@ -291,11 +319,25 @@ const struct charge_wakeup charge_wkup = {
 
 const struct wakeup_param wk_param = {
     .filter     = PORT_FLT_2ms,
-	.port[1]    = &port0,
+	.port[1]    = &port1,
+#if USB_SUSPEND_RESUME
+	.port[2]    = &port2,
+#endif
 	.sub        = &sub_wkup,
 	.charge     = &charge_wkup,
 };
 
+void usb_wkupup_disable(void)
+{
+	//log_info("usb wkup disable\n");
+    power_wakeup_index_disable(2);
+}
+
+void usb_wkupup_enable(void)
+{
+    //log_info("usb wkup enable\n");
+    power_wakeup_index_enable(2);
+}
 //-----------------------------------------------
 
 
@@ -374,6 +416,7 @@ void board_set_soft_poweroff(void)
 #define     APP_IO_DEBUG_1(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT |= BIT(x);}
 
 
+
 //-----------------------------------------------
 void sleep_exit_callback(u32 usec)
 {
@@ -385,6 +428,28 @@ void sleep_exit_callback(u32 usec)
 		power_set_mode(TCFG_LOWPOWER_POWER_SEL);
 	}
 
+#if USB_SUSPEND_RESUME
+    usb_phy_resume(0);
+
+	u8 sfr = p33_rx_1byte(P3_WKUP_SRC);
+	if(sfr & BIT(1)){
+		sfr = p33_rx_1byte(P3_WKUP_PND);
+	   	for(u8 i=0; i<8; i++){
+			if(sfr & BIT(i)){
+				p33_tx_1byte(P3_WKUP_CPND, BIT(i));
+		    	log_info("Port index %d", i);
+			}
+		}
+
+        void usb_resume_sign(const usb_dev usb_id);
+
+		if(sfr & BIT(1)){
+            usb_remote_wakeup(0);
+		}
+	}
+
+	usb_wkupup_disable();
+#endif
 }
 
 void sleep_enter_callback(u8  step)
@@ -399,8 +464,14 @@ void sleep_enter_callback(u8  step)
 			power_set_mode(PWR_LDO15);
 		}
     } else {
+
 #if 1
         close_gpio();
+#endif
+
+#if USB_SUSPEND_RESUME
+		usb_phy_suspend(0);
+		usb_wkupup_enable();
 #endif
     }
 }
@@ -428,6 +499,10 @@ void board_power_init(void)
 	power_keep_dacvdd_en(0);
 
 	power_wakeup_init(&wk_param);
+
+#if USB_SUSPEND_RESUME
+    usb_wkupup_disable();
+#endif
 
 
 /* #if (!TCFG_IOKEY_ENABLE && !TCFG_ADKEY_ENABLE) */

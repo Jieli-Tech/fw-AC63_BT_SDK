@@ -120,6 +120,26 @@ static u16 vbat_value_avg(void)
     return sum / vbat_value_array_size;
 }
 
+#define dtemp_value_array_size   16
+static u16 dtemp_value_array[dtemp_value_array_size];
+static void dtemp_value_push(u16 dtemp_value)
+{
+    static u32 pos = 0;
+    dtemp_value_array[pos] = dtemp_value;
+    pos++;
+    if (pos == dtemp_value_array_size) {
+        pos = 0;
+    }
+}
+static u16 dtemp_value_avg(void)
+{
+    u32 i, sum = 0;
+    for (i = 0; i < dtemp_value_array_size; i++) {
+        sum += dtemp_value_array[i];
+    }
+    return sum / dtemp_value_array_size;
+}
+
 void adc_set_vbat_vddio_tieup(u8 en)
 {
     vbat_vddio_tieup = !!en;
@@ -139,6 +159,10 @@ u32 adc_get_value(u32 ch)
 
     if (ch == AD_CH_VBAT) {
         return vbat_value_avg();
+    }
+
+    if (ch == AD_CH_DTEMP) {
+        return dtemp_value_avg();
     }
 
     for (int i = 0; i < ADC_MAX_CH; i++) {
@@ -320,10 +344,11 @@ void adc_scan(void *priv)
             vbg_adc_value = _adc_res;
         } else {
             adc_queue[cur_ch].value = _adc_res;
-            if (adc_queue[cur_ch].ch == AD_CH_VBAT) {
+            if (adc_queue[cur_ch].ch == AD_CH_DTEMP) {
+                dtemp_value_push(adc_queue[cur_ch].value);
+            } else if (adc_queue[cur_ch].ch == AD_CH_VBAT) {
                 vbat_value_push(adc_queue[cur_ch].value);
-            }
-            if (adc_queue[cur_ch].ch == AD_CH_LDOREF) {
+            } else if (adc_queue[cur_ch].ch == AD_CH_LDOREF) {
                 vbg_adc_value = _adc_res;
             }
         }
@@ -363,6 +388,13 @@ void _adc_init(u32 sys_lvd_en)
     adc_pmu_detect_en(1);
 
     u32 i;
+
+    adc_sample(AD_CH_DTEMP);
+    for (i = 0; i < dtemp_value_array_size; i ++) {
+        while (!(JL_ADC->CON & BIT(7)));
+        dtemp_value_array[i] = JL_ADC->RES;
+        JL_ADC->CON |= BIT(6);
+    }
 
     vbat_adc_value = 0;
     adc_sample(AD_CH_VBAT);
@@ -441,7 +473,7 @@ static u32 get_vdd_voltage(u32 ch)
 }
 
 
-static void wvdd_trim(u8 trim)
+static u8 wvdd_trim(u8 trim)
 {
     u8 wvdd_lev = 0;
     wvdd_lev = 0;
@@ -459,15 +491,17 @@ static void wvdd_trim(u8 trim)
         } while (wvdd_lev < 8);
         WLDO06_EN(0);
 
-        update_wvdd_trim_level(wvdd_lev);
+        //update_wvdd_trim_level(wvdd_lev);
     } else {
         wvdd_lev = get_wvdd_trim_level();
     }
 
-    printf("wvdd_lev: %d\n", wvdd_lev);
+    printf("trim: %d, wvdd_lev: %d\n", trim, wvdd_lev);
 
     /* power_set_wvdd(wvdd_lev); */
     M2P_WDVDD = wvdd_lev;
+
+    return wvdd_lev;
 }
 
 //950 ~ 1250
@@ -478,7 +512,7 @@ static void wvdd_trim(u8 trim)
 #define PVDD_TRIM_VALUE_H  		1050
 #define PVDD_TRIM_VALUE_L 		1000
 #endif /* #ifdef TCFG_PVDD_TRIM_VALUE */
-static void pvdd_trim(u8 trim)
+static u8 pvdd_trim(u8 trim)
 {
     u32 v = 0;
     u32 lev = 0xf;
@@ -495,7 +529,7 @@ static void pvdd_trim(u8 trim)
             lev++;
         }
 
-        update_pvdd_trim_level(lev);
+        //update_pvdd_trim_level(lev);
     } else {
         lev = get_pvdd_trim_level();
     }
@@ -505,7 +539,9 @@ static void pvdd_trim(u8 trim)
 
     P33_CON_SET(P3_PVDD0_AUTO, 0, 8, (7 << 4) | (lev - 3));
 
-    printf("pvdd_lev: %d, pvdd_lev_l: %d\n", lev, lev - 3);
+    printf("trim: %d, pvdd_lev: %d, pvdd_lev_l: %d\n", trim, lev, lev - 3);
+
+    return lev;
 }
 
 void adc_init()
@@ -527,12 +563,16 @@ void adc_init()
 #endif
 
     //trim wvdd
-    u8 trim = check_pmu_voltage(0);
-    wvdd_trim(trim);
-    pvdd_trim(trim);
+    u8 trim = check_wvdd_pvdd_trim(0);
+    u8 wvdd_lev = wvdd_trim(trim);
+    u8 pvdd_lev = pvdd_trim(trim);
+
+    if (trim) {
+        update_wvdd_pvdd_trim_level(wvdd_lev, pvdd_lev);
+    }
+
 
     _adc_init(1);
-
 }
 //late_initcall(adc_init);
 

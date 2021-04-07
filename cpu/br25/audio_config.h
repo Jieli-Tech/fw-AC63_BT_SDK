@@ -65,6 +65,10 @@
 #define TCFG_ESCO_LIMITER			0  	//通话近端底噪/限幅器
 #endif
 
+/*
+ *[模拟音量]最大等级配置
+ *比如配置30，则表示0~30，总共31等级
+ */
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_MONO_LR_DIFF || \
      TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_DUAL_LR_DIFF)
 #define MAX_ANA_VOL             (21)
@@ -72,7 +76,17 @@
 #define MAX_ANA_VOL             (30)
 #endif/*TCFG_AUDIO_DAC_CONNECT_MODE*/
 
-#define MAX_COM_VOL             (22)    // 具体数值应小于联合音量等级的数组大小 (combined_vol_list)
+/*
+ *[联合音量]最大等级配置
+ *和联合音量等级的数组大小 (combined_vol_list)关联
+ *比如配置30，则表示0~30，总共31等级
+ */
+#define MAX_COM_VOL             (30)
+
+/*
+ *[数字音量]最大等级配置
+ *比如配置30，则表示0~30，总共31等级
+ */
 #define MAX_DIG_VOL             (100)
 
 #define MAX_DIG_GR_VOL          (30)//数字音量组的最大值
@@ -91,7 +105,7 @@
 
 
 #define SYS_DEFAULT_VOL         	0//(SYS_MAX_VOL/2)
-#define SYS_DEFAULT_TONE_VOL    	18//(SYS_MAX_VOL)
+#define SYS_DEFAULT_TONE_VOL    	10//(SYS_MAX_VOL)
 #define SYS_DEFAULT_SIN_VOL     	17
 
 #define APP_AUDIO_STATE_IDLE        0
@@ -160,6 +174,11 @@ void volume_up_down_direct(s8 value);
 void app_audio_volume_init(void);
 void app_audio_set_digital_volume(s16 volume);
 void dac_trim_hook(u8 pos);
+void audio_combined_vol_init(u8 cfg_en);
+
+
+void *app_audio_alloc_use_buff(int use_len);
+void app_audio_release_use_buff(void *buf);
 
 int audio_output_buf_time(void);
 int audio_output_dev_is_working(void);

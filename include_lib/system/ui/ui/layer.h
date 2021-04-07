@@ -13,7 +13,7 @@ struct layer {
     u8 highlight;
     u8 ctrl_num;
     u8 css_num;
-    u16 css[2];
+    u32 css[2];
     struct draw_context dc;
     struct layout *layout;
     const struct layer_info *info;

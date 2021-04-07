@@ -165,6 +165,9 @@ void app_audio_volume_init(void);
 void app_audio_set_digital_volume(s16 volume);
 void dac_trim_hook(u8 pos);
 
+void *app_audio_alloc_use_buff(int use_len);
+void app_audio_release_use_buff(void *buf);
+
 int audio_output_buf_time(void);
 int audio_output_dev_is_working(void);
 int audio_output_sync_start(void);

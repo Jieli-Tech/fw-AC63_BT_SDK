@@ -6,69 +6,57 @@
 union ui_control_info;
 struct layout_info;
 
-
-#define CTRL_TYPE_WINDOW 			2
-#define CTRL_TYPE_LAYOUT 			3
-#define CTRL_TYPE_LAYER 			4
-#define CTRL_TYPE_GRID 				5
-#define CTRL_TYPE_LIST 				6
-#define CTRL_TYPE_BUTTON 			7
-#define CTRL_TYPE_PIC 				8
-#define CTRL_TYPE_BATTERY 			9
-#define CTRL_TYPE_TIME 				10
-#define CTRL_TYPE_CAMERA_VIEW 		11
-#define CTRL_TYPE_TEXT 				12
-#define CTRL_TYPE_ANIMATION 		13
-#define CTRL_TYPE_PLAYER			14
+#define CTRL_TYPE_WINDOW            2
+#define CTRL_TYPE_LAYOUT            3
+#define CTRL_TYPE_LAYER             4
+#define CTRL_TYPE_GRID              5
+#define CTRL_TYPE_LIST              6
+#define CTRL_TYPE_BUTTON            7
+#define CTRL_TYPE_PIC               8
+#define CTRL_TYPE_BATTERY           9
+#define CTRL_TYPE_TIME              10
+#define CTRL_TYPE_CAMERA_VIEW       11
+#define CTRL_TYPE_TEXT              12
+#define CTRL_TYPE_ANIMATION         13
+#define CTRL_TYPE_PLAYER            14
 #define CTRL_TYPE_NUMBER            15
 
-#define CTRL_TYPE_PROGRESS          30
+#define CTRL_TYPE_PROGRESS          20
 #define CTRL_PROGRESS_CHILD_BEGIN   (CTRL_TYPE_PROGRESS + 1)
-#define CTRL_PROGRESS_CHILD_HIGHLIGHT   (CTRL_PROGRESS_CHILD_BEGIN)
+#define CTRL_PROGRESS_CHILD_HIGHLIGHT   (CTRL_PROGRESS_CHILD_BEGIN) //21
 #define CTRL_PROGRESS_CHILD_END     (CTRL_PROGRESS_CHILD_BEGIN + 1)
 
-#define CTRL_TYPE_MULTIPROGRESS          32
+#define CTRL_TYPE_MULTIPROGRESS          22
 #define CTRL_MULTIPROGRESS_CHILD_BEGIN   (CTRL_TYPE_MULTIPROGRESS + 1)
-#define CTRL_MULTIPROGRESS_CHILD_HIGHLIGHT   (CTRL_MULTIPROGRESS_CHILD_BEGIN)
+#define CTRL_MULTIPROGRESS_CHILD_HIGHLIGHT   (CTRL_MULTIPROGRESS_CHILD_BEGIN)//23
 #define CTRL_MULTIPROGRESS_CHILD_END     (CTRL_MULTIPROGRESS_CHILD_BEGIN + 1)
 
-#define CTRL_TYPE_WATCH 			40
-#define CTRL_WATCH_CHILD_BEGIN  	(CTRL_TYPE_WATCH + 1)
-#define CTRL_WATCH_CHILD_HOUR 		(CTRL_WATCH_CHILD_BEGIN)
-#define CTRL_WATCH_CHILD_MIN 		(CTRL_WATCH_CHILD_BEGIN+1)
-#define CTRL_WATCH_CHILD_SEC 		(CTRL_WATCH_CHILD_BEGIN+2)
-#define CTRL_WATCH_CHILD_END 		(CTRL_WATCH_CHILD_BEGIN+3)
+#define CTRL_TYPE_WATCH             24
+#define CTRL_WATCH_CHILD_BEGIN      (CTRL_TYPE_WATCH + 1)
+#define CTRL_WATCH_CHILD_HOUR       (CTRL_WATCH_CHILD_BEGIN)//25
+#define CTRL_WATCH_CHILD_MIN        (CTRL_WATCH_CHILD_BEGIN+1)//26
+#define CTRL_WATCH_CHILD_SEC        (CTRL_WATCH_CHILD_BEGIN+2)//27
+#define CTRL_WATCH_CHILD_END        (CTRL_WATCH_CHILD_BEGIN+3)
 
 
-#define CTRL_TYPE_SLIDER 			50
+#define CTRL_TYPE_SLIDER            28
 
-#define SLIDER_CHILD_BEGIN 	 	 		(CTRL_TYPE_SLIDER+1)
-#define	SLIDER_CHILD_UNSELECT_PIC   	(SLIDER_CHILD_BEGIN)
-#define	SLIDER_CHILD_SELECTED_PIC  		(SLIDER_CHILD_BEGIN+1)
-#define	SLIDER_CHILD_SLIDER_PIC     	(SLIDER_CHILD_BEGIN+2)
-#define SLIDER_CHILD_PERSENT_TEXT   	(SLIDER_CHILD_BEGIN+3)
-#define SLIDER_CHILD_END 	 			(SLIDER_CHILD_BEGIN+4)
+#define SLIDER_CHILD_BEGIN          (CTRL_TYPE_SLIDER+1)
+#define SLIDER_CHILD_UNSELECT_PIC   (SLIDER_CHILD_BEGIN)//29
+#define SLIDER_CHILD_SELECTED_PIC   (SLIDER_CHILD_BEGIN+1)//30
+#define SLIDER_CHILD_SLIDER_PIC     (SLIDER_CHILD_BEGIN+2)//31
+#define SLIDER_CHILD_PERSENT_TEXT   (SLIDER_CHILD_BEGIN+3)//32
+#define SLIDER_CHILD_END            (SLIDER_CHILD_BEGIN+4)
 
-#define CTRL_TYPE_VSLIDER            55
+
+#define CTRL_TYPE_VSLIDER            33
 
 #define VSLIDER_CHILD_BEGIN          (CTRL_TYPE_VSLIDER+1)
-#define VSLIDER_CHILD_UNSELECT_PIC   (VSLIDER_CHILD_BEGIN)
-#define VSLIDER_CHILD_SELECTED_PIC   (VSLIDER_CHILD_BEGIN+1)
-#define VSLIDER_CHILD_SLIDER_PIC     (VSLIDER_CHILD_BEGIN+2)
-#define VSLIDER_CHILD_PERSENT_TEXT   (VSLIDER_CHILD_BEGIN+3)
+#define VSLIDER_CHILD_UNSELECT_PIC   (VSLIDER_CHILD_BEGIN)//34
+#define VSLIDER_CHILD_SELECTED_PIC   (VSLIDER_CHILD_BEGIN+1)//35
+#define VSLIDER_CHILD_SLIDER_PIC     (VSLIDER_CHILD_BEGIN+2)//36
+#define VSLIDER_CHILD_PERSENT_TEXT   (VSLIDER_CHILD_BEGIN+3)//37
 #define VSLIDER_CHILD_END            (VSLIDER_CHILD_BEGIN+4)
-
-#define CTRL_TYPE_BROWSER           60
-#define CTRL_TYPE_BROWSER_ITEM      61
-
-#define CTRL_TYPE_FILE_ATTRS        70
-#define CTRL_TYPE_FILE_PREVIEW      71
-#define CTRL_TYPE_FILE_TYPE_ICON    72
-#define CTRL_TYPE_FILE_RW_PIC       73
-#define CTRL_TYPE_FILE_FILM_LEN     74
-#define CTRL_TYPE_FILE_NAME         75
-#define CTRL_TYPE_FILE_SIZE         76
-#define CTRL_TYPE_FILE_CREATE_TIME  77
 
 
 struct ui_ctrl_info_head {
@@ -95,9 +83,10 @@ struct ui_text_list {
 
 struct ui_image_list_t {
     u16 num;
-    u16 image[32];
+    u16 image[64];
 };
 
+#define UI_TEXT_LIST_MAX_NUM    4
 struct ui_text_list_t {
     u16 num;
     char str[16];
@@ -198,16 +187,15 @@ struct ui_slider_info {
     struct ui_ctrl_info_head head;
     u8 step;
     struct ui_ctrl_info_head *ctrl;
-    struct element_event_action *action;
+    // struct element_event_action *action;
 };
 
 struct ui_vslider_info {
     struct ui_ctrl_info_head head;
     u8 step;
     struct ui_ctrl_info_head *ctrl;
-    struct element_event_action *action;
+    // struct element_event_action *action;
 };
-
 
 struct ui_watch_info {
     struct ui_ctrl_info_head head;
@@ -378,5 +366,6 @@ static inline void *control_event_handler_for_id(int id)
 
 
 #endif
+
 
 

@@ -23,7 +23,7 @@ void text_element_set_text(struct element_text *text, char *str,
                            const char *format, int color);
 
 
-void text_element_init(struct element_text *text, int id, u8 page,
+void text_element_init(struct element_text *text, int id, u8 page, u8 prj,
                        const struct element_css1 *css,
                        const struct element_event_action *action);
 
@@ -37,3 +37,4 @@ void text_element_set_event_handler(struct element_text *text, void *priv,
 
 
 #endif
+

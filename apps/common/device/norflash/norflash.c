@@ -1,6 +1,7 @@
 #include "norflash.h"
 #include "app_config.h"
 #include "asm/clock.h"
+#include "system/timer.h"
 
 #if defined(TCFG_NORFLASH_DEV_ENABLE) && TCFG_NORFLASH_DEV_ENABLE
 
@@ -43,6 +44,8 @@ static struct norflash_info _norflash = {
 
 int _norflash_read(u32 addr, u8 *buf, u32 len, u8 cache);
 int _norflash_eraser(u8 eraser, u32 addr);
+static void _norflash_cache_sync_timer(void *priv);
+static int _norflash_write_pages(u32 addr, u8 *buf, u32 len);
 
 
 #define spi_cs_init() \
@@ -149,6 +152,11 @@ static int norflash_verify_part(struct norflash_partition *p)
 #if FLASH_CACHE_ENABLE
 static u32 flash_cache_addr;
 static u8 *flash_cache_buf = NULL; //缓存4K的数据，与flash里的数据一样。
+static u8 flash_cache_is_dirty;
+static u16 flash_cache_timer;
+
+#define FLASH_CACHE_SYNC_T_INTERVAL     60
+
 static int _check_0xff(u8 *buf, u32 len)
 {
     for (u32 i = 0; i < len; i ++) {
@@ -326,13 +334,18 @@ int _norflash_close(void)
         _norflash.open_cnt--;
     }
     if (!_norflash.open_cnt) {
-        spi_close(_norflash.spi_num);
-        spi_cs_uninit();
-
 #if FLASH_CACHE_ENABLE
+        if (flash_cache_is_dirty) {
+            flash_cache_is_dirty = 0;
+            _norflash_eraser(FLASH_SECTOR_ERASER, flash_cache_addr);
+            _norflash_write_pages(flash_cache_addr, flash_cache_buf, 4096);
+        }
         free(flash_cache_buf);
         flash_cache_buf = NULL;
 #endif
+        spi_close(_norflash.spi_num);
+        spi_cs_uninit();
+
         log_info("norflash close done\n");
     }
     os_mutex_post(&_norflash.mutex);
@@ -385,20 +398,20 @@ __no_cache1:
         spi_dma_read(buf, len);
     }
     spi_cs_h();
-#if FLASH_CACHE_ENABLE
-    if (!cache) {
-        goto __no_cache2;
-    }
-    align_addr = (addr + len) / 4096 * 4096;
-    if ((int)len - (int)((addr + len) - align_addr) >= 4096) {
-        align_addr -= 4096;
-        if (flash_cache_addr != align_addr) {
-            flash_cache_addr = align_addr;
-            memcpy(flash_cache_buf, buf + (align_addr - addr), 4096);
-        }
-    }
-__no_cache2:
-#endif
+//#if FLASH_CACHE_ENABLE
+//    if (!cache) {
+//        goto __no_cache2;
+//    }
+//    align_addr = (addr + len) / 4096 * 4096;
+//    if ((int)len - (int)((addr + len) - align_addr) >= 4096) {
+//        align_addr -= 4096;
+//        if (flash_cache_addr != align_addr) {
+//            flash_cache_addr = align_addr;
+//            memcpy(flash_cache_buf, buf + (align_addr - addr), 4096);
+//        }
+//    }
+//__no_cache2:
+//#endif
 __exit:
     os_mutex_post(&_norflash.mutex);
     return reg;
@@ -443,6 +456,28 @@ static int _norflash_write_pages(u32 addr, u8 *buf, u32 len)
     return 0;
 }
 
+#if FLASH_CACHE_ENABLE
+static void _norflash_cache_sync_timer(void *priv)
+{
+    int reg = 0;
+    os_mutex_pend(&_norflash.mutex, 0);
+    if (flash_cache_is_dirty) {
+        flash_cache_is_dirty = 0;
+        reg = _norflash_eraser(FLASH_SECTOR_ERASER, flash_cache_addr);
+        if (reg) {
+            goto __exit;
+        }
+        reg = _norflash_write_pages(flash_cache_addr, flash_cache_buf, 4096);
+    }
+    if (flash_cache_timer) {
+        sys_timeout_del(flash_cache_timer);
+        flash_cache_timer = 0;
+    }
+__exit:
+    os_mutex_post(&_norflash.mutex);
+}
+#endif
+
 int _norflash_write(u32 addr, void *buf, u32 len, u8 cache)
 {
     int reg = 0;
@@ -461,22 +496,35 @@ int _norflash_write(u32 addr, void *buf, u32 len, u8 cache)
     u32 align_len = 4096 - (addr - align_addr);
     align_len = w_len > align_len ? align_len : w_len;
     if (align_addr != flash_cache_addr) {
-        _norflash_read(align_addr, flash_cache_buf, 4096, 1);
+        if (flash_cache_is_dirty) {
+            flash_cache_is_dirty = 0;
+            reg = _norflash_eraser(FLASH_SECTOR_ERASER, flash_cache_addr);
+            if (reg) {
+                goto __exit;
+            }
+            reg = _norflash_write_pages(flash_cache_addr, flash_cache_buf, 4096);
+            if (reg) {
+                goto __exit;
+            }
+        }
+        _norflash_read(align_addr, flash_cache_buf, 4096, 0);
         flash_cache_addr = align_addr;
     }
-    if (_check_0xff(flash_cache_buf + (addr - align_addr), align_len)) {
-        memcpy(flash_cache_buf + (addr - align_addr), w_buf, align_len);
+    memcpy(flash_cache_buf + (addr - align_addr), w_buf, align_len);
+    if ((addr + align_len) % 4096) {
+        flash_cache_is_dirty = 1;
+        if (flash_cache_timer) {
+            sys_timer_re_run(flash_cache_timer);
+        } else {
+            flash_cache_timer = sys_timeout_add(0, _norflash_cache_sync_timer, FLASH_CACHE_SYNC_T_INTERVAL);
+        }
+    } else {
+        flash_cache_is_dirty = 0;
         reg = _norflash_eraser(FLASH_SECTOR_ERASER, align_addr);
         if (reg) {
             goto __exit;
         }
         reg = _norflash_write_pages(align_addr, flash_cache_buf, 4096);
-        if (reg) {
-            goto __exit;
-        }
-    } else {
-        memcpy(flash_cache_buf + (addr - align_addr), w_buf, align_len);
-        reg = _norflash_write_pages(addr, w_buf, align_len);
         if (reg) {
             goto __exit;
         }
@@ -486,21 +534,23 @@ int _norflash_write(u32 addr, void *buf, u32 len, u8 cache)
     w_len -= align_len;
     while (w_len) {
         u32 cnt = w_len > 4096 ? 4096 : w_len;
-        _norflash_read(addr, flash_cache_buf, 4096, 1);
+        _norflash_read(addr, flash_cache_buf, 4096, 0);
         flash_cache_addr = addr;
-        if (_check_0xff(flash_cache_buf, cnt)) {
-            memcpy(flash_cache_buf, w_buf, cnt);
+        memcpy(flash_cache_buf, w_buf, cnt);
+        if ((addr + cnt) % 4096) {
+            flash_cache_is_dirty = 1;
+            if (flash_cache_timer) {
+                sys_timer_re_run(flash_cache_timer);
+            } else {
+                flash_cache_timer = sys_timeout_add(0, _norflash_cache_sync_timer, FLASH_CACHE_SYNC_T_INTERVAL);
+            }
+        } else {
+            flash_cache_is_dirty = 0;
             reg = _norflash_eraser(FLASH_SECTOR_ERASER, addr);
             if (reg) {
                 goto __exit;
             }
             reg = _norflash_write_pages(addr, flash_cache_buf, 4096);
-            if (reg) {
-                goto __exit;
-            }
-        } else {
-            memcpy(flash_cache_buf, w_buf, cnt);
-            reg = _norflash_write_pages(addr, w_buf, cnt);
             if (reg) {
                 goto __exit;
             }

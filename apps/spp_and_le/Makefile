@@ -30,9 +30,13 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/app_idle.o \
 	$(ROOT)/apps/$(APP_CASE)/app_spp_and_le.o \
 	$(ROOT)/apps/$(APP_CASE)/app_at_com.o \
+	$(ROOT)/apps/$(APP_CASE)/app_at_char_com.o \
 	$(ROOT)/apps/$(APP_CASE)/app_dongle.o \
+	$(ROOT)/apps/$(APP_CASE)/app_multi_conn.o \
 	$(ROOT)/apps/$(APP_CASE)/at_cmds.o \
+	$(ROOT)/apps/$(APP_CASE)/at_char_cmds.o \
 	$(ROOT)/apps/$(APP_CASE)/at_uart.o \
+	$(ROOT)/apps/$(APP_CASE)/at_char_uart.o \
 	$(ROOT)/apps/$(APP_CASE)/misc.o \
 	$(ROOT)/apps/$(APP_CASE)/version.o \
 	$(ROOT)/apps/$(APP_CASE)/log_config.o \
@@ -43,9 +47,11 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/rtc_alarm.o \
 	$(ROOT)/apps/$(APP_CASE)/usb_hid_devices.o \
 	$(ROOT)/apps/common/update/update.o \
+    $(ROOT)/apps/common/update/uart_update.o \
     $(ROOT)/apps/common/update/testbox_update.o \
 	$(ROOT)/apps/common/third_party_profile/common/custom_cfg.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.o \
+	$(ROOT)/apps/common/third_party_profile/jieli/trans_data_demo/le_beacon.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/spp_at_com.o \
     $(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_ch_loader_download.o \
     $(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.o \
@@ -63,8 +69,13 @@ objs += \
 objs += \
 	$(ROOT)/apps/common/third_party_profile/jieli/trans_data_demo/le_trans_data.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/le_client_demo.o \
+	$(ROOT)/apps/common/third_party_profile/jieli/le_at_char_com.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/le_at_com.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/le_at_client.o \
+	$(ROOT)/apps/common/third_party_profile/jieli/multi_demo/le_multi_common.o \
+	$(ROOT)/apps/common/third_party_profile/jieli/multi_demo/le_multi_trans.o \
+	$(ROOT)/apps/common/third_party_profile/jieli/multi_demo/le_multi_client.o \
+    $(ROOT)/apps/common/third_party_profile/jieli/le_at_char_client.o \
 
 #bt_comoon_api
 objs += \

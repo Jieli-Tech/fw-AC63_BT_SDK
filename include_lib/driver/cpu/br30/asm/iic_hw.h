@@ -42,12 +42,15 @@
 
 typedef const int hw_iic_dev;
 
+enum {IIC_MASTER, IIC_SLAVE};
+
 struct hw_iic_config {
     u8 port[2];
     u32 baudrate;
     u8 hdrive;
     u8 io_filter;
     u8 io_pu;
+    u8 role;
 };
 
 extern const struct hw_iic_config hw_iic_cfg[];
@@ -63,4 +66,17 @@ u8 hw_iic_rx_byte(hw_iic_dev iic, u8 ack);
 int hw_iic_read_buf(hw_iic_dev iic, void *buf, int len);
 int hw_iic_write_buf(hw_iic_dev iic, const void *buf, int len);
 int hw_iic_set_baud(hw_iic_dev iic, u32 baud);
+
+void hw_iic_set_ie(hw_iic_dev iic, u8 en);
+u8 hw_iic_get_pnd(hw_iic_dev iic);
+void hw_iic_clr_pnd(hw_iic_dev iic);
+void hw_iic_set_end_ie(hw_iic_dev iic, u8 en);
+u8 hw_iic_get_end_pnd(hw_iic_dev iic);
+void hw_iic_clr_end_pnd(hw_iic_dev iic);
+void hw_iic_slave_set_addr(hw_iic_dev iic, u8 addr, u8 addr_ack);
+void hw_iic_slave_rx_prepare(hw_iic_dev iic, u8 ack);
+u8 hw_iic_slave_rx_byte(hw_iic_dev iic, bool *is_start_addr);
+void hw_iic_slave_tx_byte(hw_iic_dev iic, u8 byte);
+u8 hw_iic_slave_tx_check_ack(hw_iic_dev iic);
+
 #endif

@@ -71,5 +71,6 @@ typedef struct {
 void client_clear_bonding_info(void);
 void client_send_conn_param_update(void);
 void ble_module_enable(u8 en);
+struct ble_client_operation_t *ble_get_client_operation_table(void);
 
 #endif

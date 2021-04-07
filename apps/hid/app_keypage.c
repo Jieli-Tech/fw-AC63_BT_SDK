@@ -298,7 +298,6 @@ static const u8 key_up_hold_release[][REPROT_INFO_LEN0] = {
     {3, 0x00, 0x00, 0x00 },
 };
 
-
 //------------------------------------------------------
 //下键（短按）
 static const u8 key_down_before[][REPROT_INFO_LEN0] = {
@@ -410,7 +409,7 @@ static const u8 key_right_click[][REPROT_INFO_LEN1] = {
 //---------------------------------------------------------
 //中键（短按，长按）
 //-------按下-------
-static const u8 key_pp_press[][REPROT_INFO_LEN1] = {
+static u8 key_pp_press[][REPROT_INFO_LEN1] = {
     //Report ID (2)
     {2, 0x07, 0x07, 0x70, 0x07, 0x70, 0x07, 0x01, 0x00 },
 };
@@ -426,7 +425,7 @@ static const u8 key_pp_release_before[][REPROT_INFO_LEN0] = {
     {4, 0x00, 0x00, 0x00 },
 };
 
-static const u8 key_pp_release[][REPROT_INFO_LEN1] = {
+static u8 key_pp_release[][REPROT_INFO_LEN1] = {
     //Report ID (2)
     {2, 0x00, 0x07, 0x70, 0x07, 0x70, 0x07, 0x00, 0x00  },
 };
@@ -466,13 +465,16 @@ static const u8 key_one_release[][REPROT_INFO_LEN1] = {
 //HOLD动作 就是先发按下，等松手再发松开包
 
 //------------------------------------------------------
-
+static u16  x_lab, y_lab;
+static u16  x_lab_low = 0, x_lab_hig = 0, y_lab_low = 0, y_lab_hig = 0;
+void hid_coordinate_vm_deal(u8 flag);
 extern void p33_soft_reset(void);
 extern void edr_hid_data_send(u8 report_id, u8 *data, u16 len);
 extern int ble_hid_data_send(u8 report_id, u8 *data, u16 len);
 extern int edr_hid_is_connected(void);
 extern int ble_hid_is_connected(void);
 void hid_set_soft_poweroff(void);
+int press  = 0 ;
 
 void auto_shutdown_disable(void)
 {
@@ -514,13 +516,35 @@ static int handle_send_packect(const u8 *packet_table, u16 table_size, u8 packet
     return 0;
 }
 
+static void coordinate_equal(void)
+{
+
+    x_lab_low = x_lab & 0xff;
+    x_lab_hig = x_lab >> 8;
+    y_lab_low = y_lab & 0xff;
+    y_lab_hig = y_lab >> 8;
+    key_pp_press[0][3] = x_lab_low;
+    key_pp_press[0][4] = x_lab_hig;
+    key_pp_press[0][5] = y_lab_low;
+    key_pp_press[0][6] = y_lab_hig;
+    key_pp_release[0][3] = x_lab_low;
+    key_pp_release[0][4] = x_lab_hig;
+    key_pp_release[0][5] = y_lab_low;
+    key_pp_release[0][6] = y_lab_hig;
+    /* r_printf("0x%x,0x%x\n",y_lab_low,y_lab_hig); */
+    put_buf(key_pp_press, sizeof(key_pp_press));
+    handle_send_packect(key_pp_press, sizeof(key_pp_press), REPROT_INFO_LEN1);
+    if (REMOTE_IS_IOS()) {
+        handle_send_packect(key_pp_release_before, sizeof(key_pp_release_before), REPROT_INFO_LEN0);
+    }
+    handle_send_packect(key_pp_release, sizeof(key_pp_release), REPROT_INFO_LEN1);
+
+}
 
 static void app_key_deal_test(u8 key_type, u8 key_value)
 {
     u16 key_msg = 0;
-
     log_info("app_key_evnet: %d,%d\n", key_type, key_value);
-
 #if TCFG_USER_EDR_ENABLE
     if (bt_hid_mode == HID_MODE_EDR && !edr_hid_is_connected()) {
         if (bt_connect_phone_back_start()) { //回连
@@ -529,12 +553,6 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
         }
     }
 #endif
-
-    //for debug
-    /* if (key_value == 2 || key_value == 3) { */
-    /* key_value = 5; */
-    /* } */
-
     if (key_type == KEY_EVENT_CLICK) {
         switch (key_value) {
         case 0:
@@ -591,7 +609,7 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
     }
 
 
-    if (key_type == KEY_EVENT_DOUBLE_CLICK) {
+    if (key_type == KEY_EVENT_LONG) {
         switch (key_value) {
         case 0:
             //for test
@@ -601,7 +619,6 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
             /* log_info("switch mode fail,disconnect firstly!!!"); */
             /* return; */
             /* } */
-
             is_hid_active = 1;
             if (HID_MODE_BLE == bt_hid_mode) {
                 app_select_btmode(HID_MODE_EDR);
@@ -658,26 +675,45 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
         }
     }
 
-
-    if (key_type == KEY_EVENT_LONG) {
+    if (key_type == KEY_EVENT_TRIPLE_CLICK) {
         switch (key_value) {
         case 0:
-            break;
+            x_lab += 128;
+            if (x_lab > 4095) {
+                x_lab = 0;
 
+            }
+            coordinate_equal();
+            break;
         case 1:
+            y_lab += 128;
+            if (y_lab >= 4100) {
+                y_lab = 0;
+
+            }
+            coordinate_equal();
             break;
 
         case 2:
+            y_lab -= 128;
+            if (y_lab <= 0) {
+                y_lab =  4100 ;
+
+            }
+            coordinate_equal();
             break;
 
         case 3:
+            x_lab -= 128;
+            if (x_lab <= 0) {
+                x_lab = 4095;
+
+            }
+            coordinate_equal();
             break;
 
         case 4:
-            //send press
-            handle_send_packect(key_pp_press, sizeof(key_pp_press), REPROT_INFO_LEN1);
             break;
-
         case 5:
             //send press
             if (REMOTE_IS_IOS()) {
@@ -754,23 +790,25 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
             break;
         }
     }
-
+    hid_coordinate_vm_deal(1);
 }
 //----------------------------------
 
 typedef struct {
     u16 head_tag;
     u8  mode;
+
 } hid_vm_cfg_t;
 
 #define	HID_VM_HEAD_TAG (0x3AA3)
+
 static void hid_vm_deal(u8 rw_flag)
 {
     hid_vm_cfg_t info;
     int ret;
     int vm_len = sizeof(hid_vm_cfg_t);
 
-    log_info("-hid_info vm_do:%d\n", rw_flag);
+    log_info("hid_info_vm_do:%d\n", rw_flag);
     memset(&info, 0, vm_len);
 
     if (rw_flag == 0) {
@@ -810,6 +848,7 @@ static void hid_vm_deal(u8 rw_flag)
     } else {
         info.mode = bt_hid_mode;
         info.head_tag = HID_VM_HEAD_TAG;
+
         syscfg_write(CFG_AAP_MODE_INFO, (u8 *)&info, vm_len);
         log_info("-write11--\n");
         log_info_hexdump((u8 *)&info, vm_len);
@@ -880,6 +919,36 @@ void hid_set_soft_poweroff(void)
     sys_timeout_add(NULL, power_set_soft_poweroff, WAIT_DISCONN_TIME_MS);
 }
 
+#define COORDINATE_VM_HEAD_TAG   (0x4000)
+typedef struct {
+    u8   head_tag;
+    u16  x_vm_lab;
+    u16  y_vm_lab;
+} hid_vm_lab;
+
+void hid_coordinate_vm_deal(u8 flag)
+{
+    hid_vm_lab lab;
+    int ret;
+    int len = sizeof(hid_vm_lab);
+    memset(&lab, 0, sizeof(hid_vm_lab));
+    if (flag == 0) {
+        ret = syscfg_read(CFG_COORDINATE_ADDR, (u8 *)&lab, sizeof(lab));
+        if (ret <= 0) {
+            log_info("init null \n");
+            x_lab =  0x0770;
+            y_lab =  0x0770;
+        } else {
+
+            x_lab = lab.x_vm_lab;
+            y_lab = lab.y_vm_lab;
+        }
+    } else {
+        lab.x_vm_lab = x_lab;
+        lab.y_vm_lab = y_lab;
+        ret = syscfg_write(CFG_COORDINATE_ADDR, (u8 *)&lab, sizeof(lab));
+    }
+}
 
 extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
 static void app_start()
@@ -909,6 +978,7 @@ static void app_start()
 #endif
     /* sys_auto_shut_down_enable(); */
     /* sys_auto_sniff_controle(1, NULL); */
+    hid_coordinate_vm_deal(0);
 }
 
 static int state_machine(struct application *app, enum app_state state, struct intent *it)
@@ -1393,22 +1463,26 @@ static int app_common_event_handler(struct bt_event *bt)
     switch (bt->event) {
     case COMMON_EVENT_EDR_REMOTE_TYPE:
         log_info(" COMMON_EVENT_EDR_REMOTE_TYPE \n");
+#if TCFG_USER_EDR_ENABLE
         connect_remote_type = bt->value;
         if (connect_remote_type == REMOTE_DEV_IOS) {
             user_hid_set_ReportMap(hid_report_map_ios, sizeof(hid_report_map_ios));
         } else {
             user_hid_set_ReportMap(hid_report_map, sizeof(hid_report_map));
         }
+#endif
         break;
 
     case COMMON_EVENT_BLE_REMOTE_TYPE:
         log_info(" COMMON_EVENT_BLE_REMOTE_TYPE \n");
+#if TCFG_USER_BLE_ENABLE
         connect_remote_type = bt->value;
         if (connect_remote_type == REMOTE_DEV_IOS) {
             le_hogp_set_ReportMap(hid_report_map_ios, sizeof(hid_report_map_ios));
         } else {
             le_hogp_set_ReportMap(hid_report_map, sizeof(hid_report_map));
         }
+#endif
         break;
 
     default:
@@ -1435,6 +1509,7 @@ static int event_handler(struct application *app, struct sys_event *event)
     case SYS_KEY_EVENT:
         /* log_info("Sys Key : %s", event->arg); */
         app_key_event_handler(event);
+
         return 0;
 
     case SYS_BT_EVENT:
@@ -1576,4 +1651,5 @@ REGISTER_APPLICATION(app_hid) = {
 
 
 #endif
+
 

@@ -98,6 +98,11 @@
         *(.wma_decstream_code)
         *(.wma_decstream_const)
         *(.wma_decstream_sparse_code)
+#ifdef CONFIG_MOVABLE_ENABLE
+    	audio_sync_code_begin = .;
+        *(.audio_sync_code)
+    	audio_sync_code_end = .;
+#endif
 
         *(.aac_code)
         *(.aac_const)

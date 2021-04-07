@@ -96,6 +96,7 @@ struct low_power_param {
 
     u32 osc_delay_us;
     u8  virtual_rtc;
+    u16 virtual_rtc_interval;
 };
 
 #define BLUETOOTH_RESUME    BIT(1)
@@ -189,6 +190,10 @@ void power_init(const struct low_power_param *param);
 u8 power_is_low_power_probe(void);
 
 u8 power_is_low_power_post(void);
+
+void set_softoff_wakeup_time_ms(u32 ums);
+
+void set_softoff_wakeup_time_sec(u32 sec);
 
 void power_set_soft_poweroff(void);
 

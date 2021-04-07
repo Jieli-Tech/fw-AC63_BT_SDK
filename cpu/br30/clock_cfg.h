@@ -87,6 +87,9 @@ enum {
     DEC_VBASS_CLK,
     DEC_LOUDNES_CLK,
 
+
+    LCD_UI_CLK,
+
     DONGLE_ENC_CLK,
 
     SCAN_DISK_CLK,

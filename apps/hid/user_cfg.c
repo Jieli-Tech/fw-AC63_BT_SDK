@@ -7,6 +7,7 @@
 #include "btcontroller_config.h"
 #include "app_main.h"
 #include "app_power_manage.h"
+#include "bt_common.h"
 
 #ifdef CONFIG_LITE_AUDIO
 #include "audio_config.h"
@@ -22,7 +23,7 @@
 #include "debug.h"
 
 void lp_winsize_init(struct lp_ws_t *lp);
-void bt_max_pwr_set(u8 pwr, u8 pg_pwr, u8 iq_pwr, u8 ble_pwr);
+/* void bt_max_pwr_set(u8 pwr, u8 pg_pwr, u8 iq_pwr, u8 ble_pwr); */
 
 extern APP_VAR app_var;
 

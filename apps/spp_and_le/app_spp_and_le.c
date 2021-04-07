@@ -42,6 +42,10 @@
 
 #if CONFIG_APP_SPP_LE
 
+#if TCFG_USER_EDR_ENABLE && BEACON_MODE_EN
+#error "need disable TCFG_USER_EDR_ENABLE !!!!!!"
+#endif
+
 #define WAIT_DISCONN_TIME_MS     (300)
 
 extern const u8 *bt_get_mac_addr();
@@ -50,7 +54,7 @@ void sys_auto_sniff_controle(u8 enable, u8 *addr);
 void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 
 static u8 is_app_active = 0;
-
+static u8 edr_remote_address[6];
 //---------------------------------------------------------------------
 #if TRANS_CLIENT_EN
 //指定搜索uuid
@@ -128,8 +132,8 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
 }
 
 static struct ble_client_operation_t *ble_client_api;
-static const u8 test_remoter_name1[] = "AC630N_1(BLE)";//
-/* static const u8 test_remoter_name2[] = "AC630N_HID567(BLE)";// */
+/* static const u8 test_remoter_name1[] = "AC630N_1(BLE)";// */
+static const u8 test_remoter_name1[] = "AC696X_1(BLE)";//
 static u16 ble_client_write_handle;
 static u16 ble_client_timer = 0;
 
@@ -799,6 +803,9 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
     case BT_STATUS_SECOND_CONNECTED:
     case BT_STATUS_FIRST_CONNECTED:
         log_info("BT_STATUS_CONNECTED\n");
+        put_buf(bt->args, 6);
+        memcpy(edr_remote_address, bt->args, 6);
+        log_info("edr remote rssi= %d\n", bredr_get_rssi_for_address(edr_remote_address));
         break;
 
     case BT_STATUS_FIRST_DISCONNECT:

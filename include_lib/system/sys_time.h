@@ -5,6 +5,7 @@
 
 
 struct sys_time {
+    u16 crc;
     u16 year;
     u8 month;
     u8 day;

@@ -8,7 +8,7 @@
 
 
 #define     MAX_INTERFACE_NUM       5
-
+#define     USB_SUSPEND_RESUME      0
 #define     USB_SETUP_SIZE         (512)
 
 #if 0
@@ -42,11 +42,12 @@ struct usb_device_t {
     u8 bDataOverFlag;    //ep0 0包标识
     u8 wDeviceClass;    // 设备类
     u8 bRemoteWakup: 1;
+    u8 baddr_config: 1;
 #if USB_MAX_HW_NUM == 2
     u8 usb_id: 1;
-    u8 res: 6;
+    u8 res: 5;
 #else
-    u8 res: 7;
+    u8 res: 6;
 #endif
 };
 

@@ -121,6 +121,7 @@ enum element_change_event {
     ON_CHANGE_RELEASE,
     ON_CHANGE_ANIMATION_END,
     ON_CHANGE_SHOW_COMPLETED,
+    ON_CHANGE_UPDATE_ITEM,
 };
 
 
@@ -162,11 +163,21 @@ struct image_preview {
     int page;
 };
 
+
+struct image {
+    int x;
+    int y;
+    int id;
+    int page;
+    int en;
+};
+
 struct draw_context {
     u8 ref;
     u8 alpha;
     u8 align;
     u8 data_format;
+    u8 prj;
     u8 page;
     u8 buf_num;
     u32 background_color;
@@ -191,6 +202,8 @@ struct draw_context {
     u16 lines;
     u8 col_align;
     u8 row_align;
+
+    struct image draw_img;
 
     u8 *mask;
 };
@@ -247,10 +260,11 @@ struct element_ops {
 };
 
 struct element {
-    u8 highlight: 1;
-    u8 state: 2;
-    u8 ref: 6;
-    u8 page;
+    u32 highlight: 1;
+    u32 state: 2;
+    u32 ref: 5;
+    u32 prj: 3;
+    u32 page: 21;
     // u32 alive;
     int id;
     struct element *parent;
@@ -477,8 +491,11 @@ void *ui_core_malloc(int size);
 
 void ui_core_free(void *buf);
 
-void ui_core_element_init(struct element *, u32 id, u8 page,
-                          struct  element_css1 *,
+void ui_core_element_init(struct element *,
+                          u32 id,
+                          u8 page,
+                          u8 prj,
+                          /* const */ struct element_css1 *,
                           const struct element_event_handler *,
                           const struct element_event_action *);
 
@@ -543,5 +560,6 @@ void ui_core_ontouch_unlock(struct element *elm);
 
 int ui_core_get_draw_context(struct draw_context *dc, struct element *elm, struct rect *draw);
 #endif
+
 
 

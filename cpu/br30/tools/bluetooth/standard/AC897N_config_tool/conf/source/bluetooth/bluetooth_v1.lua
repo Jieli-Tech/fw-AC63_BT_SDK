@@ -1262,6 +1262,7 @@ local dms_enc = {
     dms_sir_maxfreq = {},
     dms_mic_distance = {},
     dms_target_singal_degradation = {},
+	dms_mic_rms_diff = {},
     dms_enc_aggressfactor = {},
     dms_enc_minsuppress = {},
 };
@@ -1334,6 +1335,17 @@ dms_enc.dms_mic_distance.hbox_view = cfg:hBox {
     cfg:stSpacer(),
 };
 
+--    ) dms_mic_rms_diff
+dms_enc.dms_mic_rms_diff.cfg = cfg:dbf("Mic RMS diff:  ", 1);
+depend_item_en_show(bluetooth_en, dms_enc.dms_mic_rms_diff.cfg);
+
+dms_enc.dms_mic_rms_diff.hbox_view = cfg:hBox {
+    cfg:stLabel(dms_enc.dms_mic_rms_diff.cfg.name),
+    cfg:dspinView(dms_enc.dms_mic_rms_diff.cfg, -6, 0, 0.01, 2);
+    cfg:stLabel("（设置范围：-6 ~ 0，默认值：0）"),
+	cfg:stSpacer(),
+};
+
 -- 9-5) dms_target_singal_degradation
 dms_enc.dms_target_singal_degradation.cfg= cfg:dbf("Target_Signal_Degradation:  ", 1);
 depend_item_en_show(bluetooth_en, dms_enc.dms_target_singal_degradation.cfg);
@@ -1346,10 +1358,14 @@ dms_enc.dms_ndt_fade_in.htext = item_output_htext(dms_enc.ndt_fade_in.cfg, "TCFG
 -- item_view
 dms_enc.dms_target_singal_degradation.hbox_view = cfg:hBox {
     cfg:stLabel(dms_enc.dms_target_singal_degradation.cfg.name),
-    cfg:dspinView(dms_enc.dms_target_singal_degradation.cfg, 0, 1, 0.0001, 4),
+    cfg:labelView(dms_enc.dms_target_singal_degradation.cfg),
+    -- cfg:dspinView(dms_enc.dms_target_singal_degradation.cfg, 0, 1, 0.0001, 4),
     cfg:stLabel("(设置范围: 0 ~ 1，默认值：1)"),
     cfg:stSpacer(),
 };
+
+dms_enc.dms_target_singal_degradation.cfg:addDeps({dms_enc.dms_mic_rms_diff.cfg});
+dms_enc.dms_target_singal_degradation.cfg:setEval(function () return 10.0 ^ (dms_enc.dms_mic_rms_diff.cfg.val / 20.0); end);
 
 -- 9-6) dms_enc_aggressfactor
 dms_enc.dms_enc_aggressfactor.cfg= cfg:dbf("ENC_Aggressfactor:  ", 4);
@@ -1496,6 +1512,7 @@ dms_output_type_group_view.enc_type_group_view = cfg:stGroup(" ENC ",
         dms_enc.dms_enc_process_minfreq.hbox_view,
         dms_enc.dms_sir_maxfreq.hbox_view,
         dms_enc.dms_mic_distance.hbox_view,
+        dms_enc.dms_mic_rms_diff.hbox_view,
         dms_enc.dms_target_singal_degradation.hbox_view,
         dms_enc.dms_enc_aggressfactor.hbox_view,
         dms_enc.dms_enc_minsuppress.hbox_view,
@@ -1555,6 +1572,8 @@ dms_output_bin:setRecoverHook(function ()
     cfg:set(dms_aec_mode.ans_en, (ov >> 2) & 0x1);
     cfg:set(dms_aec_mode.enc_en, (ov >> 3) & 0x1);
     cfg:set(dms_aec_mode.agc_en, (ov >> 4) & 0x1);
+    ov = dms_enc.dms_target_singal_degradation.cfg.val;
+    cfg:set(dms_enc.dms_mic_rms_diff.cfg, 20.0 * math.log(ov, 10.0));
 end);
 
 -- E. 默认值, 见汇总

@@ -104,7 +104,7 @@ static const u8 sConfigDescriptor[] = {	//<Config Descriptor
     0,//bNumInterfaces: 在set_descriptor函数里面计算
     0x01,    //bConfigurationValue - ID of this configuration
     0x00,    //Unused
-#if USB_ROOT2
+#if USB_ROOT2 || USB_SUSPEND_RESUME
     0xA0,    //Attributes:Bus Power remotewakeup
 #else
     0x80,    //Attributes:Bus Power

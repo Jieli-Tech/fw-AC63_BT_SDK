@@ -7,3 +7,5 @@ msbc_decoder
 sbc_hwaccel
 cvsd_decoder
 pcm_decoder
+cvsd_encoder
+msbc_encoder

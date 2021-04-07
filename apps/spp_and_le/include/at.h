@@ -181,5 +181,7 @@ void at_uart_init(void *packet_handler);
 int at_uart_send_packet(const u8 *packet, int size);
 void slave_connect_param_update(u16 interval_min, u16 interval_max, u16 latency, u16 timeout);
 void at_send_event(u8 opcode, const u8 *packet, int size);
+void ct_uart_change_baud(u32 baud);
+
 
 #endif

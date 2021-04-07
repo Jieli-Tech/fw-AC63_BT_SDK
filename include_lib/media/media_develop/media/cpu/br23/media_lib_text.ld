@@ -213,6 +213,7 @@
 		*(.audio_dec_app_sync_code)
 		*(.audio_dec_app_sync_const)
 		*(.audio_dec_app_event_callback)
+		*(.audio_dec_app_dec_run)
 		*(.audio_dec_app_normal_run)
 		*(.audio_dec_tone_event_callback)
 		*(.audio_dig_vol_code)
@@ -361,6 +362,13 @@
     	_audio_hwaccel_end = .;
     	PROVIDE(audio_hwaccel_end = .);
 
+#if CONFIG_SOUND_PLATFORM_ENABLE
+        _sound_platform_driver_begin = .;
+        PROVIDE(sound_platform_driver_begin = .);
+            KEEP(*(.sound_platform_driver))
+        _sound_platform_driver_end = .;
+        PROVIDE(sound_platform_driver_end = .);
+#endif
 		. = ALIGN(4);
     	media_code_begin = .;
     	    *(.media.*.text)

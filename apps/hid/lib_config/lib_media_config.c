@@ -73,6 +73,10 @@ const int HW_EQ_LR_ALONE = 0 ;
 
 #endif
 
+//wts解码支持采样率可选择，可以同时打开也可以单独打开
+const  int  silk_fsN_enable = 1;   //支持8-12k采样率
+const  int  silk_fsW_enable = 1;  //支持16-24k采样率
+
 const int AUDIO_EQ_CLEAR_MEM_BY_MUTE_TIME_MS = 0;//300 //连续多长时间静音就清除EQ MEM
 const int AUDIO_EQ_CLEAR_MEM_BY_MUTE_LIMIT = 0; //静音判断阀值
 
@@ -246,7 +250,11 @@ const int config_wma_dec_use_malloc     = 0;
 const int config_wmapick_dec_use_malloc = 0;
 const int config_m4a_dec_use_malloc     = 0;
 const int config_m4apick_dec_use_malloc = 0;
+#if  TCFG_DEC_WAV_ENABLE
+const int config_wav_dec_use_malloc     = 1;
+#else
 const int config_wav_dec_use_malloc     = 0;
+#endif
 const int config_alac_dec_use_malloc    = 0;
 const int config_dts_dec_use_malloc     = 0;
 const int config_amr_dec_use_malloc     = 0;
@@ -257,7 +265,13 @@ const int config_aptx_dec_use_malloc    = 0;
 const int config_midi_dec_use_malloc    = 0;
 #endif
 const int vc_pitchshift_fastmode_flag        = 1;
+const  int  vc_pitchshift_downmode_flag = 0;  //变声下采样处理使能
 const int howling_pitchshift_fastmode_flag   = 1;
+const  int RS_FAST_MODE_QUALITY = 2;	//软件变采样 滤波阶数配置，范围2到8， 8代表16阶的变采样模式 ,速度跟它的大小呈正相关
+const int config_howling_enable_pemafrow_mode = 0;
+const int config_howling_enable_trap_mode     = 0;//陷波啸叫抑制模式使能
+const int config_howling_enable_pitchps_mode  = 1; //移频啸叫抑制模式使能
+const  int DOWN_S_FLAG 				= 0; //混响降采样处理使能
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DONGLE)
 const int config_mp3_enc_use_layer_3	= 1;

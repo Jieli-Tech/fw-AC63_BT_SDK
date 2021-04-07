@@ -54,9 +54,10 @@
 #define TEST_AUDIO_DATA_UPLOAD       0 //测试文件上传
 
 
-#if 1
+#if LE_DEBUG_PRINT_EN
 extern void printf_buf(u8 *buf, u32 len);
-#define log_info          printf
+/* #define log_info          printf */
+#define log_info(x, ...)  printf("[LE_AT_COM]" x " ", ## __VA_ARGS__)
 #define log_info_hexdump  printf_buf
 #else
 #define log_info(...)
@@ -74,9 +75,9 @@ extern void printf_buf(u8 *buf, u32 len);
 /* #include "debug.h" */
 
 //------
-#define ATT_LOCAL_PAYLOAD_SIZE    (200)                   //note: need >= 20
+#define ATT_LOCAL_MTU_SIZE        (128)                   //note: need >= 20
 #define ATT_SEND_CBUF_SIZE        (512)                   //note: need >= 20,缓存大小，可修改
-#define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_PAYLOAD_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
+#define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_MTU_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
 static u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
 //---------------
 
@@ -96,7 +97,7 @@ static u8 test_data_start;
 static volatile hci_con_handle_t con_handle;
 
 //加密设置
-static const uint8_t sm_min_key_size = 7;
+/* static const uint8_t sm_min_key_size = 7; */
 
 //1-just_works,2--passkey,3--yes or no
 static uint8_t sm_pair_mode;
@@ -439,7 +440,7 @@ static void server_profile_start(u16 con_handle)
 #if BT_FOR_APP_EN
     set_app_connect_type(TYPE_BLE);
 #endif
-    ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_PAYLOAD_SIZE);
+    ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_MTU_SIZE);
     set_ble_work_state(BLE_ST_CONNECT);
     ble_auto_shut_down_enable(0);
 
@@ -942,6 +943,8 @@ void ble_profile_init(void)
     /* ble_l2cap_register_packet_handler(packet_cbk); */
     /* sm_event_packet_handler_register(packet_cbk); */
     le_l2cap_register_packet_handler(&cbk_packet_handler);
+
+    ble_vendor_set_default_att_mtu(ATT_LOCAL_MTU_SIZE);
 }
 
 #if EXT_ADV_MODE_EN

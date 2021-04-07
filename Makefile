@@ -53,14 +53,15 @@ export SoC?=bd19
 #export APP_CASE?=qcy_case
 #export APP_CASE?=soundbox
 #export APP_CASE?=dongle
-#export APP_CASE?=spp_and_le
-export APP_CASE?=hid
+export APP_CASE?=spp_and_le
+#export APP_CASE?=hid
 #export APP_CASE?=mesh
 #export APP_CASE?=watch
 #export APP_CASE?=iot
 #export APP_CASE?=bt_udisk
 #export APP_CASE?=multi_link
-# export APP_CASE?=le_audio
+#export APP_CASE?=le_audio
+#export APP_CASE?=adapter
 
 
 # --------------common var begin-----------------------

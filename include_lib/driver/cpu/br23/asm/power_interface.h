@@ -30,8 +30,8 @@ enum {
 
 #define SLEEP_EN                            BIT(2)
 #define SLEEP_SAVE_TIME_US                  1L
-#define BT_SLEEP_RECOVER_TIME_US            1500L
-#define LRC_SLEEP_RECOVER_TIME_US           3500L
+#define BT_SLEEP_RECOVER_TIME_US            2500L
+#define LRC_SLEEP_RECOVER_TIME_US           4500L
 
 #define DEEP_SLEEP_EN                       BIT(1)
 #define DSLEEP_SAVE_BEFORE_ENTER_MS         1
@@ -96,6 +96,7 @@ struct low_power_param {
 
     u32 osc_delay_us;
     u8  virtual_rtc;
+    u16 virtual_rtc_interval;
 };
 
 #define BLUETOOTH_RESUME    BIT(1)
@@ -192,6 +193,10 @@ u8 power_is_low_power_post(void);
 
 void power_set_soft_poweroff(void);
 
+void set_softoff_wakeup_time_ms(u32 ums);
+
+void set_softoff_wakeup_time_sec(u32 sec);
+
 void power_set_mode(u8 mode);
 
 void power_keep_dacvdd_en(u8 en);
@@ -271,6 +276,12 @@ void lvd_extern_wakeup_enable(void);
 
 void port_edge_wkup_set_callback(void (*wakeup_callback)(u8 index, u32 gpio));
 /*-----------------------------------------------------------*/
+
+char get_vddiom_trim();
+
+char get_vddiow_trim();
+
+void vddio_trim_30v(u8 tieup);
 
 typedef u8(*idle_handler_t)(void);
 

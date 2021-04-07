@@ -10,6 +10,7 @@ local lang_en = {
     ["打开下载目录"]="Open Download Directory",
     ["显示原理图"]="Show Schematic Design",
     ["检查依赖的软件包是否更新"]="Check Update",
+    ["音频录制工具"]="Audio Recording Tool",
     ["编译前配置工具"]="Pre-compiling Config Tool",
     ["编辑FW文件"]="FW Editing Tools",
     ["﻿应用信息：AC697X-SDK"]="Application: AC697X-SDK",
@@ -122,6 +123,9 @@ local anctool_button_view = cfg:stButton("打开ANC配置工具", function () cf
 local builtin_touch_debug_tool_button_view = cfg:stButton("内置触摸调试工具",
                                 function () cfg:runProgNoWait({efftool, '--type', 'touch_debug'}); end);
 
+local audio_recording_tool_button_view = cfg:stButton("音频录制工具",
+                                function () cfg:runProgNoWait({efftool, '--type', 'record'}); end);
+
 table.insert(function_vbox_view_list, app_log_label_view);
 
 if fw_create_button_show == true then
@@ -137,6 +141,7 @@ end
 table.insert(function_vbox_view_list, efftool_tools_button_view);
 table.insert(function_vbox_view_list, anctool_button_view);
 table.insert(function_vbox_view_list, builtin_touch_debug_tool_button_view);
+table.insert(function_vbox_view_list, audio_recording_tool_button_view);
 
 table.insert(function_vbox_view_list, display_doc_button_view);
 table.insert(function_vbox_view_list, open_download_dir_button_view);

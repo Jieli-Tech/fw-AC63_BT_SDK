@@ -225,6 +225,25 @@ SECTIONS
 		#include "media/cpu/br23/media_lib_text.ld"
 
 		. = ALIGN(4);
+        __VERSION_BEGIN = .;
+        KEEP(*(.sys.version))
+        __VERSION_END = .;
+        *(.noop_version)
+
+#if TCFG_DEC_WAV_ENABLE
+        	*(.wav_dec_sparse_code)
+			*(.wav_dec_sparse_const)
+
+			*(.wav_dec_code)
+			*(.wav_dec_const)
+	        *(.wav_const)
+			*(.wav_code)
+#endif
+
+
+
+
+		. = ALIGN(4);
 	    update_target_begin = .;
 	    PROVIDE(update_target_begin = .);
 	    KEEP(*(.update_target))
@@ -353,12 +372,19 @@ SECTIONS
 
 		. = ALIGN(4);
 		dec_board_param_mem_begin = .;
-		*(.dec_board_param_mem)
+		KEEP(*(.dec_board_param_mem))
 		dec_board_param_mem_end = .;
 
         . = ALIGN(4);
 		*(.sbc_eng_code)
         . = ALIGN(4);
+
+#if TCFG_DEC_WAV_ENABLE
+
+            *(.wav_dec_data)
+
+			*(.wav_data)
+#endif
 
         . = ALIGN(32);
 		#include "btstack/btstack_lib_data.ld"
@@ -407,10 +433,20 @@ SECTIONS
 		#include "system/system_lib_bss.ld"
 		#include "media/cpu/br23/media_lib_bss.ld"
 
+#if TCFG_DEC_WAV_ENABLE
+        	*(.wav_bss)
+			*(.wav_dec_bss)
+#endif
 		. = (( . + 31) / 32 * 32);
 
 		. = ALIGN(4);
     } > ram0
+
+	.vir_timer ALIGN(32):
+    {
+        *(.vir_rtc)
+	} > ram0
+
     //cpu end
     _cpu_store_end = . ;
 
@@ -508,23 +544,9 @@ SECTIONS
 		}
 		.overlay_wav
 		{
-			*(.wav_dec_sparse_code)
-			*(.wav_dec_sparse_const)
-
-			*(.wav_dec_code)
-			*(.wav_dec_const)
-			*(.wav_dec_data)
-
-			*(.wav_data)
-			*(.wav_const)
-			*(.wav_code)
-
-
-			LONG(0xFFFFFFFF);
+						LONG(0xFFFFFFFF);
 			/* *(.wav_bss_id) */
 
-			*(.wav_bss)
-			*(.wav_dec_bss)
 			*(.wav_mem)
 			*(.wav_ctrl_mem)
 		}

@@ -25,6 +25,11 @@
 #define TCFG_UART0_TX_PORT  				IO_PORTA_00                            //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
+#define UART_DB_TX_PIN                      IO_PORTC_01                            //AT_CHART串口
+#define UART_DB_RX_PIN                      IO_PORTC_02
+#define UART_DB_RTS_PIN                     IO_PORTA_06
+#define UART_DB_CTS_PIN                     IO_PORTA_05
+
 //*********************************************************************************//
 //                                 USB 配置                                        //
 //*********************************************************************************//
@@ -36,7 +41,6 @@
 
 #define TCFG_USB_SLAVE_USER_HID            1
 #define TCFG_OTG_USB_DEV_EN                0// (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
-
 
 
 #include "usb_std_class_def.h"
@@ -269,7 +273,7 @@
 //                                  系统配置                                         //
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
-#define TCFG_SYS_LVD_EN						      0   //电量检测使能
+#define TCFG_SYS_LVD_EN						      1   //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
 #define TCFG_HID_AUTO_SHUTDOWN_TIME              (0 * 60)      //HID无操作自动关机(单位：秒)
 
@@ -278,7 +282,7 @@
 //*********************************************************************************//
 #define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
-#define TCFG_USER_EDR_ENABLE                      0   //EDR功能使能
+#define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
 #define USER_SUPPORT_PROFILE_SPP    1
 #define USER_SUPPORT_PROFILE_HFP    0

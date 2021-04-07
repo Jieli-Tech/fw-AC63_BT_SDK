@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 <FileVersion major="1" minor="6" />
 <Project>
-<Option title="AC632N" />
+<Option title="AC632N_mesh" />
 <Option compiler="q32s_lto_compiler" />
 <Build>
 <Target title="Release">
@@ -45,6 +45,7 @@
 <Add option="-DVM_ITEM_MAX_NUM=128" />
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_MESH_CASE_ENABLE" />
+<Add option="-DCONFIG_TRANSFER_ENABLE" />
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
@@ -231,6 +232,8 @@
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac632n_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac632n_demo_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd19/board_config.h" />
+<Unit filename="../../../../apps/mesh/examples/AliGenie_fan.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/mesh/examples/AliGenie_light.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/AliGenie_socket.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/generic_onoff_client.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/generic_onoff_server.c"><Option compilerVer="CC"/></Unit>
@@ -256,6 +259,7 @@
 <Unit filename="../../../../cpu/bd19/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/iic_soft.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/ledc.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/bd19/mcpwm.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/pwm_led.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/setup.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/spi.c"><Option compilerVer="CC"/></Unit>
@@ -312,6 +316,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/io_omap.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/irq.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/ledc.h" />
+<Unit filename="../../../../include_lib/driver/cpu/bd19/asm/mcpwm.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/plcnt.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/power/p11.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/power/p33.h" />

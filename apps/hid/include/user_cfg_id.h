@@ -23,6 +23,7 @@
 #define     CFG_AAP_MODE_EDR_ADDR            40
 #define     CFG_AAP_MODE_BLE_ADDR            41
 #define     CFG_AAP_MODE_24G_ADDR            42
+#define     CFG_COORDINATE_ADDR              43
 
 #define     VM_USB_MIC_GAIN             	 5
 #endif /* #ifndef _USER_CFG_ID_H_ */

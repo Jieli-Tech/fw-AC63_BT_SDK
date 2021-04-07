@@ -533,7 +533,7 @@ static void msd_write_10_async(const struct usb_device_t *usb_device, u8 cur_lun
     u32 have_send_stall = FALSE;
     void *dev_fd = NULL;
     while (lba_num) {
-        /* wdt_clear(); */
+        wdt_clear();
         num = lba_num > MSD_BLOCK_SIZE ? MSD_BLOCK_SIZE : lba_num;
         if (msd_handle->csw.uCSWDataResidue == 0) {
             msd_handle->csw.bCSWStatus = 1;
@@ -615,7 +615,7 @@ static void msd_read_10_async(const struct usb_device_t *usb_device, u8 cur_lun,
     }
 
     while (lba_num) {
-        /* wdt_clear(); */
+        wdt_clear();
         last_num = num;
         last_lba = lba;
         buf_idx = !buf_idx;
@@ -697,7 +697,7 @@ static void write_10(const struct usb_device_t *usb_device)
 #else
 
     while (lba_num) {
-        /* wdt_clear(); */
+        wdt_clear();
         num = lba_num > MSD_BLOCK_SIZE ? MSD_BLOCK_SIZE : lba_num;
         if (msd_handle->csw.uCSWDataResidue == 0) {
             msd_handle->csw.bCSWStatus = 0x1;
@@ -750,7 +750,7 @@ static void read_10(const struct usb_device_t *usb_device)
 #else
 
     while (lba_num) {
-        /* wdt_clear(); */
+        wdt_clear();
         num = lba_num > MSD_BLOCK_SIZE ? MSD_BLOCK_SIZE : lba_num;
         if (msd_handle->csw.uCSWDataResidue == 0) {
             msd_handle->csw.bCSWStatus = 0x1;

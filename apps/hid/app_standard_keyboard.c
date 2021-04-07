@@ -36,7 +36,7 @@
 #include "user_cfg.h"
 #include "app_charge.h"
 #include "app_power_manage.h"
-
+#include "gpio.h"
 #if(CONFIG_APP_STANDARD_KEYBOARD)
 
 #define LOG_TAG_CONST       HID_KEY
@@ -50,7 +50,6 @@
 
 #define SUPPORT_KEYBOARD_NO_CONFLICT        0    //无冲按键支持
 #define SUPPORT_USER_PASSKEY                0
-#define CAP_LED_PIN                         -1
 #define CAP_LED_ON_VALUE                    1
 
 typedef enum {
@@ -59,12 +58,23 @@ typedef enum {
     EDR_OPERATION_PAGESCAN_IRQUIRY_SCAN,
 } edr_operation_t;
 
+typedef enum {
+    SYSTEM_IOS,
+    SYSTEM_WIN,
+    SYSTEM_ARD,
+};
+
+
 static u16 g_auto_shutdown_timer = 0;
 static volatile u8 cur_bt_idx = 0;
-static edr_operation_t edr_operation = EDR_OPERATION_NULL;
+static    edr_operation_t edr_operation = EDR_OPERATION_NULL;
 static u8 key_pass_enter  = 0;
 static u8 remote_addr[6] = {0};
+static int bt_close_pair_handler = 0;
+static u8 keyboard_system = SYSTEM_WIN;
 
+
+void hid_report_send(u8 report_id, u8 *data, u16 len);
 void hid_set_soft_poweroff(void);
 static void sys_auto_sniff_controle(u8 enable, u8 *addr);
 static void bt_sniff_ready_clean(void);
@@ -88,6 +98,11 @@ extern void modify_ble_name(const char *name);
 #define KEYBOARD_ENTER_PAIR2    0x2
 #define KEYBOARD_ENTER_PAIR3    0x3
 
+#define KEYBOARD_SYSTEM_IOS     0x4
+#define KEYBOARD_SYSTEM_WIN     0x5
+#define KEYBOARD_SYSTEM_ARD     0x6
+#define KEYBOARD_COMPOSE_KEY    0x7
+#define KEYBOARD_F6FUNC         0x8
 typedef struct _special_key {
     u8 row;
     u8 col;
@@ -135,6 +150,38 @@ const u16 fn_remap_event[13 + 4] = {_KEY_CUSTOM_CTRL_HOME, _KEY_BRIGHTNESS_REDUC
 #else
 #define FN_ROW                   (6)
 #define FN_COL                   (0)
+
+
+const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用来标识是否特殊键
+//  0                        1         2               3         4       5         6                7        8                9                         10            11 12 13    14     15                            16
+    {0,                     _KEY_Q,   _KEY_W,         _KEY_E,  _KEY_R,  _KEY_U,  _KEY_I,          _KEY_O,    _KEY_P,             0,                       0,          0, 0, 0,    0,   0},      //0
+    {0,                     _KEY_TAB, _KEY_CAPSLOCK, _KEY_F3, _KEY_T,  _KEY_Y,  _KEY_RIGHTBRACE, _KEY_F7,   _KEY_LEFTBRACE,     0,                 _KEY_BACKSPACE,   0, 0, 0,    0,   S_KEY(_KEY_MOD_LSHIFT), S_KEY(_KEY_MOD_LALT)},
+    {0,                     _KEY_A,   _KEY_S,         _KEY_D,  _KEY_F,  _KEY_J,  _KEY_K,          _KEY_L,    _KEY_SEMICOLON,  S_KEY(_KEY_MOD_LCTRL), _KEY_BACKSLASH,  0, 0, 0,    0,   S_KEY(_KEY_MOD_RSHIFT)},     //1
+    {
+        0,                     _KEY_ESC,    0,           _KEY_F4, _KEY_G,  _KEY_H,  _KEY_F6,            0,      _KEY_APOSTROPHE, _KEY_LEFTMETA,
+        0,          _KEY_SPACE, 0, 0, _KEY_UP
+    },
+    {S_KEY(_KEY_MOD_RALT),  _KEY_Z,   _KEY_X,         _KEY_C,  _KEY_V,  _KEY_M,  _KEY_COMMA,      _KEY_DOT,   0,                 0,                 _KEY_ENTER,      _KEY_F11, _KEY_MINUS},
+    {0,                       0,         0,             0,     _KEY_B,  _KEY_N,    0,                0,      _KEY_SLASH,     _KEY_RIGHTMETA,               0,          _KEY_DOWN,  _KEY_RIGHT, 0,   _KEY_LEFT},
+    {0,                     _KEY_GRAVE, _KEY_F1,       _KEY_F2, _KEY_5,  _KEY_6,  _KEY_EQUAL,      _KEY_F8,   _KEY_MINUS,         0,                _KEY_F9,       _KEY_DELETE},
+    {_KEY_F5,               _KEY_1,   _KEY_2,        _KEY_3,  _KEY_4,  _KEY_7,  _KEY_8,          _KEY_9,    _KEY_0,          _KEY_F12,             _KEY_F10},
+};
+
+/*
+const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用来标识是否为特殊键
+//  0                        1         2               3         4       5         6                7        8                9                         10            11 12 13    14     15                            16
+    {0,                     _KEY_Q,   _KEY_W,         _KEY_E,  _KEY_R,  _KEY_U,  _KEY_I,          _KEY_O,    _KEY_P,             0,                       0,          0, 0, 0,    0,   0},      //0
+    {0,                     _KEY_TAB, _KEY_CAPSLOCK, _KEY_F3, _KEY_T,  _KEY_Y,  _KEY_RIGHTBRACE, _KEY_F7,   _KEY_LEFTBRACE,     0,                 _KEY_BACKSPACE,   0, 0, 0,    0,   S_KEY(_KEY_MOD_LSHIFT), S_KEY(_KEY_MOD_LALT)},
+    {0,                     _KEY_A,   _KEY_S,         _KEY_D,  _KEY_F,  _KEY_J,  _KEY_K,          _KEY_L,    _KEY_SEMICOLON,  S_KEY(_KEY_MOD_LCTRL), _KEY_BACKSLASH,  0, 0, 0,    0,   S_KEY(_KEY_MOD_RSHIFT)},     //1
+    {0,                     _KEY_ESC,    0,           _KEY_F4, _KEY_G,  _KEY_H,  _KEY_F6,            0,      _KEY_APOSTROPHE, _KEY_LEFTMETA,
+        0,          _KEY_SPACE, 0, 0, _KEY_UP},
+    {S_KEY(_KEY_MOD_RALT),  _KEY_Z,   _KEY_X,         _KEY_C,  _KEY_V,  _KEY_M,  _KEY_COMMA,      _KEY_DOT,   0,                 0,                 _KEY_ENTER,      _KEY_F11, _KEY_MINUS},
+    {0,                       0,         0,             0,     _KEY_B,  _KEY_N,    0,                0,      _KEY_SLASH,     _KEY_RIGHTMETA,               0,          _KEY_DOWN,  _KEY_RIGHT, 0,   _KEY_LEFT},
+    {0,                     _KEY_GRAVE, _KEY_F1,       _KEY_F2, _KEY_5,  _KEY_6,  _KEY_EQUAL,      _KEY_F8,   _KEY_MINUS,         0,                _KEY_F9,       _KEY_DELETE},
+    {_KEY_F5,               _KEY_1,   _KEY_2,        _KEY_3,  _KEY_4,  _KEY_7,  _KEY_8,          _KEY_9,    _KEY_0,          _KEY_F12,             _KEY_F10},
+};
+*/
+/*
 const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用来标识是否为特殊键
 //  0                        1         2               3         4       5         6                7        8                9                         10            11 12 13    14     15                            16
     {0,                     _KEY_Q,   _KEY_W,         _KEY_E,  _KEY_R,  _KEY_U,  _KEY_I,          _KEY_O,    _KEY_P,             0,                       0,          0, 0, 0,    0,   0},      //0
@@ -145,11 +192,12 @@ const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用�
     {0,                       0,         0,             0,     _KEY_B,  _KEY_N,    0,                0,      _KEY_SLASH,     _KEY_KPCOMMA,               0,          _KEY_DOWN,  _KEY_RIGHT, 0,   _KEY_LEFT},
     {0,                     _KEY_GRAVE, _KEY_F1,       _KEY_F2, _KEY_5,  _KEY_6,  _KEY_EQUAL,      _KEY_F8,   _KEY_MINUS,         0,                _KEY_F9,        _KEY_SCROLLLOCK},
     {_KEY_F5,               _KEY_1,   _KEY_2,         _KEY_3,  _KEY_4,  _KEY_7,  _KEY_8,          _KEY_9,    _KEY_0,          _KEY_F12,             _KEY_F10},
-};
-special_key fn_remap_key[12 + 4] = {
+};*/
+special_key fn_remap_key[14 + 4 + 4] = {
+    {.row = 3, .col = 1},       //ESC
     {.row = 6, .col = 2},       //F1
     {.row = 6, .col = 3},       //F2
-    {.row = 1, .col = 3},       //F3
+    {.row = 1, .col = 3, .is_user_key = 1},     //F3
     {.row = 3, .col = 3},       //F4
     {.row = 7, .col = 0},       //F5
     {.row = 3, .col = 6},       //F6
@@ -159,21 +207,41 @@ special_key fn_remap_key[12 + 4] = {
     {.row = 7, .col = 10},      //F10
     {.row = 4, .col = 11},      //F11
     {.row = 7, .col = 9},       //F12
+    {.row = 6, .col = 11},       //F12
+    {.row = 0, .col = 1, .is_user_key = 1},       //q
+    {.row = 0, .col = 2, .is_user_key = 1},       //w
+    {.row = 0, .col = 3, .is_user_key = 1},       //e
     {.row = 7, .col = 1, .is_user_key = 1},       //1
     {.row = 7, .col = 2, .is_user_key = 1},       //2
     {.row = 7, .col = 3, .is_user_key = 1},       //3
     {.row = 7, .col = 4, .is_user_key = 1},       //4
 };
+
+
+const u16 fn_remap_event[14 + 4 + 4] = {_KEY_CUSTOM_ESC, _KEY_CUSTOM_CTRL_HOME, _KEY_CUSTOM_CTRL_EMAIL, KEYBOARD_COMPOSE_KEY,  _KEY_CUSTOM_CTRL_CALCULATOR, \
+                                        _KEY_CUSTOM_CTRL_SEARCH, _KEY_CUSTOM_SPLIT_SCREEN,    _KEY_CUSTOM_CTRL_FORWARD,  _KEY_CUSTOM_CTRL_STOP, \
+                                        _KEY_CUSTOM_CTRL_BACK, _KEY_CUSTOM_CTRL_MUTE, _KEY_CUSTOM_CTRL_VOL_DOWN, _KEY_CUSTOM_CTRL_VOL_UP,                                      _KEY_CUSTOM_LOCK,
+                                        KEYBOARD_SYSTEM_IOS,  KEYBOARD_SYSTEM_ARD, KEYBOARD_SYSTEM_WIN,
+                                        KEYBOARD_ENTER_PAIR0, KEYBOARD_ENTER_PAIR1, KEYBOARD_ENTER_PAIR2, KEYBOARD_ENTER_PAIR3,
+                                       };
+const u16 fn_remap_ios_event[14 + 4 + 4] = {_KEY_CUSTOM_ESC, _KEY_BRIGHTNESS_REDUCTION,  _KEY_BRIGHTNESS_INCREASE, KEYBOARD_COMPOSE_KEY, _KEY_CUSTOM_CTRL_CALCULATOR, \
+                                            _KEY_CUSTOM_CTRL_SEARCH, _KEY_CUSTOM_SPLIT_SCREEN,  _KEY_CUSTOM_CTRL_FORWARD,  _KEY_CUSTOM_CTRL_STOP, \
+                                            _KEY_CUSTOM_CTRL_BACK, _KEY_CUSTOM_CTRL_MUTE, _KEY_CUSTOM_CTRL_VOL_DOWN, _KEY_CUSTOM_CTRL_VOL_UP,  \
+                                            _KEY_CUSTOM_LOCK,
+                                            KEYBOARD_SYSTEM_IOS,  KEYBOARD_SYSTEM_ARD, KEYBOARD_SYSTEM_WIN,
+                                            KEYBOARD_ENTER_PAIR0, KEYBOARD_ENTER_PAIR1, KEYBOARD_ENTER_PAIR2, KEYBOARD_ENTER_PAIR3,
+                                           };
+/*
 const u16 fn_remap_event[12 + 4] = {_KEY_CUSTOM_CTRL_HOME, _KEY_CUSTOM_CTRL_EMAIL, _KEY_CUSTOM_CTRL_SEARCH, _KEY_CUSTOM_CTRL_CALCULATOR, \
                                     _KEY_CUSTOM_CTRL_MUSIC, _KEY_CUSTOM_CTRL_BACK, _KEY_CUSTOM_CTRL_STOP, _KEY_CUSTOM_CTRL_FORWARD, \
                                     _KEY_CUSTOM_CTRL_MUTE, _KEY_CUSTOM_CTRL_VOL_DOWN, _KEY_CUSTOM_CTRL_VOL_UP, 0, \
                                     KEYBOARD_ENTER_PAIR0, KEYBOARD_ENTER_PAIR1, KEYBOARD_ENTER_PAIR2, KEYBOARD_ENTER_PAIR3,
-                                   };
+                                   };*/
 #endif
 
 
 special_key other_key[] = {
-    {.row = 6, .col = 13, .is_user_key = 1},
+    {.row = 0, .col = 18, .is_user_key = 1},
 };
 
 
@@ -276,6 +344,109 @@ const static u8  hid_report_map[] = {
     0xc0                                // END_COLLECTION                   49/50
 };
 
+#define LED_ON()  gpio_direction_output(CONNECT_LED_PIN,1);
+#define LED_OFF() gpio_direction_output(CONNECT_LED_PIN,0);
+//==========================================================
+//上电亮灯
+extern void rtc_port_pr_out(u8 port, bool on);
+
+void power_led_on_handler(void *arg)
+{
+    rtc_port_pr_out(1, 0);
+}
+
+void power_led_set(u8 en)
+{
+    rtc_port_pr_out(1, en);
+    if (en) {
+
+        sys_timeout_add(NULL, power_led_on_handler, 3000);
+    }
+}
+//================================================================
+//连接闪灯
+enum {
+    LED_WAIT_CONNECT,
+    LED_CLOSE,
+};
+
+static u8 led_io_flash;
+static u32 led_timer_id = 0;
+static u32 led_timer_ms;
+static u32 led_timeout_count;
+
+
+static void led_timer_stop(void);
+static void led_timer_start(u32 time_ms);
+static void led_on_off(u8 state, u8 res);
+
+#define SOFT_OFF_TIME_MS  (90000L)
+
+static void led_on_off(u8 state, u8 res)
+{
+    led_io_flash = 0;
+
+    switch (state) {
+    case LED_WAIT_CONNECT:
+        led_timeout_count = (SOFT_OFF_TIME_MS / 1000) * 2;
+        led_timer_start(500);
+        LED_ON();
+        led_io_flash = BIT(7) | BIT(0);
+        break;
+    case LED_CLOSE:
+        LED_OFF();
+        led_timer_stop();
+        break;
+    }
+}
+
+static void led_timer_handle(void)
+{
+    if (led_io_flash & BIT(7)) {
+        led_io_flash ^= BIT(0);
+        if (led_io_flash & BIT(0)) {
+            LED_ON();
+        } else {
+            LED_OFF();
+        }
+    }
+}
+
+
+static void led_timer_stop(void)
+{
+    if (led_timer_id) {
+        sys_timer_del(led_timer_id);
+        led_timer_id = 0;
+    }
+}
+
+static void led_timer_start(u32 time_ms)
+{
+    led_timer_stop(); //stop firstly
+    led_timer_ms = time_ms;
+    led_timer_id = sys_timer_add(0, led_timer_handle, led_timer_ms);
+}
+
+
+void bt_close_pair(void *arg)
+{
+    led_on_off(LED_CLOSE, 0);
+}
+
+void bt_keyboard_enter_pair_deal(void)
+{
+    if (bt_close_pair_handler) {
+        sys_timeout_del(bt_close_pair_handler);
+    }
+    bt_close_pair_handler = sys_timeout_add(NULL, bt_close_pair, 1000 * 60 * 3);
+    led_on_off(LED_WAIT_CONNECT, 0);
+}
+
+
+
+//+============================================================
+
 void edr_set_enable(u8 en)
 {
     printf("edr enable :%d\n", en);
@@ -302,7 +473,7 @@ void ble_reset_addr(u8 *new_addr)
     ble_module_enable(1);
 #endif
 }
-
+u8 keyboard_report[8] = {0};
 void user_key_deal(u16 user_key, u8 timeout)
 {
     int ret = 0;
@@ -312,6 +483,23 @@ void user_key_deal(u16 user_key, u8 timeout)
     u8 user_event = user_key & 0xff;
 
     switch (user_event) {
+
+    case KEYBOARD_COMPOSE_KEY:
+        keyboard_report[2] = 0x65;
+        hid_report_send(KEYBOARD_REPORT_ID, keyboard_report, 8);
+        break;
+    case KEYBOARD_SYSTEM_IOS:
+        keyboard_system = SYSTEM_IOS;
+        printf(".................sys....ios\n");
+        break;
+    case KEYBOARD_SYSTEM_WIN:
+        printf(".............sys.....win\n");
+        keyboard_system = SYSTEM_WIN;
+        break;
+    case KEYBOARD_SYSTEM_ARD:
+        keyboard_system = SYSTEM_ARD;
+        printf("..............sys....ard\n");
+        break;
     case KEYBOARD_ENTER_PAIR0:
     case KEYBOARD_ENTER_PAIR1:
     case KEYBOARD_ENTER_PAIR2:
@@ -351,7 +539,8 @@ void user_key_deal(u16 user_key, u8 timeout)
         case HID_MODE_NULL:
             break;
         }
-
+        /* printf("finish disconnected.....\n"); */
+        bt_keyboard_enter_pair_deal();
         cur_bt_idx = user_event;
         syscfg_write(CFG_CUR_BT_IDX, &cur_bt_idx, 1);                           //记录当前使用哪组蓝牙
 
@@ -366,7 +555,7 @@ void user_key_deal(u16 user_key, u8 timeout)
             }
             edr_set_enable(1);
             if (get_curr_channel_state()) {
-                printf("edr operation pagscan...\n");
+                /* printf("edr operation pagscan...\n"); */
                 edr_operation = EDR_OPERATION_PAGESCAN_IRQUIRY_SCAN;
             }
 #endif
@@ -385,15 +574,16 @@ void user_key_deal(u16 user_key, u8 timeout)
 #if  TCFG_USER_EDR_ENABLE
         if ((ret == 1) && (vm_hid_mode == HID_MODE_EDR)) {
             //last conn is edr
+            /* printf("last connected is eder ....\n"); */
             edr_set_enable(1);
             ret = syscfg_read(CFG_EDR_ADDRESS_BEGIN + cur_bt_idx, remote_addr, 6);
             if ((ret == 6) && memcmp(zero_addr, remote_addr, 6)) {              //read remote addr error
-                printf("remote_addr:0x%x:");
+                /* printf("remote_addr:0x%x:"); */
                 put_buf(remote_addr, 6);
                 if (get_curr_channel_state()) {
                     edr_operation = EDR_OPERATION_RECONN;
                 } else {
-                    printf("reconnect edr at once...\n");
+                    /* printf("reconnect edr at once...\n"); */
                     user_send_cmd_prepare(USER_CTRL_START_CONNEC_VIA_ADDR, 6, remote_addr);
                 }
             }
@@ -414,8 +604,9 @@ void user_key_deal(u16 user_key, u8 timeout)
         }
 #endif
 
+        bt_keyboard_enter_pair_deal();
         //last conn is null
-        g_printf("last conn is null\n");
+        /* g_printf("last conn is null\n"); */
 #if TCFG_USER_EDR_ENABLE
         edr_set_enable(1);
         if (get_curr_channel_state()) {
@@ -623,11 +814,18 @@ void matrix_key_map_deal(u8 *map)
     u8 row, col, i = 0;
     static u8 fn_press = 0;
 
-    if (special_key_deal(map, fn_remap_key, sizeof(fn_remap_key) / sizeof(special_key), fn_remap_event, 1)) {
-        printf("fn mark...\n");
-        return;
+    if (keyboard_system == SYSTEM_ARD) {
+        if (special_key_deal(map, fn_remap_key, sizeof(fn_remap_key) / sizeof(special_key), fn_remap_event, 1)) {
+            /* printf("fn mark...\n"); */
+            return;
+        }
     }
-
+    if (keyboard_system == SYSTEM_IOS || keyboard_system == SYSTEM_WIN) {
+        if (special_key_deal(map, fn_remap_key, sizeof(fn_remap_key) / sizeof(special_key), fn_remap_ios_event, 1)) {
+            /* printf("fn mark..ios.\n"); */
+            return;
+        }
+    }
     if (special_key_deal(map, other_key, sizeof(other_key) / sizeof(special_key), other_key_map, 0)) {
         return;
     }
@@ -760,6 +958,7 @@ static void bt_function_select_init()
 static void bredr_handle_register()
 {
 #if (USER_SUPPORT_PROFILE_HID==1)
+    printf("enter callback.....\n");
     user_hid_set_icon(BD_CLASS_KEYBOARD);
     user_hid_set_ReportMap(hid_report_map, sizeof(hid_report_map));
     user_hid_init(edr_led_status_callback);
@@ -1064,6 +1263,11 @@ static void hogp_ble_status_callback(ble_state_e status, u8 reason)
 #if TCFG_USER_EDR_ENABLE
         edr_set_enable(0);
 #endif      //TCFG_USER_EDR_MODE
+        if (bt_close_pair_handler) {
+            led_on_off(LED_CLOSE, 0);
+            sys_timeout_del(bt_close_pair_handler);
+            bt_close_pair_handler = 0;
+        }
         break;
     case BLE_ST_SEND_DISCONN:
         break;
@@ -1163,7 +1367,6 @@ static int bt_hci_event_handler(struct bt_event *bt)
 #endif
         }
     }
-
     if ((bt->event != HCI_EVENT_CONNECTION_COMPLETE) ||
         ((bt->event == HCI_EVENT_CONNECTION_COMPLETE) && (bt->value != ERROR_CODE_SUCCESS))) {
 #if TCFG_TEST_BOX_ENABLE
@@ -1219,6 +1422,14 @@ static int bt_hci_event_handler(struct bt_event *bt)
     case BTSTACK_EVENT_HCI_CONNECTIONS_DELETE:
     case HCI_EVENT_CONNECTION_COMPLETE:
         log_info(" HCI_EVENT_CONNECTION_COMPLETE \n");
+        /* led_on_off(LED_CLOSE,0);  */
+        if (bt_close_pair_handler) {
+            led_on_off(LED_CLOSE, 0);
+            sys_timeout_del(bt_close_pair_handler);
+            bt_close_pair_handler = 0;
+        }
+
+
         switch (bt->value) {
         case ERROR_CODE_SUCCESS :
             log_info("ERROR_CODE_SUCCESS  \n");
@@ -1269,29 +1480,48 @@ void ble_led_status_callback(u8 *buffer, u16 len)
 {
     put_buf(buffer, len);
     if (buffer[0] & BIT(1)) {   //CAP灯的状态
-        gpio_set_output_value(CAP_LED_PIN, CAP_LED_ON_VALUE);
+        r_printf("enter bble callback......\n");
+        /* gpio_set_output_value(CAP_LED_PIN, CAP_LED_ON_VALUE); */
+        gpio_direction_output(CAP_LED_PIN, CAP_LED_ON_VALUE);
     } else {
-        gpio_set_output_value(CAP_LED_PIN, !CAP_LED_ON_VALUE);
+        /* gpio_set_output_value(CAP_LED_PIN, !CAP_LED_ON_VALUE); */
+        gpio_direction_output(CAP_LED_PIN, !CAP_LED_ON_VALUE);
     }
 }
 
 void edr_led_status_callback(u8 *buffer, u16 len)
 {
     put_buf(buffer, len);
-    if (buffer[0] == 0xA2) {    //SET_REPORT && Output
-        if (buffer[1] ==  KEYBOARD_REPORT_ID) {
-            if (buffer[2] & BIT(1)) {   //CAP灯的状态
-                gpio_set_output_value(CAP_LED_PIN, CAP_LED_ON_VALUE);
-            } else {
-                gpio_set_output_value(CAP_LED_PIN, !CAP_LED_ON_VALUE);
-            }
-        }
+    /* if (buffer[0] == 0xA2) {    //SET_REPORT && Output */
+    /* if (buffer[1] ==  KEYBOARD_REPORT_ID) { */
+    if (buffer[2] & BIT(1)) {   //CAP灯的状态
+        /* gpio_set_output_value(CAP_LED_PIN, CAP_LED_ON_VALUE); */
+        gpio_direction_output(CAP_LED_PIN, CAP_LED_ON_VALUE);
+    } else {
+        /* gpio_set_output_value(CAP_LED_PIN, !CAP_LED_ON_VALUE); */
+        gpio_direction_output(CAP_LED_PIN, !CAP_LED_ON_VALUE);
     }
+    /* } */
+    /* } */
 }
 void le_hogp_set_output_callback(void *cb);
 static void keyboard_mode_init(u8 hid_mode)
 {
+    power_led_set(1);
+
+    /* le_hogp_set_output_callback(ble_led_status_callback); */
     u8 vm_hid_mode = HID_MODE_NULL;
+#if TCFG_BLE_ENABLE
+    if (ble_hid_is_connected()) {
+    }
+#endif
+
+#if TCFG_EDR_ENABLE
+
+    user_hid_init(edr_led_status_callback);
+
+#endif
+
 
     if ((!STACK_MODULES_IS_SUPPORT(BT_BTSTACK_LE) || !BT_MODULES_IS_SUPPORT(BT_MODULE_LE)) && (!STACK_MODULES_IS_SUPPORT(BT_BTSTACK_CLASSIC) || !BT_MODULES_IS_SUPPORT(BT_MODULE_CLASSIC))) {
         log_info("not surpport ble or edr,make sure config !!!\n");
@@ -1301,6 +1531,18 @@ static void keyboard_mode_init(u8 hid_mode)
     if (syscfg_read(CFG_HID_MODE_BEGIN + cur_bt_idx, &vm_hid_mode, 1) == 1) {  //读取HID模式
         hid_mode = vm_hid_mode;
     }
+
+    if (hid_mode == HID_MODE_NULL) {
+        /* r_printf("first power on mode is null........................................\n"); */
+#if TCFG_USER_EDR_ENABLE
+        edr_set_enable(0);
+#endif
+#if TCFG_USER_BLE_ENABLE
+        ble_module_enable(0);
+#endif
+        return ;
+    }
+
 
 #if TCFG_USER_EDR_ENABLE
     if (hid_mode & HID_MODE_EDR) {
@@ -1356,7 +1598,7 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 #endif
 
         //hid_vm_deal(0);//bt_hid_mode read for VM
-        keyboard_mode_init(HID_MODE_COMBO);
+        keyboard_mode_init(HID_MODE_NULL);
         break;
 
     case BT_STATUS_SECOND_CONNECTED:
@@ -1371,6 +1613,8 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         //close ble
         ble_module_enable(0);
 #endif
+
+
         break;
 
     case BT_STATUS_FIRST_DISCONNECT:
@@ -1530,4 +1774,6 @@ REGISTER_APPLICATION(app_hid) = {
 
 
 #endif
+
+
 

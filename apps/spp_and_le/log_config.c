@@ -77,6 +77,12 @@ const char log_tag_const_d_AT_COM AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_w_AT_COM AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_e_AT_COM AT(.LOG_TAG_CONST) = 1;
 
+const char log_tag_const_v_AT_CHAR_COM AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_i_AT_CHAR_COM AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_d_AT_CHAR_COM AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_w_AT_CHAR_COM AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_e_AT_CHAR_COM AT(.LOG_TAG_CONST) = 1;
+
 
 const char log_tag_const_v_LE_CTL AT(.LOG_TAG_CONST) = 0;
 const char log_tag_const_i_LE_CTL AT(.LOG_TAG_CONST) = 1;
@@ -125,4 +131,12 @@ const char log_tag_const_i_APP_TONE AT(.LOG_TAG_CONST) = TRUE;
 const char log_tag_const_d_APP_TONE AT(.LOG_TAG_CONST) = FALSE;
 const char log_tag_const_w_APP_TONE AT(.LOG_TAG_CONST) = TRUE;
 const char log_tag_const_e_APP_TONE AT(.LOG_TAG_CONST) = TRUE;
+
+const char log_tag_const_v_MULTI_CONN AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_i_MULTI_CONN AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_d_MULTI_CONN AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_w_MULTI_CONN AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_e_MULTI_CONN AT(.LOG_TAG_CONST) = 1;
+
+
 

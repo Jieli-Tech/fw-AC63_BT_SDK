@@ -21,6 +21,7 @@ LIBS += \
    $(AR_DIR)/bfilterfun_lib.a \
    $(AR_DIR)/wtg_dec_lib.a \
    $(AR_DIR)/wtgv2_dec_lib.a \
+   $(AR_DIR)/wav_dec_lib.a \
 --end-group
 endif
 

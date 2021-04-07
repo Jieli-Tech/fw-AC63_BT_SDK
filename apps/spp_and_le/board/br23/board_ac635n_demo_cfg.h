@@ -25,6 +25,11 @@
 #define TCFG_UART0_TX_PORT  				IO_PORTA_00                            //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
+#define UART_DB_TX_PIN                      IO_PORTC_01                            //AT_CHART串口
+#define UART_DB_RX_PIN                      IO_PORTC_02
+#define UART_DB_RTS_PIN                     IO_PORTA_06
+#define UART_DB_CTS_PIN                     IO_PORTA_05
+
 //*********************************************************************************//
 //                                 IIC配置                                        //
 //*********************************************************************************//
@@ -68,24 +73,6 @@
 #define TCFG_CODE_FLASH_ENABLE				DISABLE_THIS_MOUDLE
 #define TCFG_FLASH_DEV_SPI_HW_NUM			1// 1: SPI1    2: SPI2
 #define TCFG_FLASH_DEV_SPI_CS_PORT	    	IO_PORTA_03
-
-
-//*********************************************************************************//
-//                                  充电参数配置                                   //
-//*********************************************************************************//
-//是否支持芯片内置充电
-#define TCFG_CHARGE_ENABLE					DISABLE_THIS_MOUDLE
-//是否支持开机充电
-#define TCFG_CHARGE_POWERON_ENABLE			DISABLE
-//是否支持拔出充电自动开机功能
-#define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
-
-#define TCFG_CHARGE_FULL_V					CHARGE_FULL_V_4202
-
-#define TCFG_CHARGE_FULL_MA					CHARGE_FULL_mA_10
-
-#define TCFG_CHARGE_MA						CHARGE_mA_50
-
 
 //*********************************************************************************//
 //                                  SD 配置                                        //
@@ -252,6 +239,7 @@
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #define TCFG_LINEIN_LR_CH					AUDIO_LIN0_LR
+#define TCFG_DEC_WAV_ENABLE					DISABLE
 #else
 #define TCFG_DEC_PCM_ENABLE					DISABLE
 #endif/*TCFG_AUDIO_ENABLE*/
@@ -355,12 +343,12 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_CHARGE_FULL_MA					CHARGE_FULL_mA_10
 /*
 充电电流可选配置：
-    CHARGE_mA_20		CHARGE_mA_30		CHARGE_mA_40		CHARGE_mA_50
-    CHARGE_mA_60		CHARGE_mA_70		CHARGE_mA_80		CHARGE_mA_90
-    CHARGE_mA_100		CHARGE_mA_110		CHARGE_mA_120		CHARGE_mA_140
-    CHARGE_mA_160		CHARGE_mA_180		CHARGE_mA_200		CHARGE_mA_220
+    CHARGE_mA_20		CHARGE_mA_40		CHARGE_mA_60		CHARGE_mA_80
+    CHARGE_mA_100		CHARGE_mA_120		CHARGE_mA_140		CHARGE_mA_160
+    CHARGE_mA_180		CHARGE_mA_200		CHARGE_mA_220		CHARGE_mA_240
+    CHARGE_mA_260		CHARGE_mA_280		CHARGE_mA_300		CHARGE_mA_320
  */
-#define TCFG_CHARGE_MA						CHARGE_mA_50
+#define TCFG_CHARGE_MA						CHARGE_mA_60
 
 //*********************************************************************************//
 //                                  LED 配置                                       //
@@ -462,6 +450,7 @@ DAC硬件上的连接方式,可选的配置：
 #define BT_PHONE_NUMBER                           0   //是否播放来电报号
 #define BT_SUPPORT_DISPLAY_BAT                    0   //是否使能电量检测
 #define BT_SUPPORT_MUSIC_VOL_SYNC                 0   //是否使能音量同步
+
 
 
 //*********************************************************************************//

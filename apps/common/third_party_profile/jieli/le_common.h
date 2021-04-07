@@ -20,6 +20,8 @@
 #include "btstack/bluetooth.h"
 
 //--------------------------------------------
+#define LE_DEBUG_PRINT_EN               1     // log switch
+//--------------------------------------------
 
 #define ADV_SET_1M_PHY                  1
 #define ADV_SET_2M_PHY                  2
@@ -41,6 +43,8 @@
 #define CONN_SET_PHY_OPTIONS_S2          1
 #define CONN_SET_PHY_OPTIONS_S8          2
 
+#define ADV_SCAN_MS(_ms)                ((_ms) * 8 / 5)
+
 struct conn_param_t {
     u16 interval;
     u16 latency;
@@ -51,7 +55,7 @@ struct conn_param_t {
 // #define INDICATION_TYPE       2
 // Minimum/default MTU
 
-#define ATT_CTRL_BLOCK_SIZE       (120)                    //note: fixed,libs use
+#define ATT_CTRL_BLOCK_SIZE       (138)                    //note: fixed,libs use
 
 
 enum {

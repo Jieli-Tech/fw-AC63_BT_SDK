@@ -6,6 +6,7 @@
 #include "vm.h"
 #include "btcontroller_config.h"
 #include "app_main.h"
+#include "bt_common.h"
 
 #define LOG_TAG_CONST       USER_CFG
 #define LOG_TAG             "[USER_CFG]"
@@ -17,7 +18,7 @@
 #include "debug.h"
 
 void lp_winsize_init(struct lp_ws_t *lp);
-void bt_max_pwr_set(u8 pwr, u8 pg_pwr, u8 iq_pwr, u8 ble_pwr);
+/* void bt_max_pwr_set(u8 pwr, u8 pg_pwr, u8 iq_pwr, u8 ble_pwr); */
 
 extern APP_VAR app_var;
 

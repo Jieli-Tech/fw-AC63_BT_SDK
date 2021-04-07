@@ -46,6 +46,7 @@ const int config_btctler_le_tws         = 0;
 const int CONFIG_BTCTLER_TWS_ENABLE     = 0;
 const int CONFIG_TWS_AFH_ENABLE         = 0;
 const int CONFIG_LOW_LATENCY_ENABLE     = 1;
+const int CONFIG_BTCTLER_FAST_CONNECT_ENABLE     = 0;
 
 #if (CONFIG_BT_MODE != BT_NORMAL)
 const int config_btctler_hci_standard   = 1;
@@ -103,9 +104,11 @@ const int CONFIG_BREDR_INQUIRY   =  0;
 const int CONFIG_INQUIRY_PAGE_OFFSET_ADJUST =  0;
 
 
+const int CONFIG_ESCO_MUX_RX_BULK_ENABLE  =  0;
 const int CONFIG_LMP_NAME_REQ_ENABLE  =  1;
 const int CONFIG_LMP_PASSKEY_ENABLE  =  1;
 const int CONFIG_LMP_MASTER_ESCO_ENABLE  =  1;
+const int CONFIG_WIFI_DETECT_ENABLE = 0;
 
 const int config_bt_function  =  0;
 
@@ -114,6 +117,9 @@ const int config_btctler_bredr_master = 0;
 
 ///afh maseter 使用app设置的map 通过USER_CTRL_AFH_CHANNEL 设置
 const int config_bredr_afh_user = 0;
+
+//bt PLL 温度跟随trim
+const int config_bt_temperature_pll_trim = 0;
 /*-----------------------------------------------------------*/
 /**
  * @brief Bluetooth LE setting
@@ -128,9 +134,17 @@ const int config_btctler_le_roles    = (LE_ADV);
 const uint64_t config_btctler_le_features = LE_ENCRYPTION;
 const int config_btctler_le_roles    = (LE_SCAN | LE_INIT | LE_MASTER);
 
+#elif (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_AT_CHAR_COM)
+const uint64_t config_btctler_le_features = LE_ENCRYPTION;
+const int config_btctler_le_roles    = (LE_SCAN | LE_INIT | LE_MASTER | LE_ADV | LE_SLAVE);
+
 #elif (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_MI)
 const uint64_t config_btctler_le_features = LE_ENCRYPTION;
 const int config_btctler_le_roles    = (LE_ADV | LE_SLAVE);
+
+#elif (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_MULTI)
+const uint64_t config_btctler_le_features = LE_ENCRYPTION;
+const int config_btctler_le_roles    = (LE_ADV | LE_SLAVE) | (LE_SCAN | LE_INIT | LE_MASTER);
 
 #else
 const uint64_t config_btctler_le_features = LE_ENCRYPTION;
@@ -147,10 +161,35 @@ const int config_btctler_le_roles    = 0;
 // Master AFH
 const int config_btctler_le_afh_en = 1;
 // LE RAM Control
-const int config_btctler_le_hw_nums = 1;
+const int config_btctler_le_hw_nums = 2;
+const int config_btctler_le_rx_nums = 6;
+const int config_btctler_le_acl_packet_length = 27;
+const int config_btctler_le_acl_total_nums = 5;
+// Master multi-link
+const int config_btctler_le_master_multilink = 0;
+
+#elif (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_MULTI)
+// Master AFH
+const int config_btctler_le_afh_en = 0;
+// LE RAM Control
+const int config_btctler_le_hw_nums = 2;
 const int config_btctler_le_rx_nums = 8;
 const int config_btctler_le_acl_packet_length = 27;
-const int config_btctler_le_acl_total_nums = 4;
+const int config_btctler_le_acl_total_nums = 8;
+
+// Master multi-link
+const int config_btctler_le_master_multilink = 1;
+
+#elif DEF_BLE_DEMO_AT_CHAR_COM
+// Master AFH
+const int config_btctler_le_afh_en = 0;
+// LE RAM Control
+const int config_btctler_le_hw_nums = 3;
+const int config_btctler_le_rx_nums = 12;
+const int config_btctler_le_acl_packet_length = 27;
+const int config_btctler_le_acl_total_nums = 12;
+
+const int config_btctler_le_master_multilink = 1;
 
 #else
 // Master AFH
@@ -160,10 +199,10 @@ const int config_btctler_le_hw_nums = 1;
 const int config_btctler_le_rx_nums = 5;
 const int config_btctler_le_acl_packet_length = 27;
 const int config_btctler_le_acl_total_nums = 6;
-#endif /* (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_CLIENT) */
-
 // Master multi-link
 const int config_btctler_le_master_multilink = 0;
+
+#endif /**/
 
 const int config_btctler_le_slave_conn_update_winden = 2500;//range:100 to 2500
 /*-----------------------------------------------------------*/

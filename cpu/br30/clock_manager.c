@@ -153,6 +153,8 @@ const struct clock_type  clock_enum[] = {
     { DONGLE_ENC_CLK, (48), "DONGLE_ENC_CLK"  },
 #endif
 
+    { LCD_UI_CLK, (192),   "LCD_UI_CLK"   },
+
     { SCAN_DISK_CLK, (120),	"SCAN_DISK_CLK"   },//提高扫盘速度
 
 #if TCFG_DEC2TWS_ENABLE

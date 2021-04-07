@@ -93,6 +93,8 @@
 #define SYS_BT_EVENT_FROM_KEY       (('K' << 24) | ('E' << 16) | ('Y' << 8) | '\0')
 #define SYS_BT_EVENT_FORM_SELF  (('S' << 24) | ('E' << 16) | ('F' << 8) | '\0')
 #define DEVICE_EVENT_FROM_ANC   	   (('A' << 24) | ('N' << 16) | ('C' << 8) | '\0')
+#define SYS_BT_EVENT_FORM_AT          (('I' << 24) | ('A' << 16) | ('T' << 8) | '\0')
+#define DEVICE_EVENT_FROM_ADAPTER      (('A' << 24) | ('D' << 16) | ('A' << 8) | '\0')
 
 enum {
     KEY_EVENT_CLICK,

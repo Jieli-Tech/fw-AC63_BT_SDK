@@ -115,6 +115,7 @@ struct audio_dac_hdl {
     u8 vol_r;
 
     u8 channel;                     /*DAC声道数*/
+    u8 protect_time_dis;			/*关闭DAC延时保护*/
     u16 max_d_volume;               /*DAC数字最大音量*/
     u16 d_volume[2];                /*DAC数字音量*/
     u32 sample_rate;                /*DAC采样率*/
@@ -407,16 +408,32 @@ void dac_power_off(void);
 /*关闭audio相关模块使能*/
 void audio_disable_all(void);
 
+/*******************************************************************
+ *          Audio DACVDD上电接口
+ * params   : struct audio_dac_hdl结构指针
+ *
+ * return   : 无
+ *
+ * warnings : 仅用作Audio初始化上电，不可在任意位置使用
+ *
+ * example  : audio_dac_vdd_power_on(&dac_hdl);
+ *=================================================================*/
+void audio_dac_vdd_power_on(struct audio_dac_hdl *dac);
+/*******************************************************************
+ *          Audio DACVDD断电接口
+ * params   : struct audio_dac_hdl结构指针
+ *
+ * return   : 无
+ *
+ * warnings : 仅用作Audio DACVDD断电，不可在任意位置使用
+ *
+ * example  : audio_dac_vdd_power_off(&dac_hdl);
+ *=================================================================*/
+void audio_dac_vdd_power_off(struct audio_dac_hdl *dac);
+
 int audio_dac_fifo_set_read(struct audio_dac_hdl *dac, int offset);
 
-/*
- *  fifo数据读取
- *  data - 数据
- *  len - 长度(byte)
- *  channel - 读取DAC的channel, DA_LEFT/DA_RIGHT/DA_ALL_CH
- */
 /*************************************************************************
- * DAC模块电源关闭
  * INPUT    :  dac - DAC设备句柄，data - 地址，len - 长度，
  *             channel - 声道(DA_LEFT/DA_RIGHT/DA_ALL_CH).
  * OUTPUT   :  读取长度.
@@ -424,5 +441,20 @@ int audio_dac_fifo_set_read(struct audio_dac_hdl *dac, int offset);
  * HISTORY  :  2020/12/28 by Lichao.
  *=======================================================================*/
 int audio_dac_fifo_read(struct audio_dac_hdl *dac, void *data, int len, u8 channel);
+
+/*
+*********************************************************************
+*                  Audio Dac Reset Buf
+* Description: 重新设置dacbuf
+* Arguments  : *dac			dac句柄
+*              *buf			缓存地址
+*              *len			缓存长度
+*              *protect_time_en		DAC延时保护使能
+* Return	 : None.
+* Note(s)    : 该函数会先停止dac，所以建议在不使用dac或者静音的时候调用
+*********************************************************************
+*/
+void audio_dac_reset_buf(struct audio_dac_hdl *dac, s16 *buf, int len, u8 protect_time_en);
+
 #endif
 

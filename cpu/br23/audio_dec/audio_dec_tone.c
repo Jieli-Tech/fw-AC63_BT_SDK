@@ -332,6 +332,11 @@ static int tone_dec_file_app_evt_cb(void *priv, enum audio_dec_app_event event, 
         if (dec->cur_list->stream_handler) {
             dec->cur_list->stream_handler(dec->cur_list->stream_priv, event, file_dec->dec);
         }
+#if SYS_DIGVOL_GROUP_EN
+        if (dec->cur_list->stream_handler == NULL) {
+            sys_digvol_group_ch_close("tone_tone");
+        }
+#endif // SYS_DIGVOL_GROUP_EN
         break;
     case AUDIO_DEC_APP_EVENT_START_OK:
         dec->cur_list->dec_ok_cnt++;
@@ -363,12 +368,6 @@ static int tone_dec_file_app_evt_cb(void *priv, enum audio_dec_app_event event, 
 
         break;
     case AUDIO_DEC_APP_EVENT_STREAM_CLOSE:
-#if SYS_DIGVOL_GROUP_EN
-        if (dec->cur_list->stream_handler == NULL) {
-            sys_digvol_group_ch_close("tone_tone");
-        }
-#endif // SYS_DIGVOL_GROUP_EN
-
         break;
 
     default :
@@ -393,6 +392,8 @@ static int tone_dec_sine_app_evt_cb(void *priv, enum audio_dec_app_event event, 
     /* log_i("audio_dec_sine_app_evt_cb, priv:0x%x, event:%d \n", priv, event); */
     struct audio_dec_sine_app_hdl *sine_dec = priv;
     struct tone_dec_handle *dec = sine_dec->priv;
+    struct audio_dec_stream_entries_hdl *entries_hdl = (struct audio_dec_stream_entries_hdl *)param;
+    void *dvol_entry = NULL;
     switch (event) {
     case AUDIO_DEC_APP_EVENT_DEC_PROBE:
         if (sine_dec->sin_maker) {
@@ -425,6 +426,12 @@ static int tone_dec_sine_app_evt_cb(void *priv, enum audio_dec_app_event event, 
         if (dec->cur_list->stream_handler) {
             dec->cur_list->stream_handler(dec->cur_list->stream_priv, event, sine_dec->dec);
         }
+#if SYS_DIGVOL_GROUP_EN
+        if (dec->cur_list->stream_handler == NULL) {
+            sys_digvol_group_ch_close("tone_tone");
+        }
+#endif // SYS_DIGVOL_GROUP_EN
+
         break;
     case AUDIO_DEC_APP_EVENT_START_OK:
         dec->cur_list->dec_ok_cnt++;
@@ -436,6 +443,26 @@ static int tone_dec_sine_app_evt_cb(void *priv, enum audio_dec_app_event event, 
         /* audio_dec_sine_app_play_end(sine_dec); */
         tone_dec_end_ctrl(dec);
         break;
+    case AUDIO_DEC_APP_EVENT_STREAM_OPEN:
+#if SYS_DIGVOL_GROUP_EN
+        audio_dig_vol_param temp_digvol_param = {
+            .vol_start = get_max_sys_vol(),
+            .vol_max =  get_max_sys_vol(),
+            .ch_total = 2,
+            .fade_en = 0,   //提示音不能淡入淡出
+            .fade_points_step = 5,
+            .fade_gain_step = 10,
+            .vol_list = NULL,
+        };
+
+        if (dec->cur_list->stream_handler == NULL) {
+            dvol_entry = sys_digvol_group_ch_open("tone_tone", -1,  &temp_digvol_param);
+            (entries_hdl->entries_addr)[entries_hdl->entries_cnt++] = dvol_entry;
+        }
+#endif // SYS_DIGVOL_GROUP_EN
+
+        break;
+
 
     default :
         break;
@@ -548,9 +575,6 @@ static int tone_dec_list_play(struct tone_dec_handle *dec, u8 next)
     fclose(file);
     if (ASCII_StrCmpNoCase(format, "sin", 3) == 0) {
         // is sine file
-        if (file) {
-            fclose(file);
-        }
         dec->dec_sin = audio_dec_sine_app_create(dec_list->file_list[dec_list->idx], !dec_list->preemption);
         if (dec->dec_sin == NULL) {
             return false;

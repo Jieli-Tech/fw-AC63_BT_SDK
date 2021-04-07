@@ -25,9 +25,40 @@ struct ui_grid_item_info {
     struct layout_info *info;
 };
 
+struct scroll_area {
+    int left;
+    int top;
+    int right;
+    int bottom;
+};
+
+
+struct ui_grid_dynamic {
+    int  dhi_index;
+    int  dcol_num;
+    int  drow_num;
+
+    int  min_row_index;
+    int  max_row_index;
+    int  min_col_index;
+    int  max_col_index;
+    int  min_show_row_index;
+    int  max_show_row_index;
+    int  min_show_col_index;
+    int  max_show_col_index;
+
+    int  grid_xval;
+    int  grid_yval;
+    u8   grid_col_num;
+    u8   grid_row_num;
+    u8   grid_show_row;
+    u8   grid_show_col;
+    int  base_index_once;
+};
+
 struct ui_grid {
     struct element elm;
-    char hi_num;
+    // char hi_num;
     char hi_index;
     char touch_index;
     char onfocus;
@@ -39,7 +70,8 @@ struct ui_grid {
     u8   show_col;
     u8   avail_item_num;
     u8   pix_scroll;
-    u8   rotate;
+    u8   ctrl_num;
+    // u8   rotate;
     int  x_interval;
     int  y_interval;
     int  max_show_left;
@@ -50,11 +82,13 @@ struct ui_grid {
     int  max_top;
     int  min_left;
     int  min_top;
-    int  scroll_step;
-    u8   ctrl_num;
+    // int  scroll_step;
+    // u8   ctrl_num;
+    struct scroll_area *area;
     struct layout *item;
     struct layout_info *item_info;
-    struct element elm2;
+    // struct element elm2;
+    struct ui_grid_dynamic *dynamic;
     struct position pos;
     struct draw_context dc;
     const struct ui_grid_info *info;
@@ -92,8 +126,23 @@ int ui_grid_dynamic_release(struct ui_grid *grid);//动态列表释放
 int ui_grid_dynamic_cur_item(struct ui_grid *grid);//动态列表获取选项
 int ui_grid_dynamic_set_item_by_id(int id, int count);//修改动态列表数
 int ui_grid_dynamic_reset(struct ui_grid *grid, int index); //重置动态列表
+void ui_grid_set_scroll_area(struct ui_grid *grid, struct scroll_area *area);
 
+int ui_grid_init_dynamic(struct ui_grid *grid, int *row, int *col);
+int ui_grid_add_dynamic(struct ui_grid *grid, int *row, int *col, int redraw);
+int ui_grid_del_dynamic(struct ui_grid *grid, int *row, int *col, int redraw);
+int ui_grid_set_hi_index(struct ui_grid *grid, int hi_index);
+int ui_grid_set_pix_scroll(struct ui_grid *grid, int enable);
+int ui_grid_get_hindex(struct ui_grid *grid);
+int ui_grid_set_hindex_dynamic(struct ui_grid *grid, int dhindex, int init, int hi_index);
+int ui_grid_get_hindex_dynamic(struct ui_grid *grid);
+int ui_grid_set_base_dynamic(struct ui_grid *grid, u32 base_index_once);
+// int ui_grid_update_by_id_dynamic(int id, int redraw);
+int ui_grid_update_by_id_dynamic(int id, int item_sel, int redraw);
+int ui_grid_del_dynamic_by_id(int id, int *row, int *col, int redraw);
+int ui_grid_cur_item_dynamic(struct ui_grid *grid);
 
 #endif
+
 
 

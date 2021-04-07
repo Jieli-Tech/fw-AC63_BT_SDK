@@ -4,11 +4,11 @@
 #include "generic/typedef.h"
 
 /*DMS输出选择*/
-enum {
+typedef enum {
     DMS_OUTPUT_SEL_DEFAULT = 0,	/*默认输出：dms处理后的数据*/
     DMS_OUTPUT_SEL_MASTER,		/*主mic原始数据*/
     DMS_OUTPUT_SEL_SLAVE,		/*副mic原始数据*/
-};
+} CVP_OUTPUT_ENUM;
 
 //dms_cfg:
 typedef struct {

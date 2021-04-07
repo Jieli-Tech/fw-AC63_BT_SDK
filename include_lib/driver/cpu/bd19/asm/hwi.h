@@ -45,9 +45,7 @@
 #define IRQ_BLE_EVENT_IDX  39		//1
 #define IRQ_AES_IDX        40
 #define IRQ_USB1_CTRL_IDX  41
-#define IRQ_CHX_PWM_IDX    42
 #define IRQ_FMRX_IDX       43
-#define IRQ_SPI2_IDX       44
 #define IRQ_SBC_IDX		   45		//1
 #define IRQ_GPC_IDX		   46		//1
 #define IRQ_FMTX_IDX	   47		//1
@@ -59,6 +57,8 @@
 #define IRQ_CTM_IDX        53		//1
 #define IRQ_TIME4_IDX      54   	//0
 #define IRQ_TIME5_IDX      55   	//0
+#define IRQ_SPI2_IDX       56
+#define IRQ_CHX_PWM_IDX    58
 #define IRQ_SOFT0_IDX      60
 #define IRQ_SOFT1_IDX      61
 #define IRQ_SOFT2_IDX      62

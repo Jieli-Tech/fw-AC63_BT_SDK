@@ -5,6 +5,7 @@
 #define ACTION_IDLE_MAIN    	0x0002
 #define ACTION_AT_COM           0x0003
 #define ACTION_DONGLE_MAIN      0x0004
+#define ACTION_MULTI_MAIN       0x0005
 
 
 #endif

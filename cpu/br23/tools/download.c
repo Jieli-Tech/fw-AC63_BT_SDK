@@ -177,13 +177,13 @@ download\soundcard\download.bat
 
 download\watch\download.bat
 
-#elif CONFIG_SOUNDBOX_CASE_ENABLE
-
-download\app_ota\download.bat
-
 #elif CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE
 
+#if RCSP_UPDATE_EN
+bluetooth\app_ota\download.bat
+#else
 bluetooth\standard\download.bat
+#endif
 
 #else
 

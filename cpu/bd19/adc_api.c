@@ -41,6 +41,10 @@ static const u32 sys2adc_clk_info[] = {
     1000000L,
 };
 
+extern const int config_bt_temperature_pll_trim;
+static void temperature_pll_trim_init(void);
+static void temperature_pll_trim_exit(void);
+
 u32 adc_add_sample_ch(u32 ch)
 {
     u32 i = 0;
@@ -358,6 +362,16 @@ void _adc_init(u32 sys_lvd_en)
         JL_ADC->CON |= BIT(6);
     }
 
+    if (config_bt_temperature_pll_trim) {
+        u32 dtemp_ch = adc_add_sample_ch(AD_CH_DTEMP);
+        adc_set_sample_freq(AD_CH_DTEMP, 1500);
+        adc_sample(AD_CH_DTEMP);
+        while (!(JL_ADC->CON & BIT(7)));
+        adc_queue[dtemp_ch].value = JL_ADC->RES;
+        JL_ADC->CON |= BIT(6);
+        temperature_pll_trim_init();
+    }
+
     request_irq(IRQ_SARADC_IDX, 0, adc_isr, 0);
 
     usr_timer_add(NULL, adc_scan, 10, 0); //2ms
@@ -410,7 +424,7 @@ static u32 get_vdd_voltage(u32 ch)
 }
 
 
-static void wvdd_trim(u8 trim)
+static u8 wvdd_trim(u8 trim)
 {
     u8 wvdd_lev = 0;
     wvdd_lev = 0;
@@ -430,16 +444,18 @@ static void wvdd_trim(u8 trim)
         WVDD_LOAD_EN(0);
         WLDO06_EN(0);
 
-        update_wvdd_trim_level(wvdd_lev);
+        //update_wvdd_trim_level(wvdd_lev);
     } else {
         wvdd_lev = get_wvdd_trim_level();
     }
-    printf("wvdd_lev: %d\n", wvdd_lev);
+    printf("trim: %d, wvdd_lev: %d\n", trim, wvdd_lev);
 
     /* power_set_wvdd(wvdd_lev); */
     M2P_WDVDD = wvdd_lev;
+
+    return wvdd_lev;
 }
-static void pvdd_trim(u8 trim)
+static u8 pvdd_trim(u8 trim)
 {
     u32 v = 0;
     u32 lev = 0xf;
@@ -456,7 +472,7 @@ static void pvdd_trim(u8 trim)
             lev++;
         }
 
-        update_pvdd_trim_level(lev);
+        //update_pvdd_trim_level(lev);
     } else {
         lev = get_pvdd_trim_level();
     }
@@ -465,8 +481,121 @@ static void pvdd_trim(u8 trim)
     delay(2000);
     P33_CON_SET(P3_PVDD0_AUTO, 0, 8, (7 << 4) | (lev - PVDD_LOW_LEVEL));
 
-    printf("pvdd_lev: %d %d, pvdd_lev_l: %d\n", lev, v, lev - PVDD_LOW_LEVEL);
+    printf("trim: %d, pvdd_lev: %d %d, pvdd_lev_l: %d\n", trim, lev, v, lev - PVDD_LOW_LEVEL);
+
+    return lev;
 }
+
+//*********************************************************************************
+//蓝牙温度跟随trim
+//*********************************************************************************
+#define CHECK_TEMPERATURE_CYCLE             (2000)   //检测周期
+#define BTOSC_TEMPERATURE_THRESHOLD         (10 * 3) //偏差阈值
+#define AD_SAMPLE_COUNTS                    1
+#define WIPE_EXTREMUM_EN                    1
+#define ABS(x)                              (x > 0 ? x : (-x))
+
+#if WIPE_EXTREMUM_EN && (AD_SAMPLE_COUNTS == 2)
+#error "AD_SAMPLE_COUNTS must >= 3 while WIPE_EXTREMUM_EN=1"
+#endif
+#if (AD_SAMPLE_COUNTS < 1)
+#error "AD_SAMPLE_COUNTS must > 0"
+#endif
+
+static u32 pll_trim_timer = 0;
+static u32 prev_mV = 0;
+
+extern void bta_pll_config_init(s32 offset);
+
+static u32 get_cur_temperature(void)
+{
+    if (!config_bt_temperature_pll_trim) {
+        return 0;
+    }
+
+    u32 cur_mV;
+    u32 sum_mV = 0;
+
+#if WIPE_EXTREMUM_EN
+    u32 max = 0;
+    u32 min = (u32) - 1;
+#endif /* WIPE_EXTREMUM_EN */
+
+    for (int i = 0; i < AD_SAMPLE_COUNTS; i++) {
+
+#if 0
+        /* adc_enter_occupy_mode(AD_CH_DTEMP); */
+        /* cur_mV = adc_occupy_run(); */
+        /* adc_exit_occupy_mode(); */
+#else
+        cur_mV = adc_get_voltage(AD_CH_DTEMP);
+#endif
+        printf("cur_mV=%d\r\n", cur_mV);
+        sum_mV += cur_mV;
+#if WIPE_EXTREMUM_EN
+        max = (cur_mV > max) ? cur_mV : max;
+        min = (cur_mV < min) ? cur_mV : min;
+#endif /* WIPE_EXTREMUM_EN */
+    }
+
+#if WIPE_EXTREMUM_EN
+    printf("sum_mV=%d, max=%d, min=%d", sum_mV, max, min);
+    return ((sum_mV - max - min) / (AD_SAMPLE_COUNTS - 2));
+#else
+    return sum_mV / AD_SAMPLE_COUNTS;
+#endif /* WIPE_EXTREMUM_EN */
+}
+
+u8 get_bt_rf_state(void);
+void get_bta_pll_midbank_temp(void);
+static void pll_trim_timer_handler(void)
+{
+    if (!config_bt_temperature_pll_trim) {
+        return;
+    }
+
+    /* printf("\n--func=%s", __FUNCTION__); */
+
+    u32 cur_mV;
+    s32 minus;
+    static s32 pll_bank_offset = 0;
+
+    cur_mV = adc_get_voltage(AD_CH_DTEMP);
+
+    minus = (s32)(cur_mV - prev_mV);
+
+    printf("cur_mV =%d, prev_mV =%d,minus =%d\n", cur_mV, prev_mV, minus);
+
+    if (ABS(minus) >= BTOSC_TEMPERATURE_THRESHOLD) {
+
+        prev_mV = cur_mV;
+
+        (minus > 0) ? pll_bank_offset ++ : pll_bank_offset --;
+
+        printf("pll_bank_offset =%d\n\n", pll_bank_offset);
+
+        /* bta_pll_config_init(pll_bank_offset); */
+        get_bta_pll_midbank_temp();
+    }
+}
+
+static void temperature_pll_trim_init(void)
+{
+    prev_mV = adc_get_voltage(AD_CH_DTEMP);
+    printf("init prev_mV:%d\n", prev_mV);
+    pll_trim_timer = sys_timer_add(NULL, pll_trim_timer_handler, CHECK_TEMPERATURE_CYCLE);
+}
+
+static void temperature_pll_trim_exit(void)
+{
+    if (pll_trim_timer) {
+        sys_timeout_del(pll_trim_timer);
+        pll_trim_timer = 0;
+    }
+}
+
+//*********************************************************************************
+
 
 void adc_init()
 {
@@ -487,9 +616,14 @@ void adc_init()
 #endif
 
     //trim wvdd
-    u8 trim = check_pmu_voltage(0);
-    wvdd_trim(trim);
-    pvdd_trim(trim);
+    u8 trim = check_wvdd_pvdd_trim(0);
+    u8 wvdd_lev = wvdd_trim(trim);
+    u8 pvdd_lev = pvdd_trim(trim);
+
+    if (trim) {
+        update_wvdd_pvdd_trim_level(wvdd_lev, pvdd_lev);
+    }
+
 
     _adc_init(1);
 }

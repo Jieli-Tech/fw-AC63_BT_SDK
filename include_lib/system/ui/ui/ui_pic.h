@@ -8,13 +8,13 @@
 
 struct ui_pic {
     struct element elm;
-    char index;
-    u8 css_num;
-    u16 css[2];
-    u16 highlight_img;
-    u16 normal_img;
-    u16 highlight_img_num: 8;
-    u16 normal_img_num: 8;
+    u8 index;
+    // u8 css_num:2;
+    // u32 css[2];
+    // u16 highlight_img;
+    // u16 normal_img;
+    // u16 highlight_img_num:8;
+    // u16 normal_img_num:8;
     const struct ui_pic_info *info;
     const struct element_event_handler *handler;
 };
@@ -25,5 +25,6 @@ int ui_pic_show_image_by_id(int id, int index);
 int ui_pic_set_image_index(struct ui_pic *pic, int index);
 int ui_pic_get_normal_image_number_by_id(int id);
 int ui_pic_get_highlgiht_image_number_by_id(int id);
+int ui_pic_set_hide_by_id(int id, int hide);
 
 #endif

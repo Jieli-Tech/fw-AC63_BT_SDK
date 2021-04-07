@@ -26,7 +26,7 @@ struct ui_time {
     u8 sec;
     u8 css_num;
     u8 auto_cnt;
-    u16 css[2];
+    u32 css[2];
     int color;
     int hi_color;
     u16 buf[20];

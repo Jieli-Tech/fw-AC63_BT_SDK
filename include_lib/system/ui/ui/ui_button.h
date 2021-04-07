@@ -9,7 +9,7 @@ struct button {
     struct element elm;
     u8 image_index;
     u8 css_num;
-    u16 css[2];
+    u32 css[2];
     const struct ui_button_info *info;
     const struct element_event_handler *handler;
 };

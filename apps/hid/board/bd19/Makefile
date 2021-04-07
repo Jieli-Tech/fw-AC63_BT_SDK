@@ -21,6 +21,7 @@ LIBS += \
 objs += \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac632n_demo.o \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6321a_demo.o \
+	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6321a_mouse.o \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6323a_demo.o \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6328a_keyfob.o \
 	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6328b_demo.o \

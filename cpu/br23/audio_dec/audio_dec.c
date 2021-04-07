@@ -370,9 +370,14 @@ u32 audio_output_channel_type(void)
     } else if (dac_connect_mode == DAC_OUTPUT_FRONT_LR_REAR_LR) {
         return AUDIO_CH_LR;
     } else if (dac_connect_mode == DAC_OUTPUT_MONO_L) {
-        return AUDIO_CH_L;
+        return AUDIO_CH_DIFF;   //要输出左右合成的单声道数据选这个
+        /* return AUDIO_CH_L; */   //只要输出左声道的数据选这个
     } else if (dac_connect_mode == DAC_OUTPUT_MONO_R) {
-        return AUDIO_CH_R;
+
+        return AUDIO_CH_DIFF;  //要输出左右合成的单声道数据选这个
+
+        /* return AUDIO_CH_R; */  //只要输出右声道的数据选这个
+
     } else {
         return AUDIO_CH_DIFF;
     }
@@ -519,9 +524,6 @@ static void mixer_event_handler(struct audio_mixer *mixer, int event)
     case MIXER_EVENT_SR_CHANGE:
 #if 0
         y_printf("sr change:%d \n", mixer->sample_rate);
-#endif
-#if TCFG_KEY_TONE_EN
-        audio_key_tone_resample(mixer->sample_rate);
 #endif
         break;
     }
@@ -1255,6 +1257,17 @@ int sys_digvol_group_ch_close(char *logo)
     if (sys_digvol_group == NULL || logo == NULL) {
         return -1;
     }
+    void *hdl = audio_dig_vol_group_hdl_get(sys_digvol_group, logo);
+
+    if (hdl != NULL) {
+        void *entry = audio_dig_vol_entry_get(hdl);
+        if (entry != NULL) {
+            audio_stream_del_entry(entry);
+        }
+
+    }
+
+
     audio_dig_vol_close(audio_dig_vol_group_hdl_get(sys_digvol_group, logo));
     audio_dig_vol_group_del(sys_digvol_group, logo);
     return 0;

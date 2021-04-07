@@ -24,7 +24,7 @@ extern void printf_buf(u8 *buf, u32 len);
 /* #define DEBUG_ENABLE */
 /* #include "debug_log.h" */
 #include "spp_trans_data.h"
-#if TRANS_DATA_EN
+#if TRANS_DATA_EN || TRANS_MULTI_SPP_EN
 
 #if TEST_SPP_DATA_RATE
 #define SPP_TIMER_MS            (100)
@@ -33,7 +33,16 @@ static u32 spp_timer_handle = 0;
 static u32 spp_test_start;
 #endif
 
-#define SPP_DATA_RECIEVT_FLOW      0//流控功能使能
+/*
+ 打开流控使能后,确定配置接口 transport_spp_flow_cfg 被调用初始化配置
+ 然后使用过程 通过接口 transport_spp_flow_enable 来控制流控开关
+ */
+#define SPP_DATA_RECIEVT_FLOW              0//流控功能使能
+
+//流控速度控制，可以不用更改
+#define FLOW_SEND_CREDITS_NUM              1 //控制命令中 控制可接收的数据包个数,发送给对方的,range(1~32)
+#define FLOW_SEND_CREDITS_TRIGGER_NUM      1 //触发更新控制命令的阈值,range(1 to <= FLOW_SEND_CREDITS_NUM)
+
 
 void rfcomm_change_credits_setting(u16 init_credits, u8 base);
 int rfcomm_send_cretits_by_profile(u16 rfcomm_cid, u16 credit, u8 auto_flag);
@@ -174,21 +183,34 @@ void transport_spp_disconnect(void)
     }
 }
 
+static void timer_spp_flow_test(void)
+{
+    static u8 sw = 0;
+    if (spp_channel) {
+        sw = !sw;
+        transport_spp_flow_enable(sw);
+    }
+}
+
+//配置流控制的参数，蓝牙协议栈初始化前调用配置
 void transport_spp_flow_cfg(void)
 {
 #if SPP_DATA_RECIEVT_FLOW
-    rfcomm_change_credits_setting(1, 1);
+    rfcomm_change_credits_setting(FLOW_SEND_CREDITS_NUM, FLOW_SEND_CREDITS_TRIGGER_NUM);
+
+    //for test
+    /* sys_timer_add(0,timer_spp_flow_test,2000); */
 #endif
 }
 
-//流控使能 EN: 1 or 0
+//流控使能 EN: 1-停止收数 or 0-继续收数
 int transport_spp_flow_enable(u8 en)
 {
     int ret = -1;
 
 #if SPP_DATA_RECIEVT_FLOW
     if (spp_channel) {
-        ret = rfcomm_send_cretits_by_profile(spp_channel, 1, !en);
+        ret = rfcomm_send_cretits_by_profile(spp_channel, FLOW_SEND_CREDITS_NUM, !en);
     }
 #endif
 

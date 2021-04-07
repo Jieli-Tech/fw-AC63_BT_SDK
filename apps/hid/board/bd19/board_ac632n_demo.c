@@ -6,6 +6,7 @@
 #include "device/key_driver.h"
 #include "asm/chargestore.h"
 #include "asm/charge.h"
+#include "asm/power/p33.h"
 #include "rtc_alarm.h"
 #include "asm/pwm_led.h"
 #include "user_cfg.h"
@@ -254,11 +255,8 @@ static void board_devices_init(void)
 	key_driver_init();
 #endif
 
-#if TCFG_CHARGE_ENABLE
-    charge_api_init(&charge_data);
-#else
-    /* CHGBG_EN(0); */
-    /* CHARGE_EN(0); */
+#if (!TCFG_CHARGE_ENABLE)
+    CHARGE_EN(0);
 #endif
 
 #if TCFG_RTC_ALARM_ENABLE

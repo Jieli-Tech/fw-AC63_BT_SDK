@@ -59,9 +59,10 @@
 #define TEST_AUDIO_DATA_UPLOAD       0 //测试文件上传
 
 
-#if 1
+#if LE_DEBUG_PRINT_EN
 extern void printf_buf(u8 *buf, u32 len);
-#define log_info          printf
+/* #define log_info          printf */
+#define log_info(x, ...)  printf("[LE_TRANS]" x " ", ## __VA_ARGS__)
 #define log_info_hexdump  printf_buf
 #else
 #define log_info(...)
@@ -80,12 +81,12 @@ extern void printf_buf(u8 *buf, u32 len);
 
 //------
 //ATT发送的包长,    note: 20 <=need >= MTU
-#define ATT_LOCAL_PAYLOAD_SIZE    (200)                   //
+#define ATT_LOCAL_MTU_SIZE    (200)                   //
 //ATT缓存的buffer大小,  note: need >= 20,可修改
 #define ATT_SEND_CBUF_SIZE        (512)                   //
 
 //共配置的RAM
-#define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_PAYLOAD_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
+#define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_MTU_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
 static u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
 //---------------
 
@@ -106,7 +107,7 @@ static u8 test_data_start;
 static volatile hci_con_handle_t con_handle;
 
 //加密设置
-static const uint8_t sm_min_key_size = 7;
+/* static const uint8_t sm_min_key_size = 7; */
 
 //连接参数更新请求设置
 //是否使能参数请求更新,0--disable, 1--enable
@@ -428,7 +429,7 @@ static void server_profile_start(u16 con_handle)
 #if BT_FOR_APP_EN
     set_app_connect_type(TYPE_BLE);
 #endif
-    ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_PAYLOAD_SIZE);
+    ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_MTU_SIZE);
     set_ble_work_state(BLE_ST_CONNECT);
     ble_auto_shut_down_enable(0);
 
@@ -497,6 +498,7 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 //rcsp_dev_select(RCSP_BLE);
                 rcsp_init();
 #endif
+                log_info("ble remote rssi= %d\n", ble_vendor_get_peer_rssi(con_handle));
                 break;
 
             case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
@@ -951,6 +953,7 @@ void ble_profile_init(void)
     ancs_client_register_callback(&cbk_packet_handler);
 #endif
 
+    ble_vendor_set_default_att_mtu(ATT_LOCAL_MTU_SIZE);
 }
 
 #if EXT_ADV_MODE_EN

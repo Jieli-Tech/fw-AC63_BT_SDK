@@ -50,7 +50,7 @@ struct audio_encoder_ops {
 };
 
 #define REGISTER_AUDIO_ENCODER(ops) \
-        const struct audio_encoder_ops ops sec(.audio_encoder)
+        const struct audio_encoder_ops ops SEC(.audio_encoder)
 
 extern const struct audio_encoder_ops audio_encoder_begin[];
 extern const struct audio_encoder_ops audio_encoder_end[];

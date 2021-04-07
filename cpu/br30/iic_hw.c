@@ -23,6 +23,7 @@ static JL_IIC_TypeDef *const iic_regs[IIC_HW_NUM] = {
 #define iic_info_hdrive(iic)    (hw_iic_cfg[iic_get_id(iic)].hdrive)
 #define iic_info_io_filt(iic)   (hw_iic_cfg[iic_get_id(iic)].io_filter)
 #define iic_info_io_pu(iic)     (hw_iic_cfg[iic_get_id(iic)].io_pu)
+#define iic_info_role(iic)      (hw_iic_cfg[iic_get_id(iic)].role)
 
 static inline u32 iic_get_scl(hw_iic_dev iic)
 {
@@ -118,7 +119,12 @@ int hw_iic_init(hw_iic_dev iic)
         return ret;
     }
     hw_iic_set_die(iic, 1);
-    iic_role_host(iic_regs[id]);
+    if (iic_info_role(iic) == IIC_MASTER) {
+        iic_role_host(iic_regs[id]);
+    } else {
+        iic_role_slave(iic_regs[id]);
+        iic_si_mode_en(iic_regs[id]);
+    }
     if (iic_info_io_filt(iic)) {
         iic_isel_filter(iic_regs[id]);
     } else {
@@ -139,6 +145,7 @@ int hw_iic_init(hw_iic_dev iic)
     printf("info->hdrive = %d\n", iic_info_hdrive(iic));
     printf("info->io_filter = %d\n", iic_info_io_filt(iic));
     printf("info->io_pu = %d\n", iic_info_io_pu(iic));
+    printf("info->role = %d\n", iic_info_role(iic));
     printf("IIC_CON0 0x%04x\n", iic_regs[id]->CON0);
     printf("IIC_CON1 0x%04x\n", iic_regs[id]->CON1);
     printf("IIC_BAUD 0x%02x\n", iic_regs[id]->BAUD);
@@ -254,6 +261,104 @@ int hw_iic_write_buf(hw_iic_dev iic, const void *buf, int len)
     return i;
 }
 
+void hw_iic_set_ie(hw_iic_dev iic, u8 en)
+{
+    u8 id = iic_get_id(iic);
+
+    if (en) {
+        iic_set_ie(iic_regs[id]);
+    } else {
+        iic_clr_ie(iic_regs[id]);
+    }
+}
+
+u8 hw_iic_get_pnd(hw_iic_dev iic)
+{
+    u8 id = iic_get_id(iic);
+
+    return !!iic_pnd(iic_regs[id]);
+}
+
+void hw_iic_clr_pnd(hw_iic_dev iic)
+{
+    u8 id = iic_get_id(iic);
+
+    iic_pnd_clr(iic_regs[id]);
+}
+
+void hw_iic_set_end_ie(hw_iic_dev iic, u8 en)
+{
+    u8 id = iic_get_id(iic);
+
+    if (en) {
+        iic_set_end_ie(iic_regs[id]);
+    } else {
+        iic_clr_end_ie(iic_regs[id]);
+    }
+}
+
+u8 hw_iic_get_end_pnd(hw_iic_dev iic)
+{
+    u8 id = iic_get_id(iic);
+
+    return !!iic_end_pnd(iic_regs[id]);
+}
+
+void hw_iic_clr_end_pnd(hw_iic_dev iic)
+{
+    u8 id = iic_get_id(iic);
+
+    iic_end_pnd_clr(iic_regs[id]);
+}
+
+void hw_iic_slave_set_addr(hw_iic_dev iic, u8 addr, u8 addr_ack)
+{
+    u8 id = iic_get_id(iic);
+
+    iic_baud_reg(iic_regs[id]) = (addr & 0xfe) | !!addr_ack;
+}
+
+void hw_iic_slave_rx_prepare(hw_iic_dev iic, u8 ack)
+{
+    u8 id = iic_get_id(iic);
+
+    iic_dir_in(iic_regs[id]);
+    if (ack) {
+        iic_recv_ack(iic_regs[id]);
+    } else {
+        iic_recv_nack(iic_regs[id]);
+    }
+    iic_buf_reg(iic_regs[id]) = 0xff;
+    iic_cfg_done(iic_regs[id]);
+}
+
+u8 hw_iic_slave_rx_byte(hw_iic_dev iic, bool *is_start_addr)
+{
+    u8 id = iic_get_id(iic);
+    if (iic_start_pnd(iic_regs[id])) {
+        iic_start_pnd_clr(iic_regs[id]);
+        is_start_addr ? (*is_start_addr = 1) : 0;
+    } else {
+        is_start_addr ? (*is_start_addr = 0) : 0;
+    }
+    return iic_buf_reg(iic_regs[id]);
+}
+
+void hw_iic_slave_tx_byte(hw_iic_dev iic, u8 byte)
+{
+    u8 id = iic_get_id(iic);
+
+    iic_dir_out(iic_regs[id]);
+    iic_buf_reg(iic_regs[id]) = byte;
+    iic_cfg_done(iic_regs[id]);
+}
+
+u8 hw_iic_slave_tx_check_ack(hw_iic_dev iic)
+{
+    u8 id = iic_get_id(iic);
+
+    return iic_send_is_ack(iic_regs[id]);
+}
 void iic_disable_for_ota()
 {
     JL_IIC->CON0 = 0;

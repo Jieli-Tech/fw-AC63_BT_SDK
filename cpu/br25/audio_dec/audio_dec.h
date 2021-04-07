@@ -9,6 +9,7 @@
 #include "audio_digital_vol.h"
 #include "application/audio_eq_drc_apply.h"
 #include "application/audio_dig_vol.h"
+#include "audio_config.h"
 
 
 
@@ -16,9 +17,21 @@
 #define RB16(b)    (u16)(((u8 *)b)[0] << 8 | (((u8 *)b))[1])
 #endif
 
+#if (RECORDER_MIX_EN)
+#define MAX_SRC_NUMBER      		4 // 最大支持src个数
+#else
+#define MAX_SRC_NUMBER      		3 // 最大支持src个数
+#endif/*RECORDER_MIX_EN*/
+
+#define AUDIO_DEC_MIXER_EN		config_mixer_en
+
 extern struct audio_decoder_task decode_task;
 extern struct audio_mixer mixer;
 extern struct audio_mixer recorder_mixer;
+extern u8  audio_src_hw_filt[SRC_FILT_POINTS * SRC_CHI * 2 * MAX_SRC_NUMBER];
+extern struct audio_dac_channel default_dac;
+extern s16 mix_buff[AUDIO_MIXER_LEN / 2];
+extern u8 audio_dec_inited;
 
 // 获取输出采样率
 u32 audio_output_rate(int input_rate);

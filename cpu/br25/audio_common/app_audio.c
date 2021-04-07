@@ -33,6 +33,7 @@ extern void bt_emitter_set_vol(u8 vol);
 
 #define DEFAULT_DIGTAL_VOLUME   16384
 
+typedef short unaligned_u16 __attribute__((aligned(1)));
 struct app_audio_config {
     u8 state;
     u8 prev_state;
@@ -47,6 +48,10 @@ struct app_audio_config {
     s16 digital_volume;
     atomic_t ref;
     s16 max_volume[APP_AUDIO_MAX_STATE];
+    u8 sys_cvol_max;
+    u8 call_cvol_max;
+    unaligned_u16 *sys_cvol;
+    unaligned_u16 *call_cvol;
 };
 static const char *audio_state[] = {
     "idle",
@@ -72,6 +77,34 @@ s16 dac_buff[1 * 1024] SEC(.dac_buff);
 #elif AUDIO_OUTPUT_INCLUDE_DAC
 s16 dac_buff[4 * 1024] SEC(.dac_buff);
 #endif
+
+/*从audio中申请一块空间给use使用*/
+void *app_audio_alloc_use_buff(int use_len)
+{
+    void *buf = NULL;
+#if AUDIO_OUTPUT_INCLUDE_DAC
+    printf("uselen:%d, total:%d \n", use_len, sizeof(dac_buff));
+    if (use_len + (2 * 1024) > sizeof(dac_buff)) {
+        y_printf("dac buff < uselen\n");
+        return NULL;
+    }
+    int dac_len = ((sizeof(dac_buff) - use_len) * 4) / 4;
+    audio_dac_reset_buf(&dac_hdl, dac_buff, dac_len, 0);
+    return (u8 *)dac_buff + dac_len;
+#endif
+    return buf;
+}
+
+/*释放从audio中申请的空间*/
+void app_audio_release_use_buff(void *buf)
+{
+#if AUDIO_OUTPUT_INCLUDE_DAC
+    printf("app_audio_release_use_buff \n");
+    if (buf) {
+        audio_dac_reset_buf(&dac_hdl, dac_buff, sizeof(dac_buff), 1);
+    }
+#endif
+}
 
 /*关闭audio相关模块使能*/
 void audio_disable_all(void)
@@ -124,6 +157,14 @@ static void app_audio_volume_change(void)
     local_irq_enable();
 }
 
+#if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT)
+__attribute__((weak))
+void bt_emitter_set_vol(u8 vol)
+{
+
+}
+#endif
+
 static int audio_vol_set(u8 gain_l, u8 gain_r, u8 fade)
 {
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
@@ -162,7 +203,7 @@ static int audio_vol_set(u8 gain_l, u8 gain_r, u8 fade)
 }
 
 
-#if (SYS_VOL_TYPE == 2)
+#if (SYS_VOL_TYPE == VOL_TYPE_AD)
 
 #define DGAIN_SET_MAX_STEP (300)
 #define DGAIN_SET_MIN_STEP (30)
@@ -219,27 +260,72 @@ static unsigned short call_combined_vol_list[16][2] = {
     {22, 16384}, // 15:-11.09 db
 };
 
+void audio_combined_vol_init(u8 cfg_en)
+{
+    u16 sys_cvol_len = 0;
+    u16 call_cvol_len = 0;
+    u8 *sys_cvol  = NULL;
+    u8 *call_cvol  = NULL;
+    s16 *cvol;
+
+    log_info("audio_combined_vol_init\n");
+    __this->sys_cvol_max = ARRAY_SIZE(combined_vol_list) - 1;
+    __this->sys_cvol = combined_vol_list;
+    __this->call_cvol_max = ARRAY_SIZE(call_combined_vol_list) - 1;
+    __this->call_cvol = call_combined_vol_list;
+
+    if (cfg_en) {
+        sys_cvol  = syscfg_ptr_read(CFG_COMBINE_SYS_VOL_ID, &sys_cvol_len);
+        if (sys_cvol && sys_cvol_len) {
+            __this->sys_cvol = (unaligned_u16 *)sys_cvol;
+            __this->sys_cvol_max = sys_cvol_len / 4 - 1;
+            printf("read sys_cvol ok\n");
+        } else {
+            printf("read sys_cvol false:%x,%x\n", sys_cvol, sys_cvol_len);
+        }
+
+        call_cvol  = syscfg_ptr_read(CFG_COMBINE_CALL_VOL_ID, &call_cvol_len);
+        if (call_cvol && call_cvol_len) {
+            __this->call_cvol = (unaligned_u16 *)call_cvol;
+            __this->call_cvol_max = call_cvol_len / 4 - 1;
+            printf("read call_cvol ok\n");
+        } else {
+            printf("read call_combine_vol false:%x,%x\n", call_cvol, call_cvol_len);
+        }
+    }
+
+    log_info("sys_cvol_max:%d,call_cvol_max:%d\n", __this->sys_cvol_max, __this->call_cvol_max);
+}
+
 static int audio_combined_vol_set(u8 gain_l, u8 gain_r, u8 fade)
 {
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
     return 0;
 #endif
+    u8  gain_max;
     u8  target_again_l = 0;
     u8  target_again_r = 0;
     u16 target_dgain_l = 0;
     u16 target_dgain_r = 0;
 
     if (__this->state == APP_AUDIO_STATE_CALL) {
-        target_again_l = call_combined_vol_list[gain_l][0];
-        target_again_r = call_combined_vol_list[gain_r][0];
-        target_dgain_l = call_combined_vol_list[gain_l][1];
-        target_dgain_r = call_combined_vol_list[gain_r][1];
+        gain_max = __this->call_cvol_max;
+        gain_l = (gain_l > gain_max) ? gain_max : gain_l;
+        gain_r = (gain_r > gain_max) ? gain_max : gain_r;
+        target_again_l = *(&__this->call_cvol[gain_l * 2]);
+        target_again_r = *(&__this->call_cvol[gain_r * 2]);
+        target_dgain_l = *(&__this->call_cvol[gain_l * 2 + 1]);
+        target_dgain_r = *(&__this->call_cvol[gain_r * 2 + 1]);
     } else {
-        target_again_l = combined_vol_list[gain_l][0];
-        target_again_r = combined_vol_list[gain_r][0];
-        target_dgain_l = combined_vol_list[gain_l][1];
-        target_dgain_r = combined_vol_list[gain_r][1];
+        gain_max = __this->sys_cvol_max;
+        gain_l = (gain_l > gain_max) ? gain_max : gain_l;
+        gain_r = (gain_r > gain_max) ? gain_max : gain_r;
+        target_again_l = *(&__this->sys_cvol[gain_l * 2]);
+        target_again_r = *(&__this->sys_cvol[gain_r * 2]);
+        target_dgain_l = *(&__this->sys_cvol[gain_l * 2 + 1]);
+        target_dgain_r = *(&__this->sys_cvol[gain_r * 2 + 1]);
     }
+    y_printf("[l]v:%d,Av:%d,Dv:%d", gain_l, target_again_l, target_dgain_l);
 
     local_irq_disable();
 
@@ -266,7 +352,7 @@ static int audio_combined_vol_set(u8 gain_l, u8 gain_r, u8 fade)
     return 0;
 }
 
-#endif  // (SYS_VOL_TYPE == 2)
+#endif  // (SYS_VOL_TYPE == VOL_TYPE_AD)
 
 
 void volume_up_down_direct(s8 value)
@@ -276,11 +362,11 @@ void volume_up_down_direct(s8 value)
 
 void audio_fade_in_fade_out(u8 left_gain, u8 right_gain, u8 fade)
 {
-#if (SYS_VOL_TYPE == 2)
+#if (SYS_VOL_TYPE == VOL_TYPE_AD)
     audio_combined_vol_set(left_gain, right_gain, fade);
 #else
     audio_vol_set(left_gain, right_gain, fade);
-#endif
+#endif/*SYS_VOL_TYPE == VOL_TYPE_AD*/
 }
 
 
@@ -300,14 +386,15 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
     if (smartbox_set_volume(volume)) {
         return;
     }
-#endif
+#endif/*SMART_BOX_EN*/
+
     switch (state) {
     case APP_AUDIO_STATE_IDLE:
     case APP_AUDIO_STATE_MUSIC:
     case APP_AUDIO_STATE_LINEIN:
 #if SYS_DIGVOL_GROUP_EN
         digvol_type = "music_type";
-#endif
+#endif/*SYS_DIGVOL_GROUP_EN*/
         app_var.music_volume = volume;
         if (app_var.music_volume > get_max_sys_vol()) {
             app_var.music_volume = get_max_sys_vol();
@@ -317,24 +404,36 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
     case APP_AUDIO_STATE_CALL:
 #if SYS_DIGVOL_GROUP_EN
         digvol_type = "call_esco";
-#endif
+#endif/*SYS_DIGVOL_GROUP_EN*/
         app_var.call_volume = volume;
         if (app_var.call_volume > 15) {
             app_var.call_volume = 15;
         }
+#if (SYS_VOL_TYPE == VOL_TYPE_ANALOG)
+        /*
+         *SYS_VOL_TYPE == VOL_TYPE_ANALOG的时候，
+         *将通话音量最大值按照手机通话的音量等级进行等分
+         *由于等级不匹配，会出现对应有些等级没有一一对应
+         *的情况，如果在意，建议使用以下其中一种：
+         *#define TCFG_CALL_USE_DIGITAL_VOLUME	1
+         *#define SYS_VOL_TYPE 	VOL_TYPE_AD
+         *#define SYS_VOL_TYPE 	VOL_TYPE_DIGITAL
+         */
         volume = app_var.aec_dac_gain * app_var.call_volume / 15;
+#endif/*SYS_VOL_TYPE == VOL_TYPE_ANALOG*/
+
 #if TCFG_CALL_USE_DIGITAL_VOLUME
         audio_dac_vol_set(TYPE_DAC_DGAIN, \
                           BIT(0) | BIT(1), \
                           16384L * (s32)app_var.call_volume / (s32)__this->max_volume[APP_AUDIO_STATE_CALL], \
                           1);
         return;
-#endif
+#endif/*TCFG_CALL_USE_DIGITAL_VOLUME*/
         break;
     case APP_AUDIO_STATE_WTONE:
 #if SYS_DIGVOL_GROUP_EN
         digvol_type = "tone_tone";
-#endif
+#endif/*SYS_DIGVOL_GROUP_EN*/
 
 #if TONE_MODE_DEFAULE_VOLUME != 0
         app_var.wtone_volume = TONE_MODE_DEFAULE_VOLUME;

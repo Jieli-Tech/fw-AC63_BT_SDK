@@ -227,6 +227,7 @@
 #define TCFG_DEC_CVSD_CLOSE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#define TCFG_DEC_WAV_ENABLE				   DISABLE
 #else
 #define TCFG_DEC_PCM_CLOSE
 #define TCFG_DEC_SBC_CLOSE
@@ -309,7 +310,7 @@ DAC硬件上的连接方式,可选的配置：
 //是否支持开机充电
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE
 //是否支持拔出充电自动开机功能
-#define TCFG_CHARGE_OFF_POWERON_NE			ENABLE
+#define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
 /*
 充电截止电压可选配置：
     CHARGE_FULL_V_3962  CHARGE_FULL_V_4002  CHARGE_FULL_V_4044  CHARGE_FULL_V_4086
@@ -413,6 +414,8 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_BD_NUM						          1   //连接设备个数配置
 #define TCFG_AUTO_STOP_PAGE_SCAN_TIME             0 //配置一拖二第一台连接后自动关闭PAGE SCAN的时间(单位分钟)
 #endif
+#define TCFG_WAV_TONE_MIX_ENABLE		0
+
 
 
 //*********************************************************************************//

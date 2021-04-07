@@ -20,7 +20,7 @@
 //*********************************************************************************//
 //                                 UART配置                                        //
 //*********************************************************************************//
-#define TCFG_UART0_ENABLE					ENABLE_THIS_MOUDLE                     //串口打印模块使能
+#define TCFG_UART0_ENABLE					DISABLE_THIS_MOUDLE                     //串口打印模块使能
 #define TCFG_UART0_RX_PORT					NO_CONFIG_PORT                         //串口接收脚配置（用于打印可以选择NO_CONFIG_PORT）
 #define TCFG_UART0_TX_PORT  				IO_PORT_DP                            //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
@@ -28,13 +28,18 @@
 //*********************************************************************************//
 //                                 USB 配置                                        //
 //*********************************************************************************//
-#define TCFG_PC_ENABLE						DISABLE_THIS_MOUDLE //PC模块使能
-#define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE //U盘模块使能
-#define TCFG_HID_HOST_ENABLE                DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE  //游戏盒子模式
-#define TCFG_ADB_ENABLE                     DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
-#define TCFG_AOA_ENABLE                     DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
+#define TCFG_PC_ENABLE						ENABLE_THIS_MOUDLE//PC模块使能
+#define TCFG_USB_SLAVE_USER_HID             1
+#define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE//U盘模块使能
+#define TCFG_OTG_USB_DEV_EN                 BIT(0)//USB0 = BIT(0)  USB1 = BIT(1)
 
-#define TCFG_OTG_USB_DEV_EN                 (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
+#include "usb_std_class_def.h"
+
+///USB 配置重定义
+#undef USB_DEVICE_CLASS_CONFIG
+#define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS)
+
+
 //*********************************************************************************//
 //                                 IIC配置                                        //
 //*********************************************************************************//
@@ -267,7 +272,7 @@
 //*********************************************************************************//
 #define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
-#define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
+#define TCFG_USER_EDR_ENABLE                      0   //EDR功能使能
 
 #define USER_SUPPORT_PROFILE_SPP    1
 #define USER_SUPPORT_PROFILE_HFP    0

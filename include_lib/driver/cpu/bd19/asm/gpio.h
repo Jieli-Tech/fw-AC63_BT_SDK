@@ -179,6 +179,7 @@ struct gpio_platform_data {
  * @param enable 1，使能；0，关闭
  */
 void usb_iomode(u32 enable);
+void usb1_iomode(u32 enable);
 /**
  * @brief gpio_direction_input
  *
@@ -565,6 +566,10 @@ enum PFI_TABLE {
     PFI_SPI2_DA1 = ((u32)(&(JL_IMAP->FI_SPI2_DA1))),
     PFI_SPI2_DA2 = ((u32)(&(JL_IMAP->FI_SPI2_DA2))),
     PFI_SPI2_DA3 = ((u32)(&(JL_IMAP->FI_SPI2_DA3))),
+    PFI_MCPWM_FPIN_A = ((u32)(&(JL_IMAP->FI_MCPWM_FPIN_A))),
+    PFI_MCPWM_FPIN_B = ((u32)(&(JL_IMAP->FI_MCPWM_FPIN_B))),
+    PFI_MCPWM_FPIN_C = ((u32)(&(JL_IMAP->FI_MCPWM_FPIN_C))),
+    PFI_MCPWM_FPIN_D = ((u32)(&(JL_IMAP->FI_MCPWM_FPIN_D))),
     // PFI_SD0_CMD = ((u32)(&(JL_IMAP->FI_SD0_CMD))),
     // PFI_SD0_DA0 = ((u32)(&(JL_IMAP->FI_SD0_DA0))),
     // PFI_SD0_DA1 = ((u32)(&(JL_IMAP->FI_SD0_DA1))),

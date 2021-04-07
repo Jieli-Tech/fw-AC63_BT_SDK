@@ -76,6 +76,35 @@ enum {
     DAC_EVENT_CLOSE,
 };
 
+#if ((defined CONFIG_SOUND_PLATFORM_ENABLE) && CONFIG_SOUND_PLATFORM_ENABLE)
+struct audio_dac_trim;
+struct audio_dac_power_data {
+    u32 ldo_volt : 4;           //DACVDD_LDO电压档选择
+    u32 ldo_isel : 4;           //LDO偏置电流选择档位, 0:5u, 1:10u, 2:15u, 3:20u, 4:25u, 5:30u, 6:35u, 7:40u
+    u32 lpf_isel : 4;           //LPF bias电流选择, 0:无, 1:0.3125u, 2:0.625u, 3:0.9375, 4:1.25u, 5:1.5625, 6:1.875u, 7:2.1875u, 8:2.5u, 9:2.8125u, 10:3.125u, 11:3.4375u, 12:3.75u, 13:4.0625u, 14:4.375u, 15:4.6875u
+    u32 ldo_fb_isel : 2;        //LDO负载电流选择, 0:15u, 1:48u, 2:81u, 3:114u
+    u32 vcmo_en : 1;            //VCMO直推使能
+    u32 vcmo_always_on : 1;
+    u32 vcm_risetime : 1;       //VCM上电快慢选择
+    u32 zero_cross_detect : 1;  //模拟增益过零检测配置
+    u32 vdd_setting_enable : 1; //通过接口设置DACVDD电压的使能
+    int trim_poweron_time;
+    int (*trim_value)(struct audio_dac_trim *trim);
+    void (*trim_begin)(void);
+    void (*trim_end)(struct audio_dac_trim *trim);
+};
+
+struct audio_dac_codec_data {
+    u32 dsm_clk : 1;
+    u32 dma_mode : 1;
+};
+
+struct audio_dac_platform_data {
+    u8 output;
+    struct audio_dac_power_data power;
+    struct audio_dac_codec_data codec;
+};
+#endif
 struct dac_platform_data {
     u32 output : 4;             //DAC输出模式
     u32 ldo_volt : 4;           //DACVDD_LDO电压档选择
@@ -123,6 +152,7 @@ struct audio_dac_hdl {
     u8 vol_rr;
 
     u8 channel;                     /*DAC声道数*/
+    u8 protect_time_dis;			/*关闭DAC延时保护*/
     u16 max_d_volume;               /*DAC数字最大音量*/
     u16 d_volume[4];                /*DAC数字音量*/
     u32 sample_rate;                /*DAC采样率*/
@@ -350,6 +380,8 @@ void audio_dac_set_fade_handler(struct audio_dac_hdl *dac, void *priv, void (*fa
 
 int audio_dac_power_off(struct audio_dac_hdl *dac);
 
+int audio_dac_get_hrp(struct audio_dac_hdl *dac);
+
 /*************************************************************************
  * DAC采样率匹配
  * INPUT    :  dac - DAC设备句柄，sample_rate - 采样率
@@ -421,17 +453,32 @@ void dac_power_off(void);
 /*关闭audio相关模块使能*/
 void audio_disable_all(void);
 
+/*******************************************************************
+ *          Audio DACVDD上电接口
+ * params   : struct audio_dac_hdl结构指针
+ *
+ * return   : 无
+ *
+ * warnings : 仅用作Audio初始化上电，不可在任意位置使用
+ *
+ * example  : audio_dac_vdd_power_on(&dac_hdl);
+ *=================================================================*/
+void audio_dac_vdd_power_on(struct audio_dac_hdl *dac);
+/*******************************************************************
+ *          Audio DACVDD断电接口
+ * params   : struct audio_dac_hdl结构指针
+ *
+ * return   : 无
+ *
+ * warnings : 仅用作Audio DACVDD断电，不可在任意位置使用
+ *
+ * example  : audio_dac_vdd_power_off(&dac_hdl);
+ *=================================================================*/
+void audio_dac_vdd_power_off(struct audio_dac_hdl *dac);
 
 int audio_dac_fifo_set_read(struct audio_dac_hdl *dac, int offset);
 
-/*
- *  fifo数据读取
- *  data - 数据
- *  len - 长度(byte)
- *  channel - 读取DAC的channel, DA_LEFT/DA_RIGHT/DA_ALL_CH
- */
 /*************************************************************************
- * DAC模块电源关闭
  * INPUT    :  dac - DAC设备句柄，data - 地址，len - 长度，
  *             channel - 声道(DA_LEFT/DA_RIGHT/DA_ALL_CH).
  * OUTPUT   :  读取长度.
@@ -439,5 +486,21 @@ int audio_dac_fifo_set_read(struct audio_dac_hdl *dac, int offset);
  * HISTORY  :  2020/12/28 by Lichao.
  *=======================================================================*/
 int audio_dac_fifo_read(struct audio_dac_hdl *dac, void *data, int len, u8 channel);
+
+
+/*
+*********************************************************************
+*                  Audio Dac Reset Buf
+* Description: 重新设置dacbuf
+* Arguments  : *dac			dac句柄
+*              *buf			缓存地址
+*              *len			缓存长度
+*              *protect_time_en		DAC延时保护使能
+* Return	 : None.
+* Note(s)    : 该函数会先停止dac，所以建议在不使用dac或者静音的时候调用
+*********************************************************************
+*/
+void audio_dac_reset_buf(struct audio_dac_hdl *dac, s16 *buf, int len, u8 protect_time_en);
+
 #endif
 

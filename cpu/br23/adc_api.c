@@ -506,10 +506,12 @@ void adc_init()
 
     JL_CLOCK->PLL_CON1 &= ~BIT(18); //pll
 
-    if (!is_lcd_on()) {
-        //trim wvdd
-        if (GET_VDDIOM_VOL() == VDDIOM_VOL_34V) {
-            vddiom_trim();
+    //trim wvdd
+    if (GET_VDDIOM_VOL() == VDDIOM_VOL_34V) {
+        vddiom_trim();
+        if (is_lcd_on()) {
+            /*lcd power_down must run vddio_trim_30v()*/
+            ASSERT(0, "lcd power_down must run vddio_trim_30v()");
         }
     }
 
@@ -517,7 +519,7 @@ void adc_init()
     if (is_lcd_on()) {
         /*lcd_driver : power_down use vddiow, trim vddiow=vddiom*/
         /*参数为vddio和vbat是否绑定在一起*/
-        check_pmu_voltage(0);
+        vddio_trim_30v(0);
     }
     _adc_init(1);
 

@@ -40,7 +40,6 @@ struct ui_progress {
 };
 
 void ui_progress_enable();
-void ui_progress_enable();
 int ui_progress_set_persent_by_id(int id, int persent);
 int ui_progress_set_persent(struct ui_progress *progress, int percent);
 

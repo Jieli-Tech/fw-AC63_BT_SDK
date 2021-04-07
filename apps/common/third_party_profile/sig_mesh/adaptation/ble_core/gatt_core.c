@@ -8,6 +8,7 @@
 
 #include "adaptation.h"
 #include "proxy.h"
+#include "prov.h"
 #include "ble/hci_ll.h"
 #include "btstack/bluetooth.h"
 
@@ -216,11 +217,31 @@ extern void ble_set_scan_rsp_data(u8 data_length, u8 *data);
 extern void get_mesh_adv_name(u8 *len, u8 **data);
 extern int le_controller_get_mac(void *addr);
 
+static void get_prov_properties_capabilities(u8 *adv_data)
+{
+    const struct bt_mesh_prov *prov;
+    u8 offset = 11;
+
+    prov = bt_mesh_prov_get();
+
+    if (prov == NULL) {
+        BT_ERR("get prov is NULL");
+        return;
+    }
+
+    memcpy(adv_data + offset, (u8 *)prov->uuid, 16);
+
+    offset += 16;
+
+    memcpy(adv_data + offset, (u8 *)&prov->oob_info, 2);
+}
+
 static void Provisioning_Service(change_adv_info)(void)
 {
     if (TRUE == mesh_adv_send_timer_busy()) {
         return;
     }
+
     // setup proxy connectable advertisements
     u16 adv_int = config_bt_mesh_proxy_unprovision_adv_interval;
     u8 adv_type = 0;
@@ -229,9 +250,14 @@ static void Provisioning_Service(change_adv_info)(void)
     u8 *rsp_data;
 
     ble_set_adv_param(adv_int, adv_int, adv_type, 0, null_addr, 0x07, 0x00);
-    le_controller_get_mac(Provisioning_Service(adv_data) + 11);
+
+    // add user data
+    get_prov_properties_capabilities(Provisioning_Service(adv_data));
+
     ble_set_adv_data(sizeof(Provisioning_Service(adv_data)), (uint8_t *)Provisioning_Service(adv_data));
+
     get_mesh_adv_name(&rsp_len, &rsp_data);
+
     ble_set_scan_rsp_data(rsp_len, rsp_data);
 }
 

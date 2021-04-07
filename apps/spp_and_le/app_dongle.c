@@ -230,14 +230,14 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
 }
 
 static struct ble_client_operation_t *ble_client_api;
-static const u8 dongle_remoter_name1[] = "JL_MOUSE(BLE)";//
+static const u8 dongle_remoter_name1[] = "BD19_DV(BLE)";//
 
 //匹配配置的名字
 static const client_match_cfg_t match_dev01 = {
     .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
     .compare_data_len = sizeof(dongle_remoter_name1) - 1, //去结束符
     .compare_data = dongle_remoter_name1,
-    .bonding_flag = 1,//
+    .bonding_flag = 0,//
 };
 
 //匹配配置的名字
@@ -900,7 +900,7 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 #if TCFG_USER_EDR_ENABLE
         //no support close edr
 #ifndef CONFIG_CPU_BR30
-        radio_set_eninv(0);
+        /* radio_set_eninv(0); */
 #endif
         bredr_power_put();
         sys_auto_sniff_controle(0, NULL);

@@ -32,9 +32,6 @@ const int CONFIG_BTSTACK_SUPPORT_AAC    = 1;
 const int CONFIG_BTSTACK_SUPPORT_AAC    = 0;
 #endif
 
-
-const u8 adt_profile_support = 0;
-
 //协议栈接收到命令是否自动退出sniff
 #if CONFIG_APP_STANDARD_KEYBOARD
 const int config_btstask_auto_exit_sniff = 0;
@@ -49,5 +46,12 @@ const int config_rcsp_stack_enable = 1;
 #else
 const int config_rcsp_stack_enable = 0;
 #endif
+
+//le 配置,可以优化代码和RAM
+const int config_le_hci_connection_num = 1;//支持同时连接个数
+const int config_le_sm_support_enable = 1; //是否支持加密配对
+const int config_le_gatt_server_num = 1;   //支持server角色个数
+const int config_le_gatt_client_num = 0;   //支持client角色个数
+
 
 

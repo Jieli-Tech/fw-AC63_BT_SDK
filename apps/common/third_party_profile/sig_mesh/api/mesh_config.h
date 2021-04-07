@@ -7,7 +7,7 @@
  */
 
 /* Log debug config */
-#define MESH_CODE_LOG_DEBUG_EN                  1
+#define MESH_CODE_LOG_DEBUG_EN                  0
 #define CONFIG_BT_DEBUG                         1
 #define MESH_ADAPTATION_OPTIMIZE                1
 

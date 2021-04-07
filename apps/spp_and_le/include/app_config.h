@@ -16,20 +16,23 @@
 
 #define CONFIG_DEBUG_ENABLE
 
-
+#define CONFIG_BEACON_ENABLE              1
 
 //app case 选择,只能选1个,要配置对应的board_config.h
-#define CONFIG_APP_SPP_LE                 1
-#define CONFIG_APP_AT_COM                 0
+#define CONFIG_APP_SPP_LE                 1 //SPP + LE or LE's client
+#define CONFIG_APP_AT_COM                 0 //AT com HEX格式命令
+#define CONFIG_APP_AT_CHAR_COM            0 //AT com 字符串格式命令
 #define CONFIG_APP_DONGLE                 0 //board_dongle ,TCFG_PC_ENABLE
+#define CONFIG_APP_MULTI                  0 //蓝牙LE多连
 
 //配置对应的APP的蓝牙功能
 #if CONFIG_APP_SPP_LE
 #define TRANS_DATA_EN                     1 //蓝牙双模透传
 #define TRANS_CLIENT_EN                   0 //蓝牙(ble主机)透传
+#define BEACON_MODE_EN                    0 //蓝牙BLE ibeacon
 #define XM_MMA_EN                         0
 
-#if (TRANS_DATA_EN + TRANS_CLIENT_EN + XM_MMA_EN> 1)
+#if (TRANS_DATA_EN + TRANS_CLIENT_EN + XM_MMA_EN + BEACON_MODE_EN> 1)
 #error "they can not enable at the same time!"
 #endif
 #endif
@@ -42,6 +45,13 @@
 
 #if CONFIG_APP_DONGLE
 #define TRANS_DONGLE_EN                   1 //蓝牙(ble主机)
+#endif
+
+//蓝牙多连接
+#if CONFIG_APP_MULTI
+//组合enable,多开注意RAM的使用
+#define TRANS_MULTI_BLE_EN                1 //蓝牙BLE多连:1主1从,或者2从
+#define TRANS_MULTI_SPP_EN                0 //spp connect:只支持1个连接
 #endif
 
 #include "board_config.h"
@@ -124,11 +134,11 @@
 #endif
 #if TCFG_USER_EDR_ENABLE
 #if RCSP_BTMATE_EN
-#define CONFIG_BT_RX_BUFF_SIZE  (2 * 1024)
-#define CONFIG_BT_TX_BUFF_SIZE  (2 * 1024)
+#define CONFIG_BT_RX_BUFF_SIZE  (3 * 512)
+#define CONFIG_BT_TX_BUFF_SIZE  (3 * 512)
 #else
-#define CONFIG_BT_RX_BUFF_SIZE  (3 * 1024)
-#define CONFIG_BT_TX_BUFF_SIZE  (3 * 1024)
+#define CONFIG_BT_RX_BUFF_SIZE  (5 * 512)
+#define CONFIG_BT_TX_BUFF_SIZE  (5 * 512)
 #endif
 #else
 #define CONFIG_BT_RX_BUFF_SIZE  (0)
@@ -174,6 +184,26 @@
 //升级IO保持使能
 //#define DEV_UPDATE_SUPPORT_JUMP           //目前只有br23\br25支持
 #endif
+
+#if (defined(CONFIG_CPU_BR23) || defined(CONFIG_CPU_BR25) || defined(CONFIG_CPU_BD29))
+#define USER_UART_UPDATE_ENABLE           0//用于客户开发上位机或者多MCU串口升级方案
+
+#define UART_UPDATE_SLAVE	0
+#define UART_UPDATE_MASTER	1
+
+//配置串口升级的角色
+#define UART_UPDATE_ROLE	UART_UPDATE_SLAVE
+
+#if USER_UART_UPDATE_ENABLE
+#undef TCFG_CHARGESTORE_ENABLE
+#undef TCFG_TEST_BOX_ENABLE
+#define TCFG_CHARGESTORE_ENABLE				DISABLE_THIS_MOUDLE       //用户串口升级也使用了UART1
+#endif
+
+#endif  //USER_UART_UPDATE_ENABLE
+
+#define FLOW_CONTROL           0  //AT 字符串口流控, 目前只有br30做了测试
+
 
 #endif
 

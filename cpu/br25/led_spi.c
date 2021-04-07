@@ -15,7 +15,7 @@ static const u8 SPI2_DO[2] = {
 #define LED_SPI_DAT_BAUD        2
 #define LED_SPI_REST_BAUD       15
 #define LED_NUM_MAX             2
-
+#define LED_SPI_CLOCK_BASE		(clk_get("lsb") / 24000000)
 
 static OS_SEM led_spi_sem;
 static u32 spi_do = 0;
@@ -68,7 +68,7 @@ void led_rgb_to_24byte(u8 r, u8 g, u8 b, u8 *buf)
 void led_rest()
 {
     u8 tmp_buf[16] = {0};
-    LED_SPI->BAUD = LED_SPI_REST_BAUD;
+    LED_SPI->BAUD = (LED_SPI_REST_BAUD + 1) * LED_SPI_CLOCK_BASE - 1;
     LED_SPI->CON |= BIT(14);
     LED_SPI->ADR = (u32)tmp_buf;
     LED_SPI->CNT = 16;
@@ -89,7 +89,7 @@ void led_spi_send_rgbbuf(u8 *rgb_buf, u16 led_num) //rgb_buf的大小 至少要�
     }
     led_spi_busy = 1;
     led_rest();
-    LED_SPI->BAUD = LED_SPI_DAT_BAUD;
+    LED_SPI->BAUD = (LED_SPI_DAT_BAUD + 1) * LED_SPI_CLOCK_BASE - 1;
     LED_SPI->CON |= BIT(14);
     LED_SPI->ADR = (u32)rgb_buf;
     LED_SPI->CNT = led_num * 24;
@@ -112,7 +112,7 @@ void led_spi_send_rgbbuf_isr(u8 *rgb_buf, u16 led_num) //rgb_buf的大小 至少
     led_spi_busy = 1;
     os_sem_pend(&led_spi_sem, 0);
     led_rest();
-    LED_SPI->BAUD = LED_SPI_DAT_BAUD;
+    LED_SPI->BAUD = (LED_SPI_DAT_BAUD + 1) * LED_SPI_CLOCK_BASE - 1;
     LED_SPI->CON |= BIT(14);
     LED_SPI->ADR = (u32)rgb_buf;
     LED_SPI->CNT = led_num * 24;
@@ -169,5 +169,4 @@ void led_spi_test(void)
         wdt_clear();
     }
 }
-
 

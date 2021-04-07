@@ -32,6 +32,11 @@
 #if TCFG_APP_PC_EN
 
 //////////////////////////////////////////////////////////////////////////////
+#if ((AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DAC) &&  !TCFG_USER_TWS_ENABLE)
+#define PC_SYNC_BY_DAC_HRP      (1)
+#else
+#define PC_SYNC_BY_DAC_HRP      (0)
+#endif
 
 struct uac_dec_hdl {
     struct audio_stream *stream;	// 音频流
@@ -52,6 +57,7 @@ struct uac_dec_hdl {
     u32 source : 8;		// 音频源
     u32 cnt: 8;
     u32 state: 1;
+    u32 in_info;
     int check_data_timer;
     volatile u8 rrrl_output_en;
 };
@@ -203,15 +209,16 @@ static int uac_audio_close(void)
     }
 #endif
 
+#if SYS_DIGVOL_GROUP_EN
+    sys_digvol_group_ch_close("music_pc");
+#endif // SYS_DIGVOL_GROUP_EN
+
+
     // 先关闭各个节点，最后才close数据流
     if (uac_dec->stream) {
         audio_stream_close(uac_dec->stream);
         uac_dec->stream = NULL;
     }
-
-#if SYS_DIGVOL_GROUP_EN
-    sys_digvol_group_ch_close("music_pc");
-#endif // SYS_DIGVOL_GROUP_EN
 
     clock_set_cur();
     return 0;
@@ -352,10 +359,36 @@ u8 pc_rrrl_output_enable_status(void)
    @note
 */
 /*----------------------------------------------------------------------------*/
+
+#if PC_SYNC_BY_DAC_HRP
+
+#include "media/includes.h"
+extern struct audio_dac_hdl dac_hdl;
+/* extern int audio_dac_get_hrp(struct audio_dac_hdl *dac); */
+u32 in_points = 0;
+u32 out_points = 0;
+u32 last_hrp = 0;
+u8  dac_start_flag = 0;
+int sample_rate_set = 0;
+u16 usb_icnt = 0;
+
+#endif // PC_SYNC_BY_DAC_HRP
+
 static int audio_pc_input_sample_rate(void *priv)
 {
     struct uac_dec_hdl *dec = (struct uac_dec_hdl *)priv;
     int sample_rate = uac_speaker_stream_sample_rate();
+
+#if PC_SYNC_BY_DAC_HRP
+
+    if (sample_rate_set == 0) {
+        sample_rate_set = sample_rate;
+    }
+    sample_rate = sample_rate_set;
+    return sample_rate;
+
+#endif // PC_SYNC_BY_DAC_HRP
+
     int buf_size = uac_speaker_stream_size();
 #if TCFG_PCM_ENC2TWS_ENABLE
     if (dec->pcm_dec.dec_no_out_sound) {
@@ -421,6 +454,9 @@ static int uac_audio_start(void)
         struct audio_fmt enc_f;
         memcpy(&enc_f, &dec->pcm_dec.decoder.fmt, sizeof(struct audio_fmt));
         enc_f.coding_type = AUDIO_CODING_SBC;
+        if (dec->pcm_dec.ch_num == 2) { // 如果是双声道数据，localtws在解码时才变成对应声道
+            enc_f.channel = 2;
+        }
         int ret = localtws_enc_api_open(&enc_f, LOCALTWS_ENC_FLAG_STREAM);
         if (ret == true) {
             dec->pcm_dec.dec_no_out_sound = 1;
@@ -428,6 +464,14 @@ static int uac_audio_start(void)
             p_mixer = &g_localtws.mixer;
             // 关闭资源等待。最终会在localtws解码处等待
             audio_decoder_task_del_wait(&decode_task, &dec->wait);
+            if (dec->pcm_dec.output_ch_num != enc_f.channel) {
+                dec->pcm_dec.output_ch_num = dec->pcm_dec.decoder.fmt.channel = enc_f.channel;
+                if (enc_f.channel == 2) {
+                    dec->pcm_dec.output_ch_type = AUDIO_CH_LR;
+                } else {
+                    dec->pcm_dec.output_ch_type = AUDIO_CH_DIFF;
+                }
+            }
         }
     }
 #endif
@@ -555,6 +599,17 @@ static int uac_audio_start(void)
     dec->state = 0;
     dec->cnt = 0;
     dec->check_data_timer = sys_hi_timer_add(NULL, audio_pc_check_timer, 10);
+
+#if PC_SYNC_BY_DAC_HRP
+
+    in_points = 0;
+    out_points = 0;
+    last_hrp = 0;
+    dac_start_flag = 0;
+    usb_icnt = 0;
+
+#endif // PC_SYNC_BY_DAC_HRP
+
     clock_set_cur();
     return 0;
 
@@ -575,15 +630,15 @@ __err3:
         localtws_enc_api_close();
     }
 #endif
+#if SYS_DIGVOL_GROUP_EN
+    sys_digvol_group_ch_close("music_pc");
+#endif // SYS_DIGVOL_GROUP_EN
+
 
     if (dec->stream) {
         audio_stream_close(dec->stream);
         dec->stream = NULL;
     }
-
-#if SYS_DIGVOL_GROUP_EN
-    sys_digvol_group_ch_close("music_pc");
-#endif // SYS_DIGVOL_GROUP_EN
 
     pcm_decoder_close(&dec->pcm_dec);
 __err1:
@@ -627,8 +682,61 @@ static int uac_wait_res_handler(struct audio_res_wait *wait, int event)
 /*----------------------------------------------------------------------------*/
 static void uac_speaker_stream_rx_handler(int event, void *data, int len)
 {
-    /* putchar('A'); */
-    uac_dec_resume();
+
+#if PC_SYNC_BY_DAC_HRP
+
+    u32 hrp = audio_dac_get_hrp(&dac_hdl);
+    /* printf("\nl:%d h:%d\n", last_hrp, hrp); */
+
+    /* int sample_rate = uac_speaker_stream_sample_rate(); */
+    int sample_rate = SPK_AUDIO_RATE;
+
+    if (sample_rate_set == 0) {
+        sample_rate_set = sample_rate;
+    }
+
+    in_points += len / 2 / 2;
+
+    if (hrp >= last_hrp) {
+        out_points += hrp - last_hrp;
+    } else {
+        out_points += hrp + JL_AUDIO->DAC_LEN - last_hrp;
+    }
+    last_hrp = hrp;
+
+    if ((!dac_start_flag) && (out_points != 0)) {
+        dac_start_flag = 1;
+        in_points = 0;
+        out_points = 0;
+    }
+
+    if (dac_start_flag) {
+        if (out_points) {
+            usb_icnt++;
+            if (usb_icnt == 1000) {
+                usb_icnt = 0;
+                sample_rate_set = (int)((float)sample_rate * ((float)in_points / (float)out_points));
+                int buf_size = uac_speaker_stream_size();
+
+                if (buf_size >= (uac_speaker_stream_length() * 3 / 4)) {
+                    sample_rate_set += 1;
+                } else if (buf_size <= (uac_speaker_stream_length() / 4)) {
+                    sample_rate_set -= 1;
+                }
+
+                /* printf(">> in:%d out:%d sr:%d b:%d\n", in_points, out_points, sample_rate_set, buf_size); */
+                in_points = 0;
+                out_points = 0;
+            }
+        }
+    }
+
+#endif // PC_SYNC_BY_DAC_HRP
+
+    if (uac_speaker_stream_size() >= (uac_speaker_stream_length() * 50 / 100)) {
+        /* putchar('A'); */
+        uac_dec_resume();
+    }
 }
 
 /*----------------------------------------------------------------------------*/
@@ -658,6 +766,7 @@ static int usb_audio_play_open(void *_info)
     localtws_globle_set_dec_restart(uac_dec_push_restart);
 #endif
 
+    dec->in_info = (u32)_info;
     dec->pcm_dec.sample_rate = (u32)_info & 0xFFFFFF;
     dec->pcm_dec.ch_num = (u32)_info >> 24;
     dec->pcm_dec.output_ch_num = audio_output_channel_num();
@@ -716,7 +825,7 @@ int uac_dec_restart(int id)
     if ((!uac_dec) || (id != uac_dec->id)) {
         return -1;
     }
-    int _info = (uac_dec->pcm_dec.ch_num << 24) | uac_dec->pcm_dec.sample_rate;
+    int _info = uac_dec->in_info;//(uac_dec->pcm_dec.ch_num << 24) | uac_dec->pcm_dec.sample_rate;
     usb_audio_play_close(NULL);
     int err = usb_audio_play_open((void *)_info);
     return err;

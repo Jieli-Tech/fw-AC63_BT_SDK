@@ -25,6 +25,11 @@
 #define TCFG_UART0_TX_PORT  				IO_PORTA_00
 #define TCFG_UART0_BAUDRATE  				1000000
 
+#define UART_DB_TX_PIN                      IO_PORTC_01                            //AT_CHART串口
+#define UART_DB_RX_PIN                      IO_PORTC_02
+#define UART_DB_RTS_PIN                     IO_PORTA_06
+#define UART_DB_CTS_PIN                     IO_PORTA_05
+
 //*********************************************************************************//
 //                                 key配置                                       //
 //*********************************************************************************//
@@ -118,7 +123,7 @@
 //*********************************************************************************//
 //                                  充电参数配置                                   //
 //*********************************************************************************//
-#define TCFG_CHARGE_ENABLE					ENABLE_THIS_MOUDLE
+#define TCFG_CHARGE_ENABLE					DISABLE_THIS_MOUDLE
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE//(不支持配置)
 #define TCFG_CHARGE_OFF_POWERON_NE			DISABLE//(不支持配置)
 #define TCFG_CHARGE_FULL_V					CHARGE_FULL_V_4202

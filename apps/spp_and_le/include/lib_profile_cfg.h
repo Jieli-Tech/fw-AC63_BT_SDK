@@ -20,8 +20,10 @@ extern const int config_stack_modules;
 #define DEF_BLE_DEMO_CLIENT               3 //
 #define DEF_BLE_DEMO_AT_COM               4 //
 #define DEF_BLE_DEMO_AT_CLIENT            5 //
+#define DEF_BLE_DEMO_AT_CHAR_COM          6
 #define DEF_BLE_DEMO_MI					  9
-
+#define DEF_BLE_DEMO_MULTI                10 //
+#define DEF_BLE_DEMO_ADV                  11 //
 //配置选择的demo
 #if TCFG_USER_BLE_ENABLE
 
@@ -31,21 +33,30 @@ extern const int config_stack_modules;
 #elif (TRANS_CLIENT_EN || TRANS_DONGLE_EN)
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_CLIENT
 
+#elif TRANS_MULTI_BLE_EN
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_MULTI
+
 #elif TRANS_AT_COM
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_AT_COM
 
 #elif TRANS_AT_CLIENT
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_AT_CLIENT
 
+#elif CONFIG_APP_AT_CHAR_COM
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_AT_CHAR_COM
+
 #elif XM_MMA_EN
-#define TCFG_BLE_DEMO_SELECT		  DEF_BLE_DEMO_MI
+#define TCFG_BLE_DEMO_SELECT	      DEF_BLE_DEMO_MI
+
+#elif BEACON_MODE_EN
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_ADV
 
 #else
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_NULL//ble is closed
 #endif /* TCFG_USER_BLE_ENABLE */
 
 //配对加密使能
-#define TCFG_BLE_SECURITY_EN              0
+#define TCFG_BLE_SECURITY_EN          config_le_sm_support_enable
 
 #endif
 

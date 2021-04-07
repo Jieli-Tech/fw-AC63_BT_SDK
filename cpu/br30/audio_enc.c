@@ -73,15 +73,36 @@ void audio_mic_pwr_ctl(u8 state)
     case MIC_PWR_INIT:
     case MIC_PWR_OFF:
         /*mic vdd:low*/
+#if ((TCFG_AUDIO_MIC_PWR_PORT != NO_CONFIG_PORT))
         gpio_set_die(TCFG_AUDIO_MIC_PWR_PORT, 1);
         gpio_set_pull_up(TCFG_AUDIO_MIC_PWR_PORT, 0);
         gpio_set_pull_down(TCFG_AUDIO_MIC_PWR_PORT, 0);
         gpio_direction_output(TCFG_AUDIO_MIC_PWR_PORT, 0);
+#endif/*TCFG_AUDIO_MIC_PWR_PORT*/
+#if (TCFG_AUDIO_MIC1_PWR_PORT != NO_CONFIG_PORT)
+        gpio_set_die(TCFG_AUDIO_MIC1_PWR_PORT, 1);
+        gpio_set_pull_up(TCFG_AUDIO_MIC1_PWR_PORT, 0);
+        gpio_set_pull_down(TCFG_AUDIO_MIC1_PWR_PORT, 0);
+        gpio_direction_output(TCFG_AUDIO_MIC1_PWR_PORT, 0);
+#endif/*TCFG_AUDIO_MIC1_PWR_PORT*/
         /*
          *mic in port config
          *mic0:PA1
          *mic1:PB8
          */
+#if TCFG_AUDIO_DUAL_MIC_ENABLE
+        //MIC0
+        gpio_set_die(IO_PORTA_01, 1);
+        gpio_set_pull_up(IO_PORTA_01, 0);
+        gpio_set_pull_down(IO_PORTA_01, 0);
+        gpio_direction_output(IO_PORTA_01, 0);
+
+        //MIC1
+        gpio_set_die(IO_PORTB_08, 1);
+        gpio_set_pull_up(IO_PORTB_08, 0);
+        gpio_set_pull_down(IO_PORTB_08, 0);
+        gpio_direction_output(IO_PORTB_08, 0);
+#else
         if (TCFG_AUDIO_ADC_MIC_CHA == LADC_CH_MIC_L) {
             gpio_set_die(IO_PORTA_01, 1);
             gpio_set_pull_up(IO_PORTA_01, 0);
@@ -93,13 +114,22 @@ void audio_mic_pwr_ctl(u8 state)
             gpio_set_pull_down(IO_PORTB_08, 0);
             gpio_direction_output(IO_PORTB_08, 0);
         }
+#endif/*TCFG_AUDIO_DUAL_MIC_ENABLE*/
         break;
     case MIC_PWR_ON:
         /*mic vdd:high*/
+#if (TCFG_AUDIO_MIC_PWR_PORT != NO_CONFIG_PORT)
         gpio_set_die(TCFG_AUDIO_MIC_PWR_PORT, 1);
         gpio_set_pull_up(TCFG_AUDIO_MIC_PWR_PORT, 0);
         gpio_set_pull_down(TCFG_AUDIO_MIC_PWR_PORT, 0);
         gpio_direction_output(TCFG_AUDIO_MIC_PWR_PORT, 1);
+#endif/*TCFG_AUDIO_MIC_PWR_PORT*/
+#if (TCFG_AUDIO_MIC1_PWR_PORT != NO_CONFIG_PORT)
+        gpio_set_die(TCFG_AUDIO_MIC1_PWR_PORT, 1);
+        gpio_set_pull_up(TCFG_AUDIO_MIC1_PWR_PORT, 0);
+        gpio_set_pull_down(TCFG_AUDIO_MIC1_PWR_PORT, 0);
+        gpio_direction_output(TCFG_AUDIO_MIC1_PWR_PORT, 1);
+#endif/*TCFG_AUDIO_MIC1_PWR_PORT*/
         break;
     case MIC_PWR_DOWN:
         break;
@@ -732,14 +762,6 @@ int audio_enc_init()
 {
     printf("audio_enc_init\n");
 
-    cvsd_encoder_init();
-    msbc_encoder_init();
-#if TCFG_ENC_OPUS_ENABLE
-    opus_encoder_preinit();
-#endif
-#if TCFG_ENC_SPEEX_ENABLE
-    speex_encoder_preinit();
-#endif
     audio_adc_init(&adc_hdl, &adc_data);
 
     return 0;

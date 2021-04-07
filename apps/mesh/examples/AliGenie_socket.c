@@ -31,7 +31,6 @@ extern void pseudo_random_genrate(uint8_t *dest, unsigned size);
  */
 /*-----------------------------------------------------------*/
 #define BT_MESH_FEAT_SUPPORTED_TEMP         ( \
-                                                /*BT_MESH_FEAT_FRIEND | */\
                                                 0 \
                                             )
 #include "feature_correct.h"
@@ -86,7 +85,7 @@ void get_mesh_adv_name(u8 *len, u8 **data)
 #define MAC_ADDRESS_STRING_SIZE     (sizeof(Mac_Address) * 2)
 #define SECRET_STRING_SIZE          (sizeof(Secret) - 1)
 
-#define CUR_DEVICE_MAC_ADDR         0x28fa7a42bf14
+#define CUR_DEVICE_MAC_ADDR        	0x28fa7a42bf14
 #define PRODUCT_ID                  6001957
 #define DEVICE_SECRET               "e3a3d73b8ebf93619cdd56ce469d3cb9"
 
@@ -380,7 +379,7 @@ void comfirm_check(struct __comfirm_check_param *param)
     };
     if (!indicate_flag[param->indicate_tid]) {
         param->resend_cnt += 1;
-        if (param->resend_cnt >= 75) {  //最多重传75次，即30秒重传时间
+        if (param->resend_cnt >= 10) {  //最多重传75次，即30秒重传时间
             sys_timer_remove(timer_index[param->timer_cnt]);
             printf("resend msg more than 75 times\r\n");
         }
@@ -431,47 +430,31 @@ static void gen_onoff_set_unack(struct bt_mesh_model *model,
     timer_cnt_get(&timer_cnt);
     indicate_flag[indicate_tid] = 0;
 
-    static struct __onoff_repo onoff_repo_set;
-    onoff_repo_set.Opcode = buffer_head_init(VENDOR_MSG_ATTR_INDICAT);
-    onoff_repo_set.TID = indicate_tid;
-    onoff_repo_set.Attr_Type = 0x0100;
-    onoff_repo_set.OnOff = led_flag;
+    static struct __onoff_repo onoff_repo_set[10];
+    static u8 onoff_repo_set_cnt = 0;
+
+    if (onoff_repo_set_cnt < 9) {
+        onoff_repo_set_cnt ++;
+    } else {
+        onoff_repo_set_cnt = 0;
+    }
+
+    onoff_repo_set[onoff_repo_set_cnt].Opcode = buffer_head_init(VENDOR_MSG_ATTR_INDICAT);
+    onoff_repo_set[onoff_repo_set_cnt].TID = indicate_tid;
+    onoff_repo_set[onoff_repo_set_cnt].Attr_Type = 0x0100;
+    onoff_repo_set[onoff_repo_set_cnt].OnOff = led_flag;
 
     comfirm_check_param[timer_cnt].resend_cnt = 0;
     comfirm_check_param[timer_cnt].timer_cnt = timer_cnt;
-    comfirm_check_param[timer_cnt].indicate_tid = onoff_repo_set.TID;
-    comfirm_check_param[timer_cnt].buf = &onoff_repo_set;
-    comfirm_check_param[timer_cnt].len = sizeof(onoff_repo_set);
+    comfirm_check_param[timer_cnt].indicate_tid = onoff_repo_set[onoff_repo_set_cnt].TID;
+    comfirm_check_param[timer_cnt].buf = &onoff_repo_set[onoff_repo_set_cnt];
+    comfirm_check_param[timer_cnt].len = sizeof(onoff_repo_set[onoff_repo_set_cnt]);
 
-    printf("\n  set unack tid = %d, timer_cnt = %d, param.tid = %d  \n", onoff_repo_set.TID, timer_cnt, comfirm_check_param[timer_cnt].indicate_tid);
+    printf("\n  set unack tid = %d, timer_cnt = %d, param.tid = %d  \n", onoff_repo_set[onoff_repo_set_cnt].TID, timer_cnt, comfirm_check_param[timer_cnt].indicate_tid);
 
-    vendor_attr_status_send(&vendor_server_models[1], ctx, &onoff_repo_set, sizeof(onoff_repo_set));
+    vendor_attr_status_send(&vendor_server_models[1], ctx, &onoff_repo_set[onoff_repo_set_cnt], sizeof(onoff_repo_set[onoff_repo_set_cnt]));
     timer_index[timer_cnt] = sys_timer_add(&comfirm_check_param[timer_cnt], comfirm_check, 400);
 
-#if 0
-    /*
-     * If a server has a publish address, it is required to
-     * publish status on a state change
-     *
-     * See Mesh Profile Specification 3.7.6.1.2
-     *
-     * Only publish if there is an assigned address
-     */
-
-    if (onoff_state->previous != onoff_state->current &&
-        model->pub->addr != BT_MESH_ADDR_UNASSIGNED) {
-        log_info("publish last 0x%02x cur 0x%02x\n",
-                 onoff_state->previous, onoff_state->current);
-        onoff_state->previous = onoff_state->current;
-        bt_mesh_model_msg_init(msg,
-                               BT_MESH_MODEL_OP_GEN_ONOFF_STATUS);
-        buffer_add_u8_at_tail(msg, onoff_state->current);
-        err = bt_mesh_model_publish(model);
-        if (err) {
-            log_info("bt_mesh_model_publish err %d\n", err);
-        }
-    }
-#endif /*  */
 }
 
 static void gen_onoff_set(struct bt_mesh_model *model,
@@ -751,13 +734,19 @@ static const struct bt_mesh_comp composition = {
     .elem_count = ARRAY_SIZE(elements),
 };
 
+/*
+ * @brief AliGenie UUID格式
+ *
+ * detail on https://www.aligenie.com/doc/357554/gtgprq <表1：Device UUID格式>
+ */
+/*-----------------------------------------------------------*/
 static const u8 dev_uuid[16] = {
     0xA8, 0x01,  // CID
     0x01 | BIT(4) | BIT(6), // PID
     PID_TO_LITTLE_ENDIAN(PRODUCT_ID), // ProductID
     MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR), // MAC
-    0x00, 0x00, // FeatureFlag
-    0x00 // RFU
+    0x00, //BIT(1),  FeatureFlag
+    0x00, 0x00 // RFU
 };
 
 /*

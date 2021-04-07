@@ -49,4 +49,17 @@ int res_flen(FILE *file);
 int res_fclose(FILE *file);
 int _norflash_read_watch(u8 *buf, u32 addr, u32 len, u8 wait);//加速读
 
+struct ui_load_info {
+    u8    pj_id;
+    const char *path;
+    FILE *file;
+    FILE *res;
+    FILE *str;
+};
+
+void *ui_load_res_by_pj_id(int pj_id);
+void *ui_load_str_by_pj_id(int pj_id);
+int ui_set_sty_path_by_pj_id(int pj_id, const u8 *path);
+void *ui_load_sty_by_pj_id(int pj_id);
+
 #endif

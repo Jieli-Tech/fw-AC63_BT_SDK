@@ -162,6 +162,7 @@
 #define USB_EP0_STAGE_OUT         2
 #define USB_EP0_SET_STALL         3
 #define USB_EP0_IGNORE            4
+#define USB_EP0_STAGE_NAK         5
 
 /*            common api            */
 u32 get_jiffies();
@@ -177,6 +178,8 @@ u32 usb_g_intr_write(const usb_dev usb_id, u32 ep, const u8 *ptr, u32 len);
 u32 usb_g_iso_read(const usb_dev usb_id, u32 ep, u8 *ptr, u32 len, u32 block);
 u32 usb_g_iso_write(const usb_dev usb_id, u32 ep, const u8 *ptr, u32 len);
 void usb_slave_init(const usb_dev usb_id);
+void usb_phy_resume(const usb_dev usb_id);
+void usb_phy_suspend(const usb_dev usb_id);
 
 /*            host api            */
 

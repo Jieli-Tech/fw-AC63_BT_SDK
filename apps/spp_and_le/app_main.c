@@ -42,9 +42,12 @@ const struct task_info task_info_table[] = {
     {"btstack",             3,     768,  256  },
     {"systimer",		    7,	   128,   0		},
     {"update",				1,	   320,   0		},
-    {"dw_update",           2,     256,   128  },
+    {"dw_update",		 	2,	   256,   128  },
 #if (RCSP_BTMATE_EN)
     {"rcsp_task",		    2,		640,	128	},
+#endif
+#if(USER_UART_UPDATE_ENABLE)
+    {"uart_update",	        1,	   256,   128	},
 #endif
 #if (XM_MMA_EN)
     {"xm_mma",   		    2,		640,	256	},
@@ -112,7 +115,7 @@ void app_main()
     it.action = ACTION_SPPLE_MAIN;
 #endif
 
-#if CONFIG_APP_AT_COM
+#if CONFIG_APP_AT_COM || CONFIG_APP_AT_CHAR_COM
     it.name = "at_com";
     it.action = ACTION_AT_COM;
 #endif
@@ -121,6 +124,12 @@ void app_main()
     it.name = "dongle";
     it.action = ACTION_DONGLE_MAIN;
 #endif
+
+#if CONFIG_APP_MULTI
+    it.name = "multi_conn";
+    it.action = ACTION_MULTI_MAIN;
+#endif
+
     log_info("app_name:%s\n", it.name);
     /* it.name = "idle"; */
     /* it.action = ACTION_IDLE_MAIN; */

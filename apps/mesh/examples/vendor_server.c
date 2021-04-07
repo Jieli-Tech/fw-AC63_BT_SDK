@@ -38,7 +38,6 @@ static void vendor_set(struct bt_mesh_model *model,
  */
 /*-----------------------------------------------------------*/
 #define BT_MESH_FEAT_SUPPORTED_TEMP         ( \
-                                                BT_MESH_FEAT_PROXY | \
                                                 0 \
                                             )
 #include "feature_correct.h"

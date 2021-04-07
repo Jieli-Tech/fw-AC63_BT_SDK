@@ -160,13 +160,16 @@ struct a2dp_dec_hdl {
 
 #if AUDIO_SURROUND_CONFIG
     surround_hdl *surround;         //环绕音效句柄
+    u8 surround_eff;  //音效模式记录
 #endif
 
 #if AUDIO_VBASS_CONFIG
     vbass_hdl *vbass;               //虚拟低音句柄
 #endif
 };
-
+#if AUDIO_SURROUND_CONFIG
+static u8 a2dp_surround_eff;  //音效模式记录
+#endif
 #define AUDIO_VBASS_TEST 0
 
 #if AUDIO_VBASS_TEST
@@ -267,6 +270,7 @@ extern const int CONFIG_LOW_LATENCY_ENABLE;
 extern const int CONFIG_A2DP_DELAY_TIME;
 extern const int CONFIG_A2DP_DELAY_TIME_LO;
 extern const int CONFIG_A2DP_SBC_DELAY_TIME_LO;
+extern const int const_surround_en;
 
 
 struct a2dp_dec_hdl *a2dp_dec = NULL;
@@ -293,6 +297,7 @@ void set_source_sample_rate(u16 sample_rate);
 u8 bt_audio_is_running(void);
 #if AUDIO_SURROUND_CONFIG
 void surround_switch_test(void *p);
+void audio_surround_voice(struct a2dp_dec_hdl *dec);
 #endif
 void audio_resume_all_decoder(void)
 {
@@ -848,6 +853,47 @@ static int mix_output_effect_handler(struct audio_mixer *mixer, s16 *data, u16 l
 }
 #endif
 
+extern void audio_adc_mic_demo(u8 mic_idx, u8 gain, u8 mic_2_dac);
+extern void dac_analog_power_control(u8 en);
+u8 audio_fast_mode = 0;
+void audio_fast_mode_test()
+{
+    audio_fast_mode = 1;
+    audio_dac_set_volume(&dac_hdl, app_audio_get_volume(APP_AUDIO_CURRENT_STATE));
+    dac_analog_power_control(1);////将关闭基带，不开可发现，不可连接
+    audio_dac_start(&dac_hdl);
+    audio_adc_mic_demo(AUDIO_ADC_MIC_CH, 10, 1);
+
+}
+u8 dac_power_off_flag = 1;
+u8 is_dac_power_off()
+{
+    if (a2dp_dec || esco_dec) {
+        return 1;
+    }
+    return dac_power_off_flag;
+}
+
+void dac_analog_power_control(u8 en)
+{
+#ifdef CONFIG_CURRENT_SOUND_DEAL_ENABLE
+    if (en) {
+        dac_power_off_flag = 0;
+    } else {
+#if TCFG_AUDIO_ANC_ENABLE
+        if (!anc_status_get()) {
+            puts("anc dac_power_off");
+            dac_power_off();
+        }
+#else
+        puts("dac_power_off");
+        dac_power_off();
+#endif
+        dac_power_off_flag = 1;
+    }
+#endif
+
+}
 static void mixer_event_handler(struct audio_mixer *mixer, int event)
 {
     switch (event) {
@@ -866,6 +912,8 @@ static void mixer_event_handler(struct audio_mixer *mixer, int event)
             audio_dac_set_sample_rate(&dac_hdl, audio_mixer_get_sample_rate(mixer));
             audio_dac_set_volume(&dac_hdl, app_audio_get_volume(APP_AUDIO_CURRENT_STATE));
             audio_dac_start(&dac_hdl);
+            dac_analog_power_control(1);
+            g_printf("MIXER_EVENT_CH_OPEN=%d\n", dac_power_off_flag);
             audio_dac_set_input_correct_callback(&dac_hdl,
                                                  (void *)mixer,
                                                  (void (*)(void *, int))audio_mixer_position_correct);
@@ -899,6 +947,11 @@ static void mixer_event_handler(struct audio_mixer *mixer, int event)
 
 #else
             audio_dac_stop(&dac_hdl);
+            dac_analog_power_control(0);
+            g_printf("MIXER_EVENT_CH_CLOSE=%d\n", dac_power_off_flag);
+            if (audio_fast_mode) {
+                audio_fast_mode_test();
+            }
 #endif
         }
         break;
@@ -1279,6 +1332,66 @@ static const struct audio_dec_input a2dp_input = {
         }
     }
 };
+#if 0
+#include "tone_player.h"
+static const char *num0_9[] = {
+    TONE_NUM_0,
+    TONE_NUM_1,
+    TONE_NUM_2,
+    TONE_NUM_3,
+    TONE_NUM_4,
+    TONE_NUM_5,
+    TONE_NUM_6,
+    TONE_NUM_7,
+    TONE_NUM_8,
+    TONE_NUM_9,
+};
+
+static void a2dp_test_tone_warning(int error, int is_seqn)
+{
+    /* return ; */
+
+    const char *tone_seqn[16];
+    if (is_seqn) {
+        int ten_num = 0;
+        int num = error;
+        while (num < 10) {
+            num /= 10;
+            ten_num++;
+        }
+
+        int list_i = 0;
+        int i;
+        tone_seqn[list_i++] = TONE_RING;
+        for (i = ten_num; i > 0; i--) {
+            tone_seqn[list_i++] = num0_9[((error / (ten_num * 10)) % 10)];
+        }
+        tone_seqn[list_i] = num0_9[(error % 10)];
+        tone_file_list_play(tone_seqn, 1);
+    } else {
+        tone_play_index(error, 1);
+    }
+}
+
+void a2dp_error_tone_warning(int error)
+{
+
+    int argv[8];
+    argv[0] = (int)a2dp_test_tone_warning;
+    argv[1] = 2;
+    argv[2] = (int)IDEX_TONE_NUM_0 + error;
+    argv[3] = (int)0;
+
+    do {
+        int err = os_taskq_post_type("app_core", Q_CALLBACK, 4, argv);
+        if (err == OS_ERR_NONE) {
+            break;
+        }
+
+        os_time_dly(2);
+    } while (1);
+}
+#endif
 
 static int a2dp_dec_rx_info_check(struct rt_stream_info *info)
 {
@@ -1776,6 +1889,19 @@ static void a2dp_dec_event_handler(struct audio_decoder *decoder, int argc, int 
     }
 }
 
+void reset_a2dp_delay_time(u16 add_delay_time)
+{
+    if (!a2dp_dec) {
+        return ;
+    }
+    int a2dp_low_latency = tws_api_get_low_latency_state();
+    if (a2dp_low_latency) {
+        a2dp_delay_time = a2dp_dec->coding_type == AUDIO_CODING_AAC ? CONFIG_A2DP_DELAY_TIME_LO : CONFIG_A2DP_SBC_DELAY_TIME_LO;
+        a2dp_delay_time += add_delay_time;
+        /* r_printf("reset_a2dp_delay_time=%d\n",a2dp_delay_time ); */
+
+    }
+}
 
 
 void audio_overlay_load_code(u32 type);
@@ -1825,6 +1951,11 @@ int a2dp_dec_start()
     err = audio_decoder_get_fmt(&dec->decoder, &fmt);
     if (err) {
         goto __err2;
+    }
+    if (fmt->sample_rate == 0) {
+        log_e(">>>>>>>>>>>>>>Audio sample rate error");
+        goto __err2;
+
     }
 
     if (fmt->sample_rate == 0) {
@@ -1903,6 +2034,8 @@ int a2dp_dec_start()
     parm.channel = nch;
     parm.surround_effect_type = EFFECT_3D_PANORAMA;//打开时默认使用3d全景音,使用者，根据需求修改
     dec->surround = audio_surround_open(&parm);
+    dec->surround_eff = a2dp_surround_eff;
+    audio_surround_voice(dec);//还原按键触发的音效
     //sur_test = sys_timer_add(dec->surround, surround_switch_test, 10000);
 #endif
 
@@ -3424,4 +3557,78 @@ u32 audio_output_rate(int input_rate)
 #endif
     return  app_audio_output_samplerate_select(input_rate, 1);
 }
+
+#if AUDIO_SURROUND_CONFIG
+/*
+ *环绕音效开关控制
+ * */
+void audio_surround_voice(struct a2dp_dec_hdl *dec)
+{
+    if (dec && dec->surround) {
+        surround_hdl *surround = dec->surround;
+        u8 en = dec->surround_eff;
+        if (en) {
+            if (const_surround_en & BIT(2)) {
+                surround_update_parm parm = {0};
+                parm.surround_type = EFFECT_3D_LRDRIFT2;//音效类型
+                parm.rotatestep    = 4;   //建议1~6,环绕速度
+                parm.damping = 40;//混响音量（0~70）,空间感
+                parm.feedback = 100;//干声音量(0~100),清晰度
+                parm.roomsize = 128;//无效参数
+                audio_surround_parm_update(surround, EFFECT_SUR2, &parm);
+            } else {
+                audio_surround_parm_update(surround, EFFECT_3D_ROTATES, NULL);
+            }
+        } else {
+            surround_update_parm parm = {0};
+            audio_surround_parm_update(surround, EFFECT_OFF2, &parm);//关音效
+        }
+    }
+}
+
+#if TCFG_USER_TWS_ENABLE
+
+#define TWS_FUNC_ID_A2DP_EFF \
+	((int)(('A' + '2' + 'D' + 'P') << (2 * 8)) | \
+	 (int)(('E' + 'F' + 'F') << (1 * 8)) | \
+	 (int)(('S' + 'Y' + 'N' + 'C') << (0 * 8)))
+/*
+ *发环绕左右耳效果同步
+ * */
+void audio_surround_voice_ctrl()
+{
+    int state = tws_api_get_tws_state();
+    if (state & TWS_STA_SIBLING_CONNECTED) {
+        if (a2dp_dec && a2dp_dec->surround) {
+            if (!a2dp_dec->surround_eff) {
+                a2dp_dec->surround_eff =  1;
+            } else {
+                a2dp_dec->surround_eff =  0;
+            }
+            int a2dp_eff = a2dp_dec->surround_eff;
+            tws_api_send_data_to_sibling((u8 *)&a2dp_eff, sizeof(int), TWS_FUNC_ID_A2DP_EFF);
+        }
+    }
+}
+/*
+ *左右耳环绕效果同步回调
+ * */
+static void tws_a2dp_eff_align(void *data, u16 len, bool rx)
+{
+    if (a2dp_dec && a2dp_dec->surround) {
+        int a2dp_eff;
+        memcpy(&a2dp_eff, data, sizeof(int));
+        a2dp_dec->surround_eff = a2dp_eff;
+        a2dp_surround_eff = a2dp_eff;
+        audio_surround_voice(a2dp_dec);
+    }
+}
+
+REGISTER_TWS_FUNC_STUB(a2dp_align_eff) = {
+    .func_id = TWS_FUNC_ID_A2DP_EFF,
+    .func    = tws_a2dp_eff_align,
+};
+#endif /* TCFG_USER_TWS_ENABLE */
+
+#endif /* AUDIO_SURROUND_CONFIG */
 

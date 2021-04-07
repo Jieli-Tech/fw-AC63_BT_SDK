@@ -42,7 +42,6 @@ const struct task_info task_info_table[] = {
     {"btstack",             3,     768,  256  },
     {"systimer",		    7,	   128,   0		},
     {"update",				1,	   320,   0		},
-    {"dw_update",           2,     256,   128  },
 #if CONFIG_APP_GAMEBOX
     {"gamebox",             3,     1024,   128  },
 #endif

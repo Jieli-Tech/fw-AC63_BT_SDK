@@ -51,11 +51,8 @@ struct audio_eq_drc {
     struct audio_drc *drc;
     struct eq_fade *fade_cfg;//高低音系数表
 
-    //2路32bit异步输出
     s16 *eq_out_buf;
-#if !DECREASE_MEM
     int out_buf_size;
-#endif
     int eq_out_points;
     int eq_out_total;
     u8 high_bass_dis;

@@ -326,14 +326,11 @@ u8 get_wvdd_trim_level();
 
 u8 get_pvdd_trim_level();
 
-void update_wvdd_trim_level(u8 wvdd_level);
-
-void update_pvdd_trim_level(u8 pvdd_level);
-
-u8 check_pmu_voltage(u8 tieup);
+void update_wvdd_pvdd_trim_level(u8 wvdd_level, u8 pvdd_level);
 
 u32 get_reset_source_value(void);
 
+u8 check_wvdd_pvdd_trim(u8 tieup);
 /*-----------------------------------------------------------*/
 
 

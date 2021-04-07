@@ -77,6 +77,7 @@ u32 adc_remove_sample_ch(u32 ch);
 u32 adc_get_voltage(u32 ch);
 u32 adc_check_vbat_lowpower();
 
+void check_pmu_voltage(u8 tieup);
 
 extern void adc_enter_occupy_mode(u32 ch);
 extern void adc_exit_occupy_mode();
@@ -84,9 +85,5 @@ extern u32 adc_occupy_run();
 extern u32 adc_get_occupy_value();
 u32 adc_sample(u32 ch);
 u32 adc_value_to_voltage(u32 adc_vbg, u32 adc_ch_val);
-
-char get_vddiom_trim();
-char get_vddiow_trim();
-void check_pmu_voltage(u8 tieup);
 
 #endif

@@ -89,6 +89,34 @@ s16 dac_buff[4 * 1024 * BNUM] SEC(.dac_buff);
 s16 dac_buff[4 * 1024 * BNUM] SEC(.dac_buff);
 #endif
 
+/*从audio中申请一块空间给use使用*/
+void *app_audio_alloc_use_buff(int use_len)
+{
+    void *buf = NULL;
+#if AUDIO_OUTPUT_INCLUDE_DAC
+    printf("uselen:%d, total:%d \n", use_len, sizeof(dac_buff));
+    if (use_len + (2 * 1024) > sizeof(dac_buff)) {
+        y_printf("dac buff < uselen\n");
+        return NULL;
+    }
+    int dac_len = ((sizeof(dac_buff) - use_len) * 4) / 4;
+    audio_dac_reset_buf(&dac_hdl, dac_buff, dac_len, 0);
+    return (u8 *)dac_buff + dac_len;
+#endif
+    return buf;
+}
+
+/*释放从audio中申请的空间*/
+void app_audio_release_use_buff(void *buf)
+{
+#if AUDIO_OUTPUT_INCLUDE_DAC
+    printf("app_audio_release_use_buff \n");
+    if (buf) {
+        audio_dac_reset_buf(&dac_hdl, dac_buff, sizeof(dac_buff), 1);
+    }
+#endif
+}
+
 /*关闭audio相关模块使能*/
 void audio_disable_all(void)
 {

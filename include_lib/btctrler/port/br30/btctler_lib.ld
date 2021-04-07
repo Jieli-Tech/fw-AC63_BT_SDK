@@ -160,6 +160,8 @@ SECTIONS
     } > code0
 
 
+#ifndef CONFIG_MOVABLE_ENABLE
+
 	.data_code ALIGN(32):
 	{
 
@@ -219,6 +221,68 @@ SECTIONS
 
 		. = ALIGN(4);
     } > ram0
+
+#else
+
+    .text : ALIGN(4)
+	{
+
+        *(.lmp_irq_code)
+        *(.link_bulk_code)
+        *(.frame_irq_code)
+
+		. = ALIGN(4);
+        *(.link_task_const)
+        *(.link_task_code)
+
+		. = ALIGN(4);
+        *(.classic_irq_const)
+        *(.classic_irq_code)
+
+
+		. = ALIGN(4);
+        *(.tws_irq_code)
+
+		. = ALIGN(4);
+        tws_sync_call_begin = .;
+        *(.tws_sync_call)
+        tws_sync_call_end = .;
+
+		. = ALIGN(4);
+        tws_func_stub_begin = .;
+        *(.tws_func_stub)
+        tws_func_stub_end = .;
+
+        *(.tws_media_sync_code)
+        *(.tws_media_sync_const)
+
+        *(.tws_data_forward_code)
+        *(.tws_data_forward_const)
+
+		. = ALIGN(4);
+        tws_sync_channel_begin = .;
+        *(.tws_sync_channel.0)
+        *(.tws_sync_channel.1)
+        *(.tws_sync_channel.2)
+        *(.tws_sync_channel.3)
+        *(.tws_sync_channel.4)
+        *(.tws_sync_channel.5)
+        *(.tws_sync_channel.6)
+        *(.tws_sync_channel.7)
+        *(.tws_sync_channel.8)
+        *(.tws_sync_channel.9)
+        *(.tws_sync_channel.10)
+        *(.tws_sync_channel.11)
+        *(.tws_sync_channel.12)
+        *(.tws_sync_channel.13)
+        tws_sync_channel_end = .;
+
+        btctler_code_end = .;
+
+		. = ALIGN(4);
+    } > code0
+
+#endif
 
     /*代码统计 Code & RAM : 蓝牙协议栈*/
     BTCTLER_LE_RAM_TOTAL   = BTCTLER_LE_CONTROLLER_DATA_SIZE + BTCTLER_LE_CONTROLLER_BSS_SIZE;

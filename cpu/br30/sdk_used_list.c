@@ -104,3 +104,17 @@ wav_decoder
 
 
 
+cvsd_encoder
+msbc_encoder
+
+#if TCFG_ENC_OPUS_ENABLE
+opus_encoder
+#endif
+
+#if TCFG_ENC_SPEEX_ENABLE
+speex_encoder
+#endif
+
+
+
+

@@ -19,4 +19,10 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/audio_common/app_audio.o \
 	  $(ROOT)/cpu/$(CPU)/audio_common/audio_link.o \
 
+else ifeq ($(APP_CASE),adapter)
+objs += \
+	  $(ROOT)/cpu/$(CPU)/audio_common/app_audio.o \
+	  $(ROOT)/cpu/$(CPU)/audio_common/audio_link.o \
+	  $(ROOT)/cpu/$(CPU)/audio_common/audio_iis.o \
+
 endif

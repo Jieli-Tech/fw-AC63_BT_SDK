@@ -253,6 +253,7 @@
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #define TCFG_LINEIN_LR_CH                   AUDIO_LIN0_LR
+#define TCFG_DEC_WAV_ENABLE					DISABLE
 #else
 #define TCFG_DEC_PCM_ENABLE					DISABLE
 #endif/*TCFG_AUDIO_ENABLE*/
@@ -363,12 +364,12 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_CHARGE_FULL_MA					CHARGE_FULL_mA_10
 /*
 充电电流可选配置：
-    CHARGE_mA_20		CHARGE_mA_30		CHARGE_mA_40		CHARGE_mA_50
-    CHARGE_mA_60		CHARGE_mA_70		CHARGE_mA_80		CHARGE_mA_90
-    CHARGE_mA_100		CHARGE_mA_110		CHARGE_mA_120		CHARGE_mA_140
-    CHARGE_mA_160		CHARGE_mA_180		CHARGE_mA_200		CHARGE_mA_220
+    CHARGE_mA_20		CHARGE_mA_40		CHARGE_mA_60		CHARGE_mA_80
+    CHARGE_mA_100		CHARGE_mA_120		CHARGE_mA_140		CHARGE_mA_160
+    CHARGE_mA_180		CHARGE_mA_200		CHARGE_mA_220		CHARGE_mA_240
+    CHARGE_mA_260		CHARGE_mA_280		CHARGE_mA_300		CHARGE_mA_320
  */
-#define TCFG_CHARGE_MA						CHARGE_mA_50
+#define TCFG_CHARGE_MA						CHARGE_mA_60
 
 //*********************************************************************************//
 //                                  LED 配置                                       //

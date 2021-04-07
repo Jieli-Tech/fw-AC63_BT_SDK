@@ -25,6 +25,11 @@ typedef unsigned int    OS_CPU_DATA;                 /* Unsigned 32 bit quantity
 
 #define OS_CPU_MMU          0
 
+#define OS_CPU_VIRTUAL_MEM  1           //临时定义：区别于OS_CPU_MMU
+
+#define OS_TASK_CLR(a) 		CPU_TASK_CLR(a)
+#define OS_TASK_SW(a)     	CPU_TASK_SW(a) /* 任务级任务切换函数*/
+#define OS_INT_NESTING      CPU_INT_NESTING
 
 #define CPU_SR_ALLOC()
 

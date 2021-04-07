@@ -14,6 +14,7 @@ void *pcm2file_enc_open(struct audio_fmt *pfmt, char *logo, char *folder, char *
 void pcm2file_enc_write_file_set_limit(void *hdl, u32 cut_size, u32 limit_size);
 void pcm2file_enc_set_evt_handler(void *hdl, void (*handler)(struct audio_encoder *, int, int *), u32 maigc);
 void pcm2file_enc_start(void *hdl);
+void enc_change_status(void *hdl);
 void pcm2file_enc_close(void **hdl);
 int pcm2file_enc_is_work(void *hdl);
 int get_pcm2file_enc_file_len(void *hdl);

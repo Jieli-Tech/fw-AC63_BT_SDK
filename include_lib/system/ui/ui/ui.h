@@ -81,5 +81,32 @@ int ui_get_disp_status_by_id(int id);
 int create_control_by_id(char *tabfile, int page_id, int id, int parent_id);
 int delete_control_by_id(int id);
 
+
+void ui_remove_backcolor(struct element *elm);
+void ui_remove_backimage(struct element *elm);
+void ui_remove_border(struct element *elm);
+
+int ui_fill_rect(struct draw_context *dc, int left, int top, int width, int height, u32 acolor);
+int ui_draw_image(struct draw_context *dc, int page, int id, int x, int y);
+int ui_draw_ascii(struct draw_context *dc, char *str, int strlen, int x, int y, int color);
+int ui_draw_text(struct draw_context *dc, int encode, int endian, char *str, int strlen, int x, int y, int color);
+int ui_draw_strpic(struct draw_context *dc, int id, int x, int y, int color);
+void ui_draw_line(void *_dc, int x0, int y0, int x1, int y1, int color);
+void ui_draw_line_by_angle(void *_dc, int x, int y, int length, int angle, int color);
+void ui_draw_rect(void *_dc, int x, int y, int width, int height, int color);
+void ui_draw_circle(struct draw_context *dc, int center_x, int center_y,
+                    int radius_big, int radius_small, int angle_begin,
+                    int angle_end, int color, int percent);
+int ui_draw_set_pixel(struct draw_context *dc, int x, int y, int pixel);
+u32 ui_draw_get_pixel(struct draw_context *dc, int x, int y);
+u16 ui_draw_get_mixed_pixel(u16 backcolor, u16 forecolor, u8 alpha);
+
+void *load_control_info_by_id(char *tabfile, u32 page_id, u32 id);
+void *ui_control_new(void *_pos, void *parent);
+
+
+#define ui_id2type(id)  	(((id)>>16) & 0x3f)
+
+
 #endif
 

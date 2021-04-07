@@ -13,9 +13,9 @@ struct layout {
     struct element elm; 	//must be first
     u8 hide: 1;
     u8 inited: 1;
-    u8 release: 1;
-    u8 css_num: 5;
-    u16 css[2];
+    u8 release: 6;
+    // u8 css_num:5;
+    // u32 css[2];
     struct layout *layout;
     const struct layout_info *info;
     const struct element_event_handler *handler;

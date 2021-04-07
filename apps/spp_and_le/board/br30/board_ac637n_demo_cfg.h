@@ -26,6 +26,11 @@
 #define TCFG_UART0_TX_PORT  				IO_PORTC_04                             //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
+#define UART_DB_TX_PIN                      IO_PORTC_01                            //AT_CHART串口
+#define UART_DB_RX_PIN                      IO_PORTC_02
+#define UART_DB_RTS_PIN                     IO_PORTA_06
+#define UART_DB_CTS_PIN                     IO_PORTA_05
+
 //*********************************************************************************//
 //                                 IIC配置                                        //
 //*********************************************************************************//
@@ -169,6 +174,7 @@
 #define TCFG_DEC_CVSD_CLOSE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#define TCFG_DEC_WAV_ENABLE				   DISABLE
 #else
 #define TCFG_DEC_PCM_CLOSE
 #define TCFG_DEC_SBC_CLOSE
@@ -361,6 +367,9 @@ DAC硬件上的连接方式,可选的配置：
 #undef TCFG_CHARGESTORE_ENABLE
 #define TCFG_CHARGESTORE_ENABLE		DISABLE_THIS_MOUDLE 	//使用通话数据导出，关闭智能充电仓功能
 #endif/*AUDIO_PCM_DEBUG*/
+
+
+#define TCFG_WAV_TONE_MIX_ENABLE		0
 
 //*********************************************************************************//
 //                                 电源切换配置                                    //

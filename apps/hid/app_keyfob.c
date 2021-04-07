@@ -328,7 +328,7 @@ static void led_on_off(u8 state, u8 res)
         case LED_KEY_UP:
             led_timeout_count = 1;//
             led_timer_start(100);
-            if (edr_hid_is_connected() | ble_connect != 0) {
+            if (edr_hid_is_connected() || (ble_connect != 0)) {
                 led_next_state = LED_CLOSE;
             } else {
                 led_next_state = LED_WAIT_CONNECT;

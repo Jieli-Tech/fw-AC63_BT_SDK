@@ -11,13 +11,16 @@ struct ui_text {
     struct ui_text_attrs attrs;
     char source[8];
     void *timer;
-    char _str[4];
+
+    char _str[UI_TEXT_LIST_MAX_NUM];
     char _format[7];
-    u8 str_num: 4;
-    u8 css_num: 4;
-    u16 css[2];
-    int attr_color;
-    int attr_highlight_color;
+    u8 str_num;
+    // u8 str_num:4;
+    // u8 css_num:4;
+    // u32 css[2];
+    // u16 attr_color;
+    // u16 attr_highlight_color;
+    // struct ui_text_attrs attrs;
     const struct ui_text_info *info;
     const struct element_event_handler *handler;
 };
@@ -46,5 +49,8 @@ void text_release(struct ui_text *text);
  *   3.index_num表示有多少个字符串id拼起来
  * */
 int ui_text_set_combine_index(struct ui_text *text, u8 *store_buf, u8 *index_buf, int index_num);
+
+
+int ui_text_set_hide_by_id(int id, int hide);
 
 #endif

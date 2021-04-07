@@ -31,9 +31,13 @@
 
 
 #if TCFG_SPI_LCD_ENABLE
+#ifndef ALL_KEY_EVENT_CLICK_ONLY
 #define ALL_KEY_EVENT_CLICK_ONLY	1 	//是否全部按键只响应单击事件
+#endif
 #else
+#ifndef ALL_KEY_EVENT_CLICK_ONLY
 #define ALL_KEY_EVENT_CLICK_ONLY	0 	//是否全部按键只响应单击事件
+#endif
 #endif
 
 static volatile u8 is_key_active = 0;

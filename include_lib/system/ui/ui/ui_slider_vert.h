@@ -36,5 +36,6 @@ int ui_vslider_set_persent(struct ui_vslider *vslider, int persent);
 
 int vslider_touch_slider_move(struct ui_vslider *vslider, struct element_touch_event *e);//触摸滑动功能
 
+int vslider_get_percent(struct ui_vslider *vslider);
 #endif
 

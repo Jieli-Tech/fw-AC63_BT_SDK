@@ -29,7 +29,7 @@ struct ui_number {
     u8 css_num;
     u8 nums: 6;
     u8 type: 2;
-    u16 css[2];
+    u32 css[2];
     u8 *num_str;
     const struct ui_number_info *info;
     const struct element_event_handler *handler;

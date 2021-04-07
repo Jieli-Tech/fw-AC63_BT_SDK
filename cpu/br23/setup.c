@@ -243,6 +243,8 @@ void setup_arch()
 
     debug_init();
 
+    /* CHGBG_EN(0); */
+    /* CHARGE_EN(0); */
 
     sys_timer_init();
 

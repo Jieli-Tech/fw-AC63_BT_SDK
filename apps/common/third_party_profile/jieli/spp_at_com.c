@@ -21,7 +21,7 @@ extern void printf_buf(u8 *buf, u32 len);
 #define log_info_hexdump(...)
 #endif
 
-#if TRANS_AT_COM 
+#if TRANS_AT_COM || CONFIG_APP_AT_CHAR_COM
 #if (USER_SUPPORT_PROFILE_SPP==1)
 
 

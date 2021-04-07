@@ -40,6 +40,7 @@
 #define IOCTL_SET_BASE_ADDR             41
 #define IOCTL_SET_ASYNC_MODE            42
 #define IOCTL_GET_SPEED 				43
+#define IOCTL_SET_ACTIVE_STATUS			44
 
 #define IOCTL_GET_ID 					100
 #define IOCTL_GET_SECTOR_SIZE			101

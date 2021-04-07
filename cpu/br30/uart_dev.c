@@ -252,6 +252,15 @@ static void UT0_set_baud(u32 baud)
     }
     JL_UART0->CON0 |= BIT(13) | BIT(12) | BIT(10) | BIT(0) | BIT(1);
 }
+
+/**
+*获取串口数据长度
+*/
+static u32 uart1_get_data_len()
+{
+    return kfifo_length(&uart1.kfifo);
+}
+
 /**
  * @brief ut0使能
  */
@@ -826,6 +835,7 @@ const uart_bus_t *uart_dev_open(const struct uart_platform_data_t *arg)
         uart1.read    = UT1_read_buf;
         uart1.write   = UT1_write_buf;
         uart1.set_baud = UT1_set_baud;
+        uart1.get_data_len = uart1_get_data_len;
         UT1_open(arg->baud, arg->is_9bit,
                  arg->rx_cbuf, arg->rx_cbuf_size,
                  arg->frame_length, arg->rx_timeout);
@@ -887,8 +897,8 @@ void uart1_flow_ctl_init(u8 rts_io, u8 cts_io)
         gpio_set_pull_up(rts_io, 0);
         gpio_set_pull_down(rts_io, 0);
         gpio_write(rts_io, 0);
-        /* gpio_set_fun_output_port(rts_io, FO_UART1_RTS, 1, 1); */
-        /* JL_UART1->CON1 |= BIT(13) | BIT(0); */
+        gpio_set_fun_output_port(rts_io, FO_UART1_RTS, 1, 1);
+        JL_UART1->CON1 |= BIT(13) | BIT(0);
     }
     //CTS
     if (cts_io < IO_PORT_MAX) {
@@ -904,7 +914,9 @@ void uart1_flow_ctl_init(u8 rts_io, u8 cts_io)
 
 void uart1_flow_ctl_rts_suspend(void)
 {
-    gpio_write(_rts_io, 1);      //告诉对方，自己忙碌
+    if (!(JL_UART1->CON1 & BIT(0))) {
+        gpio_write(_rts_io, 1);      //告诉对方，自己忙碌
+    }
     JL_UART1->CON1 |= BIT(4);   //硬件停止接收
 }
 

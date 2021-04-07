@@ -269,6 +269,10 @@ int audio_dac_data_time(struct audio_dac_hdl *dac);
 void audio_dac_anc_set(struct audio_dac_hdl *dac, u8 toggle);
 
 int audio_dac_irq_enable(struct audio_dac_hdl *dac, int time_ms, void *priv, void (*callback)(void *));
+
+void audio_dac_output_enable(struct audio_dac_hdl *dac);
+
+void audio_dac_output_disable(struct audio_dac_hdl *dac);
 /*
  * 音频同步
  */

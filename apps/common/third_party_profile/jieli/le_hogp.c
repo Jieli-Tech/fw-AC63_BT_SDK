@@ -76,12 +76,12 @@ static const char user_tag_string[] = {EIR_TAG_STRING};
 
 //------
 //ATT发送的包长,    note: 20 <=need >= MTU
-#define ATT_LOCAL_PAYLOAD_SIZE    (64)
+#define ATT_LOCAL_MTU_SIZE    (64)
 //ATT缓存的buffer大小,  note: need >= 20,可修改
 #define ATT_SEND_CBUF_SIZE        (256)
 
 //共配置的RAM
-#define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_PAYLOAD_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
+#define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_MTU_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
 static u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
 //---------------
 int ble_hid_timer_handle = 0;
@@ -93,7 +93,7 @@ static volatile hci_con_handle_t con_handle;
 static u16 cur_conn_latency; //
 
 //加密设置
-static const uint8_t sm_min_key_size = 7;
+/* static const uint8_t sm_min_key_size = 7; */
 
 //连接参数更新请求设置
 //是否使能参数请求更新,0--disable, 1--enable
@@ -167,8 +167,20 @@ static const char Hardware_Revision_String[] = "0.0.1";
 static const char Firmware_Revision_String[] = "0.0.1";
 static const char Software_Revision_String[] = "0.0.1";
 static const u8 System_ID[] = {0, 0, 0, 0, 0, 0, 0, 0};
-static const u8 PnP_ID[] = {0x02, 0x17, 0x27, 0x40, 0x00, 0x23, 0x00};
-static const u8 hid_information[] = {0x11, 0x01, 0x00, 0x01};
+
+/*
+typedef struct{
+	u8  vendor_id_source;
+	u16 vendor_id;
+	u16 product_id;
+	u16 product_version;
+}
+*/
+/* static const u8 PnP_ID[] = {0x02, 0x17, 0x27, 0x40, 0x00, 0x23, 0x00}; */
+static const u8 PnP_ID[] = {0x02, 0xac, 0x05, 0x2c, 0x02, 0x1b, 0x01};
+
+/* static const u8 hid_information[] = {0x11, 0x01, 0x00, 0x01}; */
+static const u8 hid_information[] = {0x01, 0x01, 0x00, 0x03};
 
 static  u8 *report_map; //描述符
 static  u16 report_map_size;//描述符大小
@@ -454,7 +466,7 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                     con_handle = little_endian_read_16(packet, 4);
                     log_info("HCI_SUBEVENT_LE_CONNECTION_COMPLETE: %0x\n", con_handle);
-                    ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_PAYLOAD_SIZE);
+                    ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_MTU_SIZE);
 
                     log_info_hexdump(packet + 7, 7);
                     memcpy(cur_peer_addr_info, packet + 7, 7);
@@ -732,6 +744,7 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
         break;
 
     case ATT_CHARACTERISTIC_2a50_01_VALUE_HANDLE:
+        log_info("read PnP_ID\n");
         att_value_len = sizeof(PnP_ID);
         if ((offset >= att_value_len) || (offset + buffer_size) > att_value_len) {
             break;
@@ -1105,6 +1118,8 @@ void ble_profile_init(void)
     /* sm_event_packet_handler_register(packet_cbk); */
     le_l2cap_register_packet_handler(&cbk_packet_handler);
     /* att_server_flow_enable(1); */
+
+    ble_vendor_set_default_att_mtu(ATT_LOCAL_MTU_SIZE);
 }
 
 

@@ -100,6 +100,9 @@ SECTIONS
 		#include "btstack/btstack_lib_text.ld"
 		#include "system/system_lib_text.ld"
 
+        . = ALIGN(4);
+        #include "ui/ui/ui.ld"
+
 		. = ALIGN(4);
 	    update_target_begin = .;
 	    PROVIDE(update_target_begin = .);
@@ -285,9 +288,11 @@ SECTIONS
 
         *(.fat_data_code)
 
+#ifndef CONFIG_MOVABLE_ENABLE
     	audio_sync_code_begin = .;
         *(.audio_sync_code)
     	audio_sync_code_end = .;
+#endif
 
 		. = ALIGN(4);
         _SPI_CODE_START = . ;

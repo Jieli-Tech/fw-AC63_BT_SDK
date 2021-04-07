@@ -110,11 +110,11 @@
 #endif
 #if TCFG_USER_EDR_ENABLE
 #if RCSP_BTMATE_EN
-#define CONFIG_BT_RX_BUFF_SIZE  (2 * 1024)
-#define CONFIG_BT_TX_BUFF_SIZE  (2 * 1024)
+#define CONFIG_BT_RX_BUFF_SIZE  (3 * 512)
+#define CONFIG_BT_TX_BUFF_SIZE  (3 * 512)
 #else
-#define CONFIG_BT_RX_BUFF_SIZE  (3 * 1024)
-#define CONFIG_BT_TX_BUFF_SIZE  (3 * 1024)
+#define CONFIG_BT_RX_BUFF_SIZE  (5 * 512)
+#define CONFIG_BT_TX_BUFF_SIZE  (5 * 512)
 #endif
 #else
 #define CONFIG_BT_RX_BUFF_SIZE  (0)

@@ -147,6 +147,32 @@ SECTIONS
         KEEP(*(.fm_emitter_dev))
         fm_emitter_dev_end = .;
 
+		. = ALIGN(4);
+        adapter_idev_begin = .;
+        KEEP(*(.adapter_idev))
+        adapter_idev_end = .;
+
+		. = ALIGN(4);
+        adapter_odev_begin = .;
+        KEEP(*(.adapter_odev))
+        adapter_odev_end = .;
+
+		. = ALIGN(4);
+        adapter_enc_begin = .;
+        KEEP(*(.adapter_enc))
+        adapter_enc_end = .;
+
+
+		. = ALIGN(4);
+        adapter_decoder_begin = .;
+        KEEP(*(.adapter_decoder))
+        adapter_decoder_end = .;
+
+		. = ALIGN(4);
+        adapter_encoder_begin = .;
+        KEEP(*(.adapter_encoder))
+        adapter_encoder_end = .;
+
 #if (!TCFG_CODE_RUN_RAM_FM_MODE)
  	    *(.usr_timer_const)
 		*(.usr_timer_code)
@@ -178,6 +204,12 @@ SECTIONS
         *(.bfilt_code)
         *(.bfilt_table_maskroom)
        /********maskrom arithmetic end****/
+
+		. = ALIGN(4);
+        __VERSION_BEGIN = .;
+        KEEP(*(.sys.version))
+        __VERSION_END = .;
+        *(.noop_version)
 
         . = ALIGN(4);
 
@@ -279,8 +311,13 @@ SECTIONS
 
         . = ALIGN(4);
         *(.data*)
+#if TCFG_DEC_WAV_ENABLE
+           *(.wav_dec_data)
 
+			*(.wav_data)
+#endif
         . = ALIGN(4);
+
 		#include "btstack/btstack_lib_data.ld"
         . = ALIGN(4);
 		#include "system/system_lib_data.ld"
@@ -311,6 +348,10 @@ SECTIONS
 		#include "media/cpu/br25/media_lib_bss.ld"
         . = ALIGN(4);
 
+#if TCFG_DEC_WAV_ENABLE
+     	*(.wav_bss)
+		*(.wav_dec_bss)
+#endif
         *(.bss)
         . = ALIGN(4);
         *(.dts_dec_bss)
@@ -397,6 +438,10 @@ SECTIONS
 	} > ram0
 
 
+	.vir_timer ALIGN(32):
+    {
+        *(.vir_rtc)
+    } > ram0
 
 	overlay_begin = .;
 	OVERLAY : NOCROSSREFS AT(0x200000) SUBALIGN(4)
@@ -512,13 +557,7 @@ SECTIONS
 			/* KEEP(*(.wav_bss_id)) */
 			o_wav_end = .;
 
-			*(.wav_dec_data)
 
-			*(.wav_data)
-
-
-			*(.wav_bss)
-			*(.wav_dec_bss)
 			*(.wav_mem)
 			*(.wav_ctrl_mem)
 

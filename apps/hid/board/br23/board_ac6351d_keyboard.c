@@ -97,17 +97,17 @@ const struct adkey_platform_data adkey_data = {
 #endif
 
 #if TCFG_MATRIX_KEY_ENABLE
-static u32 key_row[] = {IO_PORTB_09, IO_PORTB_07, IO_PORTB_11, IO_PORTC_07,    IO_PORTB_10, IO_PORTC_06, IO_PORTB_06, IO_PORTB_08 };
-
-static u32 key_col[] = {IO_PORTA_04, IO_PORTA_00, IO_PORTA_02, IO_PORTA_01,    IO_PORTA_03, IO_PORTA_05, IO_PORTA_08, IO_PORTA_06, \
-         IO_PORTA_07, IO_PORTA_12, IO_PORTC_00, IO_PORTA_15,    IO_PORTC_01, IO_PORTB_05, IO_PORTA_13, IO_PORTA_14, \
-         IO_PORTA_09, IO_PORTA_11, IO_PORTA_10,
-       };
-/* static u32 key_row[] = {IO_PORTB_06, IO_PORTB_07, IO_PORTB_08, IO_PORTB_09, IO_PORTB_10, IO_PORTB_11, IO_PORTC_06, IO_PORTC_07}; */
-/* static u32 key_col[] = {IO_PORTA_00, IO_PORTA_01, IO_PORTA_02, IO_PORTA_03, IO_PORTA_04, IO_PORTA_05, IO_PORTA_06, IO_PORTA_07, \ */
-/*                         IO_PORTA_08, IO_PORTA_09, IO_PORTA_10,  IO_PORTA_11, IO_PORTA_12, IO_PORTA_13, IO_PORTC_00, IO_PORTA_14, \ */
-/*                         IO_PORTC_01, IO_PORTA_15, IO_PORTB_05, */
-/*                        }; */
+/* static u32 key_row[] = {IO_PORTB_09, IO_PORTB_07, IO_PORTB_11, IO_PORTC_07,    IO_PORTB_10, IO_PORTC_06, IO_PORTB_06, IO_PORTB_08 }; */
+/*  */
+/* static u32 key_col[] = {IO_PORTA_04, IO_PORTA_00, IO_PORTA_02, IO_PORTA_01,    IO_PORTA_03, IO_PORTA_05, IO_PORTA_08, IO_PORTA_06, \ */
+/*          IO_PORTA_07, IO_PORTA_12, IO_PORTC_00, IO_PORTA_15,    IO_PORTC_01, IO_PORTB_05, IO_PORTA_13, IO_PORTA_14, \ */
+/*          IO_PORTA_09, IO_PORTA_11, IO_PORTA_10, */
+/*        }; */
+static u32 key_row[] = {IO_PORTB_06, IO_PORTB_07, IO_PORTB_08, IO_PORTB_09, IO_PORTB_10, IO_PORTB_11, IO_PORTA_00, IO_PORTC_07};
+static u32 key_col[] = {IO_PORTC_06, IO_PORTA_01, IO_PORTA_02, IO_PORTA_03, IO_PORTA_04, IO_PORTA_05, IO_PORTA_06, IO_PORTA_07, \
+                        IO_PORTA_08, IO_PORTA_09, IO_PORTA_10,  IO_PORTA_11, IO_PORTA_12, IO_PORTA_13, IO_PORTC_00, IO_PORTA_14, \
+                        IO_PORTC_01, IO_PORTA_15, IO_PORTB_05,
+                       };
 
 static matrix_key_param  matrix_param = {
     .row_pin_list = key_row,

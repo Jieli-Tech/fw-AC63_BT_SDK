@@ -29,6 +29,6 @@ extern const int config_stack_modules;
 #endif /* TCFG_USER_BLE_ENABLE */
 
 //配对加密使能
-#define TCFG_BLE_SECURITY_EN              0
+#define TCFG_BLE_SECURITY_EN          config_le_sm_support_enable
 
 #endif

@@ -25,6 +25,11 @@
 #define TCFG_UART0_TX_PORT  				IO_PORTC_04                            //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
+#define UART_DB_TX_PIN                      IO_PORTC_01                            //AT_CHART串口
+#define UART_DB_RX_PIN                      IO_PORTC_02
+#define UART_DB_RTS_PIN                     IO_PORTA_06
+#define UART_DB_CTS_PIN                     IO_PORTA_05
+
 //*********************************************************************************//
 //                                 IIC配置                                        //
 //*********************************************************************************//
@@ -179,6 +184,7 @@
 #define TCFG_DEC_CVSD_CLOSE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#define TCFG_DEC_WAV_ENABLE					DISABLE
 #else
 #define TCFG_DEC_PCM_CLOSE
 #define TCFG_DEC_SBC_CLOSE
@@ -292,12 +298,12 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_CHARGE_FULL_MA					CHARGE_FULL_mA_10
 /*
 充电电流可选配置：
-    CHARGE_mA_20		CHARGE_mA_30		CHARGE_mA_40		CHARGE_mA_50
-    CHARGE_mA_60		CHARGE_mA_70		CHARGE_mA_80		CHARGE_mA_90
-    CHARGE_mA_100		CHARGE_mA_110		CHARGE_mA_120		CHARGE_mA_140
-    CHARGE_mA_160		CHARGE_mA_180		CHARGE_mA_200		CHARGE_mA_220
+    CHARGE_mA_20     CHARGE_mA_40     CHARGE_mA_60     CHARGE_mA_80
+    CHARGE_mA_100    CHARGE_mA_120    CHARGE_mA_140    CHARGE_mA_160
+    CHARGE_mA_180    CHARGE_mA_200    CHARGE_mA_220    CHARGE_mA_240
+    CHARGE_mA_260    CHARGE_mA_280    CHARGE_mA_300    CHARGE_mA_320
  */
-#define TCFG_CHARGE_MA						CHARGE_mA_50
+#define TCFG_CHARGE_MA						CHARGE_mA_60
 
 //*********************************************************************************//
 //                                 USB 配置                                        //

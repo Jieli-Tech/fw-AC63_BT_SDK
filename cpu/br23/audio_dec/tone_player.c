@@ -221,69 +221,64 @@ static int tone_play_open_with_callback_base(const char **list, u8 follow, u8 pr
 #if TCFG_TONE2TWS_ENABLE
 #include "app_task.h"
 
-static u32 tone2tws_dat_addr = 0;
+static u32 tone2tws_dat = 0;
 
 /*----------------------------------------------------------------------------*/
 /**@brief    tws提示音数据处理
-   @param    dat_addr: 数据起始地址。需free
+   @param    dat: 数据
    @return
    @note     在任务中集中处理tws信息
 */
 /*----------------------------------------------------------------------------*/
-static void tone2tws_rx_play(u32 dat_addr)
+static void tone2tws_rx_play(u32 dat)
 {
-    int dat[3];
-    memcpy(dat, (void *)dat_addr, sizeof(dat));
-    char *single_file[2] = {NULL};
-    if ((dat[0] == (u32) - 1) && (IS_DEFAULT_SINE(dat[1])) && (dat[2] == 0)) {
-        // is sine idx
-        single_file[0] = (char *)dat[1];
-    } else {
-        // is file name
-        single_file[0] = (char *)dat_addr;
+    int idex = dat - 1;
+    if (idex >= ARRAY_SIZE(tone2tws_index)) {
+        return ;
     }
+    /* y_printf("tone2tws_rx_play name:%d \n", tone2tws_index[idex]); */
+    char *single_file[2] = {NULL};
+    // is file name
+    single_file[0] = (char *)tone2tws_index[idex];
     single_file[1] = NULL;
     tone_play_open_with_callback_base(single_file, 0, 1, NULL, NULL, TONE_TWS_CONFIRM_TIME);
-    free((void *)dat_addr);
 }
 
 void tone2tws_bt_task_start(u8 tone_play)
 {
-    if (tone2tws_dat_addr == 0) {
+    if (tone2tws_dat == 0) {
         return ;
     }
     if (tone_play) {
         // 播放蓝牙提示音，抛弃该提示音
-        free((void *)tone2tws_dat_addr);
-        tone2tws_dat_addr = 0;
+        tone2tws_dat = 0;
     } else {
         // 播放该提示音
-        tone2tws_rx_play(tone2tws_dat_addr);
-        tone2tws_dat_addr = 0;
+        tone2tws_rx_play(tone2tws_dat);
+        tone2tws_dat = 0;
     }
 }
 
-static void tone2tws_rx_callback_func(u32 dat_addr)
+static void tone2tws_rx_callback_func(u32 dat)
 {
     /* printf("tone2tws_rx_callback_func\n"); */
-    if (!dat_addr) {
+    if (!dat) {
         return ;
     }
 #if TCFG_DEC2TWS_ENABLE
-    if (tone2tws_dat_addr) { // 释放旧的
-        free((void *)tone2tws_dat_addr);
-        tone2tws_dat_addr = 0;
+    if (tone2tws_dat) { // 释放旧的
+        tone2tws_dat = 0;
     }
     if (APP_BT_TASK != app_get_curr_task()) {
         r_printf("tone2tws task:%d ", app_get_curr_task());
         // 该提示音一定是在蓝牙模式播放，否则代表有问题。
         // 等返回蓝牙模式再播放
-        tone2tws_dat_addr = dat_addr;
+        tone2tws_dat = dat;
         return ;
     }
 #endif
 
-    tone2tws_rx_play(dat_addr);
+    tone2tws_rx_play(dat);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -304,20 +299,19 @@ static void tone2tws_tws_rx_data(void *data, u16 len, bool rx)
     /* printf("data rx \n"); */
     /* printf_buf(data, len); */
 
-    void *dat_addr = malloc(len);
-    ASSERT(dat_addr);
-    memcpy(dat_addr, data, len);
+    u32 dat;
+    memcpy(&dat, data, 4);
+    /* y_printf("rx dat:%d \n", dat); */
 
     // 该函数是在中断里面调用，实际处理放在task里面
     int argv[3];
     argv[0] = (int)tone2tws_rx_callback_func;
     argv[1] = 1;
-    argv[2] = (int)dat_addr;
+    argv[2] = (int)dat;
     int ret = os_taskq_post_type("app_core", Q_CALLBACK, 3, argv);
     /* printf("put taskq, ret:%d, len:%d \n", ret, len); */
     if (ret) {
         log_e("taskq post err \n");
-        free(dat_addr);
     }
 }
 
@@ -354,16 +348,15 @@ int tone_play_open_with_callback(const char **list, u8 follow, u8 preemption, vo
             if (IS_DEFAULT_SINE(name) || IS_DEFAULT_SINE(tone2tws_index[i])) {
                 if ((u32)name == (u32)tone2tws_index[i]) {
                     // is sine idx
-                    u32 dat[3] = {0};
-                    dat[0] = (u32) - 1;
-                    dat[1] = (u32)name;
-                    tws_api_send_data_to_sibling(dat, sizeof(dat), TWS_FUNC_ID_TONE2TWS);
+                    u32 dat = i + 1;
+                    tws_api_send_data_to_sibling(&dat, 4, TWS_FUNC_ID_TONE2TWS);
                     sync_confirm_time = TONE_TWS_CONFIRM_TIME;
                     break;
                 }
             } else if (!strcmp(tone2tws_index[i], name)) {
                 // is file name
-                tws_api_send_data_to_sibling(name, strlen(name) + 1, TWS_FUNC_ID_TONE2TWS);
+                u32 dat = i + 1;
+                tws_api_send_data_to_sibling(&dat, 4, TWS_FUNC_ID_TONE2TWS);
                 sync_confirm_time = TONE_TWS_CONFIRM_TIME;
                 break;
             }
@@ -555,6 +548,37 @@ int tone_play_stop_by_path(char *path)
 int tone_play_stop(void)
 {
     tone_dec_stop(&tone_dec, 1, TONE_DEC_STOP_BY_OTHER_PLAY);
+    return 0;
+}
+/*----------------------------------------------------------------------------*/
+/**@brief    提示音暂停/播放
+   @param	 *dec 提示音解码句柄
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void tone_dec_list_pp(struct tone_dec_handle *dec)
+{
+    if (dec) {
+        if (dec->dec_file) {
+            audio_dec_app_pp(dec->dec_file->dec);
+        }
+        if (dec->dec_sin) {
+            audio_dec_app_pp(dec->dec_sin->dec);
+        }
+    }
+}
+
+/*----------------------------------------------------------------------------*/
+/**@brief    提示音暂停/播放
+   @param
+   @return   0:成功
+   @note	 该接口不适用于tws对箱版本
+*/
+/*----------------------------------------------------------------------------*/
+int tone_play_pp(void)
+{
+    tone_dec_list_pp(tone_dec);
     return 0;
 }
 

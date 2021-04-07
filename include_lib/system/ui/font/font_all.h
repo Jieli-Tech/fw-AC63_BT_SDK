@@ -77,6 +77,6 @@ struct font_info {
 #define font_ntohl(x) (unsigned long)((x>>24)|((x>>8)&0xff00)|(x<<24)|((x&0xff00)<<8))
 #define font_ntoh(x) (unsigned short int )((x>>8&0x00ff)|x<<8&0xff00)
 
-extern struct font_info font_info_table[];
+extern const struct font_info font_info_table[];
 
 #endif

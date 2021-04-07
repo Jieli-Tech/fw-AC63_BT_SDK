@@ -111,7 +111,7 @@ s32 usb_bulk_only_receive_async(struct device *device, u8 host_ep, u16 rxmaxp, u
     if (ret < 0) {
         return ret;
     }
-    ret = usb_sem_pend(host_dev, 250);
+    ret = usb_sem_pend(host_dev, 300);
 
     usb_clr_intr_rxe(usb_id, host_ep);
     usb_h_set_ep_isr(host_dev, host_ep | USB_DIR_IN, NULL, host_dev);

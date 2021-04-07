@@ -331,7 +331,7 @@ const struct charge_wakeup charge_wkup = {
 const struct wakeup_param wk_param = {
     .filter     = PORT_FLT_2ms,
 	.port[1]    = &port0,
-#if CONFIG_APP_AT_COM
+#if CONFIG_APP_AT_COM || CONFIG_APP_AT_CHAR_COM
 	.port[2]    = &port1,
 #endif
 	.sub        = &sub_wkup,

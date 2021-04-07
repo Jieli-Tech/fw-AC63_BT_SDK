@@ -18,6 +18,7 @@ extern unsigned long jiffies_msec();
 extern unsigned long jiffies_half_msec();
 #endif
 
+#define JIFFIES_CIRCLE                  0x7FFFFFF
 
 #define time_after(a,b)					((long)(b) - (long)(a) < 0)
 #define time_before(a,b)				time_after(b,a)

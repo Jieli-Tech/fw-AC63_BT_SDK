@@ -130,10 +130,10 @@ void uac_speaker_stream_write(const u8 *obuf, u32 len)
             putchar('W');
         }
         if (uac_speaker->rx_handler) {
-            if (uac_speaker->cbuf.data_len >= UAC_BUFFER_MAX) {
-                // 马上就要满了，赶紧取走
-                uac_speaker->need_resume = 1; //2020-12-22注:无需唤醒
-            }
+            /* if (uac_speaker->cbuf.data_len >= UAC_BUFFER_MAX) { */
+            // 马上就要满了，赶紧取走
+            uac_speaker->need_resume = 1; //2020-12-22注:无需唤醒
+            /* } */
             if (uac_speaker->need_resume) {
                 uac_speaker->need_resume = 0;
                 uac_speaker->rx_handler(0, (void *)obuf, len);

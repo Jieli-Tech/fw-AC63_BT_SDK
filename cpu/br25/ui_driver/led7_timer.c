@@ -67,10 +67,10 @@ static const u32 timer_div[] = {
 #define MIN_TIME_CNT            0x100
 
 
-#define TIMER_CON               JL_TIMER5->CON
-#define TIMER_CNT               JL_TIMER5->CNT
-#define TIMER_PRD               JL_TIMER5->PRD
-#define TIMER_VETOR             IRQ_TIME5_IDX
+#define TIMER_CON               JL_TIMER4->CON
+#define TIMER_CNT               JL_TIMER4->CNT
+#define TIMER_PRD               JL_TIMER4->PRD
+#define TIMER_VETOR             IRQ_TIME4_IDX
 
 #define TIMER_UNIT_MS           2 //1ms起一次中断
 #define MAX_TIMER_PERIOD_MS     (1000/TIMER_UNIT_MS)

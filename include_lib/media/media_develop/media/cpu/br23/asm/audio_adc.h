@@ -98,6 +98,7 @@ struct audio_adc_hdl {
     u8 channel;		//adc打开通道统计
     u8 input;		//adc输入记录
     u8 state;		//adc状态
+    u8 mic_ldo_state : 1;//当前micldo是否打开
     //省电容mic数据结构
 #if SUPPORT_MIC_CAPLESS
     struct capless_low_pass lp;
@@ -396,5 +397,26 @@ void audio_mic_0dB_en(bool en);
 *********************************************************************
 */
 void audio_adc_mic_ctl(u8 en);
+
+
+/*
+*********************************************************************
+*                  Audio ADC MIC LDO EN
+* Description: mic ldo使能
+* Arguments  : en 使能控制位  pd adc结构体
+* Return	 : None.
+* Note(s)    : 开关mic的ldo
+*********************************************************************
+*/
+
+int audio_mic_ldo_en(u8 en, struct adc_platform_data *pd);
+
+
+
+
+
+
+
+
 
 #endif/*AUDIO_ADC_H*/

@@ -75,7 +75,7 @@ void get_mesh_adv_name(u8 *len, u8 **data)
  * @brief Conifg MAC of current demo
  */
 /*-----------------------------------------------------------*/
-#define CUR_DEVICE_MAC_ADDR         0x222233445566
+#define CUR_DEVICE_MAC_ADDR         0x222233445567
 
 /*
  * Publication Declarations
@@ -289,7 +289,7 @@ static const struct bt_mesh_comp composition = {
     .elem_count = ARRAY_SIZE(elements),
 };
 
-static const u8_t dev_uuid[16] = { 0, 0x59, 0x55 };
+static const u8_t dev_uuid[16] = {MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR)};
 
 static const struct bt_mesh_prov prov = {
     .uuid = dev_uuid,

@@ -71,4 +71,6 @@ enum {
 };
 
 void bt_testbox_ex_info_get_handle_register(u8 info_type, void *handle);
+u8  bredr_bulk_change_rx_bulk(u8 mode);
+void lmp_set_features_req_step(u8 *addr);
 #endif

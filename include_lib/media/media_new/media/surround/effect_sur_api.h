@@ -13,6 +13,7 @@ enum {
     EFFECT_3D_LRDRIFT = 0x04,
     EFFECT_3D_ROTATE = 0x08,           //这2个2选1 : 如果都置上，优先用EFFECT_3D_ROTATE
     EFFECT_3D_TYPE2 = 0x10,
+    EFFECT_3D_LRDRIFT2 = 0x20,
 };
 
 

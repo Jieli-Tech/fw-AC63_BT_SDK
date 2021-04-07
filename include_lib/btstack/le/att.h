@@ -78,6 +78,7 @@ extern "C" {
         u16  value_offset;
         u16  blob_length;
         u8  *blob;
+        u16  conn_handle;
     } att_data_report_t;
 
 

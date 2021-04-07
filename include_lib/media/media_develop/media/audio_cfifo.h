@@ -21,6 +21,8 @@ struct audio_cfifo {
     u16 free_samples;           /*fifo可写入样点个数*/
     s16 unread_samples;         /*fifo未读样点个数*/
     int sample_rate;            /*fifo对应的音频采样率*/
+    u32 sw_ptr;
+    u32 hw_ptr;
     struct list_head head;      /*子通道数据链表头*/
 };
 
@@ -31,6 +33,8 @@ struct audio_cfifo_channel {
     u16 wsp;                    /*写偏移*/
     s16 unread_samples;         /*通道未读样点个数*/
     u16 max_samples;            /*通道缓冲最大样点个数*/
+    u32 sw_ptr;
+    u32 hw_ptr;
     struct audio_cfifo *fifo;   /*主fifo指针*/
     struct list_head entry;     /*通道接入entry*/
 };
@@ -203,4 +207,8 @@ int audio_cfifo_channel_write_offset(struct audio_cfifo_channel *ch);
  * HISTORY  :  2020/12/28 by Lichao.
  *=======================================================================*/
 struct audio_cfifo_channel *audio_cfifo_min_samples_channel(struct audio_cfifo *fifo);
+
+int audio_cfifo_get_sw_ptr(struct audio_cfifo *fifo);
+
+int audio_cfifo_get_hw_ptr(struct audio_cfifo *fifo);
 #endif

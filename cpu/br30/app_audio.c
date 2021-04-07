@@ -535,21 +535,35 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
         extern void a2dp_digital_vol_set(u8 vol);
         a2dp_digital_vol_set(volume);
         return;
-#endif
+#endif/*SYS_VOL_TYPE == VOL_TYPE_DIGITAL*/
         break;
     case APP_AUDIO_STATE_CALL:
         app_var.call_volume = volume;
+#if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
+        extern void esco_digital_vol_set(u8 vol);
+        esco_digital_vol_set(volume);
+        return;
+#endif/*SYS_VOL_TYPE == VOL_TYPE_DIGITAL*/
+
 #if TCFG_CALL_USE_DIGITAL_VOLUME
         __this->digital_volume = phone_call_dig_vol_tab[volume];
         audio_dac_set_volume(&dac_hdl, volume);
         dac_digital_vol_set(volume, volume, 1);
         return;
-#endif
-#if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
-        extern void esco_digital_vol_set(u8 vol);
-        esco_digital_vol_set(volume);
-        return;
-#endif
+#endif/*TCFG_CALL_USE_DIGITAL_VOLUME*/
+
+#if (SYS_VOL_TYPE == VOL_TYPE_ANALOG)
+        /*
+         *SYS_VOL_TYPE == VOL_TYPE_ANALOG的时候，
+         *将通话音量最大值按照手机通话的音量等级进行等分
+         *由于等级可能不匹配，会出现有些等级没有一一对应
+         *的情况，如果在意，建议使用以下其中一种：
+         *#define TCFG_CALL_USE_DIGITAL_VOLUME	1
+         *#define SYS_VOL_TYPE 	VOL_TYPE_AD
+         *#define SYS_VOL_TYPE 	VOL_TYPE_DIGITAL
+         */
+        volume = app_var.aec_dac_gain * app_var.call_volume / 15;
+#endif/*SYS_VOL_TYPE == VOL_TYPE_ANALOG*/
         break;
     case APP_AUDIO_STATE_WTONE:
         app_var.wtone_volume = volume;

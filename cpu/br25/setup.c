@@ -227,3 +227,27 @@ void setup_arch()
 }
 
 /*-----------------------------------------------------------*/
+
+
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief 通过遍历链表获取当前已创建的任务
+ */
+/* ----------------------------------------------------------------------------*/
+extern const char *pcTaskName(void *pxTCB);
+struct list_head *tl_head = (struct list_head *)0x31df8;
+struct task_list {
+    struct list_head entry;
+    void *task;
+};
+void task_name_loop(void)
+{
+    struct task_list *p;
+    list_for_each_entry(p, tl_head, entry) {
+        printf("task : %s", pcTaskName(p->task));
+    }
+}
+
+
+

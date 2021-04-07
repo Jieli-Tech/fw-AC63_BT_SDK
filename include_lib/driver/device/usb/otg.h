@@ -11,12 +11,15 @@ enum {
     SLAVE_MODE_WAIT_CONFIRMATION,
     SLAVE_MODE,
     CHARGE_MODE,
+    OTG_USER_MODE,
 };
 
 enum {
     OTG_OP_NULL = 0,
     OTG_UNINSTALL = 1,
     OTG_KEEP_STATE,
+    OTG_SUSPEND,
+    OTG_RESUME,
 };
 
 #define     OTG_HOST_MODE      BIT(0)

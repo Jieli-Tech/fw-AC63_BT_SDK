@@ -335,6 +335,16 @@ struct mouse_point_t {
 #define _KEY_CUSTOM_CUT                 0x021C
 #define _KEY_CUSTOM_PASTE               0x021D
 #define _KEY_CUSTOM_SELECT_ALL          0x021E
+#define _KEY_CUSTOM_SPLIT_SCREEN        0x0196
+#define _KEY_CUSTOM_LOCK                0x0030
+#define _KEY_CUSTOM_ESC                 0x0223
+#define _KEY_CUSTOM_CALENDAR            0x018e
+#define _KEY_CUSTOM_MESSAGE             0X018d
+
+#define _KEY_CUSTOM_BROWER              0x0231
+#define _KEY_CUSTOM_PROCESS             0x023a
+
+#define _KEY_CUSTOM_SET                 0x029b
 
 #define LED_NUM_LOCK     0x01
 #define LED_CAPS_LOCK    0x02

@@ -22,7 +22,7 @@
 //*********************************************************************************//
 #define TCFG_UART0_ENABLE					ENABLE_THIS_MOUDLE                     //串口打印模块使能
 #define TCFG_UART0_RX_PORT					NO_CONFIG_PORT                         //串口接收脚配置（用于打印可以选择NO_CONFIG_PORT）
-#define TCFG_UART0_TX_PORT  				IO_PORTC_03                            //串口发送脚配置
+#define TCFG_UART0_TX_PORT  				IO_PORTC_05                            //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
 //*********************************************************************************//
@@ -143,7 +143,7 @@
 //*********************************************************************************//
 //                                 触摸板 配置                                      //
 //*********************************************************************************//
-#define TCFG_TOUCHPAD_ENABLE                ENABLE_THIS_MOUDLE
+#define TCFG_TOUCHPAD_ENABLE                DISABLE_THIS_MOUDLE
 
 //必须从小到大填电阻，没有则同VDDIO,填0x3ffL
 #define TCFG_ADKEY_AD0      (0)                                 //0R
@@ -239,10 +239,10 @@
 #if TCFG_AUDIO_ENABLE
 #undef TCFG_AUDIO_ADC_ENABLE
 #undef TCFG_AUDIO_DAC_ENABLE
-#define TCFG_AUDIO_ADC_ENABLE				ENABLE_THIS_MOUDLE
-#define TCFG_AUDIO_DAC_ENABLE				ENABLE_THIS_MOUDLE
-#define TCFG_DEC_G729_ENABLE                ENABLE
-#define TCFG_DEC_PCM_ENABLE					ENABLE
+#define TCFG_AUDIO_ADC_ENABLE			0//	ENABLE_THIS_MOUDLE
+#define TCFG_AUDIO_DAC_ENABLE			0//	ENABLE_THIS_MOUDLE
+#define TCFG_DEC_G729_ENABLE               0// ENABLE
+#define TCFG_DEC_PCM_ENABLE				0// 	ENABLE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #define TCFG_LINEIN_LR_CH                   AUDIO_LIN0_LR
@@ -372,6 +372,11 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_PWMLED_ENABLE					DISABLE_THIS_MOUDLE			//是否支持PMW LED推灯模块
 #define TCFG_PWMLED_IOMODE					LED_ONE_IO_MODE				//LED模式，单IO还是两个IO推灯
 #define TCFG_PWMLED_PIN						IO_PORTB_06					//LED使用的IO口
+#define CAP_LED_PIN                         IO_PORTC_02
+#define CONNECT_LED_PIN                     IO_PORTC_03
+
+
+
 //*********************************************************************************//
 //                                  时钟配置                                       //
 //*********************************************************************************//
@@ -425,7 +430,7 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 //                                  code switch配置                                //
 //*********************************************************************************//
-#define TCFG_CODE_SWITCH_ENABLE                   ENABLE_THIS_MOUDLE //code switch使能
+#define TCFG_CODE_SWITCH_ENABLE                   DISABLE_THIS_MOUDLE //code switch使能
 #define TCFG_CODE_SWITCH_A_PHASE_PORT             IO_PORTB_06
 #define TCFG_CODE_SWITCH_B_PHASE_PORT             IO_PORTB_07
 
@@ -435,15 +440,15 @@ DAC硬件上的连接方式,可选的配置：
 //                                  系统配置                                         //
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
-#define TCFG_SYS_LVD_EN						      0   //电量检测使能
+#define TCFG_SYS_LVD_EN						      1    //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
-#define TCFG_HID_AUTO_SHUTDOWN_TIME             (0 * 60)      //HID无操作自动关机(单位：秒)
+#define TCFG_HID_AUTO_SHUTDOWN_TIME             (6 * 60)      //HID无操作自动关机(单位：秒)
 
 //*********************************************************************************//
 //                                  蓝牙配置                                       //
 //*********************************************************************************//
 #define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
-#define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能
+#define TCFG_USER_BLE_ENABLE                      0   //BLE功能使能
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
 #define USER_SUPPORT_PROFILE_SPP    0

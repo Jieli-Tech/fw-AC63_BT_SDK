@@ -237,7 +237,7 @@ int io_key_is_vaild()
 
 	if(TCFG_IOKEY_NEXT_CONNECT_WAY == gpio_read(TCFG_IOKEY_NEXT_ONE_PORT)){
 		value |= BIT(1);
-		putchar('k');
+		/* putchar('k'); */
 	}
 #endif
 

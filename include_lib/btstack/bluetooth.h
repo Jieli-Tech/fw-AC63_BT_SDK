@@ -566,4 +566,12 @@ extern const hci_cmd_t hci_le_set_ext_advertise_enable;
 extern const hci_cmd_t hci_le_set_ext_scan_parameters;
 extern const hci_cmd_t hci_le_set_ext_scan_enable;
 
+enum VENDOR_REMOTE_TEST_VALUE {
+    VENDOR_TEST_DISCONNECTED = 0,
+    VENDOR_TEST_LEGACY_CONNECTED_BY_BT_CLASSIC,
+    VENDOR_TEST_LEGACY_CONNECTED_BY_BLE,
+    VENDOR_TEST_CONNECTED_WITH_TWS,
+};
+
+
 #endif

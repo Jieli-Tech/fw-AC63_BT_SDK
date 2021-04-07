@@ -39,6 +39,8 @@ enum enc_source {
     ENCODE_SOURCE_USER,
 };
 
+extern struct audio_encoder_task *encode_task;
+
 void esco_enc_resume(void);
 u32 recorder_get_encoding_time();
 int recorder_is_encoding(void);
@@ -48,6 +50,7 @@ void recorder_pcm2file_write_pcm_ex(s16 *data, int len);
 int mixer_recorder_encoding(void);
 int mixer_recorder_start(void);
 void mixer_recorder_stop(void);
+void recorder_encode_pp();
 int recorder_encode_start(struct record_file_fmt *f);
 int recorder_userdata_to_enc(s16 *data, int len);
 

@@ -21,6 +21,17 @@
 
 #include "classic/hci_lmp.h"
 
+
+/* app 层修改蓝牙版本，可在BT_STATUS_INIT_OK case
+  调用 set_bt_version 函数更改蓝牙版本号
+*/
+#define BLUETOOTH_CORE_SPEC_42  0x08
+#define BLUETOOTH_CORE_SPEC_50  0x09
+#define BLUETOOTH_CORE_SPEC_51  0x0a
+#define BLUETOOTH_CORE_SPEC_52  0x0b
+extern void set_bt_version(u8 version);
+
+
 /*
  *-------------------Module SUPPORT
  *  brief : 运行时优化（LTO）下，代码空间优化；
@@ -49,6 +60,9 @@ extern const int config_btctler_hci_standard;
 
 extern const int config_bt_function ;
 #define BT_ENCTRY_TASK              BIT(0)
+#define BT_MASTER_AFH               BIT(1)
+#define BT_MASTER_QOS               BIT(2)
+
 
 #define BT_FUNCTION_IS(x)           (config_bt_function & (x))
 
@@ -65,6 +79,10 @@ extern const int CONFIG_LMP_PASSKEY_ENABLE ;
 extern const int CONFIG_LMP_MASTER_ESCO_ENABLE ;
 extern const int config_btctler_bredr_master ;
 extern const int config_bredr_afh_user ;
+extern const int config_bredr_master_afh ;
+extern const int CONFIG_ESCO_MUX_RX_BULK_ENABLE ;
+extern const int config_bt_temperature_pll_trim ;
+extern const int CONFIG_WIFI_DETECT_ENABLE;
 /********************************************************************************/
 /*
  *                   API
@@ -188,6 +206,18 @@ void bredr_set_fix_pwr(u8 fix);
  */
 /* ----------------------------------------------------------------------------*/
 bool ble_rf_vendor_fixed_channel(u8 channel_index, u8 pktcnt);
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief bredr_get_rssi_for_address
+ * 获取已连接设备的rssi
+ *
+ * @param address 对方mac地址
+ * @return rssi 值，range(-127 ~ +127)
+ */
+/* ----------------------------------------------------------------------------*/
+s8 bredr_get_rssi_for_address(u8 *address);
+
 
 void set_bt_afh_classs_enc(u8 afh_class);
 void set_bt_enhanced_power_control(u8 en);

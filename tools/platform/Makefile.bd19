@@ -198,7 +198,7 @@ export LINKER = \
 #
 # --------------CBP Setting-----------------------
 #
-export CBP_TITLE = AC632N
+export CBP_TITLE = AC632N_$(APP_CASE)$(PROJECT_SUFFIX)
 export CBP_COMPILER = q32s_lto_compiler
 export CBP_ADD_OPT =
 export CBP_POSITION ?= .

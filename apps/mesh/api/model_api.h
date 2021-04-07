@@ -7,11 +7,13 @@
 #define SIG_MESH_VENDOR_CLIENT              2 // examples/vendor_client.c
 #define SIG_MESH_VENDOR_SERVER              3 // examples/vendor_server.c
 #define SIG_MESH_ALIGENIE_SOCKET            4 // examples/AliGenie_socket.c
-#define SIG_MESH_LIGHT_LIGHTNESS_SERVER		5 // examples/light_lightness_server.c
+#define SIG_MESH_ALIGENIE_LIGHT            	5 // examples/AliGenie_socket.c
+#define SIG_MESH_ALIGENIE_FAN            	6 // examples/AliGenie_socket.c
+#define SIG_MESH_LIGHT_LIGHTNESS_SERVER		7 // examples/light_lightness_server.c
 // more...
 
 //< Config whick example will use in <examples>
-#define CONFIG_MESH_MODEL                   SIG_MESH_ALIGENIE_SOCKET
+#define CONFIG_MESH_MODEL                   SIG_MESH_ALIGENIE_LIGHT
 
 
 #define BYTE_LEN(x...)                      sizeof((u8 []) {x})

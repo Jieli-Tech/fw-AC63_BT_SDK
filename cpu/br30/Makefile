@@ -6,6 +6,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/pwm_led.o \
 	  $(ROOT)/cpu/$(CPU)/iic_hw.o \
 	  $(ROOT)/cpu/$(CPU)/iic_soft.o \
+	  $(ROOT)/cpu/$(CPU)/iic_slave_test.o \
 	  $(ROOT)/cpu/$(CPU)/irflt.o \
 	  $(ROOT)/cpu/$(CPU)/uart_dev.o \
 	  $(ROOT)/cpu/$(CPU)/spi.o \
@@ -36,6 +37,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/overlay_code.o \
 	  $(ROOT)/cpu/$(CPU)/aec_tool.o \
 	  $(ROOT)/cpu/$(CPU)/audio_cvp_demo.o \
+	  $(ROOT)/cpu/$(CPU)/audio_dms_tool.o
 
 ifeq ($(CONFIG_ANC_ENABLE),y)
 objs += \
@@ -51,7 +53,10 @@ endif
 ifeq ($(APP_CASE),earphone)
 include $(ROOT)/cpu/$(CPU)/audio_dec/Makefile
 
+include $(ROOT)/cpu/$(CPU)/ui_driver/Makefile
+
 endif
+
 
 ifeq ($(AUDIO_LITE_VERSION),y)
 objs += \

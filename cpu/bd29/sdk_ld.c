@@ -92,6 +92,12 @@ SECTIONS
         storage_device_end = .;
 
 		. = ALIGN(4);
+        __VERSION_BEGIN = .;
+        KEEP(*(.sys.version))
+        __VERSION_END = .;
+        *(.noop_version)
+
+		. = ALIGN(4);
 		#include "btctrler/btctler_lib_text.ld"
 		. = ALIGN(4);
 		#include "system/system_lib_text.ld"

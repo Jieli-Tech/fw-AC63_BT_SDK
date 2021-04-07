@@ -7,6 +7,7 @@
 
 #define CONFIG_BOARD_AC632N_DEMO
 // #define CONFIG_BOARD_AC6321A_DEMO
+// #define CONFIG_BOARD_AC6321A_MOUSE
 // #define CONFIG_BOARD_AC6323A_DEMO
 // #define CONFIG_BOARD_AC6328A_KEYFOB
 // #define CONFIG_BOARD_AC6328B_DEMO
@@ -17,6 +18,7 @@
 
 #include "board_ac632n_demo_cfg.h"
 #include "board_ac6321a_demo_cfg.h"
+#include "board_ac6321a_mouse_cfg.h"
 #include "board_ac6323a_demo_cfg.h"
 #include "board_ac6328a_keyfob_cfg.h"
 #include "board_ac6328b_demo_cfg.h"

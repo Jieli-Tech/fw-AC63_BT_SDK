@@ -50,6 +50,7 @@ const int config_btctler_le_tws         = 0;
 const int CONFIG_BTCTLER_TWS_ENABLE     = 0;
 const int CONFIG_TWS_AFH_ENABLE         = 0;
 const int CONFIG_LOW_LATENCY_ENABLE     = 1;
+const int CONFIG_BTCTLER_FAST_CONNECT_ENABLE     = 0;
 
 #if (CONFIG_BT_MODE != BT_NORMAL)
 const int config_btctler_hci_standard   = 1;
@@ -101,12 +102,14 @@ const int CONFIG_TEST_DUT_CODE            = 1;
 const int CONFIG_TEST_FCC_CODE            = 1;
 const int CONFIG_TEST_DUT_ONLY_BOX_CODE   = 0;
 
+const int CONFIG_ESCO_MUX_RX_BULK_ENABLE  =  0;
 const int CONFIG_BREDR_INQUIRY   =  0;
 const int CONFIG_INQUIRY_PAGE_OFFSET_ADJUST =  0;
 
 const int CONFIG_LMP_NAME_REQ_ENABLE  =  1;
 const int CONFIG_LMP_PASSKEY_ENABLE  =  1;
 const int CONFIG_LMP_MASTER_ESCO_ENABLE  =  1;
+const int CONFIG_WIFI_DETECT_ENABLE = 0;
 
 const int config_bt_function  =  0;
 ///bredr 强制 做 maseter
@@ -114,6 +117,8 @@ const int config_btctler_bredr_master = 0;
 
 ///afh maseter 使用app设置的map 通过USER_CTRL_AFH_CHANNEL 设置
 const int config_bredr_afh_user = 0;
+//bt PLL 温度跟随trim
+const int config_bt_temperature_pll_trim = 0;
 
 #if CONFIG_APP_STANDARD_KEYBOARD
 const int config_delete_link_key          = 0;           //配置是否连接失败返回PIN or Link Key Missing时删除linkKey

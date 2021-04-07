@@ -209,6 +209,7 @@
 		*(.audio_dec_app_sync_code)
 		*(.audio_dec_app_sync_const)
 		*(.audio_dec_app_event_callback)
+		*(.audio_dec_app_dec_run)
 		*(.audio_dec_app_normal_run)
 		*(.audio_dec_tone_event_callback)
 		*(.audio_dig_vol_code)

@@ -21,6 +21,13 @@ typedef struct {
     unsigned short cc;
 } OS_SEM, OS_MUTEX, OS_QUEUE;
 
+typedef struct  {
+    u8         OSFlagType;
+    void         *OSFlagWaitList;
+    u32      OSFlagFlags;
+} OS_EVENT_GRP;
+
+#include <os/ucos_ii.h>
 
 #elif defined CONFIG_FREE_RTOS_ENABLE
 

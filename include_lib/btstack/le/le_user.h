@@ -71,6 +71,7 @@ extern "C" {
 
     void ble_get_server_operation_table(struct ble_server_operation_t **interface_pt);
 
+//--------------------------------------------
 
     struct ble_client_operation_t {
         int(*scan_enable)(void *priv, u32 enable);
@@ -87,6 +88,7 @@ extern "C" {
         int (*create_connect)(u8 *addr, u8 addr_type, u8 mode);
         int (*create_connect_cannel)(void);
         int (*get_work_state)(void);
+        int (*opt_comm_send_ext)(u16 conn_handle, u16 handle, u8 *data, u16 len, u8 att_op_type);
     };
 
     struct ble_client_operation_t *ble_get_client_operation_table(void);

@@ -21,6 +21,7 @@ typedef struct {
     u8         *service_record;
 } service_record_item_t;
 
+extern const u8 sdp_pnp_service_data_for_hid[];
 extern const u8 sdp_pnp_service_data[];
 extern const u8 sdp_spp_service_data[];
 extern service_record_item_t  sdp_record_item_begin[];
@@ -54,10 +55,19 @@ const int config_stack_modules = 0;
 
 #endif
 
+#define NEW_SDP_PNP_DATA_VER     1  //for 兼容性
+
 #if (USER_SUPPORT_PROFILE_HID==1)
 u8 sdp_make_pnp_service_data[0x60];
 SDP_RECORD_HANDLER_REGISTER(pnp_sdp_record_item) = {
+
+#if NEW_SDP_PNP_DATA_VER
+    .service_record = (u8 *)sdp_pnp_service_data_for_hid,
+#else
     .service_record = (u8 *)sdp_make_pnp_service_data,
+#endif
+
+    .service_record = (u8 *)sdp_pnp_service_data_for_hid,
     .service_record_handle = 0x1000A,
 };
 #else
@@ -81,9 +91,13 @@ void hid_sdp_init(const u8 *hid_descriptor, u16 size)
 {
 #if (USER_SUPPORT_PROFILE_HID==1)
     int real_size;
+
+#if (NEW_SDP_PNP_DATA_VER == 0)
     real_size = sdp_create_diy_device_ID_service(sdp_make_pnp_service_data, sizeof(sdp_make_pnp_service_data));
     printf("dy_device_id_service(%d):", real_size);
+#endif
     /* put_buf(sdp_make_pnp_service_data,real_size); */
+
     real_size = sdp_create_diy_hid_service(sdp_make_hid_service_data, sizeof(sdp_make_hid_service_data), hid_descriptor, size);
     printf("dy_hid_service(%d):", real_size);
     /* put_buf(sdp_make_hid_service_data,real_size); */
@@ -99,13 +113,14 @@ u8 app_le_pool[900] sec(.btstack_pool)  ALIGNED(4);
 #endif
 
 #if(TCFG_USER_EDR_ENABLE)
-#ifdef CONFIG_CPU_BD29
+/* #if (defined CONFIG_CPU_BD29) || (defined CONFIG_CPU_BD19)  */
+#if (defined CONFIG_TRANSFER_ENABLE)
 u8 app_bredr_pool[672] sec(.btstack_pool) ALIGNED(4);
 u8 app_bredr_profile[692] sec(.btstack_pool) ALIGNED(4);
 #else
 u8 app_bredr_pool[1468] sec(.btstack_pool) ALIGNED(4);
 u8 app_bredr_profile[1048] sec(.btstack_pool) ALIGNED(4);
-#endif      //endif CONFIG_CPU_BD29
+#endif      //endif
 #else
 u8 app_bredr_pool[0] sec(.btstack_pool) ALIGNED(4);
 u8 app_bredr_profile[0] sec(.btstack_pool) ALIGNED(4);
@@ -188,6 +203,9 @@ const u8 more_hfp_cmd_support = 0;
 const u8 more_avctp_cmd_support = 0;
 const u8 hci_inquiry_support = 0;
 const u8 btstack_emitter_support  = 0;  /*定义用于优化代码编译*/
+const u8 adt_profile_support = 0;
+const u8 pbg_support_enable = 0;
+
 
 
 /*u8 l2cap_debug_enable = 0xf0;

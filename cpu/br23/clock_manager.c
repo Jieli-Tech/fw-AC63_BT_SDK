@@ -147,7 +147,7 @@ const struct clock_type  clock_enum[] = {
     { DEC_VBASS_CLK, (8),	"DEC_VBASS_CLK"   },
     { DEC_LOUDNES_CLK, (108),	"DEC_LOUDNES_CLK"},
 
-    { LCD_UI_CLK, (120),	"LCD_UI_CLK"   },
+    { LCD_UI_CLK, (192),	"LCD_UI_CLK"   },
 
     { SCAN_DISK_CLK, (120),	"SCAN_DISK_CLK"   },//提高扫盘速度
 

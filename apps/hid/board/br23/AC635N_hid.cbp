@@ -45,6 +45,7 @@
 <Add option="-DVM_ITEM_MAX_NUM=128" />
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_HID_CASE_ENABLE" />
+<Add option="-DCONFIG_TRANSFER_ENABLE" />
 <Add option="-DCONFIG_LITE_AUDIO" />
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
@@ -136,6 +137,7 @@
 <Add option="../../../../include_lib/liba/br23/bfilterfun_lib.a" />
 <Add option="../../../../include_lib/liba/br23/wtg_dec_lib.a" />
 <Add option="../../../../include_lib/liba/br23/wtgv2_dec_lib.a" />
+<Add option="../../../../include_lib/liba/br23/wav_dec_lib.a" />
 <Add option="--end-group " />
 <Add option="../../../../include_lib/liba/br23/update.a" />
 <Add option="-T../../../../cpu/br23/sdk.ld" />
@@ -429,6 +431,7 @@
 <Unit filename="../../../../include_lib/media/media_develop/media/audio_splicing.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/automute.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/channel_switch.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/asm/Resample_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/asm/audio_adc.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/asm/audio_iis.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/asm/audio_linein.h" />
@@ -439,13 +442,13 @@
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/asm/dac.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/asm/hw_eq.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/asm/ps_cal_api.h" />
-<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br23/pitchshifter/pitchshifter_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/effectrs_sync.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/file_decoder.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/includes.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/mixer.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/mixer_cyclic.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/pcm_decoder.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/pitchshifter/pitchshifter_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/SpectrumShow_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/coeff_calculate_api.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/spectrum/rms_api.h" />

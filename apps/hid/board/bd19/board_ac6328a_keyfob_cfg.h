@@ -95,6 +95,8 @@
 
 #define TCFG_IOKEY_PREV_CONNECT_WAY         ONE_PORT_TO_LOW  //按键一端接低电平一端接IO
 #define TCFG_IOKEY_PREV_ONE_PORT            IO_PORT_DP
+
+
 #define TCFG_IOKEY_NEXT_CONNECT_WAY         ONE_PORT_TO_LOW  //按键一端接低电平一端接IO
 #define TCFG_IOKEY_NEXT_ONE_PORT            IO_PORT_DM
 
@@ -258,7 +260,7 @@
 #define TCFG_AUTO_SHUT_DOWN_TIME                  0   //没有蓝牙连接自动关机时间
 #define TCFG_SYS_LVD_EN                           0   //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY                    0   //是否需要按按键开机配置
-#define TCFG_HID_AUTO_SHUTDOWN_TIME              (1 * 60)      //HID无操作自动关机(单位：秒)
+#define TCFG_HID_AUTO_SHUTDOWN_TIME              (3 * 60)      //HID无操作自动关机(单位：秒)
 
 //*********************************************************************************//
 //                                  蓝牙配置                                       //

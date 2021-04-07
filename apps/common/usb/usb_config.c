@@ -3,6 +3,7 @@
 #include "irq.h"
 #include "init.h"
 #include "gpio.h"
+#include "timer.h"
 #include "app_config.h"
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB]"
@@ -126,8 +127,49 @@ void *usb_get_ep_buffer(const usb_dev usb_id, u32 ep)
     return ep_buffer;
 }
 
+static void usb_resume_sign(void *priv)
+{
+    usb_dev usb_id = usb_device2id(priv);
+    u32 reg = usb_read_power(usb_id);
+    usb_write_power(usb_id, reg | BIT(2));//send resume
+    os_time_dly(2);//10ms~20ms
+    usb_write_power(usb_id, reg);//clean resume
+}
 
+void usb_remote_wakeup(const usb_dev usb_id)
+{
+    struct usb_device_t *usb_device = usb_id2device(usb_id);
+    if (usb_device->bRemoteWakup) {
+        sys_timeout_add(usb_device, usb_resume_sign, 1);
+    }
+}
+void usb_phy_resume(const usb_dev usb_id)
+{
+    usb_iomode(0);
 
+    struct usb_device_t *usb_device = usb_id2device(usb_id);
+    usb_write_faddr(usb_id, usb_device->baddr);
+
+    if (usb_device->baddr == 0) {
+        usb_device->bDeviceStates = USB_DEFAULT;
+    } else {
+        usb_device->bDeviceStates = USB_CONFIGURED;
+    }
+
+    usb_otg_resume(usb_id);
+}
+
+void usb_phy_suspend(const usb_dev usb_id)
+{
+    gpio_set_pull_up(IO_PORT_DP, 1);
+    gpio_set_pull_down(IO_PORT_DP, 0);
+    gpio_set_direction(IO_PORT_DP, 1);
+
+    usb_iomode(1);
+    /* musb_read_usb(0, MUSB_INTRUSB); */
+
+    usb_otg_suspend(usb_id, OTG_KEEP_STATE);
+}
 void usb_isr(const usb_dev usb_id)
 {
     u32 intr_usb, intr_usbe;
@@ -145,14 +187,25 @@ void usb_isr(const usb_dev usb_id)
 
     if (intr_usb & INTRUSB_SUSPEND) {
         log_error("usb suspend");
-        usb_sie_close(usb_id);
+#if USB_SUSPEND_RESUME
+        usb_phy_suspend(usb_id);
+#endif
     }
     if (intr_usb & INTRUSB_RESET_BABBLE) {
         log_error("usb reset");
         usb_reset_interface(usb_device);
+
+#if USB_SUSPEND_RESUME
+        u32 reg = usb_read_power(usb_id);
+        usb_write_power(usb_id, (reg | INTRUSB_SUSPEND | INTRUSB_RESUME));//enable suspend resume
+#endif
     }
+
     if (intr_usb & INTRUSB_RESUME) {
         log_error("usb resume");
+#if USB_SUSPEND_RESUME
+        usb_phy_resume(usb_id);
+#endif
     }
 
     if (intr_tx & BIT(0)) {
@@ -188,6 +241,17 @@ void usb_sof_isr(const usb_dev usb_id)
     if ((sof_count++ % 1000) == 0) {
         log_d("sof 1s isr frame:%d", usb_read_sofframe(usb_id));
     }
+}
+void usb_suspend_check(void *p)
+{
+    usb_dev usb_id = (usb_dev)p;
+
+    static u16 sof_frame = 0;
+    u16 frame = usb_read_sofframe(usb_id);// sof frame 不更新，则usb进入断开或者suspend状态
+    if (frame == sof_frame) {
+        usb_phy_suspend(usb_id);
+    }
+    sof_frame = frame;
 }
 
 SET_INTERRUPT

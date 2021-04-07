@@ -213,6 +213,19 @@ void board_init()
 	board_devices_init();
 
 	power_set_mode(TCFG_LOWPOWER_POWER_SEL);
+
+#if USER_UART_UPDATE_ENABLE
+        {
+#include "uart_update.h"
+            uart_update_cfg  update_cfg = {
+                .rx = IO_PORTA_01,
+                .tx = IO_PORTA_02,
+                .output_channel = CH2_UT1_TX,
+                .input_channel = INPUT_CH0
+            };
+            uart_update_init(&update_cfg);
+        }
+#endif
 }
 
 enum {
@@ -334,7 +347,7 @@ const struct wakeup_param wk_param = {
 	.port[1]    = &port0,
 #endif
 
-#if CONFIG_APP_AT_COM
+#if CONFIG_APP_AT_COM || CONFIG_APP_AT_CHAR_COM
 	.port[2]    = &port1,
 #endif
 	.sub        = &sub_wkup,

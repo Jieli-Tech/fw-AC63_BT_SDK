@@ -8,6 +8,7 @@
 #include "classic/hci_lmp.h"
 #include "app_config.h"
 #include "audio_common/audio_iis.h"
+#include "Resample_api.h"
 
 #ifndef CONFIG_LITE_AUDIO
 #include "app_task.h"
@@ -42,6 +43,8 @@ struct esco_enc_hdl {
     int pcm_frame[60];                 //align 4Bytes
     /* s16 adc_buf[ESCO_ADC_BUFS_SIZE];    //align 4Bytes */
     u8 state;
+    RS_STUCT_API *mic_sw_src_api ;
+    u8 *mic_sw_src_buf;
 };
 
 static void adc_mic_output_handler(void *priv, s16 *data, int len)
@@ -52,7 +55,6 @@ static void adc_mic_output_handler(void *priv, s16 *data, int len)
 
 
 #if TCFG_IIS_INPUT_EN
-#include "Resample_api.h"
 #define IIS_MIC_SRC_DIFF_MAX        (50)
 #define IIS_MIC_BUF_SIZE    (2*1024)
 cbuffer_t *iis_mic_cbuf = NULL;
@@ -162,16 +164,51 @@ static int iis_mic_output_read(s16 *buf, u16 len)
 
 #endif // TCFG_IIS_INPUT_EN
 
+#if	TCFG_MIC_EFFECT_ENABLE
+
+int mic_sw_src_init(u16 out_sr)
+{
+    if (!esco_enc) {
+        printf(" mic  is not open !\n");
+        return -1;
+    }
+    esco_enc->mic_sw_src_api = get_rsfast_context();
+    esco_enc->mic_sw_src_buf = malloc(esco_enc->mic_sw_src_api->need_buf());
+
+    ASSERT(esco_enc->mic_sw_src_buf);
+    RS_PARA_STRUCT rs_para_obj;
+    rs_para_obj.nch = 1;
+    rs_para_obj.new_insample = MIC_EFFECT_SAMPLERATE;
+    rs_para_obj.new_outsample = out_sr;
+
+    esco_enc->mic_sw_src_api->open(esco_enc->mic_sw_src_buf, &rs_para_obj);
+    return 0;
+}
+
+int mic_sw_src_uninit(void)
+{
+    if (!esco_enc) {
+        return 0;
+    }
+    if (esco_enc->mic_sw_src_buf) {
+        free(esco_enc->mic_sw_src_buf);
+        esco_enc->mic_sw_src_buf = NULL;
+    }
+    return 0;
+}
+
+#endif //TCFG_MIC_EFFECT_ENABLE
+
 static void adc_mic_output_handler_downsr(void *priv, s16 *data, int len)
 {
     //printf("buf:%x,data:%x,len:%d",esco_enc->adc_buf,data,len);
     u16 i;
-    s16 temp_buf[128];
-    for (i = 0; i < len / 4; i++) {
-        temp_buf[i] = data[i * 2];
-
+    s16 temp_buf[160];
+    if (esco_enc && esco_enc->mic_sw_src_buf) {
+        int wlen = esco_enc->mic_sw_src_api->run(esco_enc->mic_sw_src_buf, data, len / 2, temp_buf);
+        audio_aec_inbuf(temp_buf, wlen << 1);
     }
-    audio_aec_inbuf(temp_buf, len / 2);
+    /* audio_aec_inbuf(temp_buf, len / 2); */
 }
 
 __attribute__((weak)) int audio_aec_output_read(s16 *buf, u16 len)
@@ -341,6 +378,7 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
 #else
 #if	TCFG_MIC_EFFECT_ENABLE
     if (fmt.sample_rate != MIC_EFFECT_SAMPLERATE) {//8K时需把mic数据采样率降低
+        mic_sw_src_init(fmt.sample_rate);
         esco_enc->adc_output.handler = adc_mic_output_handler_downsr;
     } else {
         esco_enc->adc_output.handler = adc_mic_output_handler;
@@ -401,6 +439,10 @@ void esco_enc_close()
     audio_adc_del_output_handler(&adc_hdl, &esco_enc->adc_output);
 #else
     audio_mic_close(&esco_enc->mic_ch, &esco_enc->adc_output);
+#if	TCFG_MIC_EFFECT_ENABLE
+    mic_sw_src_uninit();
+#endif //TCFG_MIC_EFFECT_ENABLE
+
     audio_encoder_close(&esco_enc->encoder);
 #endif
 #endif // TCFG_IIS_INPUT_EN

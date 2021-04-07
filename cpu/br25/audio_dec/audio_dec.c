@@ -28,7 +28,11 @@
 #include "common/Resample_api.h"
 #include "audio_link.h"
 #include "audio_sbc_codec.h"
+
+#if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
 #include "fm_emitter/fm_emitter_manage.h"
+#endif
+
 #include "audio_common/audio_iis.h"
 #endif /*CONFIG_LITE_AUDIO*/
 
@@ -61,11 +65,6 @@ extern void mix_out_automute_close();
 
 #define AUDIO_CODEC_SUPPORT_SYNC	1 // 同步
 
-#if (RECORDER_MIX_EN)
-#define MAX_SRC_NUMBER      		4 // 最大支持src个数
-#else
-#define MAX_SRC_NUMBER      		3 // 最大支持src个数
-#endif/*RECORDER_MIX_EN*/
 
 #define AUDIO_DECODE_TASK_WAKEUP_TIME	0	// 解码定时唤醒 // ms
 
@@ -82,7 +81,7 @@ struct audio_mixer_task 	mixer_task = {0};
 struct audio_decoder_task 	localtws_decode_task = {0};
 #endif
 
-static u8 audio_dec_inited = 0;
+u8 audio_dec_inited = 0;
 
 struct audio_eq_drc *mix_eq_drc = NULL;
 
@@ -104,7 +103,6 @@ struct channel_switch *mix_ch_switch = NULL;//声道变换,单声道时，先让
 
 extern const int config_mixer_en;
 
-#define AUDIO_DEC_MIXER_EN		config_mixer_en
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -351,9 +349,15 @@ u32 audio_output_channel_type(void)
     if (dac_connect_mode == DAC_OUTPUT_LR || dac_connect_mode == DAC_OUTPUT_DUAL_LR_DIFF) {
         return AUDIO_CH_LR;
     } else if (dac_connect_mode == DAC_OUTPUT_MONO_L) {
-        return AUDIO_CH_L;
+        return AUDIO_CH_DIFF;  //要输出左右合成的单声道数据选这个
+
+        /* return AUDIO_CH_L; */  //只要输出左声道的数据选这个
+
     } else if (dac_connect_mode == DAC_OUTPUT_MONO_R) {
-        return AUDIO_CH_R;
+        return AUDIO_CH_DIFF;  //要输出左右合成的单声道数据选这个
+
+        /* return AUDIO_CH_R; */  //只要输出右声道的数据选这个
+
     } else {
         return AUDIO_CH_DIFF;
     }
@@ -500,9 +504,6 @@ static void mixer_event_handler(struct audio_mixer *mixer, int event)
     case MIXER_EVENT_SR_CHANGE:
 #if 0
         y_printf("sr change:%d \n", mixer->sample_rate);
-#endif
-#if TCFG_KEY_TONE_EN
-        audio_key_tone_resample(mixer->sample_rate);
 #endif
         break;
     }
@@ -1211,6 +1212,17 @@ int sys_digvol_group_ch_close(char *logo)
     if (sys_digvol_group == NULL || logo == NULL) {
         return -1;
     }
+    void *hdl = audio_dig_vol_group_hdl_get(sys_digvol_group, logo);
+
+    if (hdl != NULL) {
+        void *entry = audio_dig_vol_entry_get(hdl);
+        if (entry != NULL) {
+            audio_stream_del_entry(entry);
+        }
+    }
+
+
+
     audio_dig_vol_close(audio_dig_vol_group_hdl_get(sys_digvol_group, logo));
     audio_dig_vol_group_del(sys_digvol_group, logo);
     return 0;

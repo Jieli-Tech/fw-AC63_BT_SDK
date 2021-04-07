@@ -85,4 +85,5 @@ u32 adc_get_voltage(u32 ch);
 u32 adc_check_vbat_lowpower();
 u32 adc_set_sample_freq(u32 ch, u32 ms);
 
+u32 adc_sample(u32 ch);
 #endif

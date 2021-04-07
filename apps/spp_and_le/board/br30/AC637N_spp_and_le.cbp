@@ -26,6 +26,7 @@
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
 <Add option="-DCONFIG_CPU_BR30" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
+<Add option="-DCONFIG_SUPPORT_WIFI_DETECT" />
 <Add option="-DCONFIG_NEW_BREDR_ENABLE" />
 <Add option="-DCONFIG_FREE_RTOS_ENABLE" />
 <Add option="-DCONFIG_EQ_SUPPORT_ASYNC" />
@@ -45,12 +46,14 @@
 <Add option="-DVM_ITEM_MAX_NUM=128" />
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_SPP_AND_LE_CASE_ENABLE" />
+<Add option="-DCONFIG_TRANSFER_ENABLE" />
 <Add option="-DCONFIG_LITE_AUDIO" />
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
 <Add option="-DCONFIG_OTA_UPDATA_ENABLE" />
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
+<Add option="-DCONFIG_CURRENT_SOUND_DEAL_ENABLE" />
 <Add option="-DCONFIG_ASR_ENABLE" />
 <Add option="-DCONFIG_DMS_MALLOC" />
 <Add option="-DCONFIG_MMU_ENABLE" />
@@ -144,6 +147,7 @@
 <Add option="../../../../include_lib/liba/br30/media_app.a" />
 <Add option="../../../../include_lib/liba/br30/wtg_dec_lib.a " />
 <Add option="../../../../include_lib/liba/br30/wtgv2_dec_lib.a" />
+<Add option="../../../../include_lib/liba/br30/wav_dec_lib.a" />
 <Add option="../../../../include_lib/liba/br30/opus_enc_lib.a" />
 <Add option="../../../../include_lib/liba/br30/speex_enc_lib.a" />
 <Add option="--end-group " />
@@ -195,6 +199,10 @@
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_ch_loader_download.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_user_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_user_update.h" />
+<Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_char_client.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_char_client.h" />
+<Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_char_com.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_char_com.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_client.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_client.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_at_com.c"><Option compilerVer="CC"/></Unit>
@@ -202,13 +210,21 @@
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_client_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_client_demo.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_common.h" />
+<Unit filename="../../../../apps/common/third_party_profile/jieli/multi_demo/le_multi_client.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/jieli/multi_demo/le_multi_common.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/jieli/multi_demo/le_multi_common.h" />
+<Unit filename="../../../../apps/common/third_party_profile/jieli/multi_demo/le_multi_trans.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/jieli/multi_demo/le_multi_trans.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/spp_at_com.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/spp_at_com.h" />
+<Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/le_beacon.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/le_beacon.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/le_trans_data.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/le_trans_data.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.h" />
 <Unit filename="../../../../apps/common/update/testbox_update.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/update/uart_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/cdc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/cdc.h" />
@@ -243,14 +259,18 @@
 <Unit filename="../../../../apps/common/usb/usb_config.h" />
 <Unit filename="../../../../apps/common/usb/usb_host_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/usb_std_class_def.h" />
+<Unit filename="../../../../apps/spp_and_le/app_at_char_com.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_at_com.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_charge.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_chargestore.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_dongle.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_idle.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_main.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/app_multi_conn.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_power_manage.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/app_spp_and_le.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/at_char_cmds.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/at_char_uart.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/at_cmds.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/at_uart.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/board/br30/board_ac6373b_demo.c"><Option compilerVer="CC"/></Unit>
@@ -310,6 +330,7 @@
 <Unit filename="../../../../cpu/br30/clock_manager.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/ctmu.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/iic_hw.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/iic_slave_test.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/iic_soft.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/irflt.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/lp_touch_key.c"><Option compilerVer="CC"/></Unit>

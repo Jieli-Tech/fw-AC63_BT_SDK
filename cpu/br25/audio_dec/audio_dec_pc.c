@@ -40,6 +40,7 @@ struct uac_dec_hdl {
 
     u32 cnt: 8;
     u32 state: 1;
+    u32 in_info;
     int check_data_timer;
 };
 
@@ -182,16 +183,18 @@ static int uac_audio_close(void)
     }
 #endif
 
+
+#if SYS_DIGVOL_GROUP_EN
+    sys_digvol_group_ch_close("music_pc");
+#endif // SYS_DIGVOL_GROUP_EN
+
+
     // 先关闭各个节点，最后才close数据流
     if (uac_dec->stream) {
         audio_stream_close(uac_dec->stream);
         uac_dec->stream = NULL;
     }
 
-
-#if SYS_DIGVOL_GROUP_EN
-    sys_digvol_group_ch_close("music_pc");
-#endif // SYS_DIGVOL_GROUP_EN
 
 
     clock_set_cur();
@@ -364,6 +367,9 @@ static int uac_audio_start(void)
         struct audio_fmt enc_f;
         memcpy(&enc_f, &dec->pcm_dec.decoder.fmt, sizeof(struct audio_fmt));
         enc_f.coding_type = AUDIO_CODING_SBC;
+        if (dec->pcm_dec.ch_num == 2) { // 如果是双声道数据，localtws在解码时才变成对应声道
+            enc_f.channel = 2;
+        }
         int ret = localtws_enc_api_open(&enc_f, LOCALTWS_ENC_FLAG_STREAM);
         if (ret == true) {
             dec->pcm_dec.dec_no_out_sound = 1;
@@ -371,6 +377,14 @@ static int uac_audio_start(void)
             p_mixer = &g_localtws.mixer;
             // 关闭资源等待。最终会在localtws解码处等待
             audio_decoder_task_del_wait(&decode_task, &dec->wait);
+            if (dec->pcm_dec.output_ch_num != enc_f.channel) {
+                dec->pcm_dec.output_ch_num = dec->pcm_dec.decoder.fmt.channel = enc_f.channel;
+                if (enc_f.channel == 2) {
+                    dec->pcm_dec.output_ch_type = AUDIO_CH_LR;
+                } else {
+                    dec->pcm_dec.output_ch_type = AUDIO_CH_DIFF;
+                }
+            }
         }
     }
 #endif
@@ -440,15 +454,16 @@ __err3:
     }
 #endif
 
+#if SYS_DIGVOL_GROUP_EN
+    sys_digvol_group_ch_close("music_pc");
+#endif // SYS_DIGVOL_GROUP_EN
+
+
     if (dec->stream) {
         audio_stream_close(dec->stream);
         dec->stream = NULL;
     }
 
-
-#if SYS_DIGVOL_GROUP_EN
-    sys_digvol_group_ch_close("music_pc");
-#endif // SYS_DIGVOL_GROUP_EN
 
 
     pcm_decoder_close(&dec->pcm_dec);
@@ -524,6 +539,7 @@ static int usb_audio_play_open(void *_info)
     localtws_globle_set_dec_restart(uac_dec_push_restart);
 #endif
 
+    dec->in_info = (u32)_info;
     dec->pcm_dec.sample_rate = (u32)_info & 0xFFFFFF;
     dec->pcm_dec.ch_num = (u32)_info >> 24;
     dec->pcm_dec.output_ch_num = audio_output_channel_num();
@@ -579,7 +595,7 @@ int uac_dec_restart(int id)
     if ((!uac_dec) || (id != uac_dec->id)) {
         return -1;
     }
-    int _info = (uac_dec->pcm_dec.ch_num << 24) | uac_dec->pcm_dec.sample_rate;
+    int _info = uac_dec->in_info;//(uac_dec->pcm_dec.ch_num << 24) | uac_dec->pcm_dec.sample_rate;
     usb_audio_play_close(NULL);
     int err = usb_audio_play_open((void *)_info);
     return err;

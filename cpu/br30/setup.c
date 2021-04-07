@@ -212,4 +212,18 @@ void setup_arch()
     __crc16_mutex_init();
 }
 
+#if 0
+u32 idle_time = 0;
+void idle_hook(void)
+{
+    wdt_clear();
+    u32 c_time = jiffies_msec();
+    /* r_printf(">>>[test]:c_time = %d\n", c_time); */
+
+    asm volatile("idle ") ;
+    idle_time += jiffies_msec() - c_time;
+    /* y_printf(">>>[test]: idle_time = %d, c_time = %d\n", idle_time, jiffies_msec()); */
+}
+#endif
+
 /*-----------------------------------------------------------*/

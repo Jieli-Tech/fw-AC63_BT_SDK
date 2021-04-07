@@ -26,6 +26,7 @@
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
 <Add option="-DCONFIG_CPU_BR30" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
+<Add option="-DCONFIG_SUPPORT_WIFI_DETECT" />
 <Add option="-DCONFIG_NEW_BREDR_ENABLE" />
 <Add option="-DCONFIG_FREE_RTOS_ENABLE" />
 <Add option="-DCONFIG_EQ_SUPPORT_ASYNC" />
@@ -45,12 +46,14 @@
 <Add option="-DVM_ITEM_MAX_NUM=128" />
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_HID_CASE_ENABLE" />
+<Add option="-DCONFIG_TRANSFER_ENABLE" />
 <Add option="-DCONFIG_LITE_AUDIO" />
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
 <Add option="-DCONFIG_OTA_UPDATA_ENABLE" />
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
+<Add option="-DCONFIG_CURRENT_SOUND_DEAL_ENABLE" />
 <Add option="-DCONFIG_ASR_ENABLE" />
 <Add option="-DCONFIG_DMS_MALLOC" />
 <Add option="-DCONFIG_MMU_ENABLE" />
@@ -148,6 +151,7 @@
 <Add option="../../../../include_lib/liba/br30/wtgv2_dec_lib.a" />
 <Add option="../../../../include_lib/liba/br30/opus_enc_lib.a" />
 <Add option="../../../../include_lib/liba/br30/speex_enc_lib.a" />
+<Add option="../../../../include_lib/liba/br30/wav_dec_lib.a" />
 <Add option="--end-group " />
 <Add option="-T../../../../cpu/br30/sdk.ld" />
 <Add option="-M=../../../../cpu/br30/tools/sdk.map" />
@@ -324,6 +328,7 @@
 <Unit filename="../../../../cpu/br30/clock_manager.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/ctmu.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/iic_hw.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/iic_slave_test.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/iic_soft.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/irflt.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/lp_touch_key.c"><Option compilerVer="CC"/></Unit>

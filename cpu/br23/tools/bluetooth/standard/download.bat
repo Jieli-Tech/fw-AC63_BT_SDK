@@ -10,7 +10,9 @@ copy ..\..\cfg_tool.bin .
 copy ..\..\app.bin .
 copy ..\..\br23loader.bin .
 
-..\..\isd_download.exe -tonorflash -dev br23 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin -res tone.cfg %1
+copy ota_all.bin ota.bin
+
+..\..\isd_download.exe -tonorflash -dev br23 -boot 0x12000 -div8 -wait 300 -uboot uboot.boot -app app.bin cfg_tool.bin %1
 :: -format all
 ::-reboot 2500
 
@@ -26,7 +28,6 @@ if exist *.sty del *.sty
 
 
 @rem 生成固件升级文件
-copy ota_all.bin ota.bin
 ..\..\fw_add.exe -noenc -fw jl_isd.fw  -add ota.bin -type 100 -out jl_isd_all.fw
 copy ota_nor.bin ota.bin
 ..\..\fw_add.exe -noenc -fw jl_isd.fw  -add ota.bin -type 100 -out jl_isd_nor.fw

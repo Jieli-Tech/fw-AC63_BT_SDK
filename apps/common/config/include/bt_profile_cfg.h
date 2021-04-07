@@ -71,7 +71,7 @@
 #endif
 
 //配对加密使能
-#define TCFG_BLE_SECURITY_EN          0
+#define TCFG_BLE_SECURITY_EN          config_le_sm_support_enable
 
 
 

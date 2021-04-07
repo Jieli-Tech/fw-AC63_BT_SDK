@@ -44,8 +44,9 @@
 #define SHOW_RX_DATA_RATE           0
 #define EXT_ADV_MODE_EN             0
 
-#if 1
-#define log_info            printf
+#if LE_DEBUG_PRINT_EN
+/* #define log_info            printf */
+#define log_info(x, ...)    printf("[LE_CLIENT]" x " ", ## __VA_ARGS__)
 #define log_info_hexdump    put_buf
 #else
 #define log_info(...)
@@ -53,9 +54,9 @@
 #endif
 
 //------
-#define ATT_LOCAL_PAYLOAD_SIZE    (64*2)                    //note: need >= 20
+#define ATT_LOCAL_MTU_SIZE        (64*2)                    //note: need >= 20
 #define ATT_SEND_CBUF_SIZE        (512)                   //note: need >= 20,缓存大小，可修改
-#define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_PAYLOAD_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
+#define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_MTU_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
 static u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
 
 #define SEARCH_PROFILE_BUFSIZE    (512)                   //note:
@@ -982,7 +983,7 @@ static void set_connection_data_phy(u8 tx_phy, u8 rx_phy)
 
 static void client_profile_start(u16 con_handle)
 {
-    ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_PAYLOAD_SIZE);
+    ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_MTU_SIZE);
     set_ble_work_state(BLE_ST_CONNECT);
 
     if (0 == client_config->security_en) {
@@ -1454,6 +1455,8 @@ void ble_profile_init(void)
     // register for HCI events
     hci_event_callback_set(&cbk_packet_handler);
     le_l2cap_register_packet_handler(&cbk_packet_handler);
+
+    ble_vendor_set_default_att_mtu(ATT_LOCAL_MTU_SIZE);
 }
 
 

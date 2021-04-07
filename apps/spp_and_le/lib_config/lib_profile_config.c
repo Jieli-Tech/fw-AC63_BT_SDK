@@ -70,7 +70,8 @@ u8 app_le_pool[900] sec(.btstack_pool)  ALIGNED(4);
 #endif
 
 #if(TCFG_USER_EDR_ENABLE)
-#ifdef CONFIG_CPU_BD29
+/* #if (defined CONFIG_CPU_BD29) || (defined CONFIG_CPU_BD19)  */
+#if (defined CONFIG_TRANSFER_ENABLE)
 u8 app_bredr_pool[672] sec(.btstack_pool) ALIGNED(4);
 u8 app_bredr_profile[692] sec(.btstack_pool) ALIGNED(4);
 #else
@@ -159,6 +160,9 @@ const u8 more_hfp_cmd_support = 0;
 const u8 more_avctp_cmd_support = 0;
 const u8 hci_inquiry_support = 0;
 const u8 btstack_emitter_support  = 0;  /*定义用于优化代码编译*/
+const u8 adt_profile_support = 0;
+const u8 pbg_support_enable = 0;
+
 
 
 /*u8 l2cap_debug_enable = 0xf0;
