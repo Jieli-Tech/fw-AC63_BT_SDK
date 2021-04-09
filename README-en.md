@@ -41,7 +41,7 @@ Build
 -------------
 Select a project to build. The following folders contains buildable projects:
 
-* APP_Bluetooth : [SPP_LE](./apps/spp_and_le), usage: data transfer,centeral devices,boardcast devices
+* APP_Bluetooth : [SPP_LE](./apps/spp_and_le), usage: data transfer,centeral devices,boardcast devices,beacon,multi-link
 
 * APP_Bluetooth : [HID](./apps/hid), usage: remote control，keyboard，mouse
 
@@ -51,9 +51,9 @@ Comming Soon：
 
 * APP_Bluetooth ：`IoT (ipv6 / 6lowpan)`
 
-* APP_Bluetooth ：`Beacon`
+* APP_Bluetooth ：`Dongle(usb / bt)`
 
-* APP_Bluetooth ：`Multi-link`
+* APP_Bluetooth ：`Voice remote control`
 
 * 2.4G_APP : `Vendor Wireless`
 
