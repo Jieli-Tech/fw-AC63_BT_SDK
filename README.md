@@ -42,7 +42,7 @@ AC63 系列通用蓝牙SDK 固件程序
 -------------
 请选择以下一个工程进行编译，下列目录包含了便于开发的工程文件：
 
-* 蓝牙应用 : [SPP_LE](./apps/spp_and_le) , 适用领域：透传，数传，扫面设备，广播设备
+* 蓝牙应用 : [SPP_LE](./apps/spp_and_le) , 适用领域：透传，数传，扫面设备，广播设备，信标，多机连接
 
 * 蓝牙应用 : [HID](./apps/hid)，适用领域：遥控器，自拍器，键盘，鼠标，吃鸡王座。
 
@@ -52,9 +52,9 @@ AC63 系列通用蓝牙SDK 固件程序
 
 * 蓝牙应用 ：`IoT (ipv6 / 6lowpan)`
 
-* 蓝牙应用 ：`Beacon`
+* 蓝牙应用 ：`Dongle(usb / bt)`
 
-* 蓝牙应用 ：`Multi-link`
+* 蓝牙应用 ：`Voice remote control`
 
 * 2.4G 应用 : `Vendor Wireless`
 
