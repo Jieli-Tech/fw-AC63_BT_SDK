@@ -14,7 +14,8 @@
 [4]:https://www.aligenie.com/doc/357554/gtgprq
 [5]:https://www.aligenie.com/doc/357554/yh3tf3
 [6]:https://iot.aligenie.com/account/login?spm=a2140w.13129968.0.0.375d643bZ07hUV&redirectURL=%2Fr%3Furl%3Dhttps%3A%2F%2Fiot.aligenie.com%2Fhome
-
+[7]:https://www.aligenie.com/doc/357554/zq0un4
+[8]:https://www.aligenie.com/doc/357554/tgllbp
 # APP - Bluetooth: Mesh ![Build result][icon_build]
 ---------------
 
@@ -473,3 +474,377 @@ const u16 config_bt_mesh_proxy_node_adv_interval = ADV_SCAN_UNIT(300); // 
             BT_MESH_MODEL_OP_END,
         };
         ```
+
+  >### SIG AliGenie Fan
+  ---
+  - #### 简介
+    该实例按照阿里巴巴 [IoT开放平台][3] 关于 [天猫精灵蓝牙mesh软件基础规范][4]，根据 `硬件品类规范` 描述自己为一个 [风扇][7]，通过 `天猫精灵` 语音输入进行发现连接(配网)和控制设备
+  - #### 实际操作
+    - 基本配置
+
+      使用 **USB DP** 作为串口 **debug** 脚，波特率为 **1000000**
+
+      使用 **PB7** 控制 **LED** 灯(模拟风扇的开和关的操作)
+
+      设备名称为`AG-Socket`
+
+      **三元组**（`MAC 地址`、`ProductID`、`Secret`）在天猫精灵开发者网站申请
+
+      设置 [**api/model_api.h**](./api/model_api.h)
+      ```C
+      #define CONFIG_MESH_MODEL                   SIG_MESH_ALIGENIE_FAN
+      ```
+      设置 [**board/xxxx/board_xxxx_demo_cfg.h**](./board/bd29/board_ac630x_demo_cfg.h)
+      ```C
+      #define TCFG_UART0_TX_PORT                  IO_PORT_DP
+      #define TCFG_UART0_BAUDRATE                 1000000
+      ```
+      设置 [**examples/AliGenie_socket.c**](./examples/AliGenie_socket.c)
+      ```C
+      #define BLE_DEV_NAME                        'A', 'G', '-', 'F', 'a', 'n'
+      //< 三元组(本例以个人名义申请的风扇类三元组)
+      #define CUR_DEVICE_MAC_ADDR                 0x27fa7af002a0
+      #define PRODUCT_ID                          7809508
+      #define DEVICE_SECRET                       "d2729d5f3898079fa7b697c76a7bfe8e"
+      const u8 led_use_port[] = {
+
+          IO_PORTB_07,
+
+      };
+      ```
+      对于 **MAC** 地址，本例中一定要按照**三元组**里面的 **MAC** 地址传入到 `bt_mac_addr_set` 函数里
+
+      设置 [**examples/AliGenie_fan.c**](./examples/AliGenie_fan.c)
+      ```C
+      void bt_ble_init(void)
+      {
+            u8 bt_addr[6] = {MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR)};
+
+            bt_mac_addr_set(bt_addr);
+
+            mesh_setup(mesh_init);
+      }
+      ```
+
+    - 编译工程并下载到目标板，接好串口，接好演示用 **LED** 灯，上电或者复位设备
+    - `天猫精灵`连接到互联网上
+      - 上电`天猫精灵`，**长按设备**上的**语音按键**，让设备进入待连接状态
+      - 手机应用商店下载`天猫精灵 APP`，**APP** 上登陆个人中心
+      - 打开手机 `WLAN`，将`天猫精灵`通过手机热点连接到互联网上
+
+      ![AliGenie_connect][gif_AliGenie_connect]
+
+    - 通过`天猫精灵`进行配网和控制
+      - 配网对话
+
+      >用户：“天猫精灵，发现设备”
+
+      >天猫精灵：“已为您发现风扇，是否需要连接”
+
+      >用户：“连接”
+
+      >天猫精灵：“连接成功。。。 。。。”
+
+      - 语音控制 **风扇命令** (可通过 [IoT开放平台][6] 添加自定义语音命令)
+
+        **命令** | **效果**
+        :-:|:-:
+        `天猫精灵，打开风扇` | 开发板上 **LED** 灯打开
+        `天猫精灵，风扇调到3档` | 开发板上 **LED** 灯亮度改变
+        `天猫精灵，关闭风扇` | 开发板上 **LED** 灯关闭
+
+  - #### 代码解读
+    - 配网
+
+      关键在于如何设置在`天猫精灵`开发者网站申请下来的**三元组**
+      - `天猫精灵`开发者网站申请三元组，并填到下面文件相应宏定义处
+
+        例如申请到的三元组如下：
+
+        **Product ID(十进制)** | **Device Secret** | **Mac地址**
+        :-:|:-:|:-:
+        7809508 | d2729d5f3898079fa7b697c76a7bfe8e | 27fa7af002a0
+
+        则按下面规则填写，**MAC** 前要加上 **0x**，**Secret** 要用 **双引号** 包住
+
+        设置 [**examples/AliGenie_fan.c**](./examples/AliGenie_fan.c)
+        ```C
+        //< 三元组(本例以个人名义申请的风扇类三元组)
+        #define CUR_DEVICE_MAC_ADDR             0x27fa7af002a0
+        #define PRODUCT_ID                      7809508
+        #define DEVICE_SECRET                   "d2729d5f3898079fa7b697c76a7bfe8e"
+        ```
+
+    - 建立 **Element** 和 **Model**
+
+        按照 [风扇软件规范][7]，要建立一个 **element**，两个**model**
+        **Element** | **Model** | **属性名称**
+        :-:|:-:|:-:
+        Primary | Generic OnOff Server(0x1000) | 开关
+        Primary | Vendor Model(0x01A80000) | 故障上报/定时控制风扇开关/调整风扇风速
+
+        相应代码操作如下：
+
+        结构体`elements`注册了一个**primary element = SIG root_models + Vendor_server_models**
+
+        结构体`root_models` **= Cfg_Server + Generic_OnOff_Server**
+
+        结构体`vendor_server_models` **= Vendor_Client_Model + Vendor_Server_Model**
+
+        ```C
+        //< Basic_Cfg_Server + Generic_OnOff_Server
+        static struct bt_mesh_model root_models[] = {
+               BT_MESH_MODEL_CFG_SRV(&cfg_srv), 
+               BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_SRV, gen_onoff_srv_op, &gen_onoff_pub_srv, &onoff_state[0]),
+            // BT_MESH_MODEL(...) // add new sig model
+        };
+
+        //< Vendor_Client + Vendor_Server
+        static struct bt_mesh_model vendor_server_models[] = {
+              BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_CLI, NULL, NULL, NULL),
+              BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_SRV, vendor_srv_op, NULL, &onoff_state[0]),
+           // BT_MESH_MODEL_VND(...) // add new vendor model
+        };
+
+        //< Only primary element
+        static struct bt_mesh_elem elements[] = {
+               BT_MESH_ELEM(0, root_models, vendor_server_models),  // primary element
+               // BT_MESH_ELEM(...) // add second element
+        };
+        ```
+
+    - 用户数据处理
+      - **SIG Generic OnOff Server**回调
+
+         结构体 `root_models` 里的 **Generic_OnOff_Server** 注册了回调 `gen_onoff_srv_op` 来对用户数据进行处理
+
+         当收到 `BT_MESH_MODEL_OP_GEN_ONOFF_GET` 等注册消息时，就会调用 `gen_onoff_get` 等对应的回调函数进行用户数据处理
+         ```C
+         static const struct bt_mesh_model_op gen_onoff_srv_op[] = {
+               { BT_MESH_MODEL_OP_GEN_ONOFF_GET, 0, gen_onoff_get },
+               { BT_MESH_MODEL_OP_GEN_ONOFF_SET, 2, gen_onoff_set },
+               { BT_MESH_MODEL_OP_GEN_ONOFF_SET_UNACK, 2, gen_onoff_set_unack },
+               BT_MESH_MODEL_OP_END,
+         };
+         ```
+
+      - **Vendor Model**回调
+
+        结构体 `vendor_srv_op` 里的 **Vendor_Server_Model** 注册了回调 `vendor_srv_op` 来对用户数据进行处理
+
+        当收到 `VENDOR_MSG_ATTR_GET` 等注册消息时，就会调用 `vendor_attr_get` 等对应的回调函数进行用户数据处理
+        ```C
+        static const struct bt_mesh_model_op vendor_srv_op[] = {
+               { VENDOR_MSG_ATTR_GET, ACCESS_OP_SIZE, vendor_attr_get },
+               { VENDOR_MSG_ATTR_SET, ACCESS_OP_SIZE, vendor_attr_set },
+               BT_MESH_MODEL_OP_END,
+        };
+        ```
+      - **vendor_attr_set**函数控制风扇档位
+
+        从接收到的消息解析出来的 `level` 为风扇档位
+
+        该程序设定的档位数最大为5，各档位风速为最大风速的 `level` 除以5
+        ```c
+        case ATTR_TYPE_WIND_SPEED: {
+        u7 level = buffer_pull_u8_from_head(buf);
+        struct __fan_speed fan_speed = {
+            .Opcode = buffer_head_init(VENDOR_MSG_ATTR_STATUS),
+            .TID = tid,
+            .Attr_Type = Attr_Type,
+            .level = level,
+        };
+
+        if (level > 5) {
+            printf("max level = 5\n");
+            level = 5;
+        }
+            printf("fan level set to %d\r\n", level);
+
+            set_led_duty(level * 1999);
+
+            vendor_attr_status_send(model, ctx, &fan_speed, sizeof(fan_speed));
+        }
+        break;
+        ```
+
+    >### SIG AliGenie Light
+    ---
+  - #### 简介
+    该实例按照阿里巴巴 [IoT开放平台][3] 关于 [天猫精灵蓝牙mesh软件基础规范][4]，根据 `硬件品类规范` 描述自己为一个 [灯][8]，通过 `天猫精灵` 语音输入进行发现连接(配网)和控制设备
+  - #### 实际操作
+    - 基本配置
+
+    使用 **USB DP** 作为串口 **debug** 脚，波特率为 **1000000**
+
+    使用 **PA1** 控制 **LED** 灯(模拟灯的开和关的操作)
+
+    设备名称为`AG-Socket`
+
+    **三元组**（`MAC 地址`、`ProductID`、`Secret`）在天猫精灵开发者网站申请
+
+    设置 [**api/model_api.h**](./api/model_api.h)
+    ```C
+    #define CONFIG_MESH_MODEL                   SIG_MESH_ALIGENIE_LIGHT
+    ```
+    设置 [**board/xxxx/board_xxxx_demo_cfg.h**](./board/bd29/board_ac630x_demo_cfg.h)
+    ```C
+    #define TCFG_UART0_TX_PORT                  IO_PORT_DP
+    #define TCFG_UART0_BAUDRATE                 1000000
+    ```
+    设置 [**examples/AliGenie_socket.c**](./examples/AliGenie_socket.c)
+    ```C
+    #define BLE_DEV_NAME                        'A', 'G', '-', 'L', 'i', 'g', 'h', 't'
+    //< 三元组(本例以个人名义申请的灯类三元组)
+    #define CUR_DEVICE_MAC_ADDR                 0x18146c110001
+    #define PRODUCT_ID                          7218909
+    #define DEVICE_SECRET                       "aab00b61998063e62f98ff04c9a787d4"
+    const u8 led_use_port[] = {
+
+        IO_PORTB_07,
+
+    };
+    ```
+    对于 **MAC** 地址，本例中一定要按照**三元组**里面的 **MAC** 地址传入到 `bt_mac_addr_set` 函数里
+
+    设置 [**examples/AliGenie_light.c**](./examples/AliGenie_light.c)
+    ```C
+    void bt_ble_init(void)
+    {
+          u8 bt_addr[6] = {MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR)};
+
+          bt_mac_addr_set(bt_addr);
+
+          mesh_setup(mesh_init);
+    }
+    ```
+
+    - 编译工程并下载到目标板，接好串口，接好演示用 **LED** 灯，上电或者复位设备
+    - `天猫精灵`连接到互联网上
+      - 上电`天猫精灵`，**长按设备**上的**语音按键**，让设备进入待连接状态
+      - 手机应用商店下载`天猫精灵 APP`，**APP** 上登陆个人中心
+      - 打开手机 `WLAN`，将`天猫精灵`通过手机热点连接到互联网上
+
+      ![AliGenie_connect][gif_AliGenie_connect]
+    - 通过`天猫精灵`进行配网和控制
+      - 配网对话
+
+      >用户：“天猫精灵，发现设备”
+
+      >天猫精灵：“发现了智能灯，是否需要连接”
+
+      >用户：“连接”
+
+      >天猫精灵：“连接成功。。。 。。。”
+
+      - 语音控制 **灯命令** (可通过 [IoT开放平台][6] 添加自定义语音命令)
+
+        **命令** | **效果**
+        :-:|:-:
+        `天猫精灵，开灯` | 开发板上 **LED** 灯打开
+        `天猫精灵，灯的亮度调到50` | 开发板上 **LED** 灯亮度改变
+        `天猫精灵，关灯` | 开发板上 **LED** 灯关闭
+        `天猫精灵，五分钟后开灯` | 开发板上 **LED** 灯在五分钟后打开
+
+  - #### 代码解读
+    - 配网
+
+      关键在于如何设置在`天猫精灵`开发者网站申请下来的**三元组**
+      - `天猫精灵`开发者网站申请三元组，并填到下面文件相应宏定义处
+
+        例如申请到的三元组如下：
+
+        **Product ID(十进制)** | **Device Secret** | **Mac地址**
+        :-:|:-:|:-:
+        7809508 | d2729d5f3898079fa7b697c76a7bfe8e | 27fa7af002a0
+
+        则按下面规则填写，**MAC** 前要加上 **0x**，**Secret** 要用 **双引号** 包住
+
+        设置 [**examples/AliGenie_light.c**](./examples/AliGenie_light.c)
+        ```C
+        //< 三元组(本例以个人名义申请的灯类三元组)
+        #define CUR_DEVICE_MAC_ADDR             0x18146c110001
+        #define PRODUCT_ID                      7218909
+        #define DEVICE_SECRET                   "aab00b61998063e62f98ff04c9a787d4"
+        ```
+
+    - 建立 **Element** 和 **Model**
+
+        按照 [风扇软件规范][7]，要建立一个 **element**，两个**model**
+        **Element** | **Model** | **属性名称**
+        :-:|:-:|:-:
+        Primary | Generic OnOff Server(0x1000) | 开关
+        Primary |  Light Lightness server(0x1300) | 灯的亮度调整
+        Primary | Vendor Model(0x01A80000) | 故障上报/定时控制灯
+
+        相应代码操作如下：
+
+        结构体`elements`注册了一个**primary element = SIG root_models + Vendor_server_models**
+
+        结构体`root_models` **= Cfg_Server + Generic_OnOff_Server**
+
+        结构体`vendor_server_models` **= Vendor_Client_Model + Vendor_Server_Model**
+
+        ```C
+        //< Basic_Cfg_Server + Light_Lightness_server + Generic_OnOff_Server
+        static struct bt_mesh_model root_models[] = {
+               BT_MESH_MODEL_CFG_SRV(&cfg_srv), 
+               BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_SRV, gen_onoff_srv_op, &gen_onoff_pub_srv, &onoff_state[0]),
+               BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LIGHTNESS_SRV, light_lightness_srv_op, &gen_onoff_pub_srv, &light),
+            // BT_MESH_MODEL(...) // add new sig model
+        };
+
+        //< Vendor_Client + Vendor_Server
+        static struct bt_mesh_model vendor_server_models[] = {
+              BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_CLI, NULL, NULL, NULL),
+              BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_SRV, vendor_srv_op, NULL, &onoff_state[0]),
+           // BT_MESH_MODEL_VND(...) // add new vendor model
+        };
+
+        //< Only primary element
+        static struct bt_mesh_elem elements[] = {
+               BT_MESH_ELEM(0, root_models, vendor_server_models),  // primary element
+               // BT_MESH_ELEM(...) // add second element
+        };
+        ```
+
+    - 用户数据处理
+      - **SIG Generic OnOff Server**回调
+
+        结构体 `root_models` 里的 **Generic_OnOff_Server** 注册了回调 `gen_onoff_srv_op` 来对用户数据进行处理
+
+        当收到 `BT_MESH_MODEL_OP_GEN_ONOFF_GET` 等注册消息时，就会调用 `gen_onoff_get` 等对应的回调函数进行用户数据处理
+        ```C
+        static const struct bt_mesh_model_op gen_onoff_srv_op[] = {
+              { BT_MESH_MODEL_OP_GEN_ONOFF_GET, 0, gen_onoff_get },
+              { BT_MESH_MODEL_OP_GEN_ONOFF_SET, 2, gen_onoff_set },
+              { BT_MESH_MODEL_OP_GEN_ONOFF_SET_UNACK, 2, gen_onoff_set_unack },
+              BT_MESH_MODEL_OP_END,
+         };
+         ```
+    - ** Light Lightness server**回调
+
+      结构体 `root_models` 里的 **Light_Lightness_server** 注册了回调 `light_lightness_srv_op` 来对用户数据进行处理
+
+      当收到 `BT_MESH_MODEL_OP_LIGHT_LIGHTNESS_GET` 等注册消息时，就会调用 `lightness_get` 等对应的回调函数进行用户数据处理
+
+      ```c
+      const struct bt_mesh_model_op light_lightness_srv_op[] = {
+        { BT_MESH_MODEL_OP_LIGHT_LIGHTNESS_GET, 				0, lightness_get},
+        { BT_MESH_MODEL_OP_LIGHT_LIGHTNESS_SET, 				0, lightness_set},
+        { BT_MESH_MODEL_OP_LIGHT_LIGHTNESS_SET_UNACK, 			0, lightness_set_unack},
+        BT_MESH_MODEL_OP_END,
+      };
+      ```
+    - **Vendor Model**回调
+
+      结构体 `vendor_srv_op` 里的 **Vendor_Server_Model** 注册了回调 `vendor_srv_op` 来对用户数据进行处理
+
+      当收到 `VENDOR_MSG_ATTR_GET` 等注册消息时，就会调用 `vendor_attr_get` 等对应的回调函数进行用户数据处理
+      ```C
+      static const struct bt_mesh_model_op vendor_srv_op[] = {
+             { VENDOR_MSG_ATTR_GET, ACCESS_OP_SIZE, vendor_attr_get },
+             { VENDOR_MSG_ATTR_SET, ACCESS_OP_SIZE, vendor_attr_set },
+             BT_MESH_MODEL_OP_END,
+      };
+      ```
