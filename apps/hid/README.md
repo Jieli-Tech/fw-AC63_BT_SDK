@@ -3,34 +3,69 @@
 # APP - Bluetooth: Dual-Mode HID ![Build result][icon_build]
 ---------------
 
-代码工程：`apps\hid\board\bd29\AC631X_hid.cbp`
+代码工程：`apps\hid\board\bd29\AC631N_hid.cbp`
 
 ## 1.APP 概述
+### 1.1 工程配置
+* 板级配置选择
 
-### 1.1.配置双模描述
+```C
+#define CONFIG_BOARD_AC631N_DEMO       // CONFIG_APP_KEYBOARD,CONFIG_APP_PAGE_TURNER
+// #define CONFIG_BOARD_AC6313_DEMO      // CONFIG_APP_KEYBOARD,CONFIG_APP_PAGE_TURNER
+// #define CONFIG_BOARD_AC6302A_MOUSE  // CONFIG_APP_MOUSE
+// #define CONFIG_BOARD_AC6319A_MOUSE  // CONFIG_APP_MOUSE
+// #define CONFIG_BOARD_AC6318_DEMO     // CONFIG_APP_KEYFOB
+
+```
+
+* app case 选择,只选1,要配置对应的board_config.h
+```C
+#define CONFIG_APP_KEYBOARD                 0//hid按键 ,default case
+#define CONFIG_APP_KEYFOB                   0//自拍器,  board_ac6368a,board_6318,board_6379b
+#define CONFIG_APP_MOUSE                    1//mouse,   board_mouse
+#define CONFIG_APP_STANDARD_KEYBOARD        0//标准HID键盘,board_ac6351d
+#define CONFIG_APP_KEYPAGE                  0//翻页器
+#define CONFIG_APP_GAMEBOX                  0//吃鸡王座
+```
+### 1.2.配置双模描述
 
 * 配置双模使能配置
 ```C
  #define TCFG_USER_BLE_ENABLE 1 //BLE 功能使能
  #define TCFG_USER_EDR_ENABLE 1 //EDR 功能使能
 ```
-* 支持双模 HID 设备切换处理
+* 支持双模以及2.4G模式切换处理,注意的是2.4G配对码必须和对方一致。
+
 ```C
+//2.4G模式: 0---ble, 非0---2.4G配对码
+/* #define CFG_RF_24G_CODE_ID       (0) //<=24bits */
+#define CFG_RF_24G_CODE_ID       (0x23) //<=24bits
 static void app_select_btmode(u8 mode)
 {
-    if (mode != HID_MODE_INIT)
-    {
-        if (bt_hid_mode == mode)
-        {
-            return;
-        }
-        bt_hid_mode = mode;
-    }
-    else
-    {
-        //init start
-    }
+    ...and so  on
+    //os_time_dly(10);
+
+    switch (bt_hid_mode) {
+    case HID_MODE_BLE:
+        log_info("---------app select ble--------\n");
+        bt_24g_mode_set(0);
+        bt_ble_mode_enable(1);
+        break;
+    case HID_MODE_EDR:
+        log_info("---------app select edr--------\n");
+        bt_edr_mode_enable(1);
+        break;
+    case HID_MODE_BLE_24G:
+        log_info("---------app select 24g--------\n");
+        bt_24g_mode_set(CFG_RF_24G_CODE_ID);
+        bt_ble_mode_enable(1);
+
 ```
+
+
+
+
+
 * 支持进入省电低功耗 Sleep
 ```C
 //*********************************************************************************//
@@ -63,11 +98,11 @@ is_hid_active = 1;
  static int event_handler(struct application *app, struct sys_event *event)
  {
 ```
-### 1.2.经典蓝牙 EDR 模式的 HID 接口列表
+### 1.3.经典蓝牙 EDR 模式的 HID 接口列表
 
-#### 1.2.1 代码文件 `hid_user.c`
+#### 1.3.1 代码文件 `hid_user.c`
 
-#### 1.2.2 接口说明
+#### 1.3.2 接口说明
 
     user_hid_set_icon 配置显示的图标
     user_hid_set_ReportMap 配置描述符 report 表
@@ -114,7 +149,8 @@ is_hid_active = 1;
 ## 3.板级配置
 
 ### 3.1 板级方案配置
- * 为提高开发过程的灵活性，HID_SDK 为用户提供几种不同的板级方案，用户可根据具体的开发需求选择相应的方案。
+ * 为提高开发过程的灵活性，HID_SDK 为用户提供几种不同的板级方案，用户可根据具体的开发需求选择相应的方案。SDK
+ 在上一版的基础上基于BR23增加标准键盘的应用。
  * 板级方案配置文件的路径：apps/hid/board/BD29/board_config.h(hid 可替换为相应的 app 名称)。
  * 用户只需在板级方案配置文件 board_config.h 添加相应的宏定义，并包含相应的头文件，即可完成板级方案的配置。
 ```C
@@ -195,11 +231,11 @@ HID_SDK提供了一些通用按键配置和消息处理方式，如果这些通�
  ![hid](./../../doc/stuff/hid_表2-8.png)
 
 ## 6.串口的使用
-串口的初始化参数在板级配置文件中（c文件和h文件）进行配置，如board_ac6xxx_mouse.c和board_ac6xxx_mouse_cfg.h，在h文件中使能TCFG_UART0_ENABLE宏和结构配置相关参数，在C文件中添加初始化数据结构，配置示例如表2-9所示。串口初始化完成后，用户可调用apps/debug.c文件中的函数进行串口打印操作。
+* 串口的初始化参数在板级配置文件中（c文件和h文件）进行配置，如board_ac6xxx_mouse.c和board_ac6xxx_mouse_cfg.h，在h文件中使能TCFG_UART0_ENABLE宏和结构配置相关参数，在C文件中添加初始化数据结构，配置示例如表2-9所示。串口初始化完成后，用户可调用apps/debug.c文件中的函数进行串口打印操作。
  ![hid](./../../doc/stuff/hid_表2-9.png)
 
 ## 7.Mouse Report Map
-Mouse Report Map定义与apps/common/ble/le_hogp.c文件内，如图3.1所示。
+* Mouse Report Map定义与apps/common/ble/le_hogp.c文件内，如图3.1所示。
 ```C
 static const u8 hid_report_map[] = {
     0x05, 0x01, 0x09, 0x02, 0xA1, 0x01, 0x85, 0x01, 0x09, 0x01, 0xA1, 0x00, 0x95, 0x05, 0x75,
@@ -220,6 +256,30 @@ Report Map 在线解析工具地址： http://eleccelerator.com/usbdescreqparser
 ## 8.蓝牙鼠标 APP 总体框架
 蓝牙鼠标 APP 总体框架如图 4.2 所示。
  ![hid](./../../doc/stuff/hid_4.1.png)
+* 在apps/hid/app_mouse.c文件中包含了APP的注册信息，如图3.3所示，系统在初始化过程中将根据此信息完成该APP的注册。
+
+```C
+/*
+ * 注册AT Module模式
+ */
+REGISTER_APPLICATION(app_mouse) = {
+    .name 	= "mouse",
+    .action	= ACTION_MOUSE_MAIN,
+    .ops 	= &app_mouse_ops,
+    .state  = APP_STA_DESTROY,
+};
+
+```
+* 系统初始化完成后，系统将调度app_task任务，该任务调用apps/hid/app_main.c->app_main()函数，开始运行app_mouse。
+* 事件的产生
+鼠标的按键、旋转编码开关、光学感应器的数据采集在系统软件定时器的中断服务函数中完成，采集的数据将被打包为相应的事件周期性地上报至全局事件列表。
+* 事件的处理
+系统将调度APP的事件处理机（app_mouse.c->event_handler()）依据事件类型，调用相应的事件处理函数。
+app_key_event_handler()、app_code_sw_event_handler()、app_optical_sensor_event_handler()位于apps/hid/app_mouse.c文件，分别用以处理按键事件、旋转编码开关事件、光学感应器事件，其事件包含的数据将被填入mouse_packet_data中保存。
+* 数据的发送
+蓝牙设备初始化时，设置了一个系统的软件定时器，用以周期性地向蓝牙主设备发送mouse_packet_data数据，该系统定时器的中断服务函数为：
+app/common/ble/le_hogp.c->hid_timer_mouse_handler()。
+
 
 ## 9.蓝牙鼠标功耗
 
@@ -237,3 +297,224 @@ Report Map 在线解析工具地址： http://eleccelerator.com/usbdescreqparser
 
  * 整机功耗
  ![hid](./../../doc/stuff/hid_9.4.png)
+
+## 10.OTA使用说明
+### 10.1 概述
+
+* 测试盒OTA升级介绍
+
+  AC630N默认支持通过杰理蓝牙测试盒进行BLE或者EDR链路的OTA升级，方便客户在开发阶段对不方便有线升级的样机进行固件更新，或者在量产阶段进行批量升级。有关杰理蓝牙测试盒的使用及相关升级操作说明，详见文档“AC690x_1T2测试盒使用说明.pdf”。
+
+* APP OTA升级介绍
+
+ AC630N 可选支持APP OTA升级，SDK提供通过JL_RCSP协议与APP交互完成OTA的demo流程。客户可以直接参考JL_RCSP协议相关文档和手机APP OTA外接库说明，将APP OTA功能集成到客户自家APP中。APP OTA功能方便对已市场的产品进行远程固件推送升级，以此修复已知问题或支持新功能。
+
+### 10.2 OTA-APP升级
+
+* 1、SDK相关配置
+
+  在app_config.h打开相关的宏定义：RCSP_BTMATE_EN、RCSP_UPDATE_EN
+
+```C
+//需要app(BLE)升级要开一下宏定义
+#define RCSP_BTMATE_EN                    1
+#define RCSP_UPDATE_EN                    1
+#define UPDATE_MD5_ENABLE                 0
+```
+* 打开APP升级，需要修改ini的话需要在cpu\bd29\tools\bluetooth\app_ota下修改，如果未打开APP升级，则修改cpu\bd29\tools\bluetooth\standard下的ini配置。对应生成的升级文件ufw也在对应的目录下
+
+* 2、手机端工具
+
+2.1 安卓端开发说明：详见tools目录下Android_杰理OTA外接库开发说明      
+2.2 IOS端开发说明： 详见tools目录下IOS_杰理OTA外接库开发说明
+
+## 11. AUDIO功能
+### 1. 概述
+HID和SPP_AND_LE新添加了AUDIO的实现示例代码，需要使用AUDIO功能要使能TCFG_AUDIO_ENABLE。
+
+目前支持芯片系列：AC635N、AC636N、AC673N
+
+
+```C
+
+//支持Audio功能，才能使能DAC/ADC模块
+#ifdef CONFIG_LITE_AUDIO
+#define TCFG_AUDIO_ENABLE					ENABLE
+#if TCFG_AUDIO_ENABLE
+#undef TCFG_AUDIO_ADC_ENABLE
+#undef TCFG_AUDIO_DAC_ENABLE
+#define TCFG_AUDIO_ADC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_AUDIO_DAC_ENABLE				ENABLE_THIS_MOUDLE
+```
+
+
+### 2. AUDIO使用
+* DAC硬件输出参数配置在板级配置文件里面有如下配置
+
+
+```C
+DAC硬件上的连接方式,可选的配置：
+    DAC_OUTPUT_MONO_L               左声道
+    DAC_OUTPUT_MONO_R               右声道
+    DAC_OUTPUT_LR                   立体声
+    DAC_OUTPUT_MONO_LR_DIFF         单声道差分输出
+*/
+#define TCFG_AUDIO_DAC_CONNECT_MODE        DAC_OUTPUT_MONO_LR_DIFF
+```
+
+### 3. MIC配置和使用
+* 3.1 配置说明
+
+  在每个board.c 文件里都有配置 mic 参数的结构体，如下所示：
+  ```C
+  struct adc_platform_data adc_data = {
+  /*MIC 是否省隔直电容：0: 不省电容  1: 省电容 */
+      .mic_capless    = TCFG_MIC_CAPLESS_ENABLE,
+  /*差分mic使能,差分mic不能使用省电容模式*/
+      .mic_diff    = 0,
+  /*MIC LDO电流档位设置：0:5    1:10ua    2:15ua    3:20ua*/
+      .mic_ldo_isel   = TCFG_AUDIO_ADC_LD0_SEL,
+  /*MIC LDO电压档位设置,也会影响MIC的偏置电压0:1.5v  1:8v  2:2.1v  3:2.4v 4:2.7v 5:3.0 */
+      .mic_ldo_vsel  = 3,
+  /*MIC免电容方案需要设置，影响MIC的偏置电压
+      21:1.18K    20:1.42K    19:1.55K    18:1.99K    17:2.2K     16:2.4K     15:2.6K     14:2.91K    13:3.05K    12:3.5K     11:3.73K
+      10:3.91K    9:4.41K     8:5.0K      7:5.6K      6:6K        5:6.5K      4:7K        3:7.6K      2:8.0K      1:8.5K              */
+      .mic_bias_res   = 18,
+  /*MIC电容隔直模式使用内部mic偏置(PA2)*/
+      .mic_bias_inside = 1,
+  /*保持内部mic偏置(PA2)输出*/
+      .mic_bias_keep = 0,
+
+  /*MIC1 是否省隔直电容：0: 不省电容  1: 省电容 */
+      .mic1_capless    = TCFG_MIC1_CAPLESS_ENABLE,
+  /*差分mic使能,差分mic不能使用省电容模式*/
+      .mic1_diff    = 0,
+  /*MIC1 LDO电流档位设置：0:5    1:10ua    2:15ua    3:20ua*/
+      .mic1_ldo_isel   = TCFG_AUDIO_ADC_LD0_SEL,
+  /*MIC1 LDO电压档位设置,也会影响MIC的偏置电压0:1.5v  1:8v  2:2.1v  3:2.4v 4:2.7v 5:3.0 */
+      .mic1_ldo_vsel  = 3,
+  /*MIC1免电容方案需要设置，影响MIC的偏置电压
+      21:1.18K    20:1.42K    19:1.55K    18:1.99K    17:2.2K     16:2.4K     15:2.6K     14:2.91K    13:3.05K    12:3.5K     11:3.73K
+      10:3.91K    9:4.41K     8:5.0K      7:5.6K      6:6K        5:6.5K      4:7K        3:7.6K      2:8.0K      1:8.5K              */
+      .mic1_bias_res   = 18,
+  /*MIC1电容隔直模式使用内部mic偏置(PB7)*/
+      .mic1_bias_inside = 1,
+  /*保持内部mic偏置(PB7)输出*/
+      .mic1_bias_keep = 0,
+
+      // ladc 通道
+      .ladc_num = ARRAY_SIZE(ladc_list),
+      .ladc = ladc_list,
+  };
+
+  ```
+* 主要关注以下变量：
+
+1）mic_capless：0：选用不省电容模式 1：选用省电容模式
+
+2）mic_bias_res：选用省电容模式的时候才有效，mic 的上拉偏置电阻，选择范围为：
+1:16K 2:7.5K 3:5.1K 4:6.8K 5:4.7K 6:3.5K 7:2.9K 8:3K 9:2.5K 10:2.1K 11:1.9K 12:2K 13:1.8K 14:1.6K 15:1.5K 16:1K 31:0.6K
+
+3）mic_ldo_vsel：mic_ldo 的偏置电压，与偏置电阻共同决定 mic 的偏置，选择范围为：0:2.3v 1:2.5v 2:2.7v 3:3.0v
+
+4）mic_bias_inside：mic 外部电容隔直，芯片内部提供偏置电压，当 mic_bias_inside=1，可以正常使用 mic_bias_res 和 mic_ldo_vsel
+
+* 3.2 自动校准 MIC 偏置电压
+
+使用省电容模式时，可在 app_config.h 配置 TCFG_MC_BIAS_AUTO_ADJUST，选择 MIC 的自动校准模式，自动选择对应的MIC 偏置电阻和偏置电压。注意：不省电容无法校准。
+```C
+*省电容mic偏置电压自动调整(因为校准需要时间，所以有不同的方式) 
+ *1、烧完程序（完全更新，包括配置区）开机校准一次 
+ *2、上电复位的时候都校准,即断电重新上电就会校准是否有偏差(默认) 
+ *3、每次开机都校准，不管有没有断过电，即校准流程每次都跑 
+#define MC_BIAS_ADJUST_DISABLE      0   //省电容mic偏置校准关闭  
+#define MC_BIAS_ADJUST_ONE          1   //省电容mic偏置只校准一次（跟dac trim一样）  
+#define MC_BIAS_ADJUST_POWER_ON     2   //省电容mic偏置每次上电复位都校准(Power_On_Reset)  
+#define MC_BIAS_ADJUST_ALWAYS       3   //省电容mic偏置每次开机都校准(包括上电复位和其他复位)  
+#define TCFG_MC_BIAS_AUTO_ADJUST    MC_BIAS_ADJUST_POWER_ON  
+#define TCFG_MC_CONVERGE_TRACE      0   //省电容mic收敛值跟踪  
+```
+* 3.3 Mic的使用示例
+
+可调用audio_adc_open_demo(void)函数输出mic的声音，示例如下：
+```C
+if (key_type == KEY_EVENT_LONG && key_value == TCFG_ADKEY_VALUE0) {  
+    printf(">>>key0:open mic\n");  
+   //br23/25 mic test  
+    extern int audio_adc_open_demo(void);  
+    audio_adc_open_demo();  
+    //br30 mic test  
+    /* extern void audio_adc_mic_demo(u8 mic_idx, u8 gain, u8 mic_2_dac); */  
+    /* audio_adc_mic_demo(1, 1, 1); */  
+} 
+```
+
+### 4 提示音的使用
+* 4.1 提示音文件配置
+
+1.打开SDK对应的cpu\brxx\tools\bluetooth\app_ota\ACxxxN_config_tool，进入配置工具入口--->选择编译前配置工具--->提示音配置。
+![hid](./../../doc/stuff/tone.png)
+
+2.打开以上界面按步骤添加自己需要的*.mp3格式的源文件，转换成需要的主要格式。要注意文件的路径，SDK中默认的路径可能和本地保存的路径不同，要改成SDK当前的绝对路径。
+
+3.在ota的目录download.bat下载项中添加tone.cfg配置选项。
+
+4.播放sin\wtg提示音，要在板级配置文件里面使能TCFG_DEC_G729_ENABLE 和 TCFG_DEC_PCM_ENABLE两个宏，如下所示：
+```C
+#if TCFG_AUDIO_ENABLE
+#undef TCFG_AUDIO_ADC_ENABLE
+#undef TCFG_AUDIO_DAC_ENABLE
+#define TCFG_AUDIO_ADC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_AUDIO_DAC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_DEC_SBC_CLOSE
+#define TCFG_DEC_MSBC_CLOSE
+#define TCFG_DEC_SBC_HWACCEL_CLOSE
+#define TCFG_DEC_PCM_ENABLE                 ENABLE
+#define TCFG_DEC_G729_ENABLE                ENABLE
+```
+
+*  4.2 提示音使用示例
+可以调用tone_play()播放提示音，使用示例如下：
+```C
+if (key_type == KEY_EVENT_LONG && key_value == TCFG_ADKEY_VALUE2) {  
+    printf(">>>key1:tone_play_test\n");  
+    //br23/25 tone play test  
+    /* tone_play_by_path(TONE_NORMAL, 1); */  
+    /* tone_play_by_path(TONE_BT_CONN, 1); */  
+    //br30 tone play test  
+    tone_play(TONE_NUM_0, 1);  
+    /* tone_play(TONE_SIN_NORMAL, 1); */  
+} 
+```
+* 4.3 opus\speex编码的使用
+1.配置说明
+
+opus\speex编码模块是对mic的数据进行编码，使用给功能，需要在板级配置文件里面使能TCFG_ENC_OPUS_ENABLE和TCFG_ENC_SPEEX_ENABLE这两个宏，配置如下图所示:
+```C
+#if TCFG_AUDIO_ENABLE  
+#undef TCFG_AUDIO_ADC_ENABLE  
+#undef TCFG_AUDIO_DAC_ENABLE  
+#define TCFG_AUDIO_ADC_ENABLE               ENABLE_THIS_MOUDLE  
+#define TCFG_AUDIO_DAC_ENABLE               ENABLE_THIS_MOUDLE  
+#define TCFG_DEC_G729_ENABLE                ENABLE  
+#define TCFG_DEC_PCM_ENABLE                 ENABLE  
+#define TCFG_ENC_OPUS_ENABLE                ENABLE  
+#define TCFG_ENC_SPEEX_ENABLE               ENABLE  
+#define TCFG_LINEIN_LR_CH                   AUDIO_LIN0_LR  
+#else  
+#define TCFG_DEC_PCM_ENABLE                 DISABLE  
+#endif/*TCFG_AUDIO_ENABLE*/  
+```
+2. opus\speex编码示例
+
+```C
+int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 code_type);
+```
+对mic的数据进行opus\speex编码使用audio_mic_enc_open()函数，参数mic_output为编码后数据输出的函数，code_type为要进行编码的类型，可选AUDIO_CODING_OPUS和AUDIO_CODING_SPEEX，使用示例如下：
+
+```C
+/*encode test*/    
+extern int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 code_type);    
+audio_mic_enc_open(mic_enc_output_data, AUDIO_CODING_OPUS);//opus encode test    
+/* audio_mic_enc_open(mic_enc_output_data, AUDIO_CODING_SPEEX);//speex encode test */  
+```
