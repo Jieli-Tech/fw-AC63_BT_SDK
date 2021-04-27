@@ -550,5 +550,70 @@ enum {
     GPCNT_GSS_INTPUT_CH1,   //iomap con1[4:7]
 };
 
+
+#define lrc_con1_init                                 \
+    /*                               */    ((0 << 7) |\
+    /*RC32K_CAP_S2_33v               */     (1 << 6) |\
+    /*RC32K_CAP_S1_33v               */     (0 << 5) |\
+    /*RC32K_CAP_S0_33v               */     (0 << 4) |\
+    /*                               */     (0 << 3) |\
+    /*                               */     (0 << 2) |\
+    /*RC32K_RNPS_S1_33v              */     (1 << 1) |\
+    /*RC32K_RNPS_S0_33v              */     (0 << 0))
+
+#define lrc_con0_init                                 \
+    /*                               */    ((0 << 7) |\
+    /*                               */     (0 << 6) |\
+    /*RC32K_RPPS_S1_33v              */     (1 << 5) |\
+    /*RC32K_RPPS_S0_33v              */     (0 << 4) |\
+    /*                               */     (0 << 3) |\
+    /*                               */     (0 << 2) |\
+    /*RC32K_RN_TRIM_33v              */     (0 << 1) |\
+    /*RC32K_EN_33v                   */     (1 << 0))
+
+
+#define lrc_pll_con4                               \
+    /*RST                       1 bit*/     ((     0 << 9  ) |\
+    /*SYSPLL_MSEL(1-0)          2 bit*/     (   0b00 << 7  ) |\
+    /*SYSPLL_RSEL(1-0)          2 bit*/     (   0b00 << 5  ) |\
+    /*SYSPLL_TSEL(3-0)          4 bit*/     ( 0b0000 << 1  ) |\
+    /*SYSPLL_DSMS               1 bit*/     (      0 << 0 ))
+
+#define lrc_pll_con3                               \
+    /*SYSPLL_CKE                1 bit*/     ((     1 << 9  ) |\
+    /*DIVS(2-0)_BTADC           3 bit*/     (  0b100 << 6  ) |\
+    /*CKOE_BTADC                1 bit*/     (      0 << 5  ) |\
+    /*CKOUT_D4P5_OE             1 bit*/     (      1 << 4  ) |\
+    /*CKOUT_D3P5_OE             1 bit*/     (      1 << 3  ) |\
+    /*CKOUT_D2P5_OE             1 bit*/     (      1 << 2  ) |\
+    /*CKOUT_D1P5_OE             1 bit*/     (      1 << 1  ) |\
+    /*CKOUT_D1_OE               1 bit*/     (      1 << 0 ))
+
+#define lrc_pll_con2                               \
+    /*SYSPLL_DS(11-0)          12 bit*/     (((192000000/(32000*8))-2)<< 0)
+
+#define lrc_pll_con1                               \
+    /*SYSPLL_REFMOD(1-0)        2 bit*/     ((  0b00 << 12 ) |\
+    /*SYSPLL_REFDSEN(1-0)       2 bit*/     (   0b01 << 10 ) |\
+    /*SYSPLL_REFSEL             1 bit*/     (      1 << 9  ) |\
+    /*ref_sel                   2 bit*/     (   0b00 << 7  ) |\
+    /*SYSPLL_REFDS(6-0)         7 bit*/     (      0 << 0 ))
+
+#define lrc_pll_con0                               \
+    /*SYSPLL_TEST_EN            1 bit*/     ((     0 << 23 ) |\
+    /*SYSPLL_TEST_S(1-0)        2 bit*/     (   0b00 << 21 ) |\
+    /*SYSPLL_LDO_BYPASS         1 bit*/     (      0 << 20 ) |\
+    /*SYSPLL_LDO12D_S(2-0)      3 bit*/     (  0b101 << 17 ) |\
+    /*SYSPLL_LDO12A_S(2-0)      3 bit*/     (  0b101 << 14 ) |\
+    /*SYSPLL_IVCOS(2-0)         3 bit*/     (  0b011 << 11 ) |\
+    /*SYSPLL_LPFR2S(2-0)        3 bit*/     (  0b111 << 8  ) |\
+    /*SYSPLL_ICPS(2-0)          3 bit*/     (  0b000 << 5  ) |\
+    /*SYSPLL_PFDS(1-0)          2 bit*/     (   0b01 << 3  ) |\
+    /*SYSPLL_MODE               1 bit*/     (      0 << 2  ) |\
+    /*SYSPLL_RN                 1 bit*/     (      0 << 1  ) |\
+    /*SYSPLL_EN                 1 bit*/     (      0 << 0 ))
+
+
+
 #endif
 #endif

@@ -584,6 +584,7 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
             break;
 
         case 4:
+            coordinate_equal();
             handle_send_packect(key_pp_press, sizeof(key_pp_press), REPROT_INFO_LEN1);
             if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_pp_release_before, sizeof(key_pp_release_before), REPROT_INFO_LEN0);
@@ -674,7 +675,7 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
             break;
         }
     }
-
+    /* 通过按键三击来调整X Y的坐标达到拍照按键位置的调整，存储在VM，掉电后依旧保留之前的坐标   */
     if (key_type == KEY_EVENT_TRIPLE_CLICK) {
         switch (key_value) {
         case 0:
@@ -686,6 +687,15 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
             coordinate_equal();
             break;
         case 1:
+            x_lab -= 128;
+            if (x_lab <= 0) {
+                x_lab = 4095;
+
+            }
+            coordinate_equal();
+            break;
+
+        case 2:
             y_lab += 128;
             if (y_lab >= 4100) {
                 y_lab = 0;
@@ -694,20 +704,10 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
             coordinate_equal();
             break;
 
-        case 2:
+        case 3:
             y_lab -= 128;
             if (y_lab <= 0) {
                 y_lab =  4100 ;
-
-            }
-            coordinate_equal();
-            break;
-
-        case 3:
-            x_lab -= 128;
-            if (x_lab <= 0) {
-                x_lab = 4095;
-
             }
             coordinate_equal();
             break;
@@ -1517,20 +1517,21 @@ static int event_handler(struct application *app, struct sys_event *event)
             bt_connction_status_event_handler(&event->u.bt);
         } else if ((u32)event->arg == SYS_BT_EVENT_TYPE_HCI_STATUS) {
             bt_hci_event_handler(&event->u.bt);
-        } else if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
-            return app_power_event_handler(&event->u.dev);
         } else if ((u32)event->arg == SYS_BT_EVENT_FORM_COMMON) {
             return app_common_event_handler(&event->u.dev);
         }
 
+        return 0;
+
+    case SYS_DEVICE_EVENT:
+        if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+            return app_power_event_handler(&event->u.dev);
+        }
 #if TCFG_CHARGE_ENABLE
         else if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {
             app_charge_event_handler(&event->u.dev);
         }
 #endif
-        return 0;
-
-    case SYS_DEVICE_EVENT:
         return 0;
 
     default:

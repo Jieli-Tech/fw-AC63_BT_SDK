@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include "app_config.h"
 
+#if TRANS_MULTI_BLE_EN
+
 #define MULTI_ROLE_CLIENT         1
 #define MULTI_ROLE_SERVER         0
 
@@ -14,13 +16,12 @@
 #define MULTI_ROLE_SLAVE          0
 
 //---------------------------------
-//range:0 ~ 1
-#define SUPPORT_MAX_SERVER       (1)
-#define SUPPORT_MAX_CLIENT       (1)
+#define SUPPORT_MAX_SERVER       TRANS_MULTI_BLE_SLAVE_NUMS
+#define SUPPORT_MAX_CLIENT       TRANS_MULTI_BLE_MASTER_NUMS
 //---------------------------------
 //----------------------------------------------------------------------------------------
-extern u16 server_con_handle[SUPPORT_MAX_SERVER];
-extern u16 client_con_handle[SUPPORT_MAX_CLIENT];
+extern u16 server_con_handle[];
+extern u16 client_con_handle[];
 
 
 s8 mul_get_dev_index(u16 handle, u8 role);
@@ -42,5 +43,7 @@ void ble_trans_module_enable(u8 en);
 void ble_client_module_enable(u8 en);
 void ble_multi_trans_disconnect(void);
 void ble_multi_client_disconnect(void);
+
+#endif
 
 #endif

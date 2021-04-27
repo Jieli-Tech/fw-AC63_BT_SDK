@@ -173,9 +173,9 @@ const int config_btctler_le_master_multilink = 0;
 const int config_btctler_le_afh_en = 0;
 // LE RAM Control
 const int config_btctler_le_hw_nums = 2;
-const int config_btctler_le_rx_nums = 8;
+const int config_btctler_le_rx_nums = 10;   //le_hw_nums*5
 const int config_btctler_le_acl_packet_length = 27;
-const int config_btctler_le_acl_total_nums = 8;
+const int config_btctler_le_acl_total_nums = 10;   //le_hw_nums*5
 
 // Master multi-link
 const int config_btctler_le_master_multilink = 1;
@@ -216,6 +216,7 @@ const int config_btctler_single_carrier_en = 1;   ////单模ble才设置
 const int config_btctler_single_carrier_en = 0;
 #endif
 
+const int sniff_support_reset_anchor_point = 0;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 
 
 /**

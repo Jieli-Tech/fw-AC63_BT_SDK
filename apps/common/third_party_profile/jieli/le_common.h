@@ -18,6 +18,7 @@
 #include "typedef.h"
 #include <stdint.h>
 #include "btstack/bluetooth.h"
+#include "app_config.h"
 
 //--------------------------------------------
 #define LE_DEBUG_PRINT_EN               1     // log switch

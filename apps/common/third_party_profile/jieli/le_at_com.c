@@ -114,9 +114,9 @@ static const struct conn_update_param_t connection_param_table[] = {
 };
 #define CONN_PARAM_TABLE_CNT      (sizeof(connection_param_table)/sizeof(struct conn_update_param_t))
 
-#if (ATT_RAM_BUFSIZE < 64)
-#error "adv_data & rsp_data buffer error!!!!!!!!!!!!"
-#endif
+/* #if (ATT_RAM_BUFSIZE < 64) */
+/* #error "adv_data & rsp_data buffer error!!!!!!!!!!!!" */
+/* #endif */
 
 //用户可配对的，这是样机跟客户开发的app配对的秘钥
 /* const u8 link_key_data[16] = {0x06, 0x77, 0x5f, 0x87, 0x91, 0x8d, 0xd4, 0x23, 0x00, 0x5d, 0xf1, 0xd8, 0xcf, 0x0c, 0x14, 0x2b}; */
@@ -813,75 +813,20 @@ static int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type)
     return ret;
 }
 
-//------------------------------------------------------
-static int make_set_adv_data(void)
-{
-    u8 offset = 0;
-    u8 *buf = adv_data;
-
-    /* offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x18, 1); */
-    /* offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x1A, 1); */
-    offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x06, 1);
-    offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, 0xAF30, 2);
-
-    if (offset > ADV_RSP_PACKET_MAX) {
-        puts("***adv_data overflow!!!!!!\n");
-        return -1;
-    }
-    log_info("adv_data(%d):", offset);
-    log_info_hexdump(buf, offset);
-    adv_data_len = offset;
-    ble_op_set_adv_data(offset, buf);
-    return 0;
-}
-
-static int make_set_rsp_data(void)
-{
-    u8 offset = 0;
-    u8 *buf = scan_rsp_data;
-
-#if RCSP_BTMATE_EN
-    u8  tag_len = sizeof(user_tag_string);
-    offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA, (void *)user_tag_string, tag_len);
-#endif
-
-    u8 name_len = gap_device_name_len;
-    u8 vaild_len = ADV_RSP_PACKET_MAX - (offset + 2);
-    if (name_len > vaild_len) {
-        name_len = vaild_len;
-    }
-    offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME, (void *)gap_device_name, name_len);
-
-    if (offset > ADV_RSP_PACKET_MAX) {
-        puts("***rsp_data overflow!!!!!!\n");
-        return -1;
-    }
-
-    log_info("rsp_data(%d):", offset);
-    log_info_hexdump(buf, offset);
-    scan_rsp_data_len = offset;
-    ble_op_set_rsp_data(offset, buf);
-    return 0;
-}
-
 //广播参数设置
 static void advertisements_setup_init()
 {
     uint8_t adv_type = ADV_IND;
     uint8_t adv_channel = ADV_CHANNEL_ALL;
-    int   ret = 0;
 
     ble_op_set_adv_param(ADV_INTERVAL_MIN, adv_type, adv_channel);
+    ble_op_set_adv_data(adv_data_len, adv_data);
+    ble_op_set_rsp_data(scan_rsp_data_len, scan_rsp_data);
 
-    if (auto_adv_enable) {
-        ret |= make_set_adv_data();
-        ret |= make_set_rsp_data();
-    }
-
-    if (ret) {
-        puts("advertisements_setup_init fail !!!!!!\n");
-        return;
-    }
+    log_info("set_adv_data(%d):", adv_data_len);
+    log_info_hexdump(adv_data, adv_data_len);
+    log_info("set_rsp_data(%d):", scan_rsp_data_len);
+    log_info_hexdump(scan_rsp_data, scan_rsp_data_len);
 
 }
 
@@ -1227,6 +1172,10 @@ void bt_ble_init(void)
 
     log_info("ble name(%d): %s \n", gap_device_name_len, gap_device_name);
 
+    adv_data_len = 0;
+    scan_rsp_data_len = 0;
+    con_handle = 0;
+
     set_ble_work_state(BLE_ST_INIT_OK);
     ble_module_enable(1);
 
@@ -1454,8 +1403,8 @@ int ble_at_set_adv_data(u8 *data, u8 len)
         return APP_BLE_OPERATION_ERROR;
     }
 
-    memcpy(at_tmp_buffer, data, len);
-    ble_op_set_adv_data(len, at_tmp_buffer);
+    memcpy(adv_data, data, len);
+    adv_data_len = len;
     return APP_BLE_NO_ERROR;
 }
 
@@ -1469,8 +1418,8 @@ int ble_at_set_rsp_data(u8 *data, u8 len)
         return APP_BLE_OPERATION_ERROR;
     }
 
-    memcpy(at_tmp_buffer, data, len);
-    ble_op_set_rsp_data(len, at_tmp_buffer);
+    memcpy(scan_rsp_data, data, len);
+    scan_rsp_data_len = len;
     return APP_BLE_NO_ERROR;
 }
 
@@ -1494,10 +1443,72 @@ void input_key_handler(u8 key_status, u8 key_number)
 {
 }
 
+//------------------------------------------------------
+static int default_make_set_adv_data(void)
+{
+    u8 offset = 0;
+    u8 *buf = adv_data;
+
+    /* offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x18, 1); */
+    /* offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x1A, 1); */
+    offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x06, 1);
+    offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, 0xAF30, 2);
+
+    if (offset > ADV_RSP_PACKET_MAX) {
+        puts("***adv_data overflow!!!!!!\n");
+        return -1;
+    }
+    log_info("default_adv_data(%d):", offset);
+    log_info_hexdump(buf, offset);
+    adv_data_len = offset;
+    return 0;
+}
+
+static int default_make_set_rsp_data(void)
+{
+    u8 offset = 0;
+    u8 *buf = scan_rsp_data;
+
+#if RCSP_BTMATE_EN
+    u8  tag_len = sizeof(user_tag_string);
+    offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA, (void *)user_tag_string, tag_len);
+#endif
+
+    u8 name_len = gap_device_name_len;
+    u8 vaild_len = ADV_RSP_PACKET_MAX - (offset + 2);
+    if (name_len > vaild_len) {
+        name_len = vaild_len;
+    }
+    offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME, (void *)gap_device_name, name_len);
+
+    if (offset > ADV_RSP_PACKET_MAX) {
+        puts("***rsp_data overflow!!!!!!\n");
+        return -1;
+    }
+
+    log_info("default_rsp_data(%d):", offset);
+    log_info_hexdump(buf, offset);
+    scan_rsp_data_len = offset;
+    return 0;
+}
+
+
 void ble_test_auto_adv(u8 en)
 {
     log_info("ble_test_auto_adv = %d", en);
     auto_adv_enable = en;
+    int ret = 0;
+
+    if (auto_adv_enable) {
+        ret |= default_make_set_adv_data();
+        ret |= default_make_set_rsp_data();
+    }
+
+    if (ret) {
+        puts("make adv&rsp data fail!!!\n");
+        return;
+    }
+
     bt_ble_adv_enable(en);
 }
 

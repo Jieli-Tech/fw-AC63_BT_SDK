@@ -48,7 +48,7 @@
 #if LE_DEBUG_PRINT_EN
 extern void printf_buf(u8 *buf, u32 len);
 //#define log_info            r_printf
-#define log_info(x, ...)  r_printf("[LE_MUL_COMM]" x " ", ## __VA_ARGS__)
+#define log_info(x, ...)  printf("[LE-MUL-COMM]" x " ", ## __VA_ARGS__)
 #define log_info_hexdump  printf_buf
 
 #else
@@ -333,7 +333,8 @@ void bt_ble_init(void)
     }
 
     if (SUPPORT_MAX_SERVER + SUPPORT_MAX_CLIENT > config_le_hci_connection_num
-        || SUPPORT_MAX_SERVER > config_le_gatt_server_num || SUPPORT_MAX_CLIENT > config_le_gatt_client_num) {
+        || SUPPORT_MAX_SERVER > config_le_gatt_server_num
+        || SUPPORT_MAX_CLIENT > config_le_gatt_client_num) {
         ASSERT(0, "btstack not enough!!!\n");
         while (1);
     }

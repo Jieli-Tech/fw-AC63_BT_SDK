@@ -18,6 +18,7 @@
 #define         SYS_CLOCK_INPUT_PLL_RC_16M  7
 #define         SYS_CLOCK_INPUT_PLL_BT_OSC  8
 #define         SYS_CLOCK_INPUT_PLL_PAT     9
+#define         SYS_CLOCK_INPUT_PLL_RCL     10
 
 typedef int SYS_CLOCK_INPUT;
 

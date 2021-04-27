@@ -14,6 +14,8 @@ u32 adc_sample(u32 ch);
 static volatile u16 _adc_res;
 static volatile u16 cur_ch_value;
 static u8 cur_ch = 0;
+//static u16 max_vbg = 0;
+//static u16 min_vbg = -1;
 struct adc_info_t {
     u32 ch;
     u16 value;
@@ -98,35 +100,39 @@ static u32 adc_get_next_ch(u32 cur_ch)
     return 0;
 }
 
-#define vbat_value_array_size   32
-static u16 vbat_value_array[vbat_value_array_size];
-static void vbat_value_push(u16 vbat_value)
+#define     VBAT_SAMPLE_FREQ    1000 //ms
+
+#define     VBAT_VALUE_ARRAY_SIZE   (8 + 1)
+
+static u16 vbat_value_array[1 + VBAT_VALUE_ARRAY_SIZE];
+static u16 vbg_value_array[1 + VBAT_VALUE_ARRAY_SIZE];
+
+static void adc_value_push(u16 *array, u16 adc_value)
 {
-    static u32 pos = 0;
-    vbat_value_array[pos] = vbat_value;
+    u32 pos = array[0];
+    array[pos] = adc_value;
     pos++;
-    if (pos == vbat_value_array_size) {
+    if (pos == VBAT_VALUE_ARRAY_SIZE) {
         pos = 0;
     }
+    array[0] = pos;
 }
-static u16 vbat_value_avg(void)
+
+static u16 adc_value_avg(u16 *array)
 {
     u32 i, sum = 0;
-    for (i = 0; i < vbat_value_array_size; i++) {
-        sum += vbat_value_array[i];
+    for (i = 1; i < VBAT_VALUE_ARRAY_SIZE; i++) {
+        sum += array[i];
     }
-    return sum / vbat_value_array_size;
+    return sum / (VBAT_VALUE_ARRAY_SIZE - 1);
 }
 
 u32 adc_get_value(u32 ch)
 {
-
-    if (ch == AD_CH_LDOREF) {
-        return vbg_adc_value;
-    }
-
     if (ch == AD_CH_VBAT) {
-        return vbat_value_avg();
+        return adc_value_avg(vbat_value_array);
+    } else if (ch == AD_CH_LDOREF) {
+        return adc_value_avg(vbg_value_array);
     }
 
     for (int i = 0; i < ADC_MAX_CH; i++) {
@@ -134,10 +140,23 @@ u32 adc_get_value(u32 ch)
             return adc_queue[i].value;
         }
     }
-    return 0;
+    return 1;
 }
 #define     VBG_CENTER  801
 #define     VBG_RES     3
+u32 adc_value_to_voltage(u32 adc_vbg, u32 adc_ch_val)
+{
+    u32 adc_res = adc_ch_val;
+    u32 adc_trim = get_vbg_trim();
+    u32 tmp, tmp1;
+
+    tmp1 = adc_trim & 0x0f;
+    tmp = (adc_trim & BIT(4)) ? VBG_CENTER - tmp1 * VBG_RES : VBG_CENTER + tmp1 * VBG_RES;
+    adc_res = adc_res * tmp / adc_vbg;
+    //printf("adc_res %d mv vbg:%d adc:%d adc_trim:%x\n", adc_res, adc_vbg, adc_ch_val, adc_trim);
+    return adc_res;
+}
+
 u32 adc_get_voltage(u32 ch)
 {
 #ifdef CONFIG_FPGA_ENABLE
@@ -146,25 +165,11 @@ u32 adc_get_voltage(u32 ch)
 
     u32 adc_vbg = adc_get_value(AD_CH_LDOREF);
     u32 adc_res = adc_get_value(ch);
-
-
-    u32 adc_trim = get_vbg_trim();
-    u32 tmp, tmp1;
-
-    tmp1 = adc_trim & 0x0f;
-    tmp = (adc_trim & BIT(4)) ? VBG_CENTER - tmp1 * VBG_RES : VBG_CENTER + tmp1 * VBG_RES;
-    adc_res = adc_res * tmp / adc_vbg;
-
-
-    /* printf("\n\n vbg %d\n",  adc_get_value(AD_CH_LDOREF));    */
-    /* printf("%x VBAT:%d %d mv\n\n", adc_trim,                  */
-    /*         adc_get_value(AD_CH_VBAT), adc_res * 4);          */
-    return adc_res;
+    return adc_value_to_voltage(adc_vbg, adc_res);
 }
 u32 adc_check_vbat_lowpower()
 {
-    int vbat = adc_get_value(AD_CH_VBAT);
-    return __builtin_abs(vbat - 255) < 5;
+    return 0;
 }
 void adc_audio_ch_select(u32 ch)
 {
@@ -263,9 +268,8 @@ u32 adc_sample(u32 ch)
     SFR(adc_con, 0, 3, 0b110);//div 96
 
     adc_con |= (0xf << 12); //启动延时控制，实际启动延时为此数值*8个ADC时钟
-    adc_con |= (adc_queue[0].ch & 0xf) << 8;
-    adc_con |= BIT(3);
-    adc_con |= BIT(6);
+    adc_con |= BIT(3); //ana en
+    adc_con |= BIT(6); //en
     adc_con |= BIT(5);//ie
 
     SFR(adc_con, 8, 4, ch & 0xf);
@@ -288,9 +292,9 @@ void set_change_vbg_value_flag(void)
 }
 void adc_scan(void *priv)
 {
-    static u16 adc_sample_flag = 0;
+    static u8 adc_sample_flag = 0;
 
-    if (adc_queue[ADC_MAX_CH].ch != -1) {//occupy mode
+    if (adc_queue[ADC_MAX_CH].ch != -1) {   //occupy mode
         return;
     }
 
@@ -299,22 +303,23 @@ void adc_scan(void *priv)
     }
 
     if (adc_sample_flag) {
-        if (adc_sample_flag == 2) {
-            vbg_adc_value = _adc_res;
-        } else {
-            adc_queue[cur_ch].value = _adc_res;
-            if (adc_queue[cur_ch].ch == AD_CH_VBAT) {
-                vbat_value_push(adc_queue[cur_ch].value);
-            }
+        adc_queue[cur_ch].value = _adc_res;
+        if (adc_queue[cur_ch].ch == AD_CH_VBAT) {
+            adc_value_push(vbat_value_array, _adc_res);
+            /* r_printf("vbat %d",_adc_res); */
+        } else if (adc_queue[cur_ch].ch == AD_CH_LDOREF) {
+            adc_value_push(vbg_value_array, _adc_res);
+            /*
+                if (_adc_res > max_vbg) {
+                    max_vbg = _adc_res;
+                }
+                if (_adc_res < min_vbg) {
+                    min_vbg = _adc_res;
+                }
+            	*/
+            /* r_printf("vbg %d",_adc_res); */
         }
         adc_sample_flag = 0;
-    }
-
-    if (change_vbg_flag) {
-        change_vbg_flag = 0;
-        adc_sample(AD_CH_LDOREF);
-        adc_sample_flag = 2;
-        return;
     }
 
     u8 next_ch = adc_get_next_ch(cur_ch);
@@ -331,44 +336,60 @@ void adc_scan(void *priv)
     }
 
     cur_ch = next_ch;
+    /*
+    static u16 test_count = 0;
+    if (test_count++ == 200) {
+        test_count = 0;
+        r_printf("min_vbg %d max_vbg %d", min_vbg, max_vbg);
+    }
+    */
+}
+
+static u16 adc_wait_pnd()
+{
+    while (!(JL_ADC->CON & BIT(7)));
+    u32 adc_res = JL_ADC->RES;
+    asm("nop");
+    JL_ADC->CON |= BIT(6);
+    return adc_res;
 }
 
 void _adc_init(u32 sys_lvd_en)
 {
     memset(adc_queue, 0xff, sizeof(adc_queue));
+    memset(vbg_value_array, 0x0, sizeof(vbg_value_array));
+    memset(vbat_value_array, 0x0, sizeof(vbat_value_array));
 
     JL_ADC->CON = 0;
 
     adc_add_sample_ch(AD_CH_VBAT);
-    adc_set_sample_freq(AD_CH_VBAT, 5000);
+    adc_set_sample_freq(AD_CH_VBAT, VBAT_SAMPLE_FREQ);
 
-    adc_pmu_detect_en(1);
+    adc_add_sample_ch(AD_CH_LDOREF);
+    adc_set_sample_freq(AD_CH_LDOREF, VBAT_SAMPLE_FREQ);
 
-    u32 i;
-    vbg_adc_value = 0;
     adc_sample(AD_CH_LDOREF);
-    for (i = 0; i < 10; i++) {
-        while (!(JL_ADC->CON & BIT(7)));
-        vbg_adc_value += JL_ADC->RES;
-        JL_ADC->CON |= BIT(6);
+
+    for (int i = 0; i < VBAT_VALUE_ARRAY_SIZE; i ++) {
+        adc_value_push(vbg_value_array, adc_wait_pnd());
     }
-    vbg_adc_value /= 10;
-    printf("vbg_adc_value = %d\n", vbg_adc_value);
+
+    printf("vbg_adc_value = %d\n", adc_value_avg(vbg_value_array));
 
     adc_sample(AD_CH_VBAT);
-    for (i = 0; i < vbat_value_array_size; i ++) {
-        while (!(JL_ADC->CON & BIT(7)));
-        vbat_value_array[i] = JL_ADC->RES;
-        JL_ADC->CON |= BIT(6);
+    for (int i = 0; i < VBAT_VALUE_ARRAY_SIZE; i ++) {
+        adc_value_push(vbat_value_array, adc_wait_pnd());
     }
+
+    printf("vbat_adc_value = %d\n", adc_value_avg(vbat_value_array));
+    printf("vbat = %d mv\n", adc_get_voltage(AD_CH_VBAT) * 4);
 
     if (config_bt_temperature_pll_trim) {
         u32 dtemp_ch = adc_add_sample_ch(AD_CH_DTEMP);
         adc_set_sample_freq(AD_CH_DTEMP, 1500);
         adc_sample(AD_CH_DTEMP);
-        while (!(JL_ADC->CON & BIT(7)));
-        adc_queue[dtemp_ch].value = JL_ADC->RES;
-        JL_ADC->CON |= BIT(6);
+        adc_queue[dtemp_ch].value = adc_wait_pnd();
+
         temperature_pll_trim_init();
     }
 
@@ -390,39 +411,22 @@ static u32 get_vdd_voltage(u32 ch)
     u32 vbg_value = 0;
     u32 wvdd_value = 0;
 
-    adc_pmu_detect_en(1);
     adc_sample(AD_CH_LDOREF);
     for (int i = 0; i < 10; i++) {
-        while (!(JL_ADC->CON & BIT(7))) { //wait pending
-        }
-
-        vbg_value += JL_ADC->RES;
-        JL_ADC->CON |= BIT(6);
+        vbg_value += adc_wait_pnd();
     }
 
     adc_sample(ch);
     for (int i = 0; i < 10; i++) {
-        while (!(JL_ADC->CON & BIT(7))) { //wait pending
-        }
-
-        wvdd_value += JL_ADC->RES;
-        JL_ADC->CON |= BIT(6);
+        wvdd_value += adc_wait_pnd();
     }
 
     u32 adc_vbg = vbg_value / 10;
     u32 adc_res = wvdd_value / 10;
 
+    return adc_value_to_voltage(adc_vbg, adc_res);
 
-    u32 adc_trim = get_vbg_trim();
-    u32 tmp, tmp1;
-
-    tmp1 = adc_trim & 0x0f;
-    tmp = (adc_trim & BIT(4)) ? VBG_CENTER - tmp1 * VBG_RES : VBG_CENTER + tmp1 * VBG_RES;
-    adc_res = adc_res * tmp / adc_vbg;
-    /* printf("adc_res %d mv vbg:%d wvdd:%d %x\n", adc_res, vbg_value / 10, wvdd_value / 10,adc_trim); */
-    return adc_res;
 }
-
 
 static u8 wvdd_trim(u8 trim)
 {
@@ -599,21 +603,8 @@ static void temperature_pll_trim_exit(void)
 
 void adc_init()
 {
-#if 0
-    JL_ANA->WLA_CON25 &= ~(BIT(19)); //fm
-    JL_ANA->WLA_CON4 &= ~(BIT(6));//bt
+    adc_pmu_detect_en(1);
 
-    //audio
-    JL_ANA->ADA_CON3 |= BIT(24);//F_VOUTL_TEST_EN_11v
-    JL_ANA->ADA_CON3 |= BIT(25);//F_VOUTR_TEST_EN_11v
-    JL_ANA->ADA_CON3 &= ~BIT(26);
-    JL_ANA->ADA_CON3 &= ~BIT(27);
-    JL_ANA->ADA_CON3 |= BIT(28);//DACVDD_TEST_EN_11v
-    JL_ANA->ADA_CON3 |= BIT(29);//R_VOUTL_TEST_EN_11v
-    JL_ANA->ADA_CON3 |= BIT(30);//R_VOUTR_TEST_EN_11v
-
-    JL_CLOCK->PLL_CON1 &= ~BIT(18); //pll
-#endif
 
     //trim wvdd
     u8 trim = check_wvdd_pvdd_trim(0);
@@ -647,11 +638,9 @@ void adc_test()
     printf("\n%s() VBAT:%d %d mv\n\n", __func__,
            adc_get_value(AD_CH_VBAT), adc_get_voltage(AD_CH_VBAT) * 4);
 
-    printf("\n%s() IO:%d %d mv\n\n", __func__,
-           adc_get_value(AD_CH_PA1), adc_get_voltage(AD_CH_PA1));
+    /* printf("\n%s() pa3:%d %d mv\n\n", __func__,                   */
+    /*        adc_get_value(AD_CH_PA3), adc_get_voltage(AD_CH_PA3)); */
 
-    /* printf("\n%s() DTEMP:%d %d mv\n\n", __func__, */
-    /* adc_get_value(AD_CH_DTEMP), adc_get_voltage(AD_CH_DTEMP)); */
 
 }
 void adc_vbg_init()

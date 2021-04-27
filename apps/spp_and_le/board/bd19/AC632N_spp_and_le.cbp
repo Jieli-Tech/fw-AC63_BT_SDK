@@ -137,6 +137,7 @@
 <Unit filename="../../../../apps/common/key/adkey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/iokey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/key_driver.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/key/touch_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/3th_profile_api.h" />
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.h" />
@@ -339,6 +340,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/power_interface.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/pwm_led.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/rdec.h" />
+<Unit filename="../../../../include_lib/driver/cpu/bd19/asm/rtc.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/spi.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/spiflash.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/uart.h" />

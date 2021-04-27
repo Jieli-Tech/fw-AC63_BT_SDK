@@ -26,4 +26,16 @@
 #define     CFG_COORDINATE_ADDR              43
 
 #define     VM_USB_MIC_GAIN             	 5
+
+#define     VM_ALARM_0                  	 44
+#define     VM_ALARM_1                  	 45
+#define     VM_ALARM_2                  	 46
+#define     VM_ALARM_3                  	 47
+#define     VM_ALARM_4                  	 48
+#define     VM_ALARM_MASK               	 49
+#define     VM_ALARM_NAME_0             	 50
+#define     VM_ALARM_NAME_1             	 51
+#define     VM_ALARM_NAME_2             	 52
+#define     VM_ALARM_NAME_3             	 53
+#define     VM_ALARM_NAME_4             	 54
 #endif /* #ifndef _USER_CFG_ID_H_ */

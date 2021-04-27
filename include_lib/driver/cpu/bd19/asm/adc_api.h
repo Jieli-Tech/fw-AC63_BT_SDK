@@ -30,13 +30,14 @@
 #define ADC_PMU_CH_PROGF     (0x4<<16)
 #define ADC_PMU_CH_VBAT      (0x5<<16)     //1/4vbat
 #define ADC_PMU_CH_LDO5V     (0x6<<16)     //1/4 LDO5V
-#define ADC_PMU_CH_WVDD      (0x7<<16)
+#define ADC_PMU_CH_WVDD_TEST (0x7<<16)	//for test
 #define ADC_PMU_CH_PVDD      (0x8<<16)
 #define ADC_PMU_CH_RVDD      (0x9<<16)
 #define ADC_PMU_CH_VSW       (0xa<<16)
 #define ADC_PMU_CH_PROGI     (0xb<<16)
 #define ADC_PMU_CH_EVDD      (0xc<<16)
 #define ADC_PMU_CH_VBGW08    (0xd<<16)  //WVBG
+#define ADC_PMU_CH_WVDD		 (0xe<<16)	//for sdk trim
 
 
 

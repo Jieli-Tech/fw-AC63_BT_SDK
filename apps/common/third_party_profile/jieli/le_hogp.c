@@ -168,16 +168,15 @@ static const char Firmware_Revision_String[] = "0.0.1";
 static const char Software_Revision_String[] = "0.0.1";
 static const u8 System_ID[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-/*
-typedef struct{
-	u8  vendor_id_source;
-	u16 vendor_id;
-	u16 product_id;
-	u16 product_version;
-}
-*/
+//定义的产品信息,for test
+#define  PNP_VID_SOURCE   0x02
+#define  PNP_VID          0x05ac //0x05d6
+#define  PNP_PID          0x022C //
+#define  PNP_PID_VERSION  0x011b //1.1.11
+
+static const u8 PnP_ID[] = {PNP_VID_SOURCE, PNP_VID & 0xFF, PNP_VID >> 8, PNP_PID & 0xFF, PNP_PID >> 8, PNP_PID_VERSION & 0xFF, PNP_PID_VERSION >> 8};
 /* static const u8 PnP_ID[] = {0x02, 0x17, 0x27, 0x40, 0x00, 0x23, 0x00}; */
-static const u8 PnP_ID[] = {0x02, 0xac, 0x05, 0x2c, 0x02, 0x1b, 0x01};
+/* static const u8 PnP_ID[] = {0x02, 0xac, 0x05, 0x2c, 0x02, 0x1b, 0x01}; */
 
 /* static const u8 hid_information[] = {0x11, 0x01, 0x00, 0x01}; */
 static const u8 hid_information[] = {0x01, 0x01, 0x00, 0x03};

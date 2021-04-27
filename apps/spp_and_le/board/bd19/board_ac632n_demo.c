@@ -141,6 +141,34 @@ const struct iokey_platform_data iokey_data = {
 	.port = iokey_list,                                       //IO按键参数表
 };
 
+#endif  /* #if TCFG_IO_KEY_ENABLE */
+
+/************************** TOUCH_KEY ****************************/
+#if TCFG_TOUCH_KEY_ENABLE
+const struct touch_key_port touch_key_list[] = {
+	{
+		.port 		= TCFG_TOUCH_KEY0_PORT,
+		.key_value 	= TCFG_TOUCH_KEY0_VALUE, 	 	//该值由时钟配置和硬件结构决定, 需要调试
+	},
+
+	{
+		.port 		= TCFG_TOUCH_KEY1_PORT,
+		.key_value 	= TCFG_TOUCH_KEY1_VALUE, 	 	//该值由时钟配置和硬件结构决定, 需要调试
+	},
+};
+
+const struct touch_key_platform_data touch_key_data = {
+	.num = ARRAY_SIZE(touch_key_list),
+	.clock = TCFG_TOUCH_KEY_CLK,
+	.change_gain 	= TCFG_TOUCH_KEY_CHANGE_GAIN,
+	.press_cfg		= TCFG_TOUCH_KEY_PRESS_CFG,
+	.release_cfg0 	= TCFG_TOUCH_KEY_RELEASE_CFG0,
+	.release_cfg1 	= TCFG_TOUCH_KEY_RELEASE_CFG1,
+	.port_list = touch_key_list,
+};
+
+#endif  /* #if TCFG_TOUCH_KEY_ENABLE */
+
 #if MULT_KEY_ENABLE
 //组合按键消息映射表
 //配置注意事项:单个按键按键值需要按照顺序编号,如power:0, prev:1, next:2
@@ -158,7 +186,6 @@ const struct key_remap_data iokey_remap_data = {
 };
 #endif
 
-#endif
 
 #if TCFG_RTC_ALARM_ENABLE
 const struct sys_time def_sys_time = {  //初始一下当前时间
@@ -338,6 +365,33 @@ static void close_gpio(void)
         [PORTC_GROUP] = 0x3ff,//
     };
 
+	if(P3_ANA_CON2 & BIT(3))
+	{
+		port_protect(port_group, IO_PORTB_02);	//protect VCM_IO
+	}
+
+	if(P3_PINR_CON & BIT(0))
+	{
+		u8 port_sel = P3_PORT_SEL0;
+		if((port_sel >= 1) && (port_sel <= 10)){
+			port_sel = IO_GROUP_NUM * 0 + port_sel - 1;
+			port_protect(port_group, port_sel);				//protect 长按复位
+		}else if((port_sel >= 11) && (port_sel <= 20)){
+			port_sel = IO_GROUP_NUM * 1 + port_sel - 11;
+			port_protect(port_group, port_sel);				//protect 长按复位
+		}else if((port_sel >= 21) && (port_sel <= 25)){
+			port_sel = IO_GROUP_NUM * 2 + port_sel - 21;
+			port_protect(port_group, port_sel);				//protect 长按复位
+		}else if(port_sel == 26){
+			port_protect(port_group, IO_PORT_DP);			//protect 长按复位
+		}else if(port_sel == 27){
+			port_protect(port_group, IO_PORT_DM);			//protect 长按复位
+		}else if(port_sel == 28){
+			port_protect(port_group, IO_PORT_DP1);			//protect 长按复位
+		}else if(port_sel == 29){
+			port_protect(port_group, IO_PORT_DM1);			//protect 长按复位
+		}
+	}
 
 #if TCFG_ADKEY_ENABLE
     port_protect(port_group,TCFG_ADKEY_PORT);

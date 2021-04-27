@@ -186,6 +186,7 @@
 <Unit filename="../../../../apps/common/key/adkey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/iokey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/key/key_driver.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/key/touch_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/music/music_decrypt.h" />
 <Unit filename="../../../../apps/common/music/music_id3.h" />
 <Unit filename="../../../../apps/common/phone_message/phone_message.h" />

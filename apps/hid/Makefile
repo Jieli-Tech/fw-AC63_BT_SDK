@@ -59,6 +59,7 @@ objs += \
 	$(ROOT)/apps/common/key/matrix_keyboard.o \
 	$(ROOT)/apps/common/key/iokey.o \
 	$(ROOT)/apps/common/key/adkey.o \
+	$(ROOT)/apps/common/key/touch_key.o \
 	$(ROOT)/apps/common/key/ctmu_touch_key.o \
     $(ROOT)/apps/common/key/key_driver.o \
     $(ROOT)/apps/common/touch_pad/SYD9557M.o \

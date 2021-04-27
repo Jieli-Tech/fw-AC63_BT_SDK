@@ -49,9 +49,14 @@
 
 //蓝牙多连接
 #if CONFIG_APP_MULTI
-//组合enable,多开注意RAM的使用
-#define TRANS_MULTI_BLE_EN                1 //蓝牙BLE多连:1主1从,或者2从
-#define TRANS_MULTI_SPP_EN                0 //spp connect:只支持1个连接
+//spp+le 组合enable,多开注意RAM的使用
+//le 多连
+#define TRANS_MULTI_BLE_EN                1 //蓝牙BLE多连:1主1从,或者2主
+#define TRANS_MULTI_BLE_SLAVE_NUMS        1 //range(0~1)
+#define TRANS_MULTI_BLE_MASTER_NUMS       1 //range(0~2)
+
+//spp
+#define TRANS_MULTI_SPP_EN                1 //spp connect:只支持1个连接
 #endif
 
 #include "board_config.h"

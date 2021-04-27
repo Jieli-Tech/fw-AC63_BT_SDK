@@ -59,7 +59,7 @@
 #if LE_DEBUG_PRINT_EN
 extern void printf_buf(u8 *buf, u32 len);
 //#define log_info            y_printf
-#define log_info(x, ...)  y_printf("[LE_MUL_TRANS]" x " ", ## __VA_ARGS__)
+#define log_info(x, ...)  printf("[LE-MUL-TRANS]" x " ", ## __VA_ARGS__)
 #define log_info_hexdump  printf_buf
 
 #else
@@ -243,20 +243,20 @@ static void connection_update_complete_success(u16 conn_handle, u8 *packet)
 }
 
 
-static void set_ble_work_state(ble_state_e state)
+static void set_ble_work_state(u8 cid, ble_state_e state)
 {
-    if (state != ble_work_state[cur_dev_cid]) {
-        log_info("ble_work_st[%d]:%x->%x\n", cur_dev_cid, ble_work_state[cur_dev_cid], state);
-        ble_work_state[cur_dev_cid] = state;
+    if (state != ble_work_state[cid]) {
+        log_info("ble_work_st[%d]:%x->%x\n", cid, ble_work_state[cid], state);
+        ble_work_state[cid] = state;
         if (app_ble_state_callback) {
             app_ble_state_callback((void *)channel_priv, state);
         }
     }
 }
 
-static ble_state_e get_ble_work_state(void)
+static ble_state_e get_ble_work_state(u8 cid)
 {
-    return ble_work_state[cur_dev_cid];
+    return ble_work_state[cid];
 }
 
 #if TEST_SEND_DATA_RATE
@@ -371,7 +371,7 @@ static void server_profile_start(u16 conn_handle)
     set_app_connect_type(TYPE_BLE);
 #endif
 
-    set_ble_work_state(BLE_ST_CONNECT);
+    set_ble_work_state(cur_dev_cid, BLE_ST_CONNECT);
     ble_auto_shut_down_enable(0);
 
     /* set_connection_data_phy(CONN_SET_CODED_PHY, CONN_SET_CODED_PHY); */
@@ -383,6 +383,7 @@ u8 ble_update_get_ready_jump_flag(void)
     return 0;
 }
 
+//尝试开新设备广播
 int ble_enable_new_dev_adv(void)
 {
     log_info("%s\n", __FUNCTION__);
@@ -400,7 +401,7 @@ int ble_enable_new_dev_adv(void)
 
     log_info("new_dev_adv\n");
     cur_dev_cid = tmp_cid;
-    set_ble_work_state(BLE_ST_IDLE);
+    set_ble_work_state(cur_dev_cid, BLE_ST_IDLE);
     bt_ble_adv_enable(1);
     return 0;
 }
@@ -438,7 +439,7 @@ void trans_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 status = hci_subevent_le_enhanced_connection_complete_get_status(packet);
                 if (status) {
                     log_info("LE_SLAVE CONNECTION FAIL!!! %0x\n", status);
-                    set_ble_work_state(BLE_ST_DISCONN);
+                    set_ble_work_state(cur_dev_cid, BLE_ST_DISCONN);
                     break;
                 }
 
@@ -472,7 +473,7 @@ void trans_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
                 if (packet[3]) {
                     log_info("LE_SLAVE CONNECTION FAIL!!! %0x\n", packet[3]);
-                    set_ble_work_state(BLE_ST_DISCONN);
+                    set_ble_work_state(cur_dev_cid, BLE_ST_DISCONN);
                     bt_ble_adv_enable(1);
                     break;
                 }
@@ -529,8 +530,6 @@ void trans_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            log_info("HCI_EVENT_DISCONNECTION_COMPLETE: %0x\n", packet[5]);
-
             u16 tmp_handle = little_endian_read_16(packet, 3);
             s8 tmp_index = mul_get_dev_index(tmp_handle, MULTI_ROLE_SERVER);
             if (tmp_index < 0) {
@@ -540,17 +539,24 @@ void trans_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
             log_info("HCI_EVENT_DISCONNECTION_COMPLETE: %0x\n", packet[5]);
             server_con_handle[tmp_index] = 0;
+            set_ble_work_state(tmp_index, BLE_ST_DISCONN);
             ble_op_multi_att_send_conn_handle(0, tmp_index, MULTI_ROLE_SERVER);
 
-            if (tmp_index != cur_dev_cid) {
-                break;
+            if (0 == server_con_handle[cur_dev_cid]) {
+                //判断当前设备是否正在ADV
+                if (BLE_ST_ADV == get_ble_work_state(cur_dev_cid)) {
+                    //直接退出，不做别的操作
+                    break;
+                }
             }
+
 
 #if RCSP_BTMATE_EN
             rcsp_exit();
 #endif
 
-            set_ble_work_state(BLE_ST_DISCONN);
+            //配设备开scan
+            cur_dev_cid = tmp_index;
 
             if (!ble_update_get_ready_jump_flag()) {
                 bt_ble_adv_enable(1);
@@ -596,9 +602,14 @@ void trans_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         }
         break;
 
-        case HCI_EVENT_ENCRYPTION_CHANGE:
-            log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d\n", packet[2]);
-            break;
+        case HCI_EVENT_ENCRYPTION_CHANGE: {
+            u16 tmp_handle = little_endian_read_16(packet, 3);
+            s8 tmp_cid = mul_get_dev_index(tmp_handle, MULTI_ROLE_SERVER);
+            if (tmp_cid != -1) {
+                log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d\n", packet[2]);
+            }
+        }
+        break;
 
 #if TRANS_ANCS_EN
         case HCI_EVENT_ANCS_META:
@@ -737,7 +748,7 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
     case ATT_CHARACTERISTIC_ae04_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae3c_01_CLIENT_CONFIGURATION_HANDLE:
-        set_ble_work_state(BLE_ST_NOTIFY_IDICATE);
+        set_ble_work_state(cur_dev_cid, BLE_ST_NOTIFY_IDICATE);
         check_connetion_updata_deal(cur_dev_cid);
         log_info("\n------write ccc:%04x,%02x\n", handle, buffer[0]);
         att_set_ccc_config(handle, buffer[0]);
@@ -748,6 +759,7 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
             test_data_send_packet();
         }
 #endif
+        //被使能通知后,尝试开新设备广播
         ble_enable_new_dev_adv();
         break;
 
@@ -790,7 +802,7 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 #if RCSP_BTMATE_EN
     case ATT_CHARACTERISTIC_ae02_02_CLIENT_CONFIGURATION_HANDLE:
         ble_op_latency_skip(server_con_handle[cur_dev_cid], HOLD_LATENCY_CNT_ALL); //
-        set_ble_work_state(BLE_ST_NOTIFY_IDICATE);
+        set_ble_work_state(cur_dev_cid, BLE_ST_NOTIFY_IDICATE);
 #endif
         /* if ((cur_conn_latency == 0) */
         /*     && (connection_update_cnt == CONN_PARAM_TABLE_CNT) */
@@ -1024,7 +1036,7 @@ static int set_adv_enable(void *priv, u32 en)
         next_state = BLE_ST_IDLE;
     }
 
-    cur_state =  get_ble_work_state();
+    cur_state =  get_ble_work_state(cur_dev_cid);
     switch (cur_state) {
     case BLE_ST_ADV:
     case BLE_ST_IDLE:
@@ -1041,7 +1053,7 @@ static int set_adv_enable(void *priv, u32 en)
         return APP_BLE_NO_ERROR;
     }
     log_info("adv_en:%d\n", en);
-    set_ble_work_state(next_state);
+    set_ble_work_state(cur_dev_cid, next_state);
 
 #if EXT_ADV_MODE_EN
     if (en) {
@@ -1065,15 +1077,21 @@ static int set_adv_enable(void *priv, u32 en)
 }
 
 
-static int ble_disconnect(void *priv)
+static int trans_disconnect(void *priv)
 {
-    if (server_con_handle[cur_dev_cid]) {
-        if (BLE_ST_SEND_DISCONN != get_ble_work_state()) {
-            log_info(">>>ble send disconnect\n");
-            set_ble_work_state(BLE_ST_SEND_DISCONN);
-            ble_op_disconnect(server_con_handle[cur_dev_cid]);
+    u8 cid = (u8) priv;
+
+    if (cid >= SUPPORT_MAX_SERVER) {
+        return APP_BLE_OPERATION_ERROR;
+    }
+
+    if (server_con_handle[cid]) {
+        if (BLE_ST_SEND_DISCONN != get_ble_work_state(cid)) {
+            log_info(">>>ble(%d) send disconnect\n", cid);
+            set_ble_work_state(cid, BLE_ST_SEND_DISCONN);
+            ble_op_disconnect(server_con_handle[cid]);
         } else {
-            log_info(">>>ble wait disconnect...\n");
+            log_info(">>>ble(%d) wait disconnect...\n", cid);
         }
         return APP_BLE_NO_ERROR;
     } else {
@@ -1175,13 +1193,9 @@ void ble_trans_module_enable(u8 en)
         adv_ctrl_en = 1;
         bt_ble_adv_enable(1);
     } else {
-        if (server_con_handle[cur_dev_cid]) {
-            adv_ctrl_en = 0;
-            ble_disconnect(NULL);
-        } else {
-            bt_ble_adv_enable(0);
-            adv_ctrl_en = 0;
-        }
+        adv_ctrl_en = 0;
+        bt_ble_adv_enable(0);
+        ble_multi_trans_disconnect();
     }
 }
 
@@ -1229,7 +1243,7 @@ void bt_multi_trans_init(void)
     memset(&ble_work_state, BLE_ST_INIT_OK, SUPPORT_MAX_SERVER);
     memset(&server_con_handle, 0, SUPPORT_MAX_SERVER << 1);
 
-    set_ble_work_state(BLE_ST_INIT_OK);
+    set_ble_work_state(cur_dev_cid, BLE_ST_INIT_OK);
     ble_trans_module_enable(1);
 
 #if TEST_SEND_DATA_RATE
@@ -1249,10 +1263,21 @@ void bt_multi_trans_exit(void)
 
 }
 
-
 void ble_multi_trans_disconnect(void)
 {
-    ble_disconnect(NULL);
+    u8 i;
+    int count;
+
+    for (u8 i = 0; i < SUPPORT_MAX_SERVER; i++) {
+        count = 150;
+        if (server_con_handle[i]) {
+            trans_disconnect((void *)i);
+            while (count-- && server_con_handle[i]) {
+                os_time_dly(1);
+                putchar('w');
+            }
+        }
+    }
 }
 
 #if RCSP_BTMATE_EN
@@ -1274,7 +1299,7 @@ static int rcsp_send_user_data_do(void *priv, u8 *data, u16 len)
 #if RCSP_BTMATE_EN
 static const struct ble_server_operation_t mi_ble_operation = {
     .adv_enable = set_adv_enable,
-    .disconnect = ble_disconnect,
+    .disconnect = trans_disconnect,
     .get_buffer_vaild = get_buffer_vaild_len,
     .send_data = (void *)rcsp_send_user_data_do,
     .regist_wakeup_send = regiest_wakeup_send,
@@ -1284,7 +1309,7 @@ static const struct ble_server_operation_t mi_ble_operation = {
 #else
 static const struct ble_server_operation_t mi_ble_operation = {
     .adv_enable = set_adv_enable,
-    .disconnect = ble_disconnect,
+    .disconnect = trans_disconnect,
     .get_buffer_vaild = get_buffer_vaild_len,
     .send_data = (void *)app_send_user_data_do,
     .regist_wakeup_send = regiest_wakeup_send,

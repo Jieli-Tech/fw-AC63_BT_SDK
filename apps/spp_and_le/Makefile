@@ -62,6 +62,7 @@ objs += \
 objs += \
 	$(ROOT)/apps/common/key/iokey.o \
 	$(ROOT)/apps/common/key/adkey.o \
+	$(ROOT)/apps/common/key/touch_key.o \
     $(ROOT)/apps/common/key/key_driver.o \
 #	$(ROOT)/apps/common/code_switch/code_switch.o \
 

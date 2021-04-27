@@ -25,4 +25,6 @@ void set_boot_flag(u32 flag);
 
 void efuse_dump();
 
+u32 p33_rd_page(u8 page);
+
 #endif  /*EFUSE_H*/

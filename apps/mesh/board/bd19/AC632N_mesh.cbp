@@ -323,6 +323,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/power_interface.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/pwm_led.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/rdec.h" />
+<Unit filename="../../../../include_lib/driver/cpu/bd19/asm/rtc.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/spi.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/spiflash.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/uart.h" />

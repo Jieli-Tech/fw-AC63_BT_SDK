@@ -475,12 +475,19 @@ void app_set_soft_poweroff(void)
     sys_timeout_add(NULL, power_set_soft_poweroff, WAIT_DISCONN_TIME_MS);
 }
 
+
+static void dongle_timer_handle_test(void)
+{
+    log_info("not_bt");
+}
+
 static void app_start()
 {
     log_info("=======================================");
     log_info("-------------dongle demo---------------");
     log_info("=======================================");
 
+#if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
     clk_set("sys", BT_NORMAL_HZ);
     u32 sys_clk =  clk_get("sys");
     bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
@@ -493,6 +500,10 @@ static void app_start()
 #if TCFG_USER_EDR_ENABLE
     sys_auto_sniff_controle(1, NULL);
 #endif /* SIG_MESH_EN */
+
+#else
+    sys_timer_add(NULL, dongle_timer_handle_test, 1000);
+#endif
 
     /* 按键消息使能 */
     sys_key_event_enable();

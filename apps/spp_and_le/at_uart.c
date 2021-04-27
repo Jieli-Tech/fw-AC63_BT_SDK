@@ -20,9 +20,9 @@
 /* #include "at.h" */
 /* #include "bt_common.h" */
 
-#if CONFIG_APP_AT_COM           
+#if CONFIG_APP_AT_COM
 
-#define LOG_TAG_CONST       AT_COM 
+#define LOG_TAG_CONST       AT_COM
 #define LOG_TAG             "[AT_UART]"
 #define LOG_ERROR_ENABLE
 #define LOG_DEBUG_ENABLE
@@ -38,14 +38,14 @@ struct at_uart {
 };
 
 struct uart_hdl {
-	struct at_uart config;
-	uart_bus_t *udev;
-	void *dbuf;
-	void *pRxBuffer;
-	void *pTxBuffer;
-	void (*packet_handler)(const u8 *packet, int size);
-	u16 data_length;
-	u8  ucRxIndex;
+    struct at_uart config;
+    uart_bus_t *udev;
+    void *dbuf;
+    void *pRxBuffer;
+    void *pTxBuffer;
+    void (*packet_handler)(const u8 *packet, int size);
+    u16 data_length;
+    u8  ucRxIndex;
 };
 
 
@@ -75,8 +75,8 @@ static void dummy_handler(const u8 *packet, int size);
 /* #define UART_DB_TX_PIN        IO_PORTC_02 */
 /* #define UART_DB_RX_PIN        IO_PORTC_03 */
 
-#define UART_DB_TX_PIN        IO_PORTB_04
-#define UART_DB_RX_PIN        IO_PORTB_05
+/* #define UART_DB_TX_PIN        IO_PORTB_04 */
+/* #define UART_DB_RX_PIN        IO_PORTB_05 */
 
 
 #ifdef HAVE_MALLOC
@@ -106,12 +106,11 @@ void at_cmd_rx_handler(void)
         log_error("Wired");
     }
 
-	if(*((u8*)__this->pRxBuffer) != AT_PACKET_TYPE_CMD)
-	{
-		log_info("IS NOT TYPE_CMD");
-		__this->data_length = 0;
-		return;
-	}	
+    if (*((u8 *)__this->pRxBuffer) != AT_PACKET_TYPE_CMD) {
+        log_info("IS NOT TYPE_CMD");
+        __this->data_length = 0;
+        return;
+    }
 
     if (__this->data_length < AT_FORMAT_HEAD) {
         return;
@@ -131,40 +130,40 @@ void at_cmd_rx_handler(void)
 
 static void ct_uart_isr_cb(void *ut_bus, u32 status)
 {
-	struct sys_event e;
-	/* printf("{##%d}"); */
+    struct sys_event e;
+    /* printf("{##%d}"); */
 
-	if (status == UT_RX || status == UT_RX_OT) {
-		e.type = SYS_DEVICE_EVENT;
-		e.arg  = (void *)DEVICE_EVENT_FROM_AT_UART;
-		e.u.dev.event = 0;
-		e.u.dev.value = 0;
-		sys_event_notify(&e);
-	}
+    if (status == UT_RX || status == UT_RX_OT) {
+        e.type = SYS_DEVICE_EVENT;
+        e.arg  = (void *)DEVICE_EVENT_FROM_AT_UART;
+        e.u.dev.event = 0;
+        e.u.dev.value = 0;
+        sys_event_notify(&e);
+    }
 }
 
 static int ct_uart_init()
 {
-	const uart_bus_t *uart_bus;
-	struct uart_platform_data_t u_arg = {0};
-	u_arg.tx_pin = UART_DB_TX_PIN;
-	u_arg.rx_pin = UART_DB_RX_PIN;
-	u_arg.rx_cbuf = devBuffer_static;
-	u_arg.rx_cbuf_size = UART_DB_SIZE;
-	u_arg.frame_length = UART_DB_SIZE;
-	u_arg.rx_timeout = 1;
-	u_arg.isr_cbfun = ct_uart_isr_cb;
-	u_arg.baud = UART_BAUD_RATE;
-	u_arg.is_9bit = 0;
+    const uart_bus_t *uart_bus;
+    struct uart_platform_data_t u_arg = {0};
+    u_arg.tx_pin = UART_DB_TX_PIN;
+    u_arg.rx_pin = UART_DB_RX_PIN;
+    u_arg.rx_cbuf = devBuffer_static;
+    u_arg.rx_cbuf_size = UART_DB_SIZE;
+    u_arg.frame_length = UART_DB_SIZE;
+    u_arg.rx_timeout = 1;
+    u_arg.isr_cbfun = ct_uart_isr_cb;
+    u_arg.baud = UART_BAUD_RATE;
+    u_arg.is_9bit = 0;
 
-	uart_bus = uart_dev_open(&u_arg);
+    uart_bus = uart_dev_open(&u_arg);
 
-	if (uart_bus != NULL) {
-		log_info("uart_dev_open() success\n");
-		__this->udev = uart_bus;
-		return 0;
-	}
-	return -1;
+    if (uart_bus != NULL) {
+        log_info("uart_dev_open() success\n");
+        __this->udev = uart_bus;
+        return 0;
+    }
+    return -1;
 }
 
 static void ct_uart_putbyte(char a)
@@ -183,45 +182,45 @@ static void ct_uart_write(char *buf, u16 len)
 
 int at_uart_send_packet(const u8 *packet, int size)
 {
-	log_info("at_uart_send:%d",size);
-	log_info_hexdump(packet, size);
-
-#if 0 
-	int i = 0;	
-	while (size--) {	
-		ct_uart_putbyte(packet[i++]);
-	}
-#else
-	ct_uart_write((void*)packet, size);
-#endif
-	/* log_info("end"); */
-	return 0;
-
-	/*
-	   int i = 0;
-	   uart_packet_t *p = (uart_packet_t *)__this->pTxBuffer;
-
-	   p->preamble = UART_PREAMBLE;
-	   p->type     = 0;
-	   p->length   = size;
-	   p->crc8     = crc_get_16bit(p, UART_FORMAT_HEAD - 3) & 0xff;
-	   p->crc16    = crc_get_16bit(packet, size);
-
-	   size += UART_FORMAT_HEAD;
-	   ASSERT(size <= UART_TX_SIZE, "Fatal Error");
-
-	   memcpy(p->payload, packet, size);
+    log_info("at_uart_send:%d", size);
+    log_info_hexdump(packet, size);
 
 #if 0
-while (size--) {	
-ct_uart_putbyte(((char *)p)[i++]);
-}
+    int i = 0;
+    while (size--) {
+        ct_uart_putbyte(packet[i++]);
+    }
 #else
-ct_uart_write((void*)p, size);
+    ct_uart_write((void *)packet, size);
 #endif
+    /* log_info("end"); */
+    return 0;
 
-return 0;
-	 */
+    /*
+       int i = 0;
+       uart_packet_t *p = (uart_packet_t *)__this->pTxBuffer;
+
+       p->preamble = UART_PREAMBLE;
+       p->type     = 0;
+       p->length   = size;
+       p->crc8     = crc_get_16bit(p, UART_FORMAT_HEAD - 3) & 0xff;
+       p->crc16    = crc_get_16bit(packet, size);
+
+       size += UART_FORMAT_HEAD;
+       ASSERT(size <= UART_TX_SIZE, "Fatal Error");
+
+       memcpy(p->payload, packet, size);
+
+    #if 0
+    while (size--) {
+    ct_uart_putbyte(((char *)p)[i++]);
+    }
+    #else
+    ct_uart_write((void*)p, size);
+    #endif
+
+    return 0;
+     */
 
 }
 
@@ -246,23 +245,23 @@ static void ct_dev_init(void)
 {
 
 #ifdef HAVE_MALLOC
-	__this = malloc(sizeof(struct uart_hdl));
-	ASSERT(__this, "Fatal error");
+    __this = malloc(sizeof(struct uart_hdl));
+    ASSERT(__this, "Fatal error");
 
-	memset(__this, 0x0, sizeof(struct uart_hdl));
+    memset(__this, 0x0, sizeof(struct uart_hdl));
 
-	__this->pRxBuffer = malloc(UART_RX_SIZE);
-	ASSERT(__this->pRxBuffer, "Fatal error");
+    __this->pRxBuffer = malloc(UART_RX_SIZE);
+    ASSERT(__this->pRxBuffer, "Fatal error");
 
-	__this->pTxBuffer = malloc(UART_TX_SIZE);
-	ASSERT(__this->pTxBuffer, "Fatal error");
+    __this->pTxBuffer = malloc(UART_TX_SIZE);
+    ASSERT(__this->pTxBuffer, "Fatal error");
 #else
-	log_info("Static");
-	__this->pRxBuffer = pRxBuffer_static;
-	__this->pTxBuffer = pTxBuffer_static;
+    log_info("Static");
+    __this->pRxBuffer = pRxBuffer_static;
+    __this->pTxBuffer = pTxBuffer_static;
 #endif
 
-	__this->packet_handler = dummy_handler;
+    __this->packet_handler = dummy_handler;
 
     __this->config.baudrate     = UART_BAUD_RATE;
     __this->config.flowcontrol  = 0;
@@ -282,11 +281,11 @@ static int ct_dev_open(void)
 
 static int ct_dev_close(void)
 {
-	if(__this->udev){
-		log_info("uart_dev_close\n");
-		uart_dev_close(__this->udev);
-	}
-	return 0;
+    if (__this->udev) {
+        log_info("uart_dev_close\n");
+        uart_dev_close(__this->udev);
+    }
+    return 0;
 }
 
 static void ct_dev_register_packet_handler(void (*handler)(const u8 *packet, int size))
@@ -296,16 +295,16 @@ static void ct_dev_register_packet_handler(void (*handler)(const u8 *packet, int
 
 void at_uart_init(void *packet_handler)
 {
-	ct_dev_init();
-	ct_dev_open();
-	ct_dev_register_packet_handler(packet_handler);
+    ct_dev_init();
+    ct_dev_open();
+    ct_dev_register_packet_handler(packet_handler);
 }
 
 extern void power_wakeup_add_io(int io);
 void set_at_uart_wakeup(void)
 {
-	ct_dev_close();
-	/* power_wakeup_add_io(UART_DB_RX_PIN);	 */
+    ct_dev_close();
+    /* power_wakeup_add_io(UART_DB_RX_PIN);	 */
 }
 
 #endif

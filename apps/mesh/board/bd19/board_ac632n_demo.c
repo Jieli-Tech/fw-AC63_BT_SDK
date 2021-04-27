@@ -11,6 +11,7 @@
 #include "user_cfg.h"
 #include "usb/otg.h"
 #include "norflash.h"
+#include "asm/power/p33.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -288,6 +289,28 @@ static void close_gpio(void)
         [PORTC_GROUP] = 0x3ff,//
     };
 
+	if(P3_PINR_CON & BIT(0))
+	{
+		u8 port_sel = P3_PORT_SEL0;
+		if((port_sel >= 1) && (port_sel <= 10)){
+			port_sel = IO_GROUP_NUM * 0 + port_sel - 1;
+			port_protect(port_group, port_sel);				//protect 长按复位
+		}else if((port_sel >= 11) && (port_sel <= 20)){
+			port_sel = IO_GROUP_NUM * 1 + port_sel - 11;
+			port_protect(port_group, port_sel);				//protect 长按复位
+		}else if((port_sel >= 21) && (port_sel <= 25)){
+			port_sel = IO_GROUP_NUM * 2 + port_sel - 21;
+			port_protect(port_group, port_sel);				//protect 长按复位
+		}else if(port_sel == 26){
+			port_protect(port_group, IO_PORT_DP);			//protect 长按复位
+		}else if(port_sel == 27){
+			port_protect(port_group, IO_PORT_DM);			//protect 长按复位
+		}else if(port_sel == 28){
+			port_protect(port_group, IO_PORT_DP1);			//protect 长按复位
+		}else if(port_sel == 29){
+			port_protect(port_group, IO_PORT_DM1);			//protect 长按复位
+		}
+	}
 
 #if TCFG_ADKEY_ENABLE
     port_protect(port_group,TCFG_ADKEY_PORT);

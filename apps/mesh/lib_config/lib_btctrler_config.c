@@ -121,6 +121,7 @@ const int config_btctler_single_carrier_en = 0;
 
 const int config_btctler_eir_version_info_len = 0;
 
+const int sniff_support_reset_anchor_point = 0;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 
 /*-----------------------------------------------------------*/
 /**

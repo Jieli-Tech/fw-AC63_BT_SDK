@@ -1335,9 +1335,10 @@ static int event_handler(struct application *app, struct sys_event *event)
 
         }
 
+        return 0;
 
-
-        else if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
+    case SYS_DEVICE_EVENT:
+        if ((u32)event->arg == DEVICE_EVENT_FROM_POWER) {
             return app_power_event_handler(&event->u.dev);
         }
 #if TCFG_CHARGE_ENABLE
@@ -1345,9 +1346,6 @@ static int event_handler(struct application *app, struct sys_event *event)
             app_charge_event_handler(&event->u.dev);
         }
 #endif
-        return 0;
-
-    case SYS_DEVICE_EVENT:
         return 0;
 
     default:

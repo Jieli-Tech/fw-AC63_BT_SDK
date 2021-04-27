@@ -293,7 +293,7 @@ static void do_operate_search_handle(void)
 }
 
 //return: 0--accept,1--reject
-int l2cap_connection_update_request_just(u8 *packet)
+int l2cap_connection_update_request_just(u8 *packet, hci_con_handle_t handle)
 {
     log_info("slave request conn_update:\n-interval_min= %d,\n-interval_max= %d,\n-latency= %d,\n-timeout= %d\n",
              little_endian_read_16(packet, 0), little_endian_read_16(packet, 2),
