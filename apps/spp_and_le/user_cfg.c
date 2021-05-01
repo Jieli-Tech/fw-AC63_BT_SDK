@@ -324,7 +324,7 @@ void cfg_file_parse(u8 idx)
     ret = syscfg_read(CFG_LRC_ID, &lrc_cfg, sizeof(LRC_CONFIG));
     if (ret > 0) {
         log_info("lrc cfg:");
-        log_info_hexdump(&lrc_cfg, sizeof(LRC_CONFIG));
+        log_info_hexdump((u8*)&lrc_cfg, sizeof(LRC_CONFIG));
         lp_winsize.lrc_ws_inc      = lrc_cfg.lrc_ws_inc;
         lp_winsize.lrc_ws_init     = lrc_cfg.lrc_ws_init;
         lp_winsize.bt_osc_ws_inc   = lrc_cfg.btosc_ws_inc;
