@@ -157,7 +157,7 @@ u32 adc_check_vbat_lowpower()
     if (!vbat_vddio_tieup) {
         u32 vbat = adc_get_value(AD_CH_VBAT);
         //printf("vbat_adc = %d vbg = %d\n", vbat, vbg_adc_value);
-        if ((!check_vbat_flag) && (__builtin_abs(vbat - 255) < 15)) {
+        if ((!check_vbat_flag) && (__builtin_abs((s32)vbat - 255) < 15)) {
             //printf("&1\n");
             set_change_vbg_value_flag();
             check_vbat_flag = 1;
@@ -596,7 +596,7 @@ static u32 get_cur_temperature(void)
 
 u8 get_bt_rf_state(void);
 void get_bta_pll_midbank_temp(void);
-static void pll_trim_timer_handler(void)
+static void pll_trim_timer_handler(void *priv)
 {
     if (!config_bt_temperature_pll_trim) {
         return;

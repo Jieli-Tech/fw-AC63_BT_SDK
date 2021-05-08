@@ -115,7 +115,7 @@ bool device_is_first_start();
 int update_result_deal();
 void update_result_set(u16 result);
 bool update_success_boot_check(void);
-typedef u8(*update_handler_t)(void);
+typedef void(*update_handler_t)(void);
 
 typedef enum _UPDATE_STATE_T {
     UPDATE_TASK_INIT,

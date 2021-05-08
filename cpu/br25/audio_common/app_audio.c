@@ -83,7 +83,7 @@ void *app_audio_alloc_use_buff(int use_len)
 {
     void *buf = NULL;
 #if AUDIO_OUTPUT_INCLUDE_DAC
-    printf("uselen:%d, total:%d \n", use_len, sizeof(dac_buff));
+    printf("uselen:%d, total:%d \n", use_len, (int)sizeof(dac_buff));
     if (use_len + (2 * 1024) > sizeof(dac_buff)) {
         y_printf("dac buff < uselen\n");
         return NULL;

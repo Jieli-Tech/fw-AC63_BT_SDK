@@ -1223,7 +1223,7 @@ static const char ble_ext_name[] = "(BLE)";
 void bt_ble_init(void)
 {
     log_info("***** ble_init******\n");
-    char *name_p;
+    const char *name_p;
     u8 ext_name_len = sizeof(ble_ext_name) - 1;
 
     name_p = bt_get_local_name();
