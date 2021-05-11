@@ -92,7 +92,7 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 --------------
 
 * 技术交流群[钉钉](./doc/stuff/dingtalk.jpg)
-* 常见问题集合[链接](.doc/stuff/AC630X软件问题整理.pdf)
+* 常见问题集合[链接](./doc/stuff/AC630X软件问题整理.pdf)
 
 免责声明
 ------------
