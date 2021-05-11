@@ -83,7 +83,7 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 
 * 开发评估板 ：开发板申请入口[链接](https://shop321455197.taobao.com/?spm=a230r.7195193.1997079397.2.2a6d391d3n5udo)
 
-* 生产烧写工具 : 为量产和裸片烧写而设计, 申请入口 [连接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.8.504d246bXKwyeH&id=620941819219) 并仔细阅读相关 [文档](./doc/stuff/烧写器使用说明文档.pdf)
+* 生产烧写工具 : 为量产和裸片烧写而设计, 申请入口 [链接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.8.504d246bXKwyeH&id=620941819219) 并仔细阅读相关 [文档](./doc/stuff/烧写器使用说明文档.pdf)
 
 * 无线测试盒 : 为空中升级/射频标定/快速产品测试而设计, 申请入口 [链接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511), 阅读[文档](./doc/stuff/AC690x_1T2测试盒使用说明.pdf) 获取更多详细信息.
 
@@ -92,7 +92,7 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 --------------
 
 * 技术交流群[钉钉](./doc/stuff/dingtalk.jpg)
-
+* 常见问题集合[链接](.doc/stuff/AC630X软件问题整理.pdf)
 
 免责声明
 ------------
