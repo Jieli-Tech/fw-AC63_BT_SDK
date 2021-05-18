@@ -740,7 +740,7 @@ static const struct bt_mesh_comp composition = {
  * detail on https://www.aligenie.com/doc/357554/gtgprq <表1：Device UUID格式>
  */
 /*-----------------------------------------------------------*/
-static const u8 dev_uuid[16] = {
+static u8 dev_uuid[16] = {
     0xA8, 0x01,  // CID
     0x01 | BIT(4) | BIT(6), // PID
     PID_TO_LITTLE_ENDIAN(PRODUCT_ID), // ProductID
@@ -811,6 +811,11 @@ static void static_auth_value_calculate(void)
     log_info("string_buf : %s", string_buf);
     log_info_hexdump(string_buf, sizeof(string_buf));
     log_info_hexdump(auth_data, sizeof(auth_data));
+}
+
+void auth_data_change(u8 *c_auth_data)
+{
+    memcpy(auth_data, c_auth_data, sizeof(auth_data));
 }
 
 static const struct bt_mesh_prov prov = {
@@ -1038,7 +1043,9 @@ static void mesh_init(void)
 {
     log_info("--func=%s", __FUNCTION__);
 
+#if (TMALL_UPDATE_TOOL == 0)
     static_auth_value_calculate();
+#endif
 
     int err = bt_mesh_init(&prov, &composition);
     if (err) {
@@ -1055,9 +1062,14 @@ static void mesh_init(void)
 
 void bt_ble_init(void)
 {
+#if (TMALL_UPDATE_TOOL == 0)
     u8 bt_addr[6] = {MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR)};
 
     bt_mac_addr_set(bt_addr);
+#else
+    void set_triad(u8 * uuid);
+    set_triad(dev_uuid);
+#endif
 
     mesh_setup(mesh_init);
 }

@@ -4,6 +4,7 @@
 #define _LE_CLIENT_DEMO_H
 
 #include <stdint.h>
+#include "btstack/le/att.h"
 
 //搜索匹配连接方式
 typedef enum {
@@ -30,6 +31,9 @@ typedef struct {
     u8  services_uuid128[16];
     u8  characteristic_uuid128[16];
     u16 opt_type; //属性
+    u8 read_long_enable: 1; //en
+    u8 read_report_reference: 1; //en
+    u8 res_bits: 6; //
 } target_uuid_t;
 
 //搜索操作记录的 handle
@@ -72,5 +76,7 @@ void client_clear_bonding_info(void);
 void client_send_conn_param_update(void);
 void ble_module_enable(u8 en);
 struct ble_client_operation_t *ble_get_client_operation_table(void);
+void bt_ble_init(void);
+void bt_ble_adv_enable(u8 enable);
 
 #endif

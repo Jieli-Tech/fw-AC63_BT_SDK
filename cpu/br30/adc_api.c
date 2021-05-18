@@ -47,6 +47,10 @@ static const u32 sys2adc_clk_info[] = {
     1000000L,
 };
 
+extern const int config_bt_temperature_pll_trim;
+static void temperature_pll_trim_init(void);
+static void temperature_pll_trim_exit(void);
+
 u32 adc_add_sample_ch(u32 ch)
 {
     u32 i = 0;
@@ -429,6 +433,16 @@ void _adc_init(u32 sys_lvd_en)
         adc_queue[vbat_queue_ch].value = vbat_adc_value;
     }
 
+    if (config_bt_temperature_pll_trim) {
+        u32 dtemp_ch = adc_add_sample_ch(AD_CH_DTEMP);
+        adc_set_sample_freq(AD_CH_DTEMP, 1500);
+        adc_sample(AD_CH_DTEMP);
+        while (!(JL_ADC->CON & BIT(7)));
+        adc_queue[dtemp_ch].value = JL_ADC->RES;
+        JL_ADC->CON |= BIT(6);
+        temperature_pll_trim_init();
+    }
+
     request_irq(IRQ_SARADC_IDX, 0, adc_isr, 0);
 
     usr_timer_add(NULL, adc_scan, 5, 0); //2ms
@@ -544,6 +558,114 @@ static u8 pvdd_trim(u8 trim)
     return lev;
 }
 
+//*********************************************************************************
+//蓝牙温度跟随trim
+//*********************************************************************************
+#define CHECK_TEMPERATURE_CYCLE             (2000)   //检测周期
+#define BTOSC_TEMPERATURE_THRESHOLD         (10 * 3) //偏差阈值
+#define AD_SAMPLE_COUNTS                    1
+#define WIPE_EXTREMUM_EN                    1
+#define ABS(x)                              (x > 0 ? x : (-x))
+
+#if WIPE_EXTREMUM_EN && (AD_SAMPLE_COUNTS == 2)
+#error "AD_SAMPLE_COUNTS must >= 3 while WIPE_EXTREMUM_EN=1"
+#endif
+#if (AD_SAMPLE_COUNTS < 1)
+#error "AD_SAMPLE_COUNTS must > 0"
+#endif
+
+static u32 pll_trim_timer = 0;
+static u32 prev_mV = 0;
+
+extern void bta_pll_config_init(s32 offset);
+
+static u32 get_cur_temperature(void)
+{
+    if (!config_bt_temperature_pll_trim) {
+        return 0;
+    }
+
+    u32 cur_mV;
+    u32 sum_mV = 0;
+
+#if WIPE_EXTREMUM_EN
+    u32 max = 0;
+    u32 min = (u32) - 1;
+#endif /* WIPE_EXTREMUM_EN */
+
+    for (int i = 0; i < AD_SAMPLE_COUNTS; i++) {
+
+#if 0
+        /* adc_enter_occupy_mode(AD_CH_DTEMP); */
+        /* cur_mV = adc_occupy_run(); */
+        /* adc_exit_occupy_mode(); */
+#else
+        cur_mV = adc_get_voltage(AD_CH_DTEMP);
+#endif
+        printf("cur_mV=%d\r\n", cur_mV);
+        sum_mV += cur_mV;
+#if WIPE_EXTREMUM_EN
+        max = (cur_mV > max) ? cur_mV : max;
+        min = (cur_mV < min) ? cur_mV : min;
+#endif /* WIPE_EXTREMUM_EN */
+    }
+
+#if WIPE_EXTREMUM_EN
+    printf("sum_mV=%d, max=%d, min=%d", sum_mV, max, min);
+    return ((sum_mV - max - min) / (AD_SAMPLE_COUNTS - 2));
+#else
+    return sum_mV / AD_SAMPLE_COUNTS;
+#endif /* WIPE_EXTREMUM_EN */
+}
+
+u8 get_bt_rf_state(void);
+void get_bta_pll_midbank_temp(void);
+static void pll_trim_timer_handler(void)
+{
+    if (!config_bt_temperature_pll_trim) {
+        return;
+    }
+
+    /* printf("\n--func=%s", __FUNCTION__); */
+
+    u32 cur_mV;
+    s32 minus;
+    static s32 pll_bank_offset = 0;
+
+    cur_mV = adc_get_voltage(AD_CH_DTEMP);
+
+    minus = (s32)(cur_mV - prev_mV);
+
+    printf("cur_mV =%d, prev_mV =%d,minus =%d\n", cur_mV, prev_mV, minus);
+
+    if (ABS(minus) >= BTOSC_TEMPERATURE_THRESHOLD) {
+
+        prev_mV = cur_mV;
+
+        (minus > 0) ? pll_bank_offset ++ : pll_bank_offset --;
+
+        printf("pll_bank_offset =%d\n\n", pll_bank_offset);
+
+        get_bta_pll_midbank_temp();
+    }
+}
+
+static void temperature_pll_trim_init(void)
+{
+    prev_mV = adc_get_voltage(AD_CH_DTEMP);
+    printf("init prev_mV:%d\n", prev_mV);
+    pll_trim_timer = sys_timer_add(NULL, pll_trim_timer_handler, CHECK_TEMPERATURE_CYCLE);
+}
+
+static void temperature_pll_trim_exit(void)
+{
+    if (pll_trim_timer) {
+        sys_timeout_del(pll_trim_timer);
+        pll_trim_timer = 0;
+    }
+}
+
+//*********************************************************************************
 void adc_init()
 {
 #if 0

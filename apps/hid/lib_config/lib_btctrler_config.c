@@ -174,7 +174,12 @@ const int config_btctler_single_carrier_en = 1;   ////单模ble才设置
 const int config_btctler_single_carrier_en = 0;
 #endif
 
+#if SNIFF_MODE_RESET_ANCHOR
 const int sniff_support_reset_anchor_point = 1;   //sniff状态下是否支持reset到最近一次通信点，用于HID
+#else
+const int sniff_support_reset_anchor_point = 0;   //sniff状态下是否支持reset到最近一次通信点，用于HID
+#endif
+const int sniff_long_interval = (500 / 0.625);    //sniff状态下进入long interval的通信间隔(ms)
 
 
 /**

@@ -12,8 +12,16 @@ LIBS = \
 ifeq ($(AUDIO_LITE_VERSION),y)
 LIBS += \
 --start-group \
+   $(AR_DIR)/aec.a \
    $(AR_DIR)/media.a \
    $(AR_DIR)/media_app.a \
+   $(AR_DIR)/libAptFilt_pi32v2_OnChip.a \
+   $(AR_DIR)/libEchoSuppress_pi32v2_OnChip.a \
+   $(AR_DIR)/libNoiseSuppress_pi32v2_OnChip.a \
+   $(AR_DIR)/libSplittingFilter_pi32v2_OnChip.a \
+   $(AR_DIR)/libFFT_pi32v2_OnChip.a \
+   $(AR_DIR)/libOpcore_maskrom_pi32v2_OnChip.a \
+   $(AR_DIR)/lib_resample_cal.a \
    $(AR_DIR)/opus_enc_lib.a \
    $(AR_DIR)/speex_enc_lib.a \
    $(AR_DIR)/bfilterfun_lib.a \

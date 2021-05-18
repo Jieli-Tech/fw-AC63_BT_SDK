@@ -45,6 +45,10 @@ extern uint32_t little_endian_read_24(const uint8_t *buffer, int pos);
 extern uint32_t little_endian_read_32(const uint8_t *buffer, int pos);
 extern void swapX(const uint8_t *src, uint8_t *dst, int len);
 
+extern void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
+extern void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
+extern void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
+extern void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
 //common api
 extern void bt_ble_init(void);
@@ -101,6 +105,7 @@ BR23: rang(0~9)  {-15.7,  -12.5,  -10.0, -6.6,  -4.4,  -2.5,  -0.1,  +2.1,  +4.6
 BR25: rang(0~9)  {-15.7,  -12.5,  -10.0, -6.6,  -4.4,  -2.5,  -0.1,  +2.1,  +4.6, +6.4}
 BR30: rang(0~8)  {-17.48, -11.46, -7.96, -3.59, -0.79, +1.12, +3.8,  +6.5,  +8.44}
 */
+//初始化配置蓝牙发射功率最大值范围,解析详见 btcontroller_modules.h
 void bt_max_pwr_set(u8 pwr, u8 pg_pwr, u8 iq_pwr, u8 ble_pwr);
 
 #endif

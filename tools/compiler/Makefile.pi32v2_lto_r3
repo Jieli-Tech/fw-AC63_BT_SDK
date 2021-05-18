@@ -146,7 +146,7 @@ export CC_ARGS = \
 -fallow-pointer-null \
 -fprefer-gnu-section \
 -Wno-shift-negative-value \
-#-Wundef \
+-Wundef \
 
 ifeq ($(CONFIG_PSRAM_ENABLE),y)
 LD_ARGS +=\

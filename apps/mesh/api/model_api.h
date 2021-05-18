@@ -13,8 +13,10 @@
 // more...
 
 //< Config whick example will use in <examples>
-#define CONFIG_MESH_MODEL                   SIG_MESH_ALIGENIE_LIGHT
+#define CONFIG_MESH_MODEL                   SIG_MESH_ALIGENIE_SOCKET
 
+/* Tmall Update tool */
+#define TMALL_UPDATE_TOOL						0
 
 #define BYTE_LEN(x...)                      sizeof((u8 []) {x})
 

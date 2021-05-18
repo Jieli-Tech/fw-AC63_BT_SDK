@@ -76,7 +76,7 @@ void usb_reset_interface(struct usb_device_t *usb_device);
 void usb_set_setup_recv(struct usb_device_t *usb_device, void *recv);
 void usb_set_setup_hook(struct usb_device_t *usb_device, void *hook);
 int usb_device_mode(const usb_dev usb_id, const u32 class);
-void usb_otg_sof_check_init(const usb_dev id);
+u32 usb_otg_sof_check_init(const usb_dev id);
 void usb_setup_init(const usb_dev usb_id, void *ptr, u8 *setup_buffer);
 u32 usb_setup_release(const usb_dev usb_id);
 u8 *usb_set_data_payload(struct usb_device_t *usb_device, struct usb_ctrlrequest *req, const void *data, u32 len);

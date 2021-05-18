@@ -131,8 +131,16 @@
 <Add option="--end-group" />
 <Add option="../../../../include_lib/liba/br25/update.a" />
 <Add option="--start-group " />
+<Add option="../../../../include_lib/liba/br25/aec.a" />
 <Add option="../../../../include_lib/liba/br25/media.a" />
 <Add option="../../../../include_lib/liba/br25/media_app.a" />
+<Add option="../../../../include_lib/liba/br25/libAptFilt_pi32v2_OnChip.a" />
+<Add option="../../../../include_lib/liba/br25/libEchoSuppress_pi32v2_OnChip.a" />
+<Add option="../../../../include_lib/liba/br25/libNoiseSuppress_pi32v2_OnChip.a" />
+<Add option="../../../../include_lib/liba/br25/libSplittingFilter_pi32v2_OnChip.a" />
+<Add option="../../../../include_lib/liba/br25/libFFT_pi32v2_OnChip.a" />
+<Add option="../../../../include_lib/liba/br25/libOpcore_maskrom_pi32v2_OnChip.a" />
+<Add option="../../../../include_lib/liba/br25/lib_resample_cal.a" />
 <Add option="../../../../include_lib/liba/br25/opus_enc_lib.a" />
 <Add option="../../../../include_lib/liba/br25/speex_enc_lib.a" />
 <Add option="../../../../include_lib/liba/br25/bfilterfun_lib.a" />
@@ -239,6 +247,7 @@
 <Unit filename="../../../../apps/common/usb/usb_config.h" />
 <Unit filename="../../../../apps/common/usb/usb_host_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/usb_std_class_def.h" />
+<Unit filename="../../../../apps/hid/aec/br25/audio_aec.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_charge.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_chargestore.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_gamebox.c"><Option compilerVer="CC"/></Unit>
@@ -268,6 +277,7 @@
 <Unit filename="../../../../apps/hid/board/br25/board_config.h" />
 <Unit filename="../../../../apps/hid/gamebox/gamebox.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/gamebox/key_mapping.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/hid/include/aec_user.h" />
 <Unit filename="../../../../apps/hid/include/app_action.h" />
 <Unit filename="../../../../apps/hid/include/app_charge.h" />
 <Unit filename="../../../../apps/hid/include/app_chargestore.h" />
@@ -458,6 +468,7 @@
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/dac.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/hw_eq.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/asm/ps_cal_api.h" />
+<Unit filename="../../../../include_lib/media/media_develop/media/cpu/br25/commproc.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/effectrs_sync.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/file_decoder.h" />
 <Unit filename="../../../../include_lib/media/media_develop/media/includes.h" />

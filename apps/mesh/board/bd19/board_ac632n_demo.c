@@ -289,6 +289,11 @@ static void close_gpio(void)
         [PORTC_GROUP] = 0x3ff,//
     };
 
+	if(P3_ANA_CON2 & BIT(3))
+	{
+		port_protect(port_group, IO_PORTB_02);	//protect VCM_IO
+	}
+
 	if(P3_PINR_CON & BIT(0))
 	{
 		u8 port_sel = P3_PORT_SEL0;

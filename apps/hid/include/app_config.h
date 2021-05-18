@@ -28,6 +28,16 @@
 #define  CONFIG_APP_MOUSE_DUAL              0 //同时开双模
 #endif
 
+//edr sniff模式选择; sniff参数需要调整,移植可具体参考app_keyboard.c
+#if CONFIG_APP_MOUSE || CONFIG_APP_STANDARD_KEYBOARD //|| CONFIG_APP_KEYBOARD
+#define SNIFF_MODE_RESET_ANCHOR             1//键盘鼠标SNIFF模式
+#else
+#define SNIFF_MODE_RESET_ANCHOR             0
+#endif
+
+//APP应用默认配置
+#define TCFG_AEC_ENABLE                     1
+
 #include "board_config.h"
 
 #include "usb_common_def.h"

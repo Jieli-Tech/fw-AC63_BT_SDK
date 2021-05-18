@@ -606,6 +606,7 @@ static int uac_audio_start(void)
     out_points = 0;
     last_hrp = 0;
     dac_start_flag = 0;
+    sample_rate_set = 0;
     usb_icnt = 0;
 
 #endif // PC_SYNC_BY_DAC_HRP

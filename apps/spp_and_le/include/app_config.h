@@ -35,6 +35,10 @@
 #if (TRANS_DATA_EN + TRANS_CLIENT_EN + XM_MMA_EN + BEACON_MODE_EN> 1)
 #error "they can not enable at the same time!"
 #endif
+
+//配置双模同名字，同地址
+#define DOUBLE_BT_SAME_NAME               0 //同名字
+#define DOUBLE_BT_SAME_MAC                0 //同地址
 #endif
 
 //选择AT: 主机从机二选一

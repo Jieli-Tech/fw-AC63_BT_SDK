@@ -38,13 +38,13 @@ void aec_cfg_fill(AEC_CONFIG *cfg);
 
 #define AEC_MODE_SIMPLEX	(ANS_EN)
 
-#ifdef CONFIG_MEDIA_NEW_ENABLE
 
 extern const u8 CONST_AEC_SIMPLEX;
 
 s8 aec_debug_online(void *buf, u16 size);
 void aec_input_clear_enable(u8 enable);
 
+int audio_aec_open(u16 sample_rate, s16 enablebit, int (*out_hdl)(s16 *data, u16 len));
 int audio_aec_init(u16 sample_rate);
 void audio_aec_close(void);
 void audio_aec_inbuf(s16 *buf, u16 len);
@@ -53,7 +53,6 @@ void audio_aec_refbuf(s16 *buf, u16 len);
 u8 audio_aec_status(void);
 void audio_aec_reboot(u8 reduce);
 
-#else
 
 extern struct aec_s_attr aec_param;
 extern const u8 CONST_AEC_SIMPLEX;
@@ -63,6 +62,5 @@ s8 aec_debug_online(void *buf, u16 size);
 void aec_cfg_fill(AEC_CONFIG *cfg);
 void aec_input_clear_enable(u8 enable);
 
-#endif /* #ifdef CONFIG_MEDIA_NEW_ENABLE */
 
 #endif/*_AEC_USER_H_*/

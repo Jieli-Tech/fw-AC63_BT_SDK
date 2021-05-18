@@ -57,7 +57,7 @@ void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en);
 static u8 is_app_active = 0;
 static u8 edr_remote_address[6];
 //---------------------------------------------------------------------
-#if TRANS_MULTI_BLE_EN && SUPPORT_MAX_CLIENT
+#if TRANS_MULTI_BLE_EN && TRANS_MULTI_BLE_MASTER_NUMS
 //指定搜索uuid
 //指定搜索uuid
 static const target_uuid_t  jl_search_uuid_table[] = {
@@ -225,7 +225,7 @@ static const client_conn_cfg_t client_conn_config = {
     /* .search_uuid_cnt = 0, //配置不搜索profile，加快回连速度 */
     .search_uuid_cnt = (sizeof(jl_search_uuid_table) / sizeof(target_uuid_t)),
     .search_uuid_table = jl_search_uuid_table,
-    .security_en = 0, //支持加密使能
+    .security_en = 0, //支持加密使能,对应配置 config_le_sm_support_enable
     .event_callback = client_event_callback,
 };
 
@@ -272,7 +272,7 @@ static void bt_function_select_init()
         printf_buf((void *)bt_get_mac_addr(), 6);
         printf_buf((void *)tmp_ble_addr, 6);
 
-#if TRANS_MULTI_BLE_EN && SUPPORT_MAX_CLIENT
+#if TRANS_MULTI_BLE_EN && TRANS_MULTI_BLE_MASTER_NUMS
         ble_client_config_init();
 #endif
 

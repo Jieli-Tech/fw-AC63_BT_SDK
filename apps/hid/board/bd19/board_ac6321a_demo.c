@@ -11,6 +11,7 @@
 #include "user_cfg.h"
 #include "usb/otg.h"
 #include "norflash.h"
+#include "asm/power/p33.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"

@@ -51,6 +51,7 @@ const struct task_info task_info_table[] = {
 #if TCFG_AUDIO_ENABLE
     {"audio_dec",           3,     768,   128  },
     {"audio_enc",           4,     512,   128  },
+    {"aec",                 2,     768,   128  },
 #endif/*TCFG_AUDIO_ENABLE*/
 #if TCFG_KWS_VOICE_RECOGNITION_ENABLE
     {"kws",                 2,     256,   64   },

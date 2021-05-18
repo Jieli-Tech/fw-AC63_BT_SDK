@@ -145,8 +145,16 @@
 <Add option="--end-group" />
 <Add option="../../../../include_lib/liba/br30/update.a" />
 <Add option="--start-group " />
+<Add option="../../../../include_lib/liba/br30/aec.a" />
 <Add option="../../../../include_lib/liba/br30/media.a" />
 <Add option="../../../../include_lib/liba/br30/media_app.a" />
+<Add option="../../../../include_lib/liba/br30/libAptFilt_pi32v2_OnChip.a " />
+<Add option="../../../../include_lib/liba/br30/libEchoSuppress_pi32v2_OnChip.a " />
+<Add option="../../../../include_lib/liba/br30/libNoiseSuppress_pi32v2_OnChip.a " />
+<Add option="../../../../include_lib/liba/br30/libSplittingFilter_pi32v2_OnChip.a " />
+<Add option="../../../../include_lib/liba/br30/libFFT_pi32v2_OnChip.a " />
+<Add option="../../../../include_lib/liba/br30/libOpcore_maskrom_pi32v2_OnChip.a " />
+<Add option="../../../../include_lib/liba/br30/lib_resample_cal.a" />
 <Add option="../../../../include_lib/liba/br30/wtg_dec_lib.a " />
 <Add option="../../../../include_lib/liba/br30/wtgv2_dec_lib.a" />
 <Add option="../../../../include_lib/liba/br30/opus_enc_lib.a" />
@@ -255,6 +263,7 @@
 <Unit filename="../../../../apps/common/usb/usb_config.h" />
 <Unit filename="../../../../apps/common/usb/usb_host_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/usb_std_class_def.h" />
+<Unit filename="../../../../apps/hid/aec/br30/audio_aec.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_charge.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_chargestore.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/app_gamebox.c"><Option compilerVer="CC"/></Unit>
@@ -439,6 +448,7 @@
 <Unit filename="../../../../include_lib/media/media_new/media/application/audio_drc.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/application/audio_energy_detect.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/application/audio_eq.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/application/audio_pitch.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/application/audio_surround.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/application/audio_vbass.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/audio_base.h" />
@@ -459,6 +469,7 @@
 <Unit filename="../../../../include_lib/media/media_new/media/file_decoder.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/includes.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/mixer.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/pitchshifter/pitchshifter_api.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/surround/effect_sur_api.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/sw_drc.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/vbass/vbass_api.h" />

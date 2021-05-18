@@ -173,3 +173,146 @@ void ble_profile_init(void)
     log_info("--func=%s", __FUNCTION__);
 }
 
+#if (TMALL_UPDATE_TOOL == 1)
+
+typedef struct __flash_of_ali_para_head {
+    s16 crc;
+    u16 string_len;
+    const u8 para_string[];
+} __attribute__((packed)) _flash_of_ali_para_head;
+
+static u32 tmall_license_ptr(void)
+{
+    u32 flash_capacity = sdfile_get_disk_capacity();
+    u32 auth_addr = flash_capacity - 256 + 80;
+    log_debug("flash capacity:%x \n", flash_capacity);
+    return sdfile_flash_addr2cpu_addr(auth_addr);
+}
+
+static bool tmall_ali_para_head_check(const u8 *para)
+{
+    _flash_of_ali_para_head *head;
+
+    //fill head
+    head = (_flash_of_ali_para_head *)para;
+
+    ///crc check
+    u8 *crc_data = (u8 *)(para + sizeof(((_flash_of_ali_para_head *)0)->crc));
+    u32 crc_len = sizeof(_flash_of_ali_para_head) - sizeof(((_flash_of_ali_para_head *)0)->crc)/*head crc*/ + (head->string_len)/*content crc,include end character '\0'*/;
+    s16 crc_sum = 0;
+
+    crc_sum = CRC16(crc_data, crc_len);
+
+    if (crc_sum != head->crc) {
+        log_debug("gma crc error !!! %x %x \n", (u32)crc_sum, (u32)head->crc);
+        return false;
+    }
+
+    return true;
+}
+
+static void tmall_triad_set(u8 *uuid)
+{
+    u8 *auth_ptr = (u8 *)tmall_license_ptr();
+
+    _flash_of_ali_para_head *head;
+
+    put_buf(auth_ptr, 128);
+
+    //head length check
+    head = (_flash_of_ali_para_head *)auth_ptr;
+    if (head->string_len >= 0xff) {
+        log_debug("gma license length error !!! \n");
+        return;
+    }
+
+    ////crc check
+    if (tmall_ali_para_head_check(auth_ptr) == (false)) {
+        return;
+    }
+
+    ///jump to context
+    auth_ptr += sizeof(_flash_of_ali_para_head);
+
+    int i;
+    u32_t pid = 0;
+    u8 *auth_ptr_store = auth_ptr;
+
+    //printf("--0");
+    //printf_buf(auth_ptr, 8);
+
+    u8 hex;
+    for (i = 0; i < 8; i++) {
+        hex = *(auth_ptr + i);
+        if ((hex >= '0') && (hex <= '9')) {
+            hex -= '0';
+        } else if ((hex >= 'a') && (hex <= 'f')) {
+            hex = hex - 'a' + 10;
+        } else {
+
+        }
+
+        pid |= hex << (28 - 4 * i);
+    }
+
+    //printf("pid = 0x%x\n", pid);
+
+    auth_ptr += 8 + 1;
+
+    //printf("--1");
+    //printf_buf(auth_ptr, 12);
+
+    u8_t mac[6] = {0};
+    u8 hex_b;
+    for (i = 0; i < 6; i++) {
+        hex = *(auth_ptr + i * 2);
+        hex_b = *(auth_ptr + i * 2 + 1);
+
+        if ((hex >= '0') && (hex <= '9')) {
+            hex -= '0';
+        } else if ((hex >= 'a') && (hex <= 'f')) {
+            hex = hex - 'a' + 10;
+        }
+
+        if ((hex_b >= '0') && (hex_b <= '9')) {
+            hex_b -= '0';
+        } else if ((hex_b >= 'a') && (hex_b <= 'f')) {
+            hex_b = hex_b - 'a' + 10;
+        }
+
+        mac[i] = (hex << 4) | hex_b;
+    }
+    //printf("before change\n");
+    //printf_buf(mac, 6);
+
+    pid = little_endian_read_32((u8 *)&pid, 0);
+
+    u8 mac_temp[6];
+    reverse_bd_addr(mac, mac_temp);
+    bt_mac_addr_set(mac_temp);
+
+    //printf("after change\n");
+    memcpy(uuid + 3, &pid, 4);
+    memcpy(uuid + 7, mac_temp,  6);
+
+    //printf("pid = 0x%x\n", pid);
+    //printf_buf(mac_temp, 6);
+
+    //tmall_auth_value_calculate
+    u8 digest[SHA256_DIGEST_SIZE];
+
+    sha256Compute(auth_ptr_store, (4 + 6 + 16) * 2 + 2, digest);
+
+    //printf_buf(digest, SHA256_DIGEST_SIZE);
+
+    extern void auth_data_change(u8 * c_auth_data);
+    auth_data_change(digest);
+}
+
+void set_triad(u8 *uuid)
+{
+    tmall_triad_set(uuid);
+}
+
+#endif
+

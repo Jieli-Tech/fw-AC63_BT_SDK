@@ -180,7 +180,7 @@ const int config_btctler_le_acl_total_nums = 10;   //le_hw_nums*5
 // Master multi-link
 const int config_btctler_le_master_multilink = 1;
 
-#elif DEF_BLE_DEMO_AT_CHAR_COM
+#elif (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_AT_CHAR_COM)
 // Master AFH
 const int config_btctler_le_afh_en = 0;
 // LE RAM Control
@@ -218,6 +218,7 @@ const int config_btctler_single_carrier_en = 0;
 
 const int sniff_support_reset_anchor_point = 0;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 
+const int sniff_long_interval = (500 / 0.625);    //sniff状态下进入long interval的通信间隔(ms)
 
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)

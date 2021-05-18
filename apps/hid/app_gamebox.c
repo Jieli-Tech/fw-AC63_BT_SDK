@@ -63,6 +63,8 @@ void bt_sniff_ready_clean(void);
 
 extern int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type);
 extern int ble_hid_data_send(u8 report_id, u8 *data, u16 len);
+extern void lmp_sniff_t_slot_attemp_reset(u16 slot, u16 attemp);
+extern const int sniff_support_reset_anchor_point;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 
 #define WAIT_DISCONN_TIME_MS     (300)
 
@@ -748,6 +750,10 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 
         bt_ble_init();
 #endif
+
+        if (sniff_support_reset_anchor_point) {
+            lmp_sniff_t_slot_attemp_reset(SNIFF_MAX_INTERVALSLOT, SNIFF_ATTEMPT_SLOT);
+        }
 
         hid_vm_deal(0);//bt_hid_mode read for VM
         app_select_btmode(HID_MODE_INIT);//

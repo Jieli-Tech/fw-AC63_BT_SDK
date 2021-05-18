@@ -199,10 +199,12 @@ __exit:
 /*
  * @brief otg检测中sof初始化，不要放在TCFG_USB_SLAVE_ENABLE里
  * @parm id usb设备号
- * @return null
+ * @return 0 ,忽略sof检查，1 等待sof信号
  */
-void usb_otg_sof_check_init(const usb_dev id)
+u32 usb_otg_sof_check_init(const usb_dev id)
 {
+    /* return 0;// */
+
     u32 ep = 0;
     u8 *ep_buffer = usb_get_ep_buffer(id, ep);
 
@@ -214,4 +216,5 @@ void usb_otg_sof_check_init(const usb_dev id)
         usb_disable_ep(id, ep);
     }
     usb_sof_clr_pnd(id);
+    return 1;
 }

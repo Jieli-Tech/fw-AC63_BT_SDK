@@ -53,6 +53,8 @@ int bt_connect_phone_back_start(void);
 extern void bt_set_osc_cap(u8 sel_l, u8 sel_r);
 extern const u8 *bt_get_mac_addr();
 extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
+extern void lmp_sniff_t_slot_attemp_reset(u16 slot, u16 attemp);
+extern const int sniff_support_reset_anchor_point;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 
 
 /* static const u8 bt_address_default[] = {0x11, 0x22, 0x33, 0x66, 0x77, 0x88}; */
@@ -1378,6 +1380,10 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 
         bt_ble_init();
 #endif
+
+        if (sniff_support_reset_anchor_point) {
+            lmp_sniff_t_slot_attemp_reset(SNIFF_MAX_INTERVALSLOT, SNIFF_ATTEMPT_SLOT);
+        }
 
         hid_vm_deal(0);//bt_hid_mode read for VM
         app_select_btmode(HID_MODE_INIT);//

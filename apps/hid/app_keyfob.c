@@ -64,6 +64,9 @@ static void auto_reconnect_handle(void);
 static void auto_reconnect_start(void);
 static void auto_reconnect_stop(void);
 
+extern void lmp_sniff_t_slot_attemp_reset(u16 slot, u16 attemp);
+extern const int sniff_support_reset_anchor_point;   //sniff状态下是否支持reset到最近一次通信点，用于HID
+
 extern int edr_hid_is_connected(void);
 extern int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type);
 
@@ -1225,6 +1228,10 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 
         bt_ble_init();
 #endif
+
+        if (sniff_support_reset_anchor_point) {
+            lmp_sniff_t_slot_attemp_reset(SNIFF_MAX_INTERVALSLOT, SNIFF_ATTEMPT_SLOT);
+        }
 
         hid_vm_deal(0);//bt_hid_mode read for VM
         app_select_btmode(HID_MODE_INIT);//

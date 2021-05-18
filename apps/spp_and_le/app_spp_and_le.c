@@ -255,7 +255,13 @@ static void bt_function_select_init()
     {
         u8 tmp_ble_addr[6];
         /* le_controller_set_mac((void*)"012345"); */
+#if DOUBLE_BT_SAME_MAC
+        //the same
+        memcpy(tmp_ble_addr, bt_get_mac_addr(), 6);
+#else
         lib_make_ble_address(tmp_ble_addr, (void *)bt_get_mac_addr());
+#endif
+
         le_controller_set_mac((void *)tmp_ble_addr);
 
         printf("\n-----edr + ble 's address-----");
@@ -380,8 +386,14 @@ static void app_start()
 
     bt_function_select_init();
     bredr_handle_register();
+
+#if DOUBLE_BT_SAME_MAC
+    //手机自带搜索界面，默认搜索到EDR
+    __change_hci_class_type(BD_CLASS_TRANSFER_HEALTH);//
+#else
     __change_hci_class_type(0);//default icon
-    /* __change_hci_class_type(BD_CLASS_TRANSFER_HEALTH);//icon */
+#endif
+
     btstack_init();
 
 #if TCFG_USER_EDR_ENABLE

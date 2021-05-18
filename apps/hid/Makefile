@@ -85,6 +85,7 @@ includes += \
 	-I$(ROOT)/apps/common/audio/  \
 	-I$(ROOT)/cpu/$(CPU)/audio_dec \
 	-I$(ROOT)/cpu/$(CPU)/audio_enc \
+	-I$(ROOT)/cpu/$(CPU)/ \
 
 objs += \
 	$(ROOT)/apps/$(APP_CASE)/lib_config/lib_media_config.o \
@@ -93,8 +94,8 @@ objs += \
 
 objs += \
 	$(ROOT)/cpu/$(CPU)/audio_dec/audio_dec_pc.o \
-	$(ROOT)/cpu/$(CPU)/audio_dec/audio_usb_mic.o
-
+	$(ROOT)/cpu/$(CPU)/audio_dec/audio_usb_mic.o \
+	$(ROOT)/apps/$(APP_CASE)/aec/$(CPU)/audio_aec.o \
 
 
 ifeq ($(MEDIA_NEW_ENABLE),y)

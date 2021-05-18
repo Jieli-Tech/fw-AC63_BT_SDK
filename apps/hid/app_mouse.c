@@ -80,6 +80,9 @@ void sys_auto_sniff_controle(u8 enable, u8 *addr);
 void bt_sniff_ready_clean(void);
 static void hid_vm_deal(u8 rw_flag);
 
+extern void lmp_sniff_t_slot_attemp_reset(u16 slot, u16 attemp);
+extern const int sniff_support_reset_anchor_point;   //sniff状态下是否支持reset到最近一次通信点，用于HID
+
 extern int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type);
 
 extern int edr_hid_is_connected(void);
@@ -638,11 +641,11 @@ static int state_machine(struct application *app, enum app_state state, struct i
     return 0;
 }
 
-#define  SNIFF_CNT_TIME               5/////<空闲5S之后进入sniff模式
+#define  SNIFF_CNT_TIME               1/////<空闲5S之后进入sniff模式
 
-#define SNIFF_MAX_INTERVALSLOT        800
-#define SNIFF_MIN_INTERVALSLOT        100
-#define SNIFF_ATTEMPT_SLOT            4
+#define SNIFF_MAX_INTERVALSLOT        16
+#define SNIFF_MIN_INTERVALSLOT        16
+#define SNIFF_ATTEMPT_SLOT            2
 #define SNIFF_TIMEOUT_SLOT            1
 
 static u8 sniff_ready_status = 0; //0:sniff_ready 1:sniff_not_ready
@@ -709,7 +712,7 @@ void sys_auto_sniff_controle(u8 enable, u8 *addr)
 
         if (sniff_timer == 0) {
             log_info("check_sniff_enable\n");
-            sniff_timer = sys_timer_add(NULL, bt_check_enter_sniff, 1000);
+            sniff_timer = sys_timer_add(NULL, bt_check_enter_sniff, 100);
         }
     } else {
 
@@ -1020,6 +1023,10 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 
         bt_ble_init();
 #endif
+
+        if (sniff_support_reset_anchor_point) {
+            lmp_sniff_t_slot_attemp_reset(SNIFF_MAX_INTERVALSLOT, SNIFF_ATTEMPT_SLOT);
+        }
 
         app_select_btmode(HID_MODE_INIT);//
 

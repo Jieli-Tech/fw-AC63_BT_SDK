@@ -123,6 +123,7 @@ const int config_btctler_eir_version_info_len = 0;
 
 const int sniff_support_reset_anchor_point = 0;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 
+const int sniff_long_interval = (500 / 0.625);    //sniff状态下进入long interval的通信间隔(ms)
 /*-----------------------------------------------------------*/
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)

@@ -89,6 +89,8 @@ extern int ble_hid_is_connected(void);
 extern void delete_link_key(bd_addr_t *bd_addr, u8 id);
 extern void le_hogp_set_output_callback(void *cb);
 extern void modify_ble_name(const char *name);
+extern void lmp_sniff_t_slot_attemp_reset(u16 slot, u16 attemp);
+extern const int sniff_support_reset_anchor_point;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 
 #define WAIT_DISCONN_TIME_MS     (300)
 
@@ -1075,7 +1077,7 @@ static int state_machine(struct application *app, enum app_state state, struct i
     return 0;
 }
 
-#define  SNIFF_CNT_TIME               5/////<空闲5S之后进入sniff模式
+#define  SNIFF_CNT_TIME               1/////<空闲5S之后进入sniff模式
 
 #define SNIFF_MAX_INTERVALSLOT        48
 #define SNIFF_MIN_INTERVALSLOT        48
@@ -1147,7 +1149,7 @@ static void sys_auto_sniff_controle(u8 enable, u8 *addr)
 
         if (sniff_timer == 0) {
             log_info("check_sniff_enable\n");
-            sniff_timer = sys_timer_add(NULL, bt_check_enter_sniff, 1000);
+            sniff_timer = sys_timer_add(NULL, bt_check_enter_sniff, 100);
         }
     } else {
 
@@ -1596,6 +1598,10 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 
         bt_ble_init();
 #endif
+
+        if (sniff_support_reset_anchor_point) {
+            lmp_sniff_t_slot_attemp_reset(SNIFF_MAX_INTERVALSLOT, SNIFF_ATTEMPT_SLOT);
+        }
 
         //hid_vm_deal(0);//bt_hid_mode read for VM
         keyboard_mode_init(HID_MODE_NULL);

@@ -265,10 +265,10 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
     memcpy(p->file_path, updata_file_name, strlen(updata_file_name));
     if (priv) {
         if (support_norflash_update_en) {
-            printf("p->parm_priv:0x%x\n len:%d\n", (u32)p->parm_priv, len);
+            printf("p->parm_priv:0x%x\n len:%d\n", p->parm_priv, len);
             memcpy(p->parm_priv + 12, priv, len);
         } else {
-            printf("p->parm_priv:0x%x priv:0x%x len:%d\n", (u32)p->parm_priv, (u32)priv, len);
+            printf("p->parm_priv:0x%x priv:0x%x len:%d\n", p->parm_priv, priv, len);
             memcpy(p->parm_priv, priv, len);
         }
     } else {
@@ -322,7 +322,7 @@ void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len)
     }
 
     p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);	//2 : crc_val
-    printf("UPDATA_PARM_ADDR = 0x%x\n", (u32)p);
+    printf("UPDATA_PARM_ADDR = 0x%x\n", p);
     printf_buf((void *)p, sizeof(UPDATA_PARM));
     printf("exif_addr:0x%x\n", *(u32 *)(p->parm_priv));
 }
@@ -573,7 +573,7 @@ void update_mode_api_v2(UPDATA_TYPE type, void (*priv_param_fill_hdl)(UPDATA_PAR
         update_param_content_fill(type, p, priv_param_fill_hdl);
 
         if (succ_report.update_param_write_hdl) {
-            succ_report.update_param_write_hdl(succ_report.priv_param, (u8*)p, update_param_len);
+            succ_report.update_param_write_hdl(succ_report.priv_param, p, update_param_len);
         }
 
 #ifdef UPDATE_LED_REMIND

@@ -53,12 +53,15 @@ static u16 g_auto_shutdown_timer = 0;
 extern void bt_set_osc_cap(u8 sel_l, u8 sel_r);
 extern const u8 *bt_get_mac_addr();
 extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
+extern void lmp_sniff_t_slot_attemp_reset(u16 slot, u16 attemp);
+extern const int sniff_support_reset_anchor_point;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 
 
 /* static const u8 bt_address_default[] = {0x11, 0x22, 0x33, 0x66, 0x77, 0x88}; */
 static void app_select_btmode(u8 mode);
 void sys_auto_sniff_controle(u8 enable, u8 *addr);
 void bt_sniff_ready_clean(void);
+extern int edr_hid_is_connected(void);
 
 extern int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type);
 
@@ -334,23 +337,48 @@ static void hid_vm_deal(u8 rw_flag)
     }
 }
 
+static int bt_get_battery_value()
+{
+    //将当前电量转换为1~9级发送给手机同步电量
+    u8 battery_level = 0;
+
+#if TCFG_SYS_LVD_EN
+    u8 vbat_percent = get_vbat_percent();
+
+    if (vbat_percent < 5) { //小于5%电量等级为0，显示10%
+        return 0;
+    }
+
+    battery_level = (vbat_percent - 5) / 10;
+
+    //取消默认蓝牙定时发送电量给手机，需要更新电量给手机使用USER_CTRL_HFP_CMD_UPDATE_BATTARY命令
+    //user_send_cmd_prepare(USER_CTRL_HFP_CMD_UPDATE_BATTARY, 0, NULL);
+    /*电量协议的是0-9个等级，请比例换算*/
+    r_printf("bt_get_battery_value:%d\n", battery_level);
+#endif
+    return battery_level;
+}
+
 
 static void bt_function_select_init()
 {
     __set_user_ctrl_conn_num(TCFG_BD_NUM);
     __set_support_msbc_flag(1);
 
-#if BT_SUPPORT_DISPLAY_BAT
-    __bt_set_update_battery_time(60);
-#else
-    __bt_set_update_battery_time(0);
-#endif
-
     __set_page_timeout_value(8000); /*回连搜索时间长度设置,可使用该函数注册使用，ms单位,u16*/
     __set_super_timeout_value(8000); /*回连时超时参数设置。ms单位。做主机有效*/
 
 #if (TCFG_BD_NUM == 2)
     __set_auto_conn_device_num(2);
+#endif
+
+#if (TCFG_USER_EDR_ENABLE && TCFG_SYS_LVD_EN && USER_SUPPORT_PROFILE_HFP)
+    //edr通过hfp显示电量
+    __set_disable_sco_flag(1);
+    __bt_set_update_battery_time(60);
+    get_battery_value_register(bt_get_battery_value);   /*电量显示获取电量的接口*/
+#else
+    __bt_set_update_battery_time(0);
 #endif
 
     //io_capabilities ; /*0: Display only 1: Display YesNo 2: KeyboardOnly 3: NoInputNoOutput*/
@@ -392,6 +420,13 @@ void hid_set_soft_poweroff(void)
     //必须先主动断开蓝牙链路,否则要等链路超时断开
     if (bt_hid_mode == HID_MODE_EDR) {
         user_hid_enable(0);
+#if USER_SUPPORT_PROFILE_HFP
+        if (get_curr_channel_state() & HFP_CH) {
+            log_info("disconnect hfp\n");
+            user_send_cmd_prepare(USER_CTRL_HFP_DISCONNECT, 0, NULL);
+        }
+#endif
+
     } else {
 #if TCFG_USER_BLE_ENABLE
         ble_module_enable(0);
@@ -474,12 +509,25 @@ static int state_machine(struct application *app, enum app_state state, struct i
     return 0;
 }
 
+#if SNIFF_MODE_RESET_ANCHOR
+
+#define  SNIFF_CNT_TIME               1/////<空闲5S之后进入sniff模式
+
+#define SNIFF_MAX_INTERVALSLOT        16
+#define SNIFF_MIN_INTERVALSLOT        16
+#define SNIFF_ATTEMPT_SLOT            2
+#define SNIFF_TIMEOUT_SLOT            1
+#define SNIFF_CHECK_TIMER_PERIOD      100
+#else
+
 #define  SNIFF_CNT_TIME               5/////<空闲5S之后进入sniff模式
 
 #define SNIFF_MAX_INTERVALSLOT        800
 #define SNIFF_MIN_INTERVALSLOT        100
 #define SNIFF_ATTEMPT_SLOT            4
 #define SNIFF_TIMEOUT_SLOT            1
+#define SNIFF_CHECK_TIMER_PERIOD      1000
+#endif
 
 static u8 sniff_ready_status = 0; //0:sniff_ready 1:sniff_not_ready
 static int exit_sniff_timer = 0;
@@ -546,7 +594,7 @@ void sys_auto_sniff_controle(u8 enable, u8 *addr)
 
         if (sniff_timer == 0) {
             log_info("check_sniff_enable\n");
-            sniff_timer = sys_timer_add(NULL, bt_check_enter_sniff, 1000);
+            sniff_timer = sys_timer_add(NULL, bt_check_enter_sniff, SNIFF_CHECK_TIMER_PERIOD);
         }
     } else {
 
@@ -842,6 +890,10 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 
         bt_ble_init();
 #endif
+
+        if (sniff_support_reset_anchor_point) {
+            lmp_sniff_t_slot_attemp_reset(SNIFF_MAX_INTERVALSLOT, SNIFF_ATTEMPT_SLOT);
+        }
 
         hid_vm_deal(0);//bt_hid_mode read for VM
         app_select_btmode(HID_MODE_INIT);//

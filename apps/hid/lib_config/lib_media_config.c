@@ -381,5 +381,10 @@ const char log_tag_const_i_AUDIO_ENCODER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(0
 const char log_tag_const_d_AUDIO_ENCODER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(TRUE);
 const char log_tag_const_e_AUDIO_ENCODER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(TRUE);
 
+const char log_tag_const_v_AEC_USER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(0);
+const char log_tag_const_c_AEC_USER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(0);
+const char log_tag_const_i_AEC_USER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(1);
+const char log_tag_const_d_AEC_USER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(TRUE);
+const char log_tag_const_e_AEC_USER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(TRUE);
 
 

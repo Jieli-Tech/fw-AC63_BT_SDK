@@ -96,6 +96,14 @@ static u32 server_timer_handle = 0;
 static u8 test_data_start;
 #endif
 
+/*
+ 打开流控使能后,确定使能接口 att_server_flow_enable 被调用
+ 然后使用过程 通过接口 att_server_flow_hold 来控制流控开关
+ 注意:流控只能控制对方使用带响应READ/WRITE等命令方式
+ 例如:ATT_WRITE_REQUEST = 0x12
+ */
+#define ATT_DATA_RECIEVT_FLOW           0//流控功能使能
+
 //---------------
 // 广播周期 (unit:0.625ms)
 #define ADV_INTERVAL_MIN          (160*5)
@@ -816,16 +824,33 @@ static int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type)
 }
 
 //------------------------------------------------------
+#if RCSP_BTMATE_EN
+static u8 tag_in_adv;
+#endif
+
 static int make_set_adv_data(void)
 {
     u8 offset = 0;
     u8 *buf = adv_data;
 
 
-    /* offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x18, 1); */
-    /* offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x1A, 1); */
+#if DOUBLE_BT_SAME_MAC
+    offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x0A, 1);
+#else
     offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, 0x06, 1);
+#endif
+
     offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, 0xAF30, 2);
+
+#if RCSP_BTMATE_EN
+    u8  tag_len = sizeof(user_tag_string);
+    if (tag_len > ADV_RSP_PACKET_MAX - (offset + 2)) {
+        tag_in_adv = 0;
+    } else {
+        offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA, (void *)user_tag_string, tag_len);
+        tag_in_adv = 1;
+    }
+#endif
 
     if (offset > ADV_RSP_PACKET_MAX) {
         puts("***adv_data overflow!!!!!!\n");
@@ -844,8 +869,10 @@ static int make_set_rsp_data(void)
     u8 *buf = scan_rsp_data;
 
 #if RCSP_BTMATE_EN
-    u8  tag_len = sizeof(user_tag_string);
-    offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA, (void *)user_tag_string, tag_len);
+    if (!tag_in_adv) {
+        u8  tag_len = sizeof(user_tag_string);
+        offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA, (void *)user_tag_string, tag_len);
+    }
 #endif
 
     u8 name_len = gap_device_name_len;
@@ -1218,13 +1245,43 @@ void ble_module_enable(u8 en)
     }
 }
 
+
+//流控使能 EN: 1-停止收数 or 0-继续收数
+int ble_trans_flow_enable(u8 en)
+{
+    int ret = -1;
+#if ATT_DATA_RECIEVT_FLOW
+    if (con_handle) {
+        att_server_flow_hold(con_handle, en);
+        ret = 0;
+    }
+#endif
+    log_info("ble_trans_flow_enable:%d,%d\n", en, ret);
+    return ret;
+}
+
+//for test
+static void timer_trans_flow_test(void)
+{
+    static u8 sw = 0;
+    if (con_handle) {
+        sw = !sw;
+        ble_trans_flow_enable(sw);
+    }
+}
+
 static const char ble_ext_name[] = "(BLE)";
 
 void bt_ble_init(void)
 {
     log_info("***** ble_init******\n");
-    const char *name_p;
+    char *name_p;
+
+#if DOUBLE_BT_SAME_NAME
+    u8 ext_name_len = 0;
+#else
     u8 ext_name_len = sizeof(ble_ext_name) - 1;
+#endif
 
     name_p = bt_get_local_name();
     gap_device_name_len = strlen(name_p);
@@ -1232,12 +1289,21 @@ void bt_ble_init(void)
         gap_device_name_len = BT_NAME_LEN_MAX - ext_name_len;
     }
 
-    //增加后缀，区分名字
     memcpy(gap_device_name, name_p, gap_device_name_len);
+
+#if DOUBLE_BT_SAME_NAME == 0
+    //增加后缀，区分名字
     memcpy(&gap_device_name[gap_device_name_len], "(BLE)", ext_name_len);
     gap_device_name_len += ext_name_len;
+#endif
 
     log_info("ble name(%d): %s \n", gap_device_name_len, gap_device_name);
+
+#if ATT_DATA_RECIEVT_FLOW
+    log_info("att_server_flow_enable\n");
+    att_server_flow_enable(1);
+    /* sys_timer_add(0, timer_trans_flow_test, 3000); */
+#endif
 
     set_ble_work_state(BLE_ST_INIT_OK);
     ble_module_enable(1);
