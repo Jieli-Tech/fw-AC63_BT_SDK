@@ -325,8 +325,8 @@ app/common/ble/le_hogp.c->hid_timer_mouse_handler()。
 
 * 2、手机端工具
 
-2.1 安卓端开发说明：详见tools目录下Android_杰理OTA外接库开发说明      
-2.2 IOS端开发说明： 详见tools目录下IOS_杰理OTA外接库开发说明
+2.1 安卓端开发说明：https://github.com/Jieli-Tech/Android-JL_OTA     
+2.2 IOS端开发说明： https://github.com/Jieli-Tech/iOS-JL_OTA
 
 ## 11. AUDIO功能
 ### 1. 概述
