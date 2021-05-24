@@ -55,6 +55,7 @@
 
 ## 目录导航
 -  ### [Start](./README.md#Start-1)
+    - #### [mesh系列教程](./README.md#mesh系列教程-1)
     - #### [应用实例选择](./README.md#应用实例选择-1)
     - #### [Mesh 配置](./README.md#Mesh-配置-1)
     - #### [Board 配置](./README.md#Board-配置-1)
@@ -62,6 +63,8 @@
     - #### [SIG Generic OnOff Client](./README.md#SIG-Generic-OnOff-Client-1)
     - #### [SIG Generic OnOff Server](./README.md#SIG-Generic-OnOff-Server-1)
     - #### [SIG AliGenie Socket](./README.md#SIG-AliGenie-Socket-1)
+    - #### [SIG AliGenie Light](./README.md#SIG-AliGenie-Light-1)
+    - #### [SIG AliGenie Fan](./README.md#SIG-AliGenie-Fan-1)
 
 ## Start
 > :book: 目录文件结构 :book:
@@ -93,7 +96,12 @@
         vendor_client.c
         vendor_server.c
         AliGenie_socket.c
+        AliGenie_Light.c
+        AliGenie_Fan.c
 ```
+  >### mesh系列教程
+  ---
+  - [mesh入门教程](https://v.qq.com/x/page/w3247hvxcga.html?ptag=qqbrowser)
 
   >### 应用实例选择
   ---
