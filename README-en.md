@@ -92,6 +92,8 @@ Community
 
 * [Dingtalk Group](./doc/stuff/dingtalk.jpg)
 
+* [Q&A](./doc/stuff/AC630X软件问题整理.pdf)
+
 Disclaimer
 ------------
 
