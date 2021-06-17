@@ -24,6 +24,13 @@ typedef struct _APP_VAR {
     s8  usb_mic_gain;
 } APP_VAR;
 
+enum {
+    KEY_USER_DEAL_POST = 0,
+    KEY_USER_DEAL_POST_MSG,
+    KEY_USER_DEAL_POST_EVENT,
+    KEY_USER_DEAL_POST_2,
+};
+
 extern APP_VAR app_var;
 
 

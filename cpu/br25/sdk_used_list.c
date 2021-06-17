@@ -3,7 +3,9 @@
 #if TCFG_USER_TWS_ENABLE
 tws_local_media_sync
 tws_afh_sync
+#if TCFG_EQ_ONLINE_ENABLE
 tws_ci_data
+#endif /* #if TCFG_EQ_ONLINE_ENABLE */
 tws_acl_data_sync
 tws_event_sync
 tws_conn_sync
@@ -129,6 +131,15 @@ wav_decoder
 midi_ctrl_decoder
 #endif
 
+
+#if TCFG_DEC_LC3_ENABLE
+lc3_decoder
+#endif
+
+
+#if TCFG_ENC_LC3_ENABLE
+lc3_encoder
+#endif
 
 
 

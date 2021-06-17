@@ -9,6 +9,7 @@
 #define ACTION_BACK 				0x0a1b2c00
 #define ACTION_STOP 				0x0a1b2c01
 #define ACTION_DO_NOTHING           0x0a1b2c02
+#define ACTION_TONE_PLAY            0x0a1b2c03
 #define ACTION_CLASS_MASK 			0xfffff000
 
 

@@ -298,7 +298,7 @@ u32 audio_output_rate(int input_rate)
     return DONGLE_OUTPUT_SAMPLE_RATE;
 #endif
 
-#if (TCFG_REVERB_ENABLE || TCFG_MIC_EFFECT_ENABLE)
+#if (TCFG_MIC_EFFECT_ENABLE)
     if (input_rate > 48000) {
         return 48000;
     }
@@ -684,6 +684,12 @@ int audio_dec_init()
     }
 #endif
 
+#if AUDIO_SPECTRUM_CONFIG
+    if (spec_hdl) {
+        entries[entry_cnt++] = &spec_hdl->entry
+    }
+#endif
+
 #if AUDIO_VOCAL_REMOVE_EN
     if (mix_vocal_remove_hdl) {
         entries[entry_cnt++] = &mix_vocal_remove_hdl->entry;
@@ -714,12 +720,6 @@ int audio_dec_init()
     // 创建数据流，把所有节点连接起来
     mixer.stream = audio_stream_open(&mixer, audio_mixer_stream_resume);
     audio_stream_add_list(mixer.stream, entries, entry_cnt);
-#if AUDIO_SPECTRUM_CONFIG
-    if (spec_hdl) {
-        //频响能量值获取接口。从倒数第二个节点分流
-        audio_stream_add_entry(entries[entry_cnt - 2], &spec_hdl->entry);
-    }
-#endif
 
     /* #if (AUDIO_OUTPUT_WAY != AUDIO_OUTPUT_WAY_DAC) */
 #if (!AUDIO_OUTPUT_INCLUDE_DAC)

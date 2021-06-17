@@ -18,6 +18,24 @@
 #endif
 
 
+
+#define PC_SYNC_BY_DAC_HRP      (0)
+
+#if PC_SYNC_BY_DAC_HRP
+#include "media/includes.h"
+extern struct audio_dac_hdl dac_hdl;
+/* extern int audio_dac_get_hrp(struct audio_dac_hdl *dac); */
+u32 in_points = 0;
+u32 out_points = 0;
+u32 last_hrp = 0;
+u8  dac_start_flag = 0;
+int sample_rate_set = 0;
+u16 usb_icnt = 0;
+
+#endif // PC_SYNC_BY_DAC_HRP
+
+
+
 #if TCFG_PC_ENABLE//TCFG_APP_PC_EN
 #if (defined(TCFG_PCM2TWS_SBC_ENABLE) && (TCFG_PCM2TWS_SBC_ENABLE))
 #define UAC_DEC_PCM_ENC_TYPE		AUDIO_CODING_SBC
@@ -86,6 +104,13 @@ struct uac_dec_hdl {
     int eq_out_points;
     int eq_out_total;
 #endif
+
+
+    u32 cnt: 8;
+
+    u32 state: 1;
+
+    int check_data_timer;
 
 
 };
@@ -253,6 +278,79 @@ static int uac_dec_output_handler(struct audio_decoder *decoder, s16 *data, int 
     return len - rlen;
 }
 
+/*----------------------------------------------------------------------------*/
+/**@brief    检测uac是否收到数据，没数据时暂停mix_ch
+   @param    *priv: 私有参数
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+static void audio_pc_check_timer(void *priv)
+{
+#if 1
+    u8 alive = uac_speaker_get_alive();
+    if (alive) {
+        uac_dec->cnt++;
+        if (uac_dec->cnt > 5) {
+            if (!uac_dec->state) {
+#if TCFG_DEC2TWS_ENABLE
+                if (uac_dec->pcm_dec.dec_no_out_sound) {
+                    localtws_decoder_pause(1);
+                }
+#endif
+                audio_mixer_ch_pause(&uac_dec->mix_ch, 1);
+                audio_decoder_resume_all(&decode_task);
+                uac_dec->state = 1;
+            }
+        }
+    } else {
+        if (uac_dec->cnt) {
+            uac_dec->cnt--;
+        }
+        if (uac_dec->state) {
+            uac_dec->state = 0;
+            uac_dec->cnt = 0;
+#if TCFG_DEC2TWS_ENABLE
+            if (uac_dec->pcm_dec.dec_no_out_sound) {
+                localtws_decoder_pause(0);
+            }
+#endif
+            audio_mixer_ch_pause(&uac_dec->mix_ch, 0);
+            audio_decoder_resume_all(&decode_task);
+        }
+    }
+    uac_speaker_set_alive(1);
+#else
+    static u8 cnt = 0;
+    if (uac_speaker_stream_size(NULL) == 0) {
+        if (cnt < 20) {
+            cnt++;
+        }
+        if (cnt == 15) {
+#if TCFG_DEC2TWS_ENABLE
+            if (uac_dec->pcm_dec.dec_no_out_sound) {
+                localtws_decoder_pause(1);
+            }
+#endif
+            audio_mixer_ch_pause(&uac_dec->mix_ch, 1);
+            audio_decoder_resume_all(&decode_task);
+        }
+    } else {
+        if (cnt > 14) {
+#if TCFG_DEC2TWS_ENABLE
+            if (uac_dec->pcm_dec.dec_no_out_sound) {
+                localtws_decoder_pause(0);
+            }
+#endif
+            audio_mixer_ch_pause(&uac_dec->mix_ch, 0);
+            audio_decoder_resume_all(&decode_task);
+        }
+        cnt = 0;
+    }
+#endif
+}
+
+
 
 static int uac_stream_read(struct audio_decoder *decoder, void *buf, u32 len)
 {
@@ -375,7 +473,19 @@ static int uac_audio_sync_init(struct uac_dec_hdl *dec)
     dec->top_size = uac_speaker_stream_length() * 70 / 100;
     dec->bottom_size = uac_speaker_stream_length() * 40 / 100;
 
+
+
+#if PC_SYNC_BY_DAC_HRP
+
+    if (sample_rate_set == 0) {
+        sample_rate_set = dec->src_out_sr;
+    }
+    dec->audio_new_rate = sample_rate_set;
+
+#else
     dec->audio_new_rate = dec->src_out_sr;//audio_output_rate(dec->sample_rate);
+#endif
+
     printf("out_sr:%d, dsr:%d, \n", dec->audio_new_rate, dec->sample_rate);
     dec->usb_audio_max_speed = dec->audio_new_rate + 50;
     dec->usb_audio_min_speed = dec->audio_new_rate - 50;
@@ -422,6 +532,10 @@ static int uac_audio_close(void)
 
     uac_dec->start = 0;
     uac_dec->sync_start = 0;
+
+    if (uac_dec->check_data_timer) {
+        sys_hi_timer_del(uac_dec->check_data_timer);
+    }
 
     audio_decoder_close(&uac_dec->decoder);
     uac_audio_sync_release(uac_dec);
@@ -576,6 +690,21 @@ __dec_start:
         goto __err;
     }
 
+    dec->state = 0;
+    dec->cnt = 0;
+    dec->check_data_timer = sys_hi_timer_add(NULL, audio_pc_check_timer, 10);
+
+#if PC_SYNC_BY_DAC_HRP
+
+    in_points = 0;
+    out_points = 0;
+    last_hrp = 0;
+    dac_start_flag = 0;
+    usb_icnt = 0;
+
+#endif // PC_SYNC_BY_DAC_HRP
+
+
     clock_set_cur();
     dec->start = 1;
     return 0;
@@ -610,7 +739,59 @@ static int uac_wait_res_handler(struct audio_res_wait *wait, int event)
 
 static void uac_speaker_stream_rx_handler(int event, void *data, int len)
 {
-    if (uac_dec) {
+#if PC_SYNC_BY_DAC_HRP
+
+    u32 hrp = audio_dac_get_hrp(&dac_hdl);
+    /* printf("\nl:%d h:%d\n", last_hrp, hrp); */
+
+    /* int sample_rate = uac_speaker_stream_sample_rate(); */
+    int sample_rate = SPK_AUDIO_RATE;
+
+    if (sample_rate_set == 0) {
+        sample_rate_set = sample_rate;
+    }
+
+    in_points += len / 2 / 2;
+
+    if (hrp >= last_hrp) {
+        out_points += hrp - last_hrp;
+    } else {
+        out_points += hrp + JL_AUDIO->DAC_LEN - last_hrp;
+    }
+    last_hrp = hrp;
+
+    if ((!dac_start_flag) && (out_points != 0)) {
+        dac_start_flag = 1;
+        in_points = 0;
+        out_points = 0;
+    }
+
+
+    if (dac_start_flag) {
+        if (out_points) {
+            usb_icnt++;
+            if (usb_icnt == 1000) {
+                usb_icnt = 0;
+                sample_rate_set = out_points ;
+                int buf_size = uac_speaker_stream_size();
+
+                if (buf_size >= (uac_speaker_stream_length() * 3 / 4)) {
+                    sample_rate_set += 1;
+                } else if (buf_size <= (uac_speaker_stream_length() / 4)) {
+                    sample_rate_set -= 1;
+                }
+
+                /* printf(">> in:%d out:%d sr:%d b:%d\n", in_points, out_points, sample_rate_set, buf_size); */
+                in_points = 0;
+                out_points = 0;
+            }
+        }
+    }
+
+#endif // PC_SYNC_BY_DAC_HRP
+
+
+    if ((uac_speaker_stream_size() >= (uac_speaker_stream_length() * 50 / 100)) && (&uac_dec->decoder != NULL)) {
         audio_decoder_resume(&uac_dec->decoder);
     }
 }

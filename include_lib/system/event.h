@@ -39,6 +39,7 @@
 
 #define 	KEY_F1 				60
 
+
 #define SYS_ALL_EVENT           0xffff
 #define SYS_KEY_EVENT 			0x0001
 #define SYS_TOUCH_EVENT 		0x0002
@@ -81,6 +82,7 @@
 #define SYS_BT_EVENT_BLE_STATUS        (('B' << 24) | ('L' << 16) | ('E' << 8) | '\0')
 #define SYS_BT_EVENT_FORM_COMMON       (('C' << 24) | ('M' << 16) | ('M' << 8) | '\0')
 #define DEVICE_EVENT_FROM_KEY		   (('K' << 24) | ('E' << 16) | ('Y' << 8) | '\0')
+#define DEVICE_EVENT_FROM_CUSTOM	   (('C' << 24) | ('S' << 16) | ('T' << 8) | '\0')
 #define SYS_BT_AI_EVENT_TYPE_STATUS    (('B' << 24) | ('A' << 16) | ('I' << 8) | '\0')
 #define DEVICE_EVENT_FROM_UART_RX_OVERFLOW		(('U' << 24) | ('R' << 16) | ('F' << 8) | '\0')
 #define DEVICE_EVENT_FROM_UART_RX_OUTTIME		(('U' << 24) | ('R' << 16) | ('T' << 8) | '\0')

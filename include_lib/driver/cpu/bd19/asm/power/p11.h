@@ -279,31 +279,6 @@
 #define LP_TMR0_SAMPLE_KST(x)       SFR(P11_TMR0_CON2, 6, 1, x)
 #define LP_TMR0_SAMPLE_DONE()       (P11_TMR0_CON2 & BIT(7))
 
-#define LP_TMR1_EN(x)               SFR(P11_TMR1_CON0, 0, 1, x)
-#define LP_TMR1_CTU(x)              SFR(P11_TMR1_CON0, 1, 1, x)
-#define LP_TMR1_P11_WKUP_IE(x)      SFR(P11_TMR1_CON0, 2, 1, x)
-#define LP_TMR1_P11_TO_IE(x)        SFR(P11_TMR1_CON0, 3, 1, x)
-#define LP_TMR1_CLR_P11_WKUP(x)     SFR(P11_TMR1_CON0, 4, 1, x)
-#define LP_TMR1_WKUP(x)             SFR(P11_TMR1_CON0, 5, 1, x)
-#define LP_TMR1_CLR_P11_TO(x)       SFR(P11_TMR1_CON0, 6, 1, x)
-#define LP_TMR1_P11_TO(x)           SFR(P11_TMR1_CON0, 7, 1, x)
-
-#define LP_TMR1_SW_KICK_START(x)    SFR(P11_TMR1_CON1, 0, 1, x)
-#define LP_TMR1_HW_KICK_START(x)    SFR(P11_TMR1_CON1, 1, 1, x)
-#define LP_TMR1_WKUP_IE(x)          SFR(P11_TMR1_CON1, 2, 1, x)
-#define LP_TMR1_TO_IE(x)            SFR(P11_TMR1_CON1, 3, 1, x)
-#define LP_TMR1_CLR_MSYS_WKUP(x)    SFR(P11_TMR1_CON1, 4, 1, x)
-#define LP_TMR1_MSYS_WKUP(x)        SFR(P11_TMR1_CON1, 5, 1, x)
-#define LP_TMR1_CLR_MSYS_TO(x)      SFR(P11_TMR1_CON1, 6, 1, x)
-#define LP_TMR1_MSYS_TO(x)          SFR(P11_TMR1_CON1, 7, 1, x)
-
-#define LP_TMR1_CLK_SEL(x)          SFR(P11_TMR1_CON2, 0, 2, x)
-#define LP_TMR1_CLK_DIV(x)          SFR(P11_TMR1_CON2, 2, 2, x)
-#define LP_TMR1_KST(x)              SFR(P11_TMR1_CON2, 4, 1, x)
-#define LP_TMR1_RUN()               (P11_TMR1_CON2 & BIT(5))
-#define LP_TMR1_SAMPLE_KST(x)       SFR(P11_TMR1_CON2, 6, 1, x)
-#define LP_TMR1_SAMPLE_DONE()       (P11_TMR1_CON2 & BIT(7))
-
 //===========================================================================//
 //
 //                            P2M_MEM(跟p11同步)

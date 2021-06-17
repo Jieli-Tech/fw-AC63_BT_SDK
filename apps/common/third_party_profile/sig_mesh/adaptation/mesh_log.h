@@ -3,15 +3,6 @@
 
 #include "system/debug.h"
 
-// -- output terminal color
-#define RedBold             "\033[31;1;7m" // 红色加粗
-#define RedBoldBlink        "\033[31;1;5m" // 红色加粗、闪烁
-#define BlueBold            "\033[34;1;7m" // 蓝色加粗
-#define BlueBoldBlink       "\033[34;1;5m" // 蓝色加粗、闪烁
-#define PurpleBold          "\033[35;1m"   // 紫色加粗
-#define PurpleBoldBlink     "\033[35;1;5m" // 紫色加粗、闪烁
-#define Reset               "\033[0;25m"   // 颜色复位
-
 #ifndef LOG_TAG_CONST
 
 #undef log_info

@@ -85,7 +85,7 @@ const struct clock_type  clock_enum[] = {
     { DEC_PCM_CLK	, (24), "DEC_PCM_CLK	 " },
 #ifndef CONFIG_SOUNDBOX_FLASH_256K
     { DEC_MP3_CLK	, (80), "DEC_MP3_CLK	 " },
-    { DEC_WAV_CLK	, (32), "DEC_WAV_CLK	 " },
+    { DEC_WAV_CLK	, (48), "DEC_WAV_CLK	 " },
     { DEC_G726_CLK	, (24), "DEC_G726_CLK	 " },
     { DEC_MTY_CLK	, (24), "DEC_MTY_CLK	 " },
     { DEC_WMA_CLK	, (48), "DEC_WMA_CLK	 " },
@@ -164,6 +164,10 @@ const struct clock_type  clock_enum[] = {
 
     {AI_SPEECH_CLK, (120),	"AI_SPEECH_CLK"   },
     {SMARTBOX_ACTION_CLK, (160),	"SMARTBOX_ACTION_CLK"   },
+
+#ifdef CONFIG_ADAPTER_ENABLE
+    {ADAPTER_PROCESS_CLK, (64),	"ADAPTER_PROCESS_CLK"   },
+#endif
 };
 
 

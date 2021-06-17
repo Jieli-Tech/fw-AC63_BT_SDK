@@ -19,6 +19,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/clock_manager.o
 ifneq ($(APP_CASE), mesh)
 ifneq ($(APP_CASE),hid)
+ifneq ($(APP_CASE),ll_sync)
 ifneq ($(APP_CASE),spp_and_le)
 ifneq ($(APP_CASE),dongle)
 objs += \
@@ -44,6 +45,7 @@ objs += \
 	  $(ROOT)/cpu/$(CPU)/audio_anc.o
 endif
 
+endif
 endif
 endif
 endif

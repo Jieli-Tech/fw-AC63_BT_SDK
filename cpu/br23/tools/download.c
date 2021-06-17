@@ -65,6 +65,9 @@ cp download/watch/isd_config_double_bank.ini ./isd_config.ini
 cp download/watch/isd_config.ini ./
 #endif
 cp download/watch/download.bat ./
+#elif  CONFIG_ICRECORDER_CASE_ENABLE
+cp download/ICrecorder/isd_config.ini ./
+cp download/ICrecorder/download.bat ./
 #else
 cp download/standard/isd_config.ini ./
 cp download/standard/download.bat ./
@@ -174,8 +177,17 @@ del *.bc
 download\soundcard\download.bat
 
 #elif  CONFIG_WATCH_CASE_ENABLE
+#if  CONFIG_DOUBLE_BANK_ENABLE
+set ini_cfg=isd_config_double_bank.ini
+#else
+set ini_cfg=isd_config.ini
+#endif
+download\watch\download.bat %ini_cfg%
 
-download\watch\download.bat
+#elif  CONFIG_ICRECORDER_CASE_ENABLE
+
+download\ICrecorder\download.bat
+
 
 #elif CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE
 

@@ -10,7 +10,7 @@
 #include "application/audio_eq_drc_apply.h"
 #include "application/audio_dig_vol.h"
 #include "audio_config.h"
-
+#include "audio_effect/audio_eq_drc_demo.h"
 
 
 #ifndef RB16

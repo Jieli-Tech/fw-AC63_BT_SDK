@@ -72,6 +72,7 @@ const int config_bt_function  =  0;
 
 ///bredr 强制 做 maseter
 const int config_btctler_bredr_master = 0;
+const int config_btctler_dual_a2dp  = 0;
 
 ///afh maseter 使用app设置的map 通过USER_CTRL_AFH_CHANNEL 设置
 const int config_bredr_afh_user = 0;
@@ -105,7 +106,7 @@ const int config_btctler_le_acl_total_nums = 10;
 
 const int config_btctler_le_slave_conn_update_winden = 2500;//range:100 to 2500
 
-const int ble_disable_wait_enable = 0;
+const int ble_disable_wait_enable = 1;                      //不开启wait_enable会导致升级调用ll_destory的时候出现BT访问mmu异常
 
 /*-----------------------------------------------------------*/
 /**

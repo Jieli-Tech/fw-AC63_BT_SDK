@@ -19,6 +19,7 @@ const int config_dcdc_mode = 1;
 #else
 const int config_dcdc_mode = 0;
 #endif
+const int config_spi_code_user_cache = 0;
 
 #if(TCFG_CLOCK_SYS_SRC == SYS_CLOCK_INPUT_PLL_RCL) //系统时钟源选择
 const int  clock_sys_src_use_lrc_hw = 1; //当使用lrc时timer.c需要特殊设置

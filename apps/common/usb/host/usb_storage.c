@@ -808,14 +808,15 @@ static int _usb_stor_read_big_block(struct device *device, u32 disk_block_size, 
     u8 num_block =  disk_block_size / 512; //8
     u8 req_offset = lba % num_block; //计算block数据偏移量
     u8 send_cbw = 0;
-    if ((req_offset == 0)  || (lba <= disk->prev_lba) || ((lba - disk->prev_lba) > num_block)) {
+    if ((req_offset == 0)  || (lba <= disk->prev_lba) || ((lba - disk->prev_lba) > num_block) || (disk->remain_len == 0)) {
         //sector 4k地址;或地址不连续时(地址小于上一次地址; 地址和上一次地址不属于同一个sector)
         send_cbw = 1;
     } else {
         //地址连续
         send_cbw = 0;
     }
-    /* y_printf("lba===%d prev_lba=%d req_offset===%d cbw:%d %d",lba,disk->prev_lba,req_offset,send_cbw,abs_value); */
+    /* y_printf("lba===%d prev_lba=%d req_offset===%d cbw:%d %d %d\n", */
+    /* lba, disk->prev_lba, req_offset, send_cbw, disk_block_size,disk->remain_len); */
     disk->prev_lba = lba;
     lba = lba / num_block;
 
@@ -900,17 +901,13 @@ int _usb_stor_async_wait_sem(struct usb_host_device *host_dev)
 {
     int ret = 0;
 #if UDISK_READ_512_ASYNC_ENABLE
-    local_irq_disable(); //这里关中断,避免获取变量值被中断打断
-    if (get_async_mode() == BULK_ASYNC_MODE_ENTER) {
-        set_async_mode(BULK_ASYNC_MODE_SEM_PEND);
-        local_irq_enable();
-        ret = os_sem_pend(host_dev->sem, 100);
+    if (get_async_mode() == BULK_ASYNC_MODE_SEM_PEND) {
+        set_async_mode(BULK_ASYNC_MODE_EXIT);
+        ret = usb_sem_pend(host_dev, 100);
         if (ret) {
-            r_printf("ret timeout %d", ret);
+            r_printf("usb async ret timeout %d", ret);
             return -DEV_ERR_TIMEOUT;
         }
-    } else {
-        local_irq_enable();
     }
 #endif
     return ret;
@@ -922,7 +919,6 @@ static int _usb_stro_read_async(struct device *device, void *pBuf, u32 num_lba, 
     struct mass_storage *disk = host_device2disk(host_dev);
     const usb_dev usb_id = host_device2id(host_dev);
 
-    usb_h_mutex_pend(host_dev);
     const u32 txmaxp = usb_stor_txmaxp(disk);
     const u32 rxmaxp = usb_stor_rxmaxp(disk);
     int ret = 0;
@@ -1011,14 +1007,12 @@ static int _usb_stro_read_async(struct device *device, void *pBuf, u32 num_lba, 
     disk->async_prev_lba = lba;
 
     disk->dev_status = DEV_OPEN;
-    usb_h_mutex_post(host_dev);
     return num_lba;
 __exit:
     if (disk->dev_status != DEV_CLOSE) {
         disk->dev_status = DEV_OPEN;
     }
     log_error("%s---%d", __func__, __LINE__);
-    usb_h_mutex_post(host_dev);
     return 0;
 }
 #endif
@@ -1029,24 +1023,24 @@ static int _usb_stro_read_async(struct device *device, void *pBuf, u32 num_lba, 
     struct mass_storage *disk = host_device2disk(host_dev);
     const usb_dev usb_id = host_device2id(host_dev);
 
-    usb_h_mutex_pend(host_dev);
     const u32 txmaxp = usb_stor_txmaxp(disk);
     const u32 rxmaxp = usb_stor_rxmaxp(disk);
     int ret = 0;
     u32 rx_len = num_lba * 512;  //filesystem uses the fixed BLOCK_SIZE
     u8 read_block_num = UDISK_READ_ASYNC_BLOCK_NUM;
     /* r_printf("lba : %d %d\n",lba,disk->remain_len); */
-    _usb_stor_async_wait_sem(host_dev);
+    if (_usb_stor_async_wait_sem(host_dev)) {
+        goto __exit;
+    }
+
     if ((lba != disk->async_prev_lba + 1)) {
         if (disk->remain_len == 0) {
             if (disk->need_send_csw) {
                 //已取完data,需要发csw
                 ret = _usb_stro_read_csw(device);
                 if (ret < DEV_ERR_NONE) {
-                    log_error("%s:%d ret:%d\n", __func__, __LINE__, ret);
-                } else if (ret != sizeof(struct usb_scsi_csw)) {
-                    ret = -DEV_ERR_UNKNOW;
-                    log_error("%s:%d\n", __func__, __LINE__);
+                    log_error("%s:%d %d\n", __func__, __LINE__, ret);
+                    goto __exit;
                 }
                 disk->need_send_csw = 0;
             }
@@ -1061,9 +1055,10 @@ static int _usb_stro_read_async(struct device *device, void *pBuf, u32 num_lba, 
                                         NULL,
                                         rx_len);
             disk->remain_len -= rx_len;
-            if (ret < DEV_ERR_NONE) {
-                log_error("%s:%d\n", __func__, __LINE__);
+            if (ret != rx_len) {
+                log_error("%s:%d %d\n", __func__, __LINE__, ret);
                 disk->remain_len = 0; //data 接收错误直接发csw
+                goto __exit;
             }
             if (disk->remain_len == 0) {
                 //csw
@@ -1073,11 +1068,10 @@ static int _usb_stro_read_async(struct device *device, void *pBuf, u32 num_lba, 
                                             udisk_ep.target_epin,
                                             (u8 *)&disk->csw,
                                             sizeof(struct usb_scsi_csw));
-                if (ret < DEV_ERR_NONE) {
-                    log_error("%s:%d\n", __func__, __LINE__);
-                } else if (ret != sizeof(struct usb_scsi_csw)) {
+                if (ret != sizeof(struct usb_scsi_csw)) {
                     ret = -DEV_ERR_UNKNOW;
                     log_error("%s:%d\n", __func__, __LINE__);
+                    goto __exit;
                 }
                 break;
             }
@@ -1102,22 +1096,20 @@ static int _usb_stro_read_async(struct device *device, void *pBuf, u32 num_lba, 
         disk->remain_len -= rx_len;
         if (disk->remain_len == 0) {
             ret = _usb_stro_read_csw(device);
-            if (ret < DEV_ERR_NONE) {
-                log_error("%s:%d ret:%d\n", __func__, __LINE__, ret);
-            } else if (ret != sizeof(struct usb_scsi_csw)) {
+            if (ret != sizeof(struct usb_scsi_csw)) {
                 ret = -DEV_ERR_UNKNOW;
                 log_error("%s:%d\n", __func__, __LINE__);
+                goto __exit;
             }
         }
     } else {
         memcpy(pBuf, disk->udisk_512_buf, rx_len);
         if (disk->remain_len == 0) {
             ret = _usb_stro_read_csw(device);
-            if (ret < DEV_ERR_NONE) {
-                log_error("%s:%d ret:%d\n", __func__, __LINE__, ret);
-            } else if (ret != sizeof(struct usb_scsi_csw)) {
+            if (ret != sizeof(struct usb_scsi_csw)) {
                 ret = -DEV_ERR_UNKNOW;
                 log_error("%s:%d\n", __func__, __LINE__);
+                goto __exit;
             }
         }
     }
@@ -1149,14 +1141,12 @@ static int _usb_stro_read_async(struct device *device, void *pBuf, u32 num_lba, 
     }
 
     disk->dev_status = DEV_OPEN;
-    usb_h_mutex_post(host_dev);
     return num_lba;
 __exit:
     if (disk->dev_status != DEV_CLOSE) {
         disk->dev_status = DEV_OPEN;
     }
     log_error("%s---%d", __func__, __LINE__);
-    usb_h_mutex_post(host_dev);
     return 0;
 }
 #endif
@@ -1934,6 +1924,9 @@ static int usb_stor_close(struct device *device)
     if (disk) {
         log_info("=====================usb_stor_close===================== 333");
         ret = usb_h_mutex_pend(host_dev);
+
+        const usb_dev usb_id = host_device2id(host_dev);
+        usb_clr_intr_rxe(usb_id, udisk_ep.host_epin);
 
         disk->dev_status = DEV_IDLE;
 

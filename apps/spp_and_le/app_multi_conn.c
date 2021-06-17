@@ -162,7 +162,7 @@ static void client_test_write(void)
     for (i = 0; i < SUPPORT_MAX_CLIENT; i++) {
         tmp_handle = mul_dev_get_conn_handle(i, MULTI_ROLE_CLIENT);
 
-        if (tmp_handle) {
+        if (tmp_handle && ble_client_write_handle) {
             ret = ble_client_api->opt_comm_send_ext(tmp_handle, ble_client_write_handle, &count, 16, ATT_OP_WRITE_WITHOUT_RESPOND);
             log_info("test_write:%04x,%d", tmp_handle, ret);
         }
@@ -203,11 +203,11 @@ static void client_event_callback(le_client_event_e event, u8 *packet, int size)
         break;
 
     case CLI_EVENT_DISCONNECT:
-        if (ble_client_timer) {
+        if (ble_client_timer && TRANS_MULTI_BLE_MASTER_NUMS == 1) {
             sys_timeout_del(ble_client_timer);
+            ble_client_write_handle = 0;
+            ble_client_timer = 0;
         }
-        ble_client_timer = 0;
-        ble_client_write_handle = 0;
         break;
 
     default:

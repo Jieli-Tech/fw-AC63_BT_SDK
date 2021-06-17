@@ -41,6 +41,7 @@
   xTaskGetCurrentTaskHandle = ABSOLUTE(0x10fe98);
   xTaskGetTickCount = ABSOLUTE(0x10fe9c);
   xTaskGetHandle = ABSOLUTE(0x10fea0);
+  os_task_get_handle = ABSOLUTE(0x10fea0);
   vTaskDelete = ABSOLUTE(0x10fea4);
   xTaskGetApplicationTaskTag = ABSOLUTE(0x10fea8);
   vTaskSetApplicationTaskTag = ABSOLUTE(0x10feac);

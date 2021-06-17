@@ -134,7 +134,7 @@ void bt_production_test(u8 en);
        AC692x   PA13   PA12
        AC693x   PA8    PA9
        AC695x   PA9    PA10
-       AC696x   PA9    PA10
+       AC696x   PC1    PC2
        AC694x   PB1    PB2
        AC697x   PC2    PC3
        AC631x   PA7    PA8
@@ -229,8 +229,35 @@ bool ble_rf_vendor_fixed_channel(u8 channel_index, u8 pktcnt);
 /* ----------------------------------------------------------------------------*/
 s8 bredr_get_rssi_for_address(u8 *address);
 
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief  配置tx 是否支持包类型, (sdk默认支持)
+ *
+ * @param  packet_type
+ * @param  support_en   0 or 1
+ * @return true or false
+ */
+/* ----------------------------------------------------------------------------*/
+typedef enum {
+    PKT_TYPE_2DH5_EU = 0,
+} pkt_type_eu;
+
+bool bredr_link_vendor_support_packet_enable(pkt_type_eu packet_type, u8 support_en);
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief  配置ble 优先级锁定不低压ACL, (sdk 默认自动调节)
+ *
+ * @param  role:0--master,1--slave
+ * @param  enalbe   0 or 1
+ * @return null
+ */
+/* ----------------------------------------------------------------------------*/
+void ble_vendor_set_hold_prio(u8 role, u8 enable);
 
 void set_bt_afh_classs_enc(u8 afh_class);
 void set_bt_enhanced_power_control(u8 en);
+
+void set_bt_full_name_event(u8 en);
 
 #endif

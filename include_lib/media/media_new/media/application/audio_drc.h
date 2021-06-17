@@ -113,6 +113,24 @@ int audio_drc_run(struct audio_drc *drc, s16 *data, u32 len);
 /*----------------------------------------------------------------------------*/
 int audio_drc_close(struct audio_drc *drc);
 
+/*----------------------------------------------------------------------------*/
+/**@brief    audio_drc_open重新封装，简化使用
+   @param    *parm: drc参数句柄,参数详见结构体struct audio_drc_param
+   @return   eq句柄
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+struct audio_drc *audio_dec_drc_open(struct audio_drc_param *parm);
+
+/*----------------------------------------------------------------------------*/
+/**@brief    audio_drc_close重新封装，简化使用
+   @param    drc句柄
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void audio_dec_drc_close(struct audio_drc *drc);
+
 
 #ifndef EQ_CORE_V1
 void drc_app_run_check(struct audio_drc *drc);

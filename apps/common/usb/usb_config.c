@@ -5,6 +5,12 @@
 #include "gpio.h"
 #include "timer.h"
 #include "app_config.h"
+#include "lbuf.h"
+
+#ifdef CONFIG_ADAPTER_ENABLE
+#include "adapter_usb_hid.h"
+#endif//CONFIG_ADAPTER_ENABLE
+
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB]"
 #define LOG_ERROR_ENABLE
@@ -17,34 +23,40 @@
 #define     SET_INTERRUPT   ___interrupt
 
 
-#define EP0_DMA_SIZE    (64+4)
-#define HID_DMA_SIZE    (64+4)
-#define AUDIO_DMA_SIZE  (256+4)
-#define MSD_DMA_SIZE    (64+4)
-#define CDC_DMA_SIZE    (64+4)
 #define     MAX_EP_TX   5
 #define     MAX_EP_RX   5
+
 static usb_interrupt usb_interrupt_tx[USB_MAX_HW_NUM][MAX_EP_TX];// SEC(.usb_g_bss);
 static usb_interrupt usb_interrupt_rx[USB_MAX_HW_NUM][MAX_EP_RX];// SEC(.usb_h_bss);
 
-static u8 ep0_dma_buffer[EP0_DMA_SIZE]     __attribute__((aligned(4))) SEC(.usb_ep0)    ;
+static u8 ep0_dma_buffer[EP0_SETUP_LEN]     __attribute__((aligned(4))) SEC(.usb_ep0)    ;
+
 #if TCFG_USB_SLAVE_MSD_ENABLE
-static u8 msd_dma_buffer[MSD_DMA_SIZE * 2]  __attribute__((aligned(4)))SEC(.usb_msd_dma);
+#define     MSD_DMA_SIZE (64*2)
+#else
+#define     MSD_DMA_SIZE 0
 #endif
+
 #if TCFG_USB_SLAVE_HID_ENABLE
-static u8 hid_dma_rx_buffer[HID_DMA_SIZE]  __attribute__((aligned(4)))SEC(.usb_hid_dma);
-static u8 hid_dma_tx_buffer[HID_DMA_SIZE]  __attribute__((aligned(4)))SEC(.usb_hid_dma);
+#define     HID_DMA_SIZE    64
+#else
+#define     HID_DMA_SIZE    0
 #endif
+
 #if TCFG_USB_SLAVE_AUDIO_ENABLE
-static u8 spk_dma_buffer[AUDIO_DMA_SIZE]   __attribute__((aligned(4)))SEC(.usb_iso_dma);
-static u8 mic_dma_buffer[AUDIO_DMA_SIZE]   __attribute__((aligned(4)))SEC(.usb_iso_dma);
+#define     AUDIO_DMA_SIZE  256+192
+#else
+#define     AUDIO_DMA_SIZE  0
 #endif
+
 #if TCFG_USB_SLAVE_CDC_ENABLE
-static u8 cdc_dma_rx_buffer[CDC_DMA_SIZE]  __attribute__((aligned(4)))SEC(.usb_cdc_dma);
-static u8 cdc_dma_tx_buffer[CDC_DMA_SIZE]  __attribute__((aligned(4)))SEC(.usb_cdc_dma);
 #if CDC_INTR_EP_ENABLE
-static u8 cdc_intr_dma_tx_buffer[CDC_DMA_SIZE]  __attribute__((aligned(4)))SEC(.usb_cdc_dma);
+#define     CDC_DMA_SIZE    (64*3)
+#else
+#define     CDC_DMA_SIZE    (64*2)
 #endif
+#else
+#define     CDC_DMA_SIZE    0
 #endif
 
 struct usb_config_var_t {
@@ -59,8 +71,22 @@ static struct usb_config_var_t *usb_config_var = {NULL};
 static struct usb_config_var_t _usb_config_var SEC(.usb_config_var);
 #endif
 
+
+#define USB_DMA_BUF_ALIGN	(8)
+#ifndef USB_DMA_BUF_MAX_SIZE
+#define USB_DMA_BUF_MAX_SIZE (HID_DMA_SIZE +USB_DMA_BUF_ALIGN+ AUDIO_DMA_SIZE +USB_DMA_BUF_ALIGN+ MSD_DMA_SIZE*2 + USB_DMA_BUF_ALIGN+CDC_DMA_SIZE + USB_DMA_BUF_ALIGN)
+#endif//USB_DMA_BUF_MAX_SIZE
+
+static u8 usb_dma_buf[USB_DMA_BUF_MAX_SIZE] SEC(.usb_msd_dma) __attribute__((aligned(8)));
+struct lbuff_head *usb_dma_lbuf = NULL;
+void usb_memory_init()
+{
+    usb_dma_lbuf = lbuf_init(usb_dma_buf, sizeof(usb_dma_buf), USB_DMA_BUF_ALIGN, 0);
+    log_info("%s() total dma size %x @%x", __func__, sizeof(usb_dma_buf), usb_dma_buf);
+}
+
 __attribute__((always_inline_when_const_args))
-void *usb_get_ep_buffer(const usb_dev usb_id, u32 ep)
+void *usb_alloc_ep_dmabuffer(const usb_dev usb_id, u32 ep, u32 dma_size)
 {
     u8 *ep_buffer = NULL;
     u32 _ep = ep & 0xf;
@@ -69,31 +95,8 @@ void *usb_get_ep_buffer(const usb_dev usb_id, u32 ep)
         case 0:
             ep_buffer = ep0_dma_buffer;
             break;
-        case 1:
-#if TCFG_USB_SLAVE_MSD_ENABLE
-            ep_buffer = msd_dma_buffer;
-#endif
-            break;
-        case 2:
-#if TCFG_USB_SLAVE_HID_ENABLE
-            ep_buffer = hid_dma_tx_buffer;
-#endif
-#if TCFG_USB_SLAVE_CDC_ENABLE
-            ep_buffer = cdc_dma_tx_buffer;
-#endif
-            break;
-        case 3:
-#if TCFG_USB_SLAVE_AUDIO_ENABLE
-            ep_buffer = mic_dma_buffer;
-#endif
-#if TCFG_USB_SLAVE_CDC_ENABLE
-#if CDC_INTR_EP_ENABLE
-            ep_buffer = cdc_intr_dma_tx_buffer;
-#endif
-#endif
-            break;
-        case 4:
-            ep_buffer = NULL;
+        default :
+            ep_buffer = lbuf_alloc(usb_dma_lbuf, dma_size);
             break;
         }
     } else {
@@ -101,29 +104,15 @@ void *usb_get_ep_buffer(const usb_dev usb_id, u32 ep)
         case 0:
             ep_buffer = ep0_dma_buffer;
             break;
-        case 1:
-#if TCFG_USB_SLAVE_MSD_ENABLE
-            ep_buffer = msd_dma_buffer;
-#endif
-            break;
-        case 2:
-#if TCFG_USB_SLAVE_HID_ENABLE
-            ep_buffer = hid_dma_rx_buffer;
-#endif
-#if TCFG_USB_SLAVE_CDC_ENABLE
-            ep_buffer = cdc_dma_rx_buffer;
-#endif
-            break;
-        case 3:
-#if TCFG_USB_SLAVE_AUDIO_ENABLE
-            ep_buffer = spk_dma_buffer;
-#endif
-            break;
-        case 4:
-            ep_buffer = NULL;
+        default :
+            ep_buffer = lbuf_alloc(usb_dma_lbuf, dma_size);
             break;
         }
     }
+    ASSERT(ep_buffer, "usb_alloc_ep_dmabuffer ep_buffer = NULL!!!, _ep = %x, dma_size = %d\n", ep, dma_size);
+
+    log_info("ep_buffer = %x, ep = %x, dma_size = %d\n", ep_buffer, ep, dma_size);
+
     return ep_buffer;
 }
 

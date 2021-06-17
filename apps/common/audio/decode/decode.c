@@ -28,12 +28,19 @@ struct audio_dec_app_audio_state_hdl {
 const struct audio_dec_format_hdl decode_format_list[] = {
     {"wtg", AUDIO_CODING_G729},
     {"msbc", AUDIO_CODING_MSBC},
+    {"msb", AUDIO_CODING_MSBC},
     {"sbc", AUDIO_CODING_SBC},
     {"mty", AUDIO_CODING_MTY},
     {"aac", AUDIO_CODING_AAC},
     {"mp3", AUDIO_CODING_MP3},
     {"wma", AUDIO_CODING_WMA},
     {"wav", AUDIO_CODING_WAV},
+#if (defined(TCFG_DEC_MIDI_ENABLE) && TCFG_DEC_MIDI_ENABLE)
+    //midi 文件播放，需要对应音色文件配合
+    {"midi", AUDIO_CODING_MIDI},
+    {"mid", AUDIO_CODING_MIDI},
+#endif //TCFG_DEC_MIDI_ENABLE
+
 #if TCFG_DEC_WTGV2_ENABLE
     {"wts", AUDIO_CODING_WTGV2},
 #endif

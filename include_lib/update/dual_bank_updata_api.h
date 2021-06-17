@@ -11,7 +11,7 @@ u32 get_dual_bank_passive_update_max_buf(void);
  * @param priv:reserved
  * @param max_ptk_len: Supported maxium length of every programming,it decides the max size of programming every time
  */
-u32 dual_bank_passive_update_init(u16 fw_crc, u32 fw_size, u16 max_pkt_len, void *priv);
+u32 dual_bank_passive_update_init(u32 fw_crc, u32 fw_size, u16 max_pkt_len, void *priv);
 
 /* @brief:exit the update task
  * @param priv:reserved
@@ -38,7 +38,7 @@ u32 dual_bank_update_write(void *data, u16 len, int (*write_complete_cb)(void *p
  * @verify_result_hdl:when the verification completed,this callback for result notification;
  *                    if crc_res equals 1,crc verification passed,if 0,the verification failed.
 */
-u32 dual_bank_update_verify(void (*crc_init_hdl)(void), u16(*crc_calc_hdl)(u16 init_crc, u8 *data, u32 len), int (*verify_result_hdl)(int crc_res));
+u32 dual_bank_update_verify(void (*crc_init_hdl)(void), u32(*crc_calc_hdl)(u32 init_crc, u8 *data, u32 len), int (*verify_result_hdl)(int crc_res));
 
 
 /* @brief:After the new fw verification succeed,call this api to program the new boot info for new fw
@@ -58,6 +58,14 @@ enum {
  *             clean the boot info of running bank and call system_reset,system will run the other bank if available;
  */
 int flash_update_clr_boot_info(u8 type);
+
+/* @brief:this api for user read flash data to calculate crc
+ * @param offset: the offset relative to update area
+          read_buf: user data buffer
+          read_len: read length
+   @returns: Actual read length
+ */
+u32 dual_bank_update_read_data(u32 offset, u8 *read_buf, u32 read_len);
 
 #endif
 

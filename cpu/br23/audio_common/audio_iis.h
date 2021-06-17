@@ -4,6 +4,7 @@
 #include "audio_link.h"
 
 extern void *audio_iis_output_start(ALINK_PORT port, u8 ch);
+extern void *audio_iis_output_restart(ALINK_PORT port, u8 ch);
 extern void audio_iis_output_stop(ALINK_PORT port);
 extern int audio_iis_output_write(s16 *data, u32 len);
 extern void audio_iis_output_set_srI(u32 sample_rate);

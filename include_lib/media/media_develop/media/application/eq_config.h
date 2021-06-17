@@ -46,6 +46,11 @@ enum {
     EQ_ONLINE_CMD_CALL_EQ_SEG = 0x2002,
     EQ_ONLINE_CMD_AEC_EQ_SEG = 0x2003,
 
+    EQ_ONLINE_CMD_SONG_EQ_V1_SEG = 0x2011,// float gain, float q
+    EQ_ONLINE_CMD_CALL_EQ_V1_SEG = 0x2012,
+    EQ_ONLINE_CMD_AEC_EQ_V1_SEG = 0x2013,
+
+
     EQ_ONLINE_CMD_SONG_DRC = 0x2101,
 //add xx here
 
@@ -53,6 +58,7 @@ enum {
 };
 
 
+extern u32 EQ_PRIV_SECTION_NUM;
 
 /*eq online packet*/
 typedef struct {
@@ -76,8 +82,13 @@ typedef struct {
 #ifdef CONFIG_CPU_BR23
 #define SECTION_MAX 32
 #else
+#ifdef CONFIG_CPU_BR25
 #define SECTION_MAX 10
-#endif
+#else
+#define SECTION_MAX 20
+#endif//CONFIG_CPU_BR25
+#endif//CONFIG_CPU_BR23
+
 typedef struct {
     CFG_PARM par;
     EQ_CFG_SEG seg[SECTION_MAX];   //eq系数存储地址
@@ -175,6 +186,7 @@ typedef struct {
 
     void *priv;
     int (*send_cmd)(void *priv, u32 id, u8 *packet, int size);//在线调试，命令应答
+    u8 custom_mode_id;   //记录自定义eq系数表的数组所在下标号
 } EQ_CFG;
 
 typedef struct _eq_parm {
@@ -224,7 +236,7 @@ typedef enum {
 /*----------------------------------------------------------------------------*/
 int *get_eq_coeff_tab(EQ_CFG *eq_cfg, MUSIC_MODE mode);
 /*----------------------------------------------------------------------------*/
-/**@brief    获取配置句柄
+/**@brief    获取配置EQ_CFG *eq_cfg句柄
    @param
    @return
    @note
@@ -319,13 +331,23 @@ int eq_mode_set_custom_param(u16 index, int gain);
 /*----------------------------------------------------------------------------*/
 int eq_mode_set_custom_info(u16 index, int freq, int gain);
 /*----------------------------------------------------------------------------*/
-/**@brief   普通音频eq,无离线文件时，用默认eq系数表的eq效果模式设置
+/**@brief   普通音频eq,无离线文件时，用默认eq系数表的eq效果模式设置(设置模式,更新系数)
    @param   mode:EQ_MODE_NORMAL, EQ_MODE_ROCK,EQ_MODE_POP,EQ_MODE_CLASSIC,EQ_MODE_JAZZ,EQ_MODE_COUNTRY, EQ_MODE_CUSTOM
    @return
    @note    外部使用
 */
 /*----------------------------------------------------------------------------*/
 int eq_mode_set(EQ_MODE mode);
+
+/*----------------------------------------------------------------------------*/
+/**@brief   eq模式切换
+   @param
+   @return
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
+int eq_mode_sw(void);
+
 /*----------------------------------------------------------------------------*/
 /**@brief   普通音频eq,无离线文件时，获取eq效果模式
    @param
@@ -335,22 +357,14 @@ int eq_mode_set(EQ_MODE mode);
 /*----------------------------------------------------------------------------*/
 EQ_MODE eq_mode_get_cur(void);
 
-/*----------------------------------------------------------------------------*/
-/**@brief   普通音频eq,无离线文件时，获取某eq效果模式的中心截止频率
-   @param   mode:EQ_MODE_NORMAL, EQ_MODE_ROCK,EQ_MODE_POP,EQ_MODE_CLASSIC,EQ_MODE_JAZZ,EQ_MODE_COUNTRY, EQ_MODE_CUSTOM
-   @param   index:哪一段
-   @return  中心截止频率
-   @note    外部使用
-*/
-/*----------------------------------------------------------------------------*/
-int eq_mode_get_freq(u8 mode, u16 index);
+
 
 /*----------------------------------------------------------------------------*/
 /**@brief    解析eq效果文件的系数
    @param    *eq_cfg:*eq_cfg:配置句柄
    @param    *path:eq效果文件路径
    @return
-   @note
+   @note  可用该接口切换eq效果文件，需使能TCFG_USE_EQ_FILE,config_audio_eq_file_sw_en
 */
 /*----------------------------------------------------------------------------*/
 s32 eq_file_get_cfg(EQ_CFG *eq_cfg, u8 *path);
@@ -414,6 +428,16 @@ int eq_phone_get_filter_info(void *_eq, int sr, struct audio_eq_filter_info *inf
 void drc_app_run_check(struct audio_drc *drc);
 
 /*----------------------------------------------------------------------------*/
+/**@brief   普通音频eq,无离线文件时，获取某eq效果模式的中心截止频率
+   @param   mode:EQ_MODE_NORMAL, EQ_MODE_ROCK,EQ_MODE_POP,EQ_MODE_CLASSIC,EQ_MODE_JAZZ,EQ_MODE_COUNTRY, EQ_MODE_CUSTOM
+   @param   index:哪一段
+   @return  中心截止频率
+   @note    外部使用
+*/
+/*----------------------------------------------------------------------------*/
+int eq_mode_get_freq(u8 mode, u16 index);
+
+/*----------------------------------------------------------------------------*/
 /**@brief   eq系数更新检测
    @param    *eq:eq句柄
    @return
@@ -433,7 +457,7 @@ static const struct eq_seg_info your_audio_out_eq_tab[] = {
     {0, EQ_IIR_TYPE_BAND_PASS, 125,   0 << 20, (int)(0.7f * (1 << 24))},
     {1, EQ_IIR_TYPE_BAND_PASS, 12000, 0 << 20, (int)(0.3f * (1 << 24))},
 };
-
+float your_eq_coeff_tab[2][5];
 /*----------------------------------------------------------------------------*/
 /**@brief    用户自定义eq的系数回调
    @param    eq:句柄
@@ -445,6 +469,10 @@ static const struct eq_seg_info your_audio_out_eq_tab[] = {
 /*----------------------------------------------------------------------------*/
 int audio_eq_get_filter_info_demo(void *_eq, int sr, struct audio_eq_filter_info *info)
 {
+    if (!sr) {
+        sr = 44100;
+    }
+#if 0
     struct audio_eq *eq = (struct audio_eq *)_eq;
     local_irq_disable();
     u8 nsection = ARRAY_SIZE(your_audio_out_eq_tab);
@@ -459,10 +487,23 @@ int audio_eq_get_filter_info_demo(void *_eq, int sr, struct audio_eq_filter_info
     for (int i = 0; i < nsection; i++) {
         eq_seg_design(&eq->eq_seg_tab[i], sr, &eq->eq_coeff_tab[5 * i]);
     }
+
     local_irq_enable();
     info->L_coeff = info->R_coeff = (void *)eq->eq_coeff_tab;
     info->L_gain = info->R_gain = 0;
     info->nsection = nsection;
+#else
+    local_irq_disable();
+    u8 nsection = ARRAY_SIZE(your_audio_out_eq_tab);
+    for (int i = 0; i < nsection; i++) {
+        eq_seg_design(&your_audio_out_eq_tab[i], sr, &your_eq_coeff_tab[i]);
+    }
+    local_irq_enable();
+    info->L_coeff = info->R_coeff = (void *)your_eq_coeff_tab;//系数指针赋值
+    info->L_gain = info->R_gain = 0;//总增益填写，用户可修改（-20~20db）
+    info->nsection = nsection;//eq段数，根据提供给的系数表来填写，例子是2
+
+#endif
     return 0;
 }
 
@@ -492,6 +533,86 @@ int drc_get_filter_info_demo(void *drc, struct audio_drc_filter_info *info)
     return 0;
 }
 
+
+//修改自定义模式eq系数表，更新系数到eq 方法
+// 板极头文件中 这两宏 配0
+#define TCFG_EQ_ONLINE_ENABLE               0     //支持在线EQ调试,
+#define TCFG_USE_EQ_FILE                    0    //离线eq使用配置文件还是默认系数表 1：使用文件  0 使用默认系数表
+
+
+// 在sdk中实现以下接函数
+/*----------------------------------------------------------------------------*/
+/**@brief    设置用户自定义模式每段eq信息
+   @param
+   @param
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+int eq_mode_set_custom_info_user(struct eq_seg_info *seg)
+{
+    if (!config_audio_eq_file_en) {
+        if (!seg) {
+            return 0;
+        }
+        u16 index = seg->index;                       //第几段eq
+        EQ_CFG *eq_cfg = get_eq_cfg_hdl();
+        if (index >= eq_cfg->section_max) {
+            return 0;
+        }
+        int *tmp = (int *)eq_cfg->eq_type_tab;
+        EQ_CFG_SEG *tab_custom = (EQ_CFG_SEG *)tmp[EQ_MODE_CUSTOM];
+
+        index = eq_cfg->eq_mode_use_idx[index];
+        memcpy(&tab_custom[index], seg, sizeof(struct eq_seg_info));//更新参数到自定义模式系数表
+
+        /* log_debug("idx:%d, iir:%d, freq:%d, gain:%d, q:%d ", seg->index, seg->iir_type, seg->freq, seg->gain, seg->q); */
+    }
+    return 0;
+}
+/*----------------------------------------------------------------------------*/
+/**@brief    获取某个模式eq表内，某一段eq的信息
+   @param
+   @param
+   @return  返回eq信息
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+struct eq_seg_info *eq_mode_get_custom_info_user(EQ_MODE mode, u8 index)
+{
+    if (!config_audio_eq_file_en) {
+        EQ_CFG *eq_cfg = get_eq_cfg_hdl();
+        if (index >= eq_cfg->section_max) {
+            return 0;
+        }
+        int *tmp = (int *)eq_cfg->eq_type_tab;
+        EQ_CFG_SEG *seg = (EQ_CFG_SEG *)tmp[mode];
+
+        index = eq_cfg->eq_mode_use_idx[index];
+        /* log_debug("idx:%d, iir:%d, freq:%d, gain:%d, q:%d ", seg->index, seg->iir_type, seg->freq, seg->gain, seg->q); */
+        return &seg[index];
+    }
+    return 0;
+}
+/*设置总增益后，需要设置更新*/
+void update_global_gain_demo(float global_gain)
+{
+    EQ_CFG *eq_cfg = get_eq_cfg_hdl();
+    set_global_gain(eq_cfg, song_eq_mode, global_gain);//设置总增益，
+    eq_mode_set(EQ_MODE_CUSTOM);//设置自定义模式、更新系数以及总增益
+}
+
+/*设置参数后，需要设置更新*/
+void update_eq_seg_info_demo(struct eq_seg_info *seg)
+{
+    eq_mode_set_custom_info_user(seg);//更新参数到自定义模式系数表
+    eq_mode_set(EQ_MODE_CUSTOM);//设置自定义模式、更新系数以及总增益
+}
+void update_custom_info_demo2(u16 index, int freq, int gain)
+{
+    eq_mode_set_custom_info(index, freq, gain);/*改某一段eq的的中心截止频率 以及增益*/
+    eq_mode_set(EQ_MODE_CUSTOM);//设置自定义模式、更新系数以及总增益
+}
 
 #endif
 

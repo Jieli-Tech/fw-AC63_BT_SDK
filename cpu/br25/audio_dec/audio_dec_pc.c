@@ -734,46 +734,18 @@ void usb_audio_demo_exit(void)
 /*----------------------------------------------------------------------------*/
 void *pc_eq_drc_open(u16 sample_rate, u8 ch_num)
 {
-
-#if TCFG_EQ_ENABLE
+#if TCFG_EQ_ENABLE && TCFG_PC_MODE_EQ_ENABLE
     struct audio_eq_drc *eq_drc = NULL;
-    struct audio_eq_drc_parm effect_parm = {0};
+    u8 drc_en = 0;
+#if TCFG_DRC_ENABLE && TCFG_PC_MODE_DRC_ENABLE
+    drc_en = 1;
+#endif/*TCFG_DRC_ENABLE && TCFG_LINEIN_MODE_DRC_ENABLE*/
+    eq_drc = stream_eq_drc_open_demo(sample_rate, ch_num, drc_en, song_eq_mode);
 
-#if TCFG_PC_MODE_EQ_ENABLE
-    effect_parm.eq_en = 1;
-
-#if TCFG_PC_MODE_DRC_ENABLE
-    effect_parm.drc_en = 1;
-    effect_parm.drc_cb = drc_get_filter_info;
-#endif
-
-
-    if (effect_parm.eq_en) {
-        effect_parm.async_en = 1;
-        effect_parm.out_32bit = 1;
-        effect_parm.online_en = 1;
-        effect_parm.mode_en = 1;
-    }
-
-    effect_parm.eq_name = song_eq_mode;
-#if TCFG_EQ_DIVIDE_ENABLE
-    effect_parm.divide_en = 1;
-#endif
-
-
-    effect_parm.ch_num = ch_num;
-    effect_parm.sr = sample_rate;
-    effect_parm.eq_cb = eq_get_filter_info;
-    eq_drc = audio_eq_drc_open(&effect_parm);
-
-    clock_add(EQ_CLK);
-    if (effect_parm.drc_en) {
-        clock_add(EQ_DRC_CLK);
-    }
-#endif
     return eq_drc;
-#endif
+#endif/*TCFG_EQ_ENABLE && TCFG_PC_MODE_EQ_ENABLE*/
     return NULL;
+
 }
 
 /*----------------------------------------------------------------------------*/
@@ -785,21 +757,10 @@ void *pc_eq_drc_open(u16 sample_rate, u8 ch_num)
 /*----------------------------------------------------------------------------*/
 void pc_eq_drc_close(struct audio_eq_drc *eq_drc)
 {
-#if TCFG_EQ_ENABLE
-#if TCFG_PC_MODE_EQ_ENABLE
-    if (eq_drc) {
-        audio_eq_drc_close(eq_drc);
-        eq_drc = NULL;
-        clock_remove(EQ_CLK);
-#if TCFG_DRC_ENABLE
-#if TCFG_PC_MODE_DRC_ENABLE
-        clock_remove(EQ_DRC_CLK);
-#endif
-#endif
-    }
-#endif
-#endif
-    return;
+#if TCFG_EQ_ENABLE && TCFG_PC_MODE_EQ_ENABLE
+    stream_eq_drc_close_demo(eq_drc);
+#endif/*TCFG_EQ_ENABLE && TCFG_PC_MODE_EQ_ENABLE*/
+
 }
 
 #endif /* TCFG_APP_PC_EN */

@@ -1,5 +1,5 @@
 -------------------- 设置FW版本信息 --------------------
-cfg:addKeyInfo("script_version", "AC696X-v0.01-cfg_tool-v0.05");
+cfg:addKeyInfo("script_version", "AC696X-v0.01-cfg_tool-v0.08");
 
 -------------------- 设置应用名称 --------------------
 product_name = "AC696X"; --此名称将显示于配置工具入口界面

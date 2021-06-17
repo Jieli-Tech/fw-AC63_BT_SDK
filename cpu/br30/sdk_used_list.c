@@ -2,7 +2,9 @@
 
 #if TCFG_USER_TWS_ENABLE
 tws_local_media_sync
+#if TCFG_EQ_ONLINE_ENABLE
 tws_ci_data
+#endif /* #if TCFG_EQ_ONLINE_ENABLE */
 tws_acl_data_sync
 tws_event_sync
 tws_conn_sync

@@ -26,6 +26,8 @@ const int config_asser         = 0;
 const int config_asser         = 1;
 #endif
 
+const int config_system_info   = 0;
+
 //================================================//
 //                  SDFILE 精简使能               //
 //================================================//

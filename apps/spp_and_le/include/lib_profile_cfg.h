@@ -24,11 +24,21 @@ extern const int config_stack_modules;
 #define DEF_BLE_DEMO_MI					  9
 #define DEF_BLE_DEMO_MULTI                10 //
 #define DEF_BLE_DEMO_ADV                  11 //
+#define DEF_BLE_DEMO_NONCONN_24G          12 //
+#define DEF_BLE_DEMO_LL_SYNC              13 //
+#define DEF_BLE_DEMO_TUYA_TRANS           14
+
 //配置选择的demo
 #if TCFG_USER_BLE_ENABLE
 
 #if TRANS_DATA_EN
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_TRANS_DATA
+
+#elif LL_SYNC_EN
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_LL_SYNC
+
+#elif TUYA_TRANS_EN
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_TUYA_TRANS
 
 #elif (TRANS_CLIENT_EN || TRANS_DONGLE_EN)
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_CLIENT
@@ -50,6 +60,9 @@ extern const int config_stack_modules;
 
 #elif BEACON_MODE_EN
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_ADV
+
+#elif TRANS_NONCON_24G_EN
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_NONCONN_24G
 
 #else
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_NULL//ble is closed

@@ -3,6 +3,14 @@
 
 #include "typedef.h"
 
+
+//=======================================================//
+//                    默认宏配置定义                     //
+//=======================================================//
+#ifndef SDFILE_STORAGE
+#define SDFILE_STORAGE 			0
+#endif /* #ifndef SDFILE_STORAGE */
+
 /********* sdfile 文件头 **********/
 #define SDFILE_NAME_LEN 			16
 

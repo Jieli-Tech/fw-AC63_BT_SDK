@@ -40,7 +40,7 @@ static struct usb_request_block urb;
 
 u8 get_async_mode(void)
 {
-    u8 mode = 0;
+    u8 mode = BULK_ASYNC_MODE_EXIT ;
 #if UDISK_READ_512_ASYNC_ENABLE
     local_irq_disable();
     mode = urb.async_mode;
@@ -61,6 +61,7 @@ static void usb_bulk_rx_isr(struct usb_host_device *host_dev, u32 ep)
 {
     usb_dev usb_id = host_device2id(host_dev);
     int l  = min(urb.len, urb.rxmap);
+
     l = usb_h_ep_read_async(usb_id, ep, urb.target_ep, urb.ptr, l, USB_ENDPOINT_XFER_BULK, 0);
     /* g_printf("%s() %d %d", __func__, l, urb.len); */
     if (l > 0) {
@@ -74,17 +75,21 @@ static void usb_bulk_rx_isr(struct usb_host_device *host_dev, u32 ep)
         urb.len = 0;
     }
 
+
     if (urb.len == 0) {
-        if (!get_async_mode()) {
+        u32 async_mode = get_async_mode();
+
+        if (async_mode == BULK_ASYNC_MODE_EXIT) {
             usb_sem_post(host_dev);
-        } else {
-            if (get_async_mode() == BULK_ASYNC_MODE_SEM_PEND) {
+        } else if (async_mode == BULK_ASYNC_MODE_SEM_PEND) {
+            if (urb.msg == 0) {
                 usb_sem_post(host_dev);
+            } else {
+                r_printf("usb async error");
             }
-            set_async_mode(BULK_ASYNC_MODE_EXIT);
         }
     } else {
-        usb_h_ep_read_async(usb_id, ep,  urb.target_ep, urb.ptr, urb.len, USB_ENDPOINT_XFER_BULK, 1);
+        usb_h_ep_read_async(usb_id, ep, urb.target_ep, urb.ptr, urb.len, USB_ENDPOINT_XFER_BULK, 1);
     }
 }
 s32 usb_bulk_only_receive_async(struct device *device, u8 host_ep, u16 rxmaxp, u8 target_ep, u8 *pBuf, u32 len)
@@ -135,7 +140,7 @@ s32 usb_bulk_receive_async_no_wait(struct device *device, u8 host_ep, u16 rxmaxp
     struct usb_host_device *host_dev = device_to_usbdev(device);
     const usb_dev usb_id = host_device2id(host_dev);
 
-    urb.async_mode = 1;
+    set_async_mode(BULK_ASYNC_MODE_SEM_PEND);
     urb.ptr = pBuf;
     urb.len = len;
     urb.target_ep = target_ep;

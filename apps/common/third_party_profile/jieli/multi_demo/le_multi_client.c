@@ -58,8 +58,16 @@
 #define SEARCH_PROFILE_BUFSIZE    (512)                   //note:
 static u8 search_ram_buffer[SEARCH_PROFILE_BUFSIZE] __attribute__((aligned(4)));
 #define scan_buffer search_ram_buffer
-//---------------
 
+//---------------
+#define BASE_INTERVAL_MIN         (6)//最小的interval
+#if(SUPPORT_MAX_CLIENT > 2)
+#define BASE_INTERVAL_VALUE       (BASE_INTERVAL_MIN*4)
+#else
+#define BASE_INTERVAL_VALUE       (BASE_INTERVAL_MIN)
+#endif
+
+//---------------
 //搜索类型
 #define SET_SCAN_TYPE       SCAN_ACTIVE
 //搜索 周期大小
@@ -68,7 +76,7 @@ static u8 search_ram_buffer[SEARCH_PROFILE_BUFSIZE] __attribute__((aligned(4)));
 #define SET_SCAN_WINDOW     ADV_SCAN_MS(10) // unit: ms
 
 //连接周期
-#define SET_CONN_INTERVAL   (24*1) //(unit:1.25ms)
+#define SET_CONN_INTERVAL   (BASE_INTERVAL_MIN*8) //(unit:1.25ms)
 //连接latency
 #define SET_CONN_LATENCY    0  //(unit:conn_interval)
 //连接超时
@@ -87,13 +95,14 @@ static s8 cur_dev_cid; // 当前操作的多机id
 #define BLE_VM_TAIL_TAG           (0x5CB9)
 struct pair_info_t {
     u16 head_tag;
-    u8  pair_flag;
+    u8  pair_flag: 2;
+    u8  match_dev_id: 6;
     u8  peer_address_info[7];
     u16 tail_tag;
 };
 static struct pair_info_t  conn_pair_info;
 static u8 pair_bond_enable = 0;
-
+static u8 match_dev_id = 0;
 static struct pair_info_t conn_pair_info_table[SUPPORT_MAX_CLIENT];
 //-------------------------------------------------------------------------------
 typedef struct {
@@ -164,6 +173,7 @@ static bool check_device_is_match(u8 info_type, u8 *data, int size)
             if (0 == memcmp(data, cfg->compare_data, cfg->compare_data_len)) {
                 log_info("match ok:%d\n", cfg->bonding_flag);
                 pair_bond_enable = cfg->bonding_flag;
+                match_dev_id = i;
                 client_event_report(CLI_EVENT_MATCH_DEV, cfg, sizeof(client_match_cfg_t));
                 return true;
             }
@@ -199,7 +209,7 @@ static void conn_pair_vm_do(struct pair_info_t *info, u8 rw_flag)
             memcpy(info, &conn_pair_info_table[0], unit_len);
         }
     } else {
-        int fill_index = 0;
+        int fill_index = -1;
 
         if (!info) {
             log_info("-table clean--\n");
@@ -211,12 +221,38 @@ static void conn_pair_vm_do(struct pair_info_t *info, u8 rw_flag)
                 }
             }
 
+            r_printf("===============write new dev\n");
+            put_buf(conn_pair_info_table, unit_len * SUPPORT_MAX_CLIENT);
+            put_buf(info, unit_len);
+            log_info("find table\n");
+
             for (i = 0; i < SUPPORT_MAX_CLIENT; i++) {
+                //先找空的填入
                 if (conn_pair_info_table[i].pair_flag == 0) {
                     fill_index = i;
                     break;
                 }
             }
+
+            if (SUPPORT_MAX_CLIENT == i) {
+                for (i = 0; i < SUPPORT_MAX_CLIENT; i++) {
+                    //先覆盖相同条件的
+                    if (conn_pair_info_table[i].match_dev_id == info->match_dev_id) {
+                        log_info("replace match_dev_id= %d\n", info->match_dev_id);
+                        fill_index = i;
+                        break;
+                    }
+                }
+            }
+
+            if (fill_index == -1) {
+                for (i = SUPPORT_MAX_CLIENT - 1; i > 0; i--) {
+                    //覆盖旧的
+                    memcpy(&conn_pair_info_table[i], &conn_pair_info_table[i - 1], unit_len);
+                }
+                fill_index = 0;
+            }
+
             memcpy(&conn_pair_info_table[fill_index], info, unit_len);
             conn_pair_info_table[fill_index].head_tag = BLE_VM_HEAD_TAG;
             conn_pair_info_table[fill_index].tail_tag = BLE_VM_TAIL_TAG;
@@ -409,9 +445,21 @@ int l2cap_connection_update_request_just(u8 *packet, hci_con_handle_t handle)
              little_endian_read_16(packet, 0), little_endian_read_16(packet, 2),
              little_endian_read_16(packet, 4), little_endian_read_16(packet, 6));
 
+#if (SUPPORT_MAX_CLIENT > 1)
+    u16 cfg_interval = BASE_INTERVAL_VALUE;
+    u16 max_interval = little_endian_read_16(packet, 2);
+    while (max_interval >= (cfg_interval + BASE_INTERVAL_VALUE)) {
+        cfg_interval += BASE_INTERVAL_VALUE;
+    }
+    little_endian_store_16(packet, 0, cfg_interval);
+    little_endian_store_16(packet, 2, cfg_interval);
+    r_printf("conn_handle:%04x,confirm_interval:%d", handle, cfg_interval);
+    log_info("conn_handle:%04x,confirm_interval:%d\n", handle, cfg_interval);
+#endif
+
     //change param
-    /* little_endian_store_16(packet, 4,0); */
-    /* little_endian_store_16(packet, 6,400); */
+    /* little_endian_store_16(packet, 4,0);//disable latency */
+    /* little_endian_store_16(packet, 6,400);//change timeout */
     return 0;
     /* return 1; */
 }
@@ -649,6 +697,7 @@ static void client_report_adv_data(adv_report_t *report_pt, u16 len)
                 && 0 == memcmp(report_pt->address, &conn_pair_info_table[i].peer_address_info[1], 6)) {
                 find_tag = 1;
                 log_info("find paired dev to connect\n");
+                put_buf(conn_pair_info_table[i].peer_address_info, 7);
             }
         }
     }
@@ -1016,6 +1065,7 @@ void client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 if (pair_bond_enable) {
                     log_info("bond remoter\n");
                     conn_pair_info.pair_flag = 1;
+                    conn_pair_info.match_dev_id = match_dev_id;
                     memcpy(&conn_pair_info.peer_address_info, &packet[7], 7);
                     conn_pair_vm_do(&conn_pair_info, 1);
                     pair_bond_enable = 0;
@@ -1045,7 +1095,11 @@ void client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             case HCI_SUBEVENT_LE_EXTENDED_ADVERTISING_REPORT:
                 /* log_info("APP HCI_SUBEVENT_LE_EXTENDED_ADVERTISING_REPORT"); */
                 /* log_info_hexdump(packet, size); */
-                client_report_ext_adv_data(&packet[2], packet[1]);
+                if (BLE_ST_SCAN == get_ble_work_state(cur_dev_cid)) {
+                    client_report_ext_adv_data(&packet[2], packet[1]);
+                } else {
+                    log_info("drop ext_adv_report!!!\n");
+                }
                 break;
 #endif /* EXT_ADV_MODE_EN */
             }
@@ -1113,7 +1167,11 @@ void client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
         case GAP_EVENT_ADVERTISING_REPORT:
             /* putchar('@'); */
-            client_report_adv_data((void *)&packet[2], packet[1]);
+            if (BLE_ST_SCAN == get_ble_work_state(cur_dev_cid)) {
+                client_report_adv_data((void *)&packet[2], packet[1]);
+            } else {
+                log_info("drop adv_report!!!\n");
+            }
             break;
 
         case HCI_EVENT_ENCRYPTION_CHANGE: {

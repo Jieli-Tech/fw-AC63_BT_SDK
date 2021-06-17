@@ -118,6 +118,9 @@ struct usb_msd_handle {
     struct usb_scsi_csw csw;
     struct msd_info info;
     u8 *msd_buf;
+    u8 *ep_out_dmabuffer;
+    /* u8 *ep_in_dmabuffer; */
+
 };
 struct usb_msd_handle *msd_handle;
 #if USB_MALLOC_ENABLE
@@ -195,17 +198,13 @@ static void recover_set_cardreader_popup(u32 lun)
 static void msd_endpoint_init(struct usb_device_t *usb_device, u32 itf)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
-    u8 *ep_buffer = usb_get_ep_buffer(usb_id, MSD_BULK_EP_IN | USB_DIR_IN);
-    ASSERT(ep_buffer, "usb alloc ep buffer failed");
 
-    usb_g_ep_config(usb_id, MSD_BULK_EP_IN | USB_DIR_IN, USB_ENDPOINT_XFER_BULK, 0, ep_buffer, MAXP_SIZE_BULKIN);
-    ep_buffer = usb_get_ep_buffer(usb_id, MSD_BULK_EP_OUT);
-    ASSERT(ep_buffer, "usb alloc ep buffer failed");
+    usb_g_ep_config(usb_id, MSD_BULK_EP_IN | USB_DIR_IN, USB_ENDPOINT_XFER_BULK, 0, msd_handle->ep_out_dmabuffer, MAXP_SIZE_BULKIN);
 
-    usb_g_ep_config(usb_id, MSD_BULK_EP_OUT, USB_ENDPOINT_XFER_BULK, 1, ep_buffer, MAXP_SIZE_BULKOUT);
+    usb_g_ep_config(usb_id, MSD_BULK_EP_OUT, USB_ENDPOINT_XFER_BULK, 1, msd_handle->ep_out_dmabuffer, MAXP_SIZE_BULKOUT);
     usb_g_set_intr_hander(usb_id, MSD_BULK_EP_OUT, msd_wakeup);
 
-    usb_enable_ep(usb_id, MSD_BULK_EP_OUT);
+    usb_enable_ep(usb_id, MSD_BULK_EP_IN);
 }
 static void msd_reset_wakeup(struct usb_device_t *usb_device, u32 itf_num)
 {
@@ -242,6 +241,11 @@ static void *check_disk_status(u8 cur_lun)
     if (dev_manager_list_check_by_logo((char *)dev_name)) {
         if (dev_fd == NULL) {
             msd_handle->info.dev_handle[cur_lun] = dev_open(dev_name, NULL);
+            if (msd_handle->info.dev_handle[cur_lun]) {
+#ifdef CONFIG_EARPHONE_CASE_ENABLE
+                dev_ioctl(msd_handle->info.dev_handle[cur_lun], IOCTL_POWER_RESUME, (u32)dev_name);
+#endif
+            }
         } else {
             //FIXME:need add device state check??
             u32 dev_online = 0;
@@ -381,7 +385,7 @@ static void inquiry(const struct usb_device_t *usb_device)
 {
     u32 err;
     u32 len = min(msd_handle->csw.uCSWDataResidue, sizeof(SCSIInquiryData));
-    u32 scsiinquirydata[sizeof(SCSIInquiryData) / 4]; //usb dma 不能访问code区域
+    u32 scsiinquirydata[sizeof(SCSIInquiryData) / 4 + 4]; //usb dma 不能访问code区域
     memcpy(scsiinquirydata, SCSIInquiryData, sizeof(SCSIInquiryData));
     err = msd_mcu2usb(usb_device, scsiinquirydata, len);
     if (err == 0) {
@@ -585,6 +589,7 @@ static void msd_write_10_async(const struct usb_device_t *usb_device, u8 cur_lun
     }
 }
 
+int printf_lite(const char *format, ...);
 static void msd_read_10_async(const struct usb_device_t *usb_device, u8 cur_lun, u32 lba, u16 lba_num)
 {
     u32 err = 0;
@@ -594,22 +599,23 @@ static void msd_read_10_async(const struct usb_device_t *usb_device, u8 cur_lun,
     void *dev_fd = NULL;
 
     if (lba_num == 0) {
-        log_error("lba_num == 0\n");
+        printf_lite("lba_num == 0\n");
         stall_error(usb_device, 0, 0x02);
         return;
     }
+    printf_lite("%s() %d %d", __func__, lba, lba_num);
     num = lba_num > MSD_BLOCK_SIZE ? MSD_BLOCK_SIZE : lba_num;
     dev_fd = check_disk_status(cur_lun);
     if (dev_fd) {
         dev_ioctl(dev_fd, IOCTL_SET_ASYNC_MODE, 0);
         err = dev_bulk_read(dev_fd, msd_handle->msd_buf + buf_idx * MSD_BUFFER_SIZE, lba, num);
         if (err != num) {
-            log_error("read disk error0 = %d, dev = %s\n", err, msd_handle->info.dev_name[cur_lun]);
+            printf_lite("read disk error0 = %d, dev = %s\n", err, msd_handle->info.dev_name[cur_lun]);
             stall_error(usb_device, 0, MEDIUM_ERROR);
             return;
         }
     } else {
-        log_error("read_10 disk offline, dev = %s\n", msd_handle->info.dev_name[cur_lun]);
+        printf_lite("read_10 disk offline, dev = %s\n", msd_handle->info.dev_name[cur_lun]);
         stall_error(usb_device, 0, MEDIUM_ERROR);
         return;
     }
@@ -635,8 +641,8 @@ static void msd_read_10_async(const struct usb_device_t *usb_device, u8 cur_lun,
                 dev_ioctl(dev_fd, IOCTL_SET_ASYNC_MODE, 0);
                 err = dev_bulk_read(dev_fd, msd_handle->msd_buf + buf_idx * MSD_BUFFER_SIZE, lba, num);
                 if (err != num) {
-                    log_error("read disk error1 = %d, dev = %s",
-                              err, msd_handle->info.dev_name[cur_lun]);
+                    printf_lite("read disk error1 = %d, dev = %s",
+                                err, msd_handle->info.dev_name[cur_lun]);
                     stall_error(usb_device, 0, MEDIUM_ERROR);
                     break;
                 }
@@ -645,15 +651,22 @@ static void msd_read_10_async(const struct usb_device_t *usb_device, u8 cur_lun,
                 dev_ioctl(dev_fd, IOCTL_FLUSH, 0);
             }
         } else {
-            log_error("read_10 disk offline, dev = %s",
-                      msd_handle->info.dev_name[cur_lun]);
+            printf_lite("read_10 disk offline, dev = %s",
+                        msd_handle->info.dev_name[cur_lun]);
             stall_error(usb_device, 0, MEDIUM_ERROR);
             break;
         }
+
+        /* u8 *p = msd_handle->msd_buf + !buf_idx * MSD_BUFFER_SIZE; */
+        /* for (int i = 0; i < last_num * 512; i++) {                */
+        /*     p[i] = i;                                             */
+        /* }                                                         */
+
         err = msd_mcu2usb(usb_device, msd_handle->msd_buf + !buf_idx * MSD_BUFFER_SIZE, last_num * 0x200);
+
         if (err != last_num * 0x200) {
-            log_error("read_10 data transfer err %d, dev = %s",
-                      __LINE__, msd_handle->info.dev_name[cur_lun]);
+            printf_lite("read_10 data transfer err %d, dev = %s",
+                        __LINE__, msd_handle->info.dev_name[cur_lun]);
             stall_error(usb_device, 0, 0x05);
             if (num) {
                 dev_ioctl(dev_fd, IOCTL_FLUSH, 0);
@@ -765,18 +778,18 @@ static void read_10(const struct usb_device_t *usb_device)
             err = dev_bulk_read(dev_fd, msd_handle->msd_buf, lba, num);
             dev_ioctl(dev_fd, IOCTL_CMD_SUSPEND, 0);
             if (err != num) {
-                log_error("read disk error =%d, dev = %s", err, msd_handle->info.dev_name[cur_lun]);
+                printf_lite("read disk error =%d, dev = %s", err, msd_handle->info.dev_name[cur_lun]);
                 stall_error(usb_device, 0, MEDIUM_ERROR);
                 break;
             }
         } else {
-            log_error("read disk offline, dev = %s", err, msd_handle->info.dev_name[cur_lun]);
+            printf_lite("read disk offline, dev = %s", err, msd_handle->info.dev_name[cur_lun]);
             stall_error(usb_device, 0, MEDIUM_ERROR);
             break;
         }
         err = msd_mcu2usb(usb_device, msd_handle->msd_buf, num * 0x200);
         if (err == 0) {
-            log_error("write usb err %d, dev = %s", __LINE__, msd_handle->info.dev_name[cur_lun]);
+            printf_lite("write usb err %d, dev = %s", __LINE__, msd_handle->info.dev_name[cur_lun]);
             stall_error(usb_device, 0, MEDIUM_ERROR);
             break;
         }
@@ -1003,7 +1016,7 @@ u32 msd_unregister_all()
     }
     return 0;
 }
-u32 msd_register()
+u32 msd_register(const usb_dev usb_id)
 {
     if (msd_handle == NULL) {
 #if USB_MALLOC_ENABLE
@@ -1027,6 +1040,9 @@ u32 msd_register()
         msd_handle = &_msd_handle;
 #endif
         log_info("msd_handle = %x", msd_handle);
+
+        msd_handle->ep_out_dmabuffer = usb_alloc_ep_dmabuffer(usb_id, MSD_BULK_EP_OUT, MAXP_SIZE_BULKIN + MAXP_SIZE_BULKOUT);
+
     }
     return 0;
 }
@@ -1036,6 +1052,9 @@ u32 msd_release()
         for (int i = 0; i < __get_max_msd_dev(); i++) {
             void *dev_fd = msd_handle->info.dev_handle[i] ;
             if (dev_fd) {
+#ifdef CONFIG_EARPHONE_CASE_ENABLE
+                dev_ioctl(dev_fd, IOCTL_POWER_SUSPEND, 0);
+#endif
                 dev_close(dev_fd);
                 msd_handle->info.dev_handle[i] = NULL;
             }

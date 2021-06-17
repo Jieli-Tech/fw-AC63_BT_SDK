@@ -2,7 +2,7 @@
 #define _AUDIO_CONFIG_H_
 
 #include "generic/typedef.h"
-#include "board_config.h"
+#include "app_config.h"
 
 #if(defined(CONFIG_MIXER_CYCLIC)&&(SOUNDCARD_ENABLE))
 #define AUDIO_MIXER_LEN			(128 * 2 * 2 * 6)
@@ -118,7 +118,7 @@
 
 #define AUDIO_OUTPUT_DAC_AND_IIS (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DAC_IIS)
 
-#endif
+#endif //TCFG_IIS_ENABLE
 
 #define AUDIO_OUTPUT_INCLUDE_IIS (AUDIO_OUTPUT_ONLY_IIS || AUDIO_OUTPUT_DAC_AND_IIS)
 

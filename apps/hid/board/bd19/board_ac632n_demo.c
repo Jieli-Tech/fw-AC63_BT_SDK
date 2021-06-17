@@ -145,28 +145,23 @@ const struct iokey_platform_data iokey_data = {
 
 /************************** TOUCH_KEY ****************************/
 #if TCFG_TOUCH_KEY_ENABLE
-const struct touch_key_port touch_key_list[] = {
-	{
-		.port 		= TCFG_TOUCH_KEY0_PORT,
-		.key_value 	= TCFG_TOUCH_KEY0_VALUE, 	 	//该值由时钟配置和硬件结构决定, 需要调试
-	},
-
-	{
-		.port 		= TCFG_TOUCH_KEY1_PORT,
-		.key_value 	= TCFG_TOUCH_KEY1_VALUE, 	 	//该值由时钟配置和硬件结构决定, 需要调试
-	},
+const const struct touch_key_port touch_key_list[] = {
+    {
+	    .press_delta    = TCFG_TOUCH_KEY0_PRESS_DELTA,
+        .port           = TCFG_TOUCH_KEY0_PORT,
+        .key_value      = TCFG_TOUCH_KEY0_VALUE,
+    },
+    {
+	    .press_delta    = TCFG_TOUCH_KEY1_PRESS_DELTA,
+	    .port           = TCFG_TOUCH_KEY1_PORT,
+        .key_value      = TCFG_TOUCH_KEY1_VALUE,
+    },
 };
 
 const struct touch_key_platform_data touch_key_data = {
-	.num = ARRAY_SIZE(touch_key_list),
-	.clock = TCFG_TOUCH_KEY_CLK,
-	.change_gain 	= TCFG_TOUCH_KEY_CHANGE_GAIN,
-	.press_cfg		= TCFG_TOUCH_KEY_PRESS_CFG,
-	.release_cfg0 	= TCFG_TOUCH_KEY_RELEASE_CFG0,
-	.release_cfg1 	= TCFG_TOUCH_KEY_RELEASE_CFG1,
-	.port_list = touch_key_list,
+    .num = ARRAY_SIZE(touch_key_list),
+    .port_list = touch_key_list,
 };
-
 #endif  /* #if TCFG_TOUCH_KEY_ENABLE */
 
 #if MULT_KEY_ENABLE

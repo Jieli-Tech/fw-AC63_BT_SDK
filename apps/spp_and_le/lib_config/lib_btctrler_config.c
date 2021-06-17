@@ -90,7 +90,7 @@ const int CONFIG_INQUIRY_SCAN_POWER         = 7;
 const u8 rx_fre_offset_adjust_enable = 1;
 
 const int config_bredr_fcc_fix_fre = 0;
-const int ble_disable_wait_enable = 1;
+const int ble_disable_wait_enable = 1;                      //不开启wait_enable会导致升级调用ll_destory的时候出现BT访问mmu异常
 
 const int config_btctler_eir_version_info_len = 0;
 
@@ -114,6 +114,7 @@ const int config_bt_function  =  0;
 
 ///bredr 强制 做 maseter
 const int config_btctler_bredr_master = 0;
+const int config_btctler_dual_a2dp  = 0;
 
 ///afh maseter 使用app设置的map 通过USER_CTRL_AFH_CHANNEL 设置
 const int config_bredr_afh_user = 0;
@@ -129,6 +130,10 @@ const int config_bt_temperature_pll_trim = 0;
 #if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_ADV)
 const uint64_t config_btctler_le_features = 0;
 const int config_btctler_le_roles    = (LE_ADV);
+
+#elif (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_NONCONN_24G)
+const uint64_t config_btctler_le_features = 0;
+const int config_btctler_le_roles    = (LE_SCAN | LE_ADV);
 
 #elif (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_CLIENT) || (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_AT_CLIENT)
 const uint64_t config_btctler_le_features = LE_ENCRYPTION;
@@ -190,6 +195,17 @@ const int config_btctler_le_acl_packet_length = 27;
 const int config_btctler_le_acl_total_nums = 12;
 
 const int config_btctler_le_master_multilink = 1;
+
+#elif (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_NONCONN_24G)
+// Master AFH
+const int config_btctler_le_afh_en = 0;
+// LE RAM Control
+const int config_btctler_le_hw_nums = 2;
+const int config_btctler_le_rx_nums = 8;
+const int config_btctler_le_acl_packet_length = 27;
+const int config_btctler_le_acl_total_nums = 8;
+// Master multi-link
+const int config_btctler_le_master_multilink = 0;
 
 #else
 // Master AFH

@@ -49,5 +49,8 @@ extern void chargestore_api_close(void);
 extern int chargestore_api_write(u8 *buf, u8 len);
 extern void chargestore_api_init(const struct chargestore_platform_data *arg);
 extern void chargestore_api_wait_complete(void);
+extern void chargestore_api_set_timeout(u16 timeout);
+extern void chargestore_api_stop(void);
+extern void chargestore_api_restart(void);
 
 #endif

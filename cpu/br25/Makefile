@@ -74,6 +74,9 @@ objs += \
 
 endif
 
+ifeq ($(APP_CASE),adapter)
+include $(ROOT)/cpu/$(CPU)/audio_common/Makefile
+else
 include $(ROOT)/cpu/$(CPU)/ui_driver/Makefile
 include $(ROOT)/cpu/$(CPU)/audio_common/Makefile
 include $(ROOT)/cpu/$(CPU)/audio_dec/Makefile
@@ -81,7 +84,7 @@ include $(ROOT)/cpu/$(CPU)/audio_enc/Makefile
 include $(ROOT)/cpu/$(CPU)/audio_effect/Makefile
 include $(ROOT)/cpu/$(CPU)/localtws/Makefile
 include $(ROOT)/cpu/$(CPU)/audio_mic/Makefile
-
+endif
 
 ifeq ($(AUDIO_LITE_VERSION),y)
 #include $(ROOT)/cpu/$(CPU)/audio_common/Makefile

@@ -149,7 +149,7 @@ struct rt_stream_info {
     u8 noblock;
     u8 rx_delay;
     u16 seqn;
-    u16 frame_num;
+    s16 distance_time;
     u32 data_len;
     u32 remain_len;
     void *baddr;

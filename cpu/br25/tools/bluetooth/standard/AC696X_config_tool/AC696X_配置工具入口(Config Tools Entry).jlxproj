@@ -5,6 +5,8 @@ require("conf.entry.user_cfg");
 local lang_en = {
     ["AC694X"]="",
     ["打开EQ工具"]="Open EQ Tool",
+	["打开音效配置工具（新EQ工具）"]="Open Audio Effect Config Tool (New EQ)",
+	["音效配置（混响工具）"]="Audio Effect Config Tool（Reverberation）",
     ["打开下载目录"]="Open Download Directory",
     ["显示原理图"]="Show Schematic Design",
     ["检查依赖的软件包是否更新"]="Check Update",
@@ -19,7 +21,7 @@ cfg:setTranslate("en", lang_en);
 local rootDir = cfg.rootDir;
 
 local pkgman = rootDir .. "/pkgman.exe";
-local req_pkgs = {"eq", "sdktool", "luaconfig", "3rd"};
+local req_pkgs = {"eq", "efftool", "sdktool", "luaconfig", "3rd"};
 local check_prog = {pkgman};
 
 local missing_pkgs = {};
@@ -65,6 +67,7 @@ sdktool   = cfg:utilsGetPkg("sdktool").run;
 luaconfig = cfg:utilsGetPkg("luaconfig").run;
 projdir  = cfg.dir .. '/../';
 eq = cfg:utilsGetPkg("eq").run;
+efftool = cfg:utilsGetPkg("efftool").run;
 
 else
 
@@ -72,6 +75,7 @@ sdktool   = cfg:utilsGetPkg("sdktool").run;
 luaconfig = cfg:utilsGetPkg("luaconfig").run;
 projdir  = cfg.dir .. '/download/';
 eq = cfg:utilsGetPkg("eq").run;
+efftool = cfg:utilsGetPkg("efftool").run;
 
 end
 
@@ -106,6 +110,18 @@ local eq_tools_button_view = cfg:stButton("打开EQ工具",
                                 end
                             );
 
+local efftool_tools_button_view = cfg:stButton("打开音效配置工具（新EQ工具）",
+                                function ()
+		                            cfg:runProgNoWait({efftool, '--type', 'eq'});
+                                end
+                            );
+
+local efftool_eff_button_view = cfg:stButton("音效配置（混响工具）",
+                                function ()
+		                            cfg:runProgNoWait({efftool, '--type', 'eff'});
+                                end
+                            );
+
 table.insert(function_vbox_view_list, app_log_label_view);
 
 if fw_create_button_show == true then
@@ -117,6 +133,9 @@ table.insert(function_vbox_view_list, fw_edit_button_view);
 if eq_tool_button_show  == true then
 table.insert(function_vbox_view_list, eq_tools_button_view);
 end
+
+table.insert(function_vbox_view_list, efftool_tools_button_view);
+table.insert(function_vbox_view_list, efftool_eff_button_view);
 
 table.insert(function_vbox_view_list, display_doc_button_view);
 table.insert(function_vbox_view_list, open_download_dir_button_view);

@@ -123,7 +123,7 @@ struct audio_eq {
     int (*output)(void *priv, void *data, u32 len);  //输出回调
 #ifdef EQ_CORE_V1
     struct eq_seg_info *eq_seg_tab;                 //运算前系数表
-    int *eq_coeff_tab;                              //运算后系数表
+    float *eq_coeff_tab;                              //运算后系数表
     void *entry;                                   //无效
 #endif
 };
@@ -200,6 +200,23 @@ int audio_eq_set_check_running(struct audio_eq *eq, u8 check_hw_running);
 */
 /*----------------------------------------------------------------------------*/
 int audio_eq_set_info(struct audio_eq *eq, u8 channels, u8 out_32bit);
+
+/*----------------------------------------------------------------------------*/
+/**@brief    设置eq信息
+   @param    eq:句柄
+   @param    channels:设置入输出通道数
+   @param    in_mode:使能eq输入32bit数据，2:float, 1：输入32bit数据， 0：输入16bit是数据
+   @param    out_mode:使能eq输出32bit数据，2:float, 1：输出32bit数据， 0：输出16bit是数据
+   @param    run_mode:运行模式，0：normal, 1:mono, 2:stero
+   @param    data_in_mode:输入数据存放方式 0：块模式  1：序列模式
+   @param    data_out_mode:输入数据存放方式 0：块模式  1：序列模式
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+int audio_eq_set_info_new(struct audio_eq *eq, u8 channels, u8 in_mode, u8 out_mode, u8 run_mode, u8 data_in_mode, u8 data_out_mode);
+
+
 /*----------------------------------------------------------------------------*/
 /**@brief    eq启动
    @param    eq:句柄
@@ -247,6 +264,23 @@ void audio_eq_async_data_clear(struct audio_eq *eq);
 /*----------------------------------------------------------------------------*/
 int audio_eq_data_len(struct audio_eq *eq);
 
+/*----------------------------------------------------------------------------*/
+/**@brief    audio_eq_open重新封装，简化使用
+   @param    *parm: eq参数句柄,参数详见结构体struct audio_eq_param
+   @return   eq句柄
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+struct audio_eq *audio_dec_eq_open(struct audio_eq_param *parm);
+
+/*----------------------------------------------------------------------------*/
+/**@brief    audio_eq_close重新封装，简化使用
+   @param    eq句柄
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void audio_dec_eq_close(struct audio_eq *eq);
 
 #ifndef EQ_CORE_V1
 void eq_app_run_check(struct audio_eq *eq);

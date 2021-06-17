@@ -51,7 +51,7 @@ static const u8 sHIDDescriptor[] = {
     USB_DIR_IN | HID_EP_IN,     // bEndpointAddress
     USB_ENDPOINT_XFER_INT,      // Interrupt
     LOBYTE(MAXP_SIZE_HIDIN), HIBYTE(MAXP_SIZE_HIDIN),// Maximum packet size
-    10,     // Poll every 10msec seconds
+    1,     // Poll every 10msec seconds
 
 //@Endpoint Descriptor:
     /* USB_DT_ENDPOINT_SIZE,       // bLength
@@ -109,6 +109,9 @@ static void *get_hid_report_desc(u32 index)
 }
 
 
+static u8 *hid_ep_in_dma;
+/* static u8 *hid_ep_out_dma; */
+
 static u32 hid_tx_data(struct usb_device_t *usb_device, const u8 *buffer, u32 len)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
@@ -116,22 +119,31 @@ static u32 hid_tx_data(struct usb_device_t *usb_device, const u8 *buffer, u32 le
 }
 static void hid_rx_data(struct usb_device_t *usb_device, u32 ep)
 {
-    const usb_dev usb_id = usb_device2id(usb_device);
-    u8 *ep_buffer = usb_get_ep_buffer(usb_id, HID_EP_OUT);
-    u32 rx_len = usb_g_intr_read(usb_id, ep, NULL, 64, 0);
-    hid_tx_data(usb_device, ep_buffer, rx_len);
+    /* const usb_dev usb_id = usb_device2id(usb_device); */
+    /* u32 rx_len = usb_g_intr_read(usb_id, ep, NULL, 64, 0); */
+    /* hid_tx_data(usb_device, hid_ep_out_dma, rx_len); */
 }
 
 static void hid_endpoint_init(struct usb_device_t *usb_device, u32 itf)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
-    u8 *ep_buffer = usb_get_ep_buffer(usb_id, HID_EP_IN | USB_DIR_IN);
-    usb_g_ep_config(usb_id, HID_EP_IN | USB_DIR_IN, USB_ENDPOINT_XFER_INT, 0, ep_buffer, MAXP_SIZE_HIDIN);
+    usb_g_ep_config(usb_id, HID_EP_IN | USB_DIR_IN, USB_ENDPOINT_XFER_INT, 0, hid_ep_in_dma, MAXP_SIZE_HIDIN);
+    usb_enable_ep(usb_id, HID_EP_IN);
 
-    ep_buffer = usb_get_ep_buffer(usb_id, HID_EP_OUT);
-    usb_g_set_intr_hander(usb_id, HID_EP_OUT, hid_rx_data);
-    usb_g_ep_config(usb_id, HID_EP_OUT, USB_ENDPOINT_XFER_INT, 1, ep_buffer, MAXP_SIZE_HIDOUT);
-    usb_enable_ep(usb_id, HID_EP_OUT);
+    /* usb_g_set_intr_hander(usb_id, HID_EP_OUT, hid_rx_data); */
+    /* usb_g_ep_config(usb_id, HID_EP_OUT, USB_ENDPOINT_XFER_INT, 1, ep_buffer, MAXP_SIZE_HIDOUT); */
+}
+u32 hid_register(const usb_dev usb_id)
+{
+    hid_ep_in_dma = usb_alloc_ep_dmabuffer(usb_id, HID_EP_IN | USB_DIR_IN, MAXP_SIZE_HIDIN);
+
+    /* hid_ep_out_dma = usb_alloc_ep_dmabuffer(usb_id, HID_EP_OUT,MAXP_SIZE_HIDOUT); */
+    return 0;
+}
+
+void hid_release(const usb_dev usb_id)
+{
+    return ;
 }
 
 static void hid_reset(struct usb_device_t *usb_device, u32 itf)
@@ -139,7 +151,7 @@ static void hid_reset(struct usb_device_t *usb_device, u32 itf)
     const usb_dev usb_id = usb_device2id(usb_device);
     log_debug("%s", __func__);
 #if USB_ROOT2
-    usb_disable_ep(usb_id, HID_EP_OUT);
+    usb_disable_ep(usb_id, HID_EP_IN);
 #else
     hid_endpoint_init(usb_device, itf);
 #endif
@@ -161,6 +173,9 @@ static u32 hid_recv_output_report(struct usb_device_t *usb_device, struct usb_ct
 
 static u32 hid_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlrequest *req)
 {
+    if (req == -1) {
+        return 0;
+    }
     const usb_dev usb_id = usb_device2id(usb_device);
     u32 tx_len;
     u8 *tx_payload = usb_get_setup_buffer(usb_device);
@@ -195,11 +210,15 @@ static u32 hid_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreques
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
             } else if (usb_device->bDeviceStates == USB_CONFIGURED) {
                 //只有一个interface 没有Alternate
-                usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
+                if (req->wValue == 0) { //alt 0
+                    usb_set_setup_phase(usb_device, USB_EP0_STAGE_SETUP);
+                } else {
+                    usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
+                }
             }
             break;
         case USB_REQ_GET_INTERFACE:
-            if (req->wLength) {
+            if (req->wValue || (req->wLength != 1)) {
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
             } else if (usb_device->bDeviceStates == USB_DEFAULT) {
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);

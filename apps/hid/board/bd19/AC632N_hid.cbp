@@ -46,8 +46,10 @@
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_HID_CASE_ENABLE" />
 <Add option="-DCONFIG_TRANSFER_ENABLE" />
+<Add option="-DCONFIG_LITE_AEC_ENABLE=0" />
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
+<Add option="-DCONFIG_LINK_DISTURB_SCAN_ENABLE=0" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
 <Add option="-DCONFIG_OTA_UPDATA_ENABLE" />
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
@@ -153,7 +155,6 @@
 <Unit filename="../../../../apps/common/key/touch_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.h" />
-<Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data/le_rcsp_adv_module.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_msg.h" />
@@ -169,6 +170,7 @@
 <Unit filename="../../../../apps/common/touch_pad/SYD9557M.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/touch_pad/SYD9557M.h" />
 <Unit filename="../../../../apps/common/update/testbox_update.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/update/uart_update_master.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/cdc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/cdc.h" />
@@ -263,8 +265,10 @@
 <Unit filename="../../../../cpu/bd19/chargestore.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/iic_soft.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/bd19/irflt.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/ledc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/mcpwm.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/bd19/plcnt.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/pwm_led.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/setup.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/spi.c"><Option compilerVer="CC"/></Unit>
@@ -288,17 +292,13 @@
 <Unit filename="../../../../include_lib/btstack/btstack_event.h" />
 <Unit filename="../../../../include_lib/btstack/btstack_task.h" />
 <Unit filename="../../../../include_lib/btstack/btstack_typedef.h" />
-<Unit filename="../../../../include_lib/btstack/frame_queque.h" />
 <Unit filename="../../../../include_lib/btstack/le/att.h" />
 <Unit filename="../../../../include_lib/btstack/le/ble_api.h" />
 <Unit filename="../../../../include_lib/btstack/le/ble_data_types.h" />
 <Unit filename="../../../../include_lib/btstack/le/gatt.h" />
+<Unit filename="../../../../include_lib/btstack/le/le_common_define.h" />
 <Unit filename="../../../../include_lib/btstack/le/le_user.h" />
 <Unit filename="../../../../include_lib/btstack/le/sm.h" />
-<Unit filename="../../../../include_lib/btstack/third_party/baidu/dma_protobuf.h" />
-<Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_dma.h" />
-<Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_dma_pb.h" />
-<Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_platform.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/common/ble_config.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/common/ble_user.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/common/btstack_3th_protocol_user.h" />
@@ -327,6 +327,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/includes.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/io_imap.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/io_omap.h" />
+<Unit filename="../../../../include_lib/driver/cpu/bd19/asm/irflt.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/irq.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/ledc.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd19/asm/mcpwm.h" />
@@ -384,6 +385,7 @@
 <Unit filename="../../../../include_lib/system/device/key_driver.h" />
 <Unit filename="../../../../include_lib/system/device/rdec_key.h" />
 <Unit filename="../../../../include_lib/system/device/slidekey.h" />
+<Unit filename="../../../../include_lib/system/device/tent600_key.h" />
 <Unit filename="../../../../include_lib/system/device/touch_key.h" />
 <Unit filename="../../../../include_lib/system/device/vm.h" />
 <Unit filename="../../../../include_lib/system/event.h" />

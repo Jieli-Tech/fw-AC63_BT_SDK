@@ -330,6 +330,7 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_MIC_CAPLESS_ENABLE				DISABLE_THIS_MOUDLE
 
 
+#define AUDIO_MIDI_CTRL_CONFIG    0 //midi电子琴接口使能 ,开这个宏要关掉低功耗使能
 
 //*********************************************************************************//
 //                                  充电仓配置                                     //

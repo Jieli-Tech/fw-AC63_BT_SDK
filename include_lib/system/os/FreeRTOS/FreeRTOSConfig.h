@@ -81,18 +81,6 @@
  * FreeRTOS API DOCUMENTATION AVAILABLE ON THE FreeRTOS.org WEB SITE.  See
  * http://www.freertos.org/a00110.html
  *----------------------------------------------------------*/
-#ifdef __GCC_PI32V2__
-#include "pi32v2/portmacro.h"
-#endif
-
-#ifdef __GCC_PI32_LTO__
-#include "pi32_lto/portmacro.h"
-#endif
-
-#ifdef __GCC_Q32S__
-#include "q32s/portmacro.h"
-#endif
-
 #define configUSE_PREEMPTION					1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION	1
 #define configUSE_IDLE_HOOK						1
@@ -191,5 +179,17 @@ static inline  void vAssertCalled(const char *str, unsigned int ulLine)
 #define TRACE_ENTER_CRITICAL_SECTION() portENTER_CRITICAL()
 #define TRACE_EXIT_CRITICAL_SECTION() portEXIT_CRITICAL()
 //#include "trcKernelPort.h"
+
+#ifdef __GCC_PI32V2__
+#include "pi32v2/portmacro.h"
+#endif
+
+#ifdef __GCC_PI32_LTO__
+#include "pi32_lto/portmacro.h"
+#endif
+
+#ifdef __GCC_Q32S__
+#include "q32s/portmacro.h"
+#endif
 
 #endif /* FREERTOS_CONFIG_H */

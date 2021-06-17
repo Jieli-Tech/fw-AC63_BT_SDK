@@ -12,6 +12,8 @@
 #include "api/health_cli.h"
 #include "api/health_srv.h"
 #include "api/cdb.h"
+#include "system/debug.h"
+
 
 /*******************************************************************/
 /*
@@ -26,14 +28,6 @@
 #define BT_MESH_ADDR_IS_VIRTUAL(addr) ((addr) >= 0x8000 && (addr) < 0xc000)
 #define BT_MESH_ADDR_IS_RFU(addr) ((addr) >= 0xff00 && (addr) <= 0xfffb)
 
-// -- output terminal color
-#define RedBold             "\033[31;1;7m" // 红色加粗
-#define RedBoldBlink        "\033[31;1;5m" // 红色加粗、闪烁
-#define BlueBold            "\033[34;1;7m" // 蓝色加粗
-#define BlueBoldBlink       "\033[34;1;5m" // 蓝色加粗、闪烁
-#define PurpleBold          "\033[35;1m"   // 紫色加粗
-#define PurpleBoldBlink     "\033[35;1;5m" // 紫色加粗、闪烁
-#define Reset               "\033[0;25m"   // 颜色复位
 
 //< error type
 #define ENONE           0  /* Err None */

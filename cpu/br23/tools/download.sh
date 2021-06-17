@@ -3,6 +3,23 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ##!/bin/sh
 ${OBJDUMP} -D -address-mask=0x1ffffff -print-dbg $1.elf > $1.lst
 ${OBJCOPY} -O binary -j .text $1.elf text.bin
@@ -34,14 +51,8 @@ ${OBJSIZEDUMP} -lite -skip-zero -enable-dbg-info $1.elf | sort -k 1 > symbol_tbl
 
 files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota_all.bin ota_all_debug.bin ota_nor.bin ota_nor_debug.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe packres.exe json_to_res.exe md5sum.exe"
 NICKNAME="br23_sdk"
-
-
-
-cp download/watch/isd_config_double_bank.ini ./isd_config.ini
-
-
-
-cp download/watch/download.bat ./
+cp download/ICrecorder/isd_config.ini ./
+cp download/ICrecorder/download.bat ./
 
 
 

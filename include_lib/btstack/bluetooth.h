@@ -16,11 +16,6 @@
 //Classic
 
 
-//Third-party
-#include "third_party/baidu/dma_protobuf.h"
-#include "third_party/baidu/dueros_dma.h"
-#include "third_party/baidu/dueros_dma_pb.h"
-#include "third_party/baidu/dueros_platform.h"
 
 
 //Common
@@ -305,6 +300,11 @@
 // last used HCI_EVENT in 2.1 is 0x3d
 // last used HCI_EVENT in 4.1 is 0x57
 
+#define HCI_EVENT_VENDOR_CONNECTION_COMPLETE               0xEF
+
+//event definition for new vendor sub event
+#define HCI_EVENT_VENDOR_META							   0xF5
+#define HCI_SUBEVENT_VENDOR_TEST_MODE_CFG				   0x01
 
 #define HCI_EVENT_VENDOR_FRE_OFFSET_TRIM                   0xF6
 #define HCI_EVENT_VENDOR_ENCRY_COMPLETE                    0xF7

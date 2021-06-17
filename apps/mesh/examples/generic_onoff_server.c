@@ -57,18 +57,25 @@ const u16 config_bt_mesh_proxy_node_adv_interval = ADV_SCAN_UNIT(300); // unit: 
  * @brief Conifg complete local name
  */
 /*-----------------------------------------------------------*/
+
+static u8 ble_mesh_adv_name[32 + 2];
+
 #define BLE_DEV_NAME        'O', 'n', 'O', 'f', 'f', '_', 's', 'r', 'v'
 
-const uint8_t mesh_name[] = {
+const uint8_t mesh_default_name[] = {
     // Name
     BYTE_LEN(BLE_DEV_NAME) + 1, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, BLE_DEV_NAME,
 };
 
 void get_mesh_adv_name(u8 *len, u8 **data)
 {
-    *len = sizeof(mesh_name);
 
-    *data = mesh_name;
+    //r_printf("==============================%s,%d\n", __FUNCTION__, __LINE__);
+    //put_buf(ble_mesh_adv_name,32);
+
+    *len = ble_mesh_adv_name[0] + 1;
+    *data = ble_mesh_adv_name;
+
 }
 
 /**
@@ -403,11 +410,29 @@ void input_key_handler(u8 key_status, u8 key_number)
     }
 }
 
+extern void mesh_set_gap_name(const u8 *name);
 void bt_ble_init(void)
 {
     u8 bt_addr[6] = {MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR)};
 
     bt_mac_addr_set(bt_addr);
+
+    //r_printf("==============================%s,%d\n", __FUNCTION__, __LINE__);
+    bt_mac_addr_set(bt_addr);
+
+    u8 *name_p = &ble_mesh_adv_name[2];
+    int ret = syscfg_read(CFG_BT_NAME, name_p, 32);
+    if (ret <= 0) {
+        log_info("read bt name err\n");
+        memcpy(ble_mesh_adv_name, mesh_default_name, sizeof(mesh_default_name));
+    } else {
+        ble_mesh_adv_name[0] = strlen(name_p) + 1;
+        ble_mesh_adv_name[1] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
+        put_buf(name_p, 32);
+    }
+
+    mesh_set_gap_name(name_p);
+    log_info("mesh_name:%s\n", name_p);
 
     mesh_setup(mesh_init);
     if (BT_MODE_IS(BT_BQB)) {

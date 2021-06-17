@@ -194,6 +194,8 @@ void auto_shutdown_disable(void)
 #if TCFG_AUDIO_ENABLE
 #include "tone_player.h"
 #include "media/includes.h"
+#include "key_event_deal.h"
+extern void midi_paly_test(u32 key);
 #endif/*TCFG_AUDIO_ENABLE*/
 static void app_key_deal_test(u8 key_type, u8 key_value)
 {
@@ -214,6 +216,19 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
         /* extern int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 code_type); */
         /* audio_mic_enc_open(NULL, AUDIO_CODING_OPUS);//opus encode test */
         /* audio_mic_enc_open(NULL, AUDIO_CODING_SPEEX);//speex encode test  */
+
+
+
+        /*midi test*/
+
+        //printf(">>>key0:open midi\n");
+        //	midi_paly_test(KEY_IR_NUM_0);
+
+
+
+
+
+
     }
     if (key_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE1) {
         printf(">>>key1:tone_play_test\n");
@@ -224,7 +239,23 @@ static void app_key_deal_test(u8 key_type, u8 key_value)
         /* tone_play(TONE_NUM_8, 1); */
         /* tone_play(TONE_SIN_NORMAL, 1); */
 
+        //	printf(">>>key0:set  midi\n");
+        //	midi_paly_test(KEY_IR_NUM_1);
+
+
     }
+
+
+
+
+    if (key_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE2) {
+        //	printf(">>>key2:play  midi\n");
+        //	midi_paly_test(KEY_IR_NUM_2);
+    }
+
+
+
+
 #endif/*TCFG_AUDIO_ENABLE*/
 
 #if HID_TEST_KEEP_SEND_EN
@@ -888,7 +919,14 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         le_hogp_set_icon(BLE_APPEARANCE_HID_KEYBOARD);//keyboard
         le_hogp_set_ReportMap(hid_report_map, sizeof(hid_report_map));
 
-        bt_ble_init();
+        if (BT_MODE_IS(BT_BQB)) {
+            void ble_bqb_test_thread_init(void);
+            ble_bqb_test_thread_init();
+            break;
+        } else {
+            extern void bt_ble_init(void);
+            bt_ble_init();
+        }
 #endif
 
         if (sniff_support_reset_anchor_point) {

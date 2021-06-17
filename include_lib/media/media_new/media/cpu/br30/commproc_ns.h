@@ -16,4 +16,9 @@ int noise_suppress_open(noise_suppress_param *param);
 int noise_suppress_close(void);
 int noise_suppress_run(short *in, short *out, int npoint);
 
+enum {
+    NS_CMD_NOISE_FLOOR = 1,
+};
+int noise_suppress_config(u32 cmd, int arg, void *priv);
+
 #endif/*_COMMPROC_NS_H_*/

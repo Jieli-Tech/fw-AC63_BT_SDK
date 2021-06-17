@@ -22,6 +22,13 @@ struct audio_enc_write_input {
     void (*put)(void *, s16 *frame);
 };
 
+typedef struct enc_tmark_info {
+    unsigned int len;
+    u8      data[0];
+} Tmark_info;
+
+
+
 //////////////////////////////////////////////////////////////////////////////
 int enc_write_file_resume(void *hdl);	// 调用该函数激活写文件
 

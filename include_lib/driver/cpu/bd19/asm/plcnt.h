@@ -1,21 +1,20 @@
 #ifndef _PLCNT_DRV_H_
 #define _PLCNT_DRV_H_
 
-#define TOUCH_KEY_CH_MAX		3
 
-typedef struct _CTM_KEY_VAR {
-    s32 touch_release_buf[TOUCH_KEY_CH_MAX]; 		//按键释放值滤波器buffer
-    u16 touch_cnt_buf[TOUCH_KEY_CH_MAX];			//按键计数值滤波器buffer
-    s16 FLT1CFG1;					//滤波器1配置参数1
-    s16 FLT1CFG2;					//滤波器1配置参数2, 等于(-RELEASECFG0)<<FLT1CFG0
-    s16 PRESSCFG;					//按下判决门限
-    s16 RELEASECFG0;				//释放判决门限0
-    s16 RELEASECFG1;				//释放判决门限1
-    s8  FLT0CFG;					//滤波器0配置参数(0/1/2/3)
-    s8  FLT1CFG0;					//滤波器1配置参数0
-    u16 touch_key_state;			//按键状态标志，随时可能被中断改写，按键处理程序需要将此标志复制出来再行处理
-    u8  touch_init_cnt[TOUCH_KEY_CH_MAX];				//初始化计数器，非0时进行初始化
-} sCTM_KEY_VAR;
+#define PLCNT_KEY_CH_MAX		3
+
+struct touch_key_port {
+    u16 press_delta;    //按下判决的阈值
+    u8 port; 			//触摸按键IO
+    u8 key_value; 		//按键返回值
+};
+
+struct touch_key_platform_data {
+    u8 num; 	        //触摸按键个数
+    const struct touch_key_port *port_list;
+};
+
 
 /* =========== pclcnt API ============= */
 //plcnt 初始化

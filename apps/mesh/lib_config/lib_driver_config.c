@@ -14,6 +14,7 @@
 #include "app_config.h"
 #include "system/includes.h"
 
+const int config_spi_code_user_cache = 0;
 #if TCFG_POWER_MODE_QUIET_ENABLE
 const int config_dcdc_mode = 1;
 #else

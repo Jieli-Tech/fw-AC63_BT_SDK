@@ -63,11 +63,12 @@ extern void audio_sw_drc_close(void *hdl);
 extern int audio_sw_drc_update(void *hdl, struct drc_ch *ch_tmp, u16 sample_rate, u8 channel);
 extern int audio_sw_drc_run(void *hdl, s16 *in_buf, s16 *out_buf, int npoint_per_channel);
 
-#define  EQ_INOUT_EN 0
-#if EQ_INOUT_EN
+
 void audio_hw_crossover_open(struct sw_drc *drc, int (*L_coeff)[3], u8 nsection);
 void audio_hw_crossover_close(struct sw_drc *drc);
 void audio_hw_crossover_run(struct sw_drc *drc, s16 *data, int len);
-#endif
+void audio_hw_crossover_update(struct sw_drc *drc, int (*L_coeff)[3], u8 nsection);
 
+extern const int config_audio_drc_en;
+extern const int hw_eq_support_multi_channels;
 #endif

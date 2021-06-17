@@ -282,6 +282,20 @@ void audio_set_mic_mute(u8 mute);
 */
 int audio_adc_linein_open(struct audio_adc_ch *adc, int ch, struct audio_adc_hdl *hdl);
 
+
+/*
+*********************************************************************
+*                  Audio ADC Linein Ch SWitch
+* Description: linein采样通道已打开的情况下切换到其他 linein 通道
+* Arguments  : adc	原adc采样通道句柄
+*			   ch   linein通道索引
+* Return	 : 0 成功	其他 失败
+* Note(s)    : None.
+*********************************************************************
+*/
+
+int audio_adc_linein_ch_switch(struct audio_adc_ch *adc, int ch);
+
 /*
 *********************************************************************
 *                  Audio ADC Linein Sample Rate

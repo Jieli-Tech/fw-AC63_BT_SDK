@@ -117,6 +117,7 @@
 		*(.mic_cap_bss)
 		*(.sbc_hwaccel_bss)
 		*(.resample_fastcal_bss)
+		*(.lc3_decoder_bss)
         media_bss_end = .;
 
 

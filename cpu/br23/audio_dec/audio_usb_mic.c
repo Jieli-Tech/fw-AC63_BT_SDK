@@ -6,6 +6,7 @@
 #include "app_config.h"
 #include "audio_splicing.h"
 #include "application/audio_echo_reverb.h"
+#include "audio_common/audio_iis.h"
 
 /*usb mic的数据是否经过AEC,包括里面的ANS模块*/
 #define USB_MIC_AEC_EN		0
@@ -68,6 +69,137 @@ EF_REVERB_FIX_PARM usbmic_echo_fix_parm_default = {
     .max_ms = 200,				////所需要的最大延时，影响 need_buf 大小
 };
 #endif
+
+#if TCFG_IIS_INPUT_EN
+
+#include "audio_link.h"
+#include "Resample_api.h"
+#define IIS_MIC_SRC_DIFF_MAX        (50)
+#define IIS_MIC_BUF_SIZE    (2*1024)
+
+static RS_STUCT_API *iis_mic_sw_src_api = NULL;
+static u8 *iis_mic_sw_src_buf = NULL;
+static s16 iis_mic_sw_src_output[ALNK_BUF_POINTS_NUM * 3 / 2];
+static s32 sw_src_in_sr = 0;
+static s32 sw_src_in_sr_top = 0;
+static s32 sw_src_in_sr_botton = 0;
+
+static int iis_mic_sw_src_init()
+{
+    printf("%s !!\n", __func__);
+    if (iis_mic_sw_src_api) {
+        printf("iis mic sw src is already open !\n");
+        return -1;
+    }
+    iis_mic_sw_src_api = get_rs16_context();
+    g_printf("iis_mic_sw_src_api:0x%x\n", iis_mic_sw_src_api);
+    ASSERT(iis_mic_sw_src_api);
+    u32 iis_mic_sw_src_need_buf = iis_mic_sw_src_api->need_buf();
+    g_printf("iis_mic_sw_src_buf:%d\n", iis_mic_sw_src_need_buf);
+    iis_mic_sw_src_buf = malloc(iis_mic_sw_src_need_buf);
+    ASSERT(iis_mic_sw_src_buf);
+    RS_PARA_STRUCT rs_para_obj;
+    rs_para_obj.nch = 1;
+    rs_para_obj.new_insample = TCFG_IIS_INPUT_SR;
+    rs_para_obj.new_outsample = MIC_AUDIO_RATE;
+
+    sw_src_in_sr = rs_para_obj.new_insample;
+    sw_src_in_sr_top = rs_para_obj.new_insample + IIS_MIC_SRC_DIFF_MAX;
+    sw_src_in_sr_botton = rs_para_obj.new_insample - IIS_MIC_SRC_DIFF_MAX;
+    printf("sw src,in = %d,out = %d\n", rs_para_obj.new_insample, rs_para_obj.new_outsample);
+    iis_mic_sw_src_api->open(iis_mic_sw_src_buf, &rs_para_obj);
+    return 0;
+}
+
+static int iis_mic_sw_src_uninit()
+{
+    printf("%s !!\n", __func__);
+    if (iis_mic_sw_src_api) {
+        iis_mic_sw_src_api = NULL;
+    }
+    if (iis_mic_sw_src_buf) {
+        free(iis_mic_sw_src_buf);
+        iis_mic_sw_src_buf = NULL;
+    }
+    return 0;
+}
+
+
+static void iis_mic_output_handler(u8 ch, s16 *data, u32 len)
+{
+    s16 *outdat = data;
+    int outlen = len;
+    if (usb_mic_hdl == NULL) {
+        return ;
+    }
+    if (usb_mic_hdl->status == USB_MIC_STOP) {
+        return ;
+    }
+    // dual to mono
+    for (int i = 0; i < len / 4; i++) {
+        data[i] = data[2 * i];
+    }
+    len = len >> 1;
+    outlen >>= 1;
+
+    if (iis_mic_sw_src_api && iis_mic_sw_src_buf) {
+        if (usb_mic_hdl->output_cbuf.data_len > PCM_ENC2USB_OUTBUF_LEN * 3 / 4) {
+            sw_src_in_sr++;
+            if (sw_src_in_sr > sw_src_in_sr_top) {
+                sw_src_in_sr = sw_src_in_sr_top;
+            }
+            //printf(">>  sw_src_in_sr++ = %d\n",sw_src_in_sr);
+        } else if (usb_mic_hdl->output_cbuf.data_len < PCM_ENC2USB_OUTBUF_LEN / 4) {
+            sw_src_in_sr--;
+            if (sw_src_in_sr < sw_src_in_sr_botton) {
+                sw_src_in_sr = sw_src_in_sr_botton;
+            }
+            //printf(">>  sw_src_in_sr-- = %d\n",sw_src_in_sr);
+        }
+
+        iis_mic_sw_src_api->set_sr(iis_mic_sw_src_buf, sw_src_in_sr);
+
+        outlen = iis_mic_sw_src_api->run(iis_mic_sw_src_buf,    \
+                                         data,                  \
+                                         len >> 1,              \
+                                         iis_mic_sw_src_output);
+        ASSERT(outlen <= (sizeof(iis_mic_sw_src_output) >> 1));
+        outlen = outlen << 1;
+        outdat = iis_mic_sw_src_output;
+    }
+
+    switch (usb_mic_hdl->source) {
+    case ENCODE_SOURCE_MIC:
+    case ENCODE_SOURCE_LINE0_LR:
+    case ENCODE_SOURCE_LINE1_LR:
+    case ENCODE_SOURCE_LINE2_LR: {
+#if USB_MIC_AEC_EN
+        audio_aec_inbuf(outdat, outlen);
+#else
+#if	TCFG_USB_MIC_ECHO_ENABLE
+        if (usb_mic_hdl->p_echo_hdl) {
+            run_echo(usb_mic_hdl->p_echo_hdl, outdat, outdat, outlen);
+        }
+#endif
+
+
+        int wlen = cbuf_write(&usb_mic_hdl->output_cbuf, outdat, outlen);
+        if (wlen != outlen) {
+            printf("wlen %d len %d\n", wlen, outlen);
+        }
+#endif
+    }
+    break;
+    default:
+        break;
+    }
+
+}
+
+
+#endif // TCFG_IIS_INPUT_EN
+
+
 static int usb_audio_mic_sync(u32 data_size)
 {
 #if 0
@@ -342,6 +474,11 @@ int usb_audio_mic_open(void *_info)
     if (!hdl) {
         return -EFAULT;
     }
+
+    local_irq_disable();
+    usb_mic_hdl = hdl;
+    local_irq_enable();
+
     hdl->status = USB_MIC_STOP;
 #if 0
     hdl->adc_buf = zalloc(USB_MIC_BUFS_SIZE * 2);
@@ -397,6 +534,10 @@ int usb_audio_mic_open(void *_info)
     app_var.usb_mic_gain = uac_mic_vol_switch(uac_get_mic_vol(0));
 #endif//TCFG_MIC_EFFECT_ENABLE
 
+#if TCFG_IIS_INPUT_EN
+    iis_mic_sw_src_init();
+    audio_iis_input_start(TCFG_IIS_INPUT_PORT, TCFG_IIS_INPUT_DATAPORT_SEL, iis_mic_output_handler);
+#else //TCFG_IIS_INPUT_EN
 #if (TCFG_USB_MIC_DATA_FROM_MICEFFECT)
     mic_effect_to_usbmic_onoff(1);
 #else
@@ -415,6 +556,7 @@ int usb_audio_mic_open(void *_info)
     audio_mic_start(&hdl->mic_ch);
 #endif
 #endif//TCFG_USB_MIC_DATA_FROM_MICEFFECT
+#endif //TCFG_IIS_INPUT_EN
 #endif//SOUNDCARD_ENABLE
 #if TCFG_USB_MIC_ECHO_ENABLE
     hdl->p_echo_hdl = open_echo(&usbmic_echo_parm_default, &usbmic_echo_fix_parm_default);
@@ -424,14 +566,17 @@ int usb_audio_mic_open(void *_info)
     hdl->status = USB_MIC_START;
     hdl->mic_busy = 0;
 
-    local_irq_disable();
-    usb_mic_hdl = hdl;
-    local_irq_enable();
     /* __this->rec_begin = 0; */
     return 0;
 }
 
-
+u32 usb_mic_is_running()
+{
+    if (usb_mic_hdl) {
+        return SPK_AUDIO_RATE;
+    }
+    return 0;
+}
 
 /*
  *************************************************************
@@ -513,12 +658,17 @@ int usb_audio_mic_close(void *arg)
 #if (TCFG_USB_MIC_DATA_FROM_MICEFFECT)
         mic_effect_to_usbmic_onoff(0);
 #else
+#if TCFG_IIS_INPUT_EN
+        audio_iis_input_stop(TCFG_IIS_INPUT_PORT, TCFG_IIS_INPUT_DATAPORT_SEL);
+        iis_mic_sw_src_uninit();
+#else // TCFG_IIS_INPUT_EN
 #if 0
         audio_adc_mic_close(&usb_mic_hdl->mic_ch);
         audio_adc_del_output_handler(&adc_hdl, &usb_mic_hdl->adc_output);
 #else
         audio_mic_close(&usb_mic_hdl->mic_ch, &usb_mic_hdl->adc_output);
 #endif
+#endif // TCFG_IIS_INPUT_EN
 #endif//TCFG_USB_MIC_DATA_FROM_MICEFFECT
 #endif//SOUNDCARD_ENABLE
 

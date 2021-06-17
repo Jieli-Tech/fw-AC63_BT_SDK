@@ -96,7 +96,8 @@ struct low_power_param {
 
     u32 osc_delay_us;
     u8  virtual_rtc;
-    u16 virtual_rtc_interval;
+    u8 user_nv_timer_en;
+    u16 nv_timer_interval;
 };
 
 #define BLUETOOTH_RESUME    BIT(1)
@@ -141,10 +142,12 @@ struct sub_wakeup {
 
 //<Max hardware wakeup port
 #define MAX_WAKEUP_PORT     8
+#define MAX_RTC_PORT     2
 
 struct wakeup_param {
     const PORT_FLT filter;
     const struct port_wakeup *port[MAX_WAKEUP_PORT];
+    const struct port_wakeup *rtc_port[MAX_RTC_PORT];
     const struct charge_wakeup *charge;
     const struct alarm_wakeup *alram;
     const struct lvd_wakeup *lvd;

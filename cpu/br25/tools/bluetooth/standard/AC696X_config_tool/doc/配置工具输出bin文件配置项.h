@@ -53,18 +53,31 @@ typedef struct __BLUE_NAME {
 } BLUE_NAME_CFG;
 
 //aec_cfg: ID: 604, CFG_AEC_ID, 0x8681, len = 0x14 = 20
-typedef struct __AEC {
-    u8 mic_again; 
-    u8 dac_again; 
-    u16 ndt_max_gain;   //default: 384(0 ~ 2048)
-    u16 ndt_min_gain;   //default: 64(0 ~ 2048)
-    u16 ndt_fade_gain;  //default: 32(0 ~ 2048)
-    u16 nearend_thr;    //default: 50(0 ~ 1024)
-    u32 nlp_aggress;    //float, default: 4.0f(0 ~ 35)
-    u32 nlp_suppress;   //float, default: 5.0f(0 ~ 10)
-    u8 aec_mode;        //diable(0), reduce(1), advance(2)
-    u8 ul_eq_en;        //disable(0), enable(1)
-} _GNU_PACKED_ AEC;
+//aec_cfg: 
+typedef struct __AEC_CONFIG { 
+    u8 mic_again;           //DAC增益,default:3(0~14)
+    u8 dac_again;           //MIC增益,default:22(0~31)
+    u8 aec_mode;            //AEC模式,default:advance(diable(0), reduce(1), advance(2))
+    u8 ul_eq_en;            //上行EQ使能,default:enable(disable(0), enable(1))
+    /*AGC*/ 
+    float fade_gain;        //放大步进default: 0.9f(0.1 ~ 5 dB)
+    float ndt_max_gain;     //单端讲话放大上限,default: 12.f(0 ~ 24 dB)
+    float ndt_min_gain;     //单端讲话放大下限,default: 0.f(-20 ~ 24 dB)
+    float ndt_speech_thr;   //单端讲话放大阈值,default: -50.f(-70 ~ -40 dB)
+    float dt_max_gain;      //双端讲话放大上限,default: 12.f(0 ~ 24 dB)
+    float dt_min_gain;      //双端讲话放大下限,default: 0.f(-20 ~ 24 dB)
+    float dt_speech_thr;    //双端讲话放大阈值,default: -40.f(-70 ~ -40 dB)
+    float echo_present_thr; //单端双端讲话阈值,default:-70.f(-70 ~ -40 dB)
+    /*AEC*/ 
+    float aec_dt_aggress;   //原音回音追踪等级, default: 1.0f(1 ~ 5)
+    float aec_refengthr;    //进入回音消除参考值, default: -70.0f(-90 ~ -60 dB)
+    /*ES*/ 
+    float es_aggress_factor;    //回音前级动态压制,越小越强,default: -3.0f(-1 ~ -5)
+    float es_min_suppress;      //回音后级动态压制,越大越强,default: 4.f(0 ~ 10)
+    /*ANS*/ 
+    float ans_aggress; //噪声前级动态压制,越大越强default: 1.25f(1 ~ 2)
+    float ans_suppress; //噪声后级动态压制,越小越强default: 0.04f(0 ~ 1)
+} _GNU_PACKED_ AEC_CONFIG;
 
 //tws_pair_code: ID: 602, CFG_TWS_PAIR_CODE_ID, 0x8781, len = 0x02
 typedef struct __TWS_PAIR_CODE {

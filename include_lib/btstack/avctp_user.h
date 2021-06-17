@@ -277,6 +277,7 @@ typedef enum {
 //    //删除所有设备记忆
     USER_CTRL_DEL_ALL_REMOTE_INFO,
     USER_CTRL_TEST_KEY,
+    USER_CTRL_SEND_USER_INFO,
 
     USER_CTRL_KEYPRESS,
     USER_CTRL_PAIR,
@@ -513,7 +514,7 @@ extern int hfp_ag_buf_init(void *buf, int size, int deal_flag);
 extern void __set_emitter_enable_flag(u8 flag);
 extern void hci_cancel_inquiry();
 extern u8 hci_standard_connect_check(void);
-extern void __emitter_send_media_toggle(u8 toggle);
+extern void __emitter_send_media_toggle(u8 *addr, u8 toggle);
 extern u8 is_a2dp_source_dev_null();
 extern u8 get_total_connect_dev(void);
 extern u8 get_remote_dev_info_index();

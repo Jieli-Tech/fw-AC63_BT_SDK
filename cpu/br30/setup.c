@@ -151,15 +151,16 @@ void setup_arch()
 
     memory_init();
 
+
+#if defined(TCFG_FIX_NOISE) && (TCFG_FIX_NOISE == 1)
+    extern void fix_dac_popo(u8 en); //用于改善隔直推开dac的杂声
+    fix_dac_popo(1);
+#endif
     //P11 系统必须提前打开
     p11_init();
     wdt_init(WDT_4S);
 
-    /* #if TCFG_AUDIO_ANC_ENABLE */
     /* wdt_close(); */
-    /* #else */
-    /* wdt_init(WDT_4S); */
-    /* #endif */
     clk_init_osc_cap(0x0a, 0x0a);
     clk_voltage_init(TCFG_CLOCK_MODE, SYSVDD_VOL_SEL_126V);
     clk_early_init(TCFG_CLOCK_SYS_SRC, TCFG_CLOCK_OSC_HZ, TCFG_CLOCK_SYS_HZ);

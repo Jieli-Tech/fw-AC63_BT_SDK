@@ -74,6 +74,7 @@ static struct app_audio_config app_audio_cfg = {0};
 extern struct audio_dac_hdl dac_hdl;
 extern struct dac_platform_data dac_data;
 struct audio_dac_hdl dac_hdl;
+extern struct audio_dac_channel default_dac;
 extern struct audio_adc_hdl adc_hdl;
 OS_SEM dac_sem;
 
@@ -543,7 +544,7 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
                     }
 
 
-                    audio_dig_vol_set(audio_dig_vol_group_hdl_get(sys_digvol_group, music_dig_logo[i]),  AUDIO_DIG_VOL_ALL_CH, volume);
+                    audio_dig_vol_group_vol_set(sys_digvol_group, music_dig_logo[i], AUDIO_DIG_VOL_ALL_CH, volume);
                 }
             } else {
                 if (audio_dig_vol_group_hdl_get(sys_digvol_group, digvol_type) == NULL) {
@@ -551,7 +552,7 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
                 }
 
 
-                audio_dig_vol_set(audio_dig_vol_group_hdl_get(sys_digvol_group, digvol_type),  AUDIO_DIG_VOL_ALL_CH, volume);
+                audio_dig_vol_group_vol_set(sys_digvol_group, digvol_type, AUDIO_DIG_VOL_ALL_CH, volume);
             }
         }
 
@@ -1592,7 +1593,7 @@ int app_audio_output_write(void *buf, int len)
 {
 #if 0
 #if AUDIO_OUTPUT_ONLY_DAC
-    return audio_dac_write(&dac_hdl, buf, len);
+    return audio_dac_write(&default_dac, buf, len);
 #elif AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM
     return fm_emitter_cbuf_write(buf, len);
 #elif AUDIO_OUTPUT_DAC_AND_IIS
@@ -1600,7 +1601,7 @@ int app_audio_output_write(void *buf, int len)
     int wlen2 = 0;
     static u8 output_order = 0;
     if (dac_remain_len) {
-        wlen1 = audio_dac_write(&dac_hdl, buf, dac_remain_len);
+        wlen1 = audio_dac_write(&default_dac, buf, dac_remain_len);
         dac_remain_len -= wlen1;
         return wlen1;
     }
@@ -1613,9 +1614,9 @@ int app_audio_output_write(void *buf, int len)
 
     if (output_order) { //调换输出顺序做输出均衡
         wlen2 = audio_link_write_stereodata(buf, len, TCFG_IIS_OUTPUT_PORT);
-        wlen1 = audio_dac_write(&dac_hdl, buf, len);
+        wlen1 = audio_dac_write(&default_dac, buf, len);
     } else {
-        wlen1 = audio_dac_write(&dac_hdl, buf, len);
+        wlen1 = audio_dac_write(&default_dac, buf, len);
         wlen2 = audio_link_write_stereodata(buf, len, TCFG_IIS_OUTPUT_PORT);
     }
     if (wlen1 == wlen2) {
@@ -1663,7 +1664,10 @@ int app_audio_output_start(void)
 int app_audio_output_stop(void)
 {
 #if AUDIO_OUTPUT_INCLUDE_DAC
-    return audio_dac_stop(&dac_hdl);
+
+
+    return audio_dac_channel_stop(&default_dac);
+
 #endif
     return 0;
 }

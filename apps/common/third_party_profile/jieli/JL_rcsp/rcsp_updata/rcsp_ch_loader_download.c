@@ -5,7 +5,6 @@
 #include "system/fs/fs.h"
 #include "rcsp_user_update.h"
 #include "JL_rcsp_protocol.h"
-#include "le_rcsp_adv_module.h"
 #include "os/os_error.h"
 
 #include <string.h>

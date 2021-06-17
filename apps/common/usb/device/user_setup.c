@@ -35,7 +35,7 @@ static const u8 user_stirng[] = {
     'd', 0x00,
     'i', 0x00,
     'o', 0x00,
-    '2', 0x00,
+    '1', 0x00,
     '.', 0x00,
     '0', 0x00,
 };
@@ -190,8 +190,8 @@ static u32 user_setup_filter(struct usb_device_t *usb_device, struct usb_ctrlreq
                             "STALL",
                            };
 
-    usb_log_d("state:%s phase: %s", statas[usb_device->bDeviceStates],
-              phases[usb_device->bsetup_phase]);
+    printf("state:%s phase: %s", statas[usb_device->bDeviceStates],
+           phases[usb_device->bsetup_phase]);
 #endif
     return ret;// not zero user handle this request
 }

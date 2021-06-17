@@ -389,12 +389,14 @@ struct uac_info_t {
     u16 spk_min_vol;
     u16 spk_def_vol;
     u16 spk_vol_res;
+    u8 *spk_dma_buffer;
 
     u16 mic_max_vol;
     u16 mic_min_vol;
     u16 mic_def_vol;
     u16 mic_vol_res;
     u16 mic_vol;
+    u8 *mic_dma_buffer;
 
     u8 spk_mute: 1;
     u8 mic_mute: 1;
@@ -466,6 +468,13 @@ u16 uac_get_mic_vol(const usb_dev usb_id)
     }
     return 0;
 }
+
+u16 uac_get_mic_sameplerate(void *priv)
+{
+    u16 sample_rate = (u16)mic_samplingfrequency;
+    return sample_rate;
+}
+
 static u32 uac_vol_handler(struct usb_device_t *usb_device, struct usb_ctrlrequest *setup)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
@@ -600,7 +609,11 @@ static u32 audio_ac_itf_handler(struct usb_device_t *usb_device, struct usb_ctrl
             usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);//no alt setting
         }
 #else
-        usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);//no alt setting
+        if (setup->wValue == 0) { //alt 0
+            usb_set_setup_phase(usb_device, USB_EP0_STAGE_SETUP);
+        } else {
+            usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
+        }
 #endif
         break;
     case USB_REQ_GET_INTERFACE:
@@ -609,7 +622,7 @@ static u32 audio_ac_itf_handler(struct usb_device_t *usb_device, struct usb_ctrl
             SetInterface_0_Lock = 0;
         }
 #endif
-        if (setup->wLength) {
+        if (setup->wValue || (setup->wLength != 1)) {
             usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
         } else if (usb_device->bDeviceStates == USB_DEFAULT) {
             usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
@@ -752,7 +765,7 @@ void usb_audio_plc_close()
 static void spk_transfer(struct usb_device_t *usb_device, u32 ep)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
-    u8 *ep_buffer = usb_get_ep_buffer(usb_id, SPK_ISO_EP_OUT);
+    u8 *ep_buffer = uac_info->spk_dma_buffer;
     u32 spk_frame_len = SPK_AUDIO_RATE * (SPK_AUDIO_RES / 8) * SPK_CHANNEL / 1000;
     spk_frame_len += (SPK_AUDIO_RATE % 1000 ? (SPK_AUDIO_RES / 8) * SPK_CHANNEL : 0);
     u32 rx_len = usb_g_iso_read(usb_id, SPK_ISO_EP_OUT, NULL, spk_frame_len, 0);
@@ -773,8 +786,7 @@ static void open_spk(struct usb_device_t *usb_device)
     const usb_dev usb_id = usb_device2id(usb_device);
     u32 spk_frame_len = SPK_AUDIO_RATE * (SPK_AUDIO_RES / 8) * SPK_CHANNEL / 1000;
     spk_frame_len += (SPK_AUDIO_RATE % 1000 ? (SPK_AUDIO_RES / 8) * SPK_CHANNEL : 0);
-    usb_enable_ep(usb_id, SPK_ISO_EP_OUT);
-    u8 *ep_buffer = usb_get_ep_buffer(usb_id, SPK_ISO_EP_OUT);
+    u8 *ep_buffer = uac_info->spk_dma_buffer;
     uac_speaker_stream_open(SPK_AUDIO_RATE, SPK_CHANNEL);
 
 #if UAC_PLC_EN
@@ -784,7 +796,6 @@ static void open_spk(struct usb_device_t *usb_device)
     usb_g_set_intr_hander(usb_id, SPK_ISO_EP_OUT | USB_DIR_OUT, spk_transfer);
 
     usb_g_ep_config(usb_id, SPK_ISO_EP_OUT | USB_DIR_OUT, USB_ENDPOINT_XFER_ISOC, 1, ep_buffer, spk_frame_len);
-
 }
 static void close_spk(struct usb_device_t *usb_device)
 {
@@ -800,6 +811,7 @@ static void close_spk(struct usb_device_t *usb_device)
     uac_speaker_stream_close();
 
 }
+static u8 spk_itf_status;
 static u32 spk_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlrequest *setup)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
@@ -835,8 +847,10 @@ static u32 spk_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
             usb_set_setup_phase(usb_device, USB_EP0_STAGE_SETUP);
             if (setup->wValue == 1) { //alt 1
                 open_spk(usb_device);
+                spk_itf_status = 1;
             } else if (setup->wValue == 0) { //alt 0
                 close_spk(usb_device);
+                spk_itf_status = 0;
             } else {
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
             }
@@ -848,7 +862,7 @@ static u32 spk_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
         if (usb_root2_testing()) {
             usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
         } else {
-            if (setup->wLength) {
+            if (setup->wValue || (setup->wLength != 1)) {
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
             } else if (usb_device->bDeviceStates == USB_DEFAULT) {
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
@@ -856,7 +870,7 @@ static u32 spk_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
             } else if (usb_device->bDeviceStates == USB_CONFIGURED) {
                 tx_len = 1;
-                tx_payload[0] = 0x00;
+                tx_payload[0] = spk_itf_status;
                 usb_set_data_payload(usb_device, setup, tx_payload, tx_len);
             }
         }
@@ -875,27 +889,38 @@ static u32 spk_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
     }
     return ret;
 }
+static u8 mic_no_data;
 static void mic_transfer(struct usb_device_t *usb_device, u32 ep)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
-    u8 *ep_buffer = usb_get_ep_buffer(usb_id, MIC_ISO_EP_IN | USB_DIR_IN);
+    u8 *ep_buffer = uac_info->mic_dma_buffer;
 
     if (mic_samplingfrequency == 0) {
         mic_samplingfrequency = MIC_AUDIO_RATE;
     }
+
     u32 mic_frame_len = ((mic_samplingfrequency * MIC_AUDIO_RES / 8 * MIC_CHANNEL) / 1000);
     mic_frame_len += (mic_samplingfrequency % 1000 ? (MIC_AUDIO_RES / 8) * MIC_CHANNEL : 0);
 
     int len = uac_mic_stream_read(ep_buffer,  mic_frame_len);
+    if (len) {
+        mic_no_data = 0;
+    } else if (mic_no_data) {
+        len = mic_frame_len;
+        memset(ep_buffer, 0, len);
+    }
     usb_g_iso_write(usb_id, MIC_ISO_EP_IN, NULL, len);
 
 }
 static void open_mic(struct usb_device_t *usb_device)
 {
     log_info("%s", __func__);
+    mic_no_data = 1;
     const usb_dev usb_id = usb_device2id(usb_device);
+
     usb_enable_ep(usb_id, MIC_ISO_EP_IN);
-    u8 *ep_buffer = usb_get_ep_buffer(usb_id, MIC_ISO_EP_IN | USB_DIR_IN);
+
+    u8 *ep_buffer = uac_info->mic_dma_buffer;
 
     usb_g_set_intr_hander(usb_id, MIC_ISO_EP_IN | USB_DIR_IN, mic_transfer);
 
@@ -922,6 +947,7 @@ static void close_mic(struct usb_device_t *usb_device)
     usb_g_set_intr_hander(usb_id, MIC_ISO_EP_IN | USB_DIR_IN, NULL);
     uac_mic_stream_close();
 }
+static u8 mic_itf_status;
 static u32 mic_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlrequest *setup)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
@@ -957,8 +983,10 @@ static u32 mic_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
             usb_set_setup_phase(usb_device, USB_EP0_STAGE_SETUP);
             if (setup->wValue == 1) {//alt 1
                 open_mic(usb_device);
+                mic_itf_status = 1;
             } else if (setup->wValue == 0) { //alt 0
                 close_mic(usb_device);
+                mic_itf_status = 0;
             } else {
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
             }
@@ -969,7 +997,7 @@ static u32 mic_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
         if (usb_root2_testing()) {
             usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
         } else {
-            if (setup->wLength) {
+            if (setup->wValue || (setup->wLength != 1)) {
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
             } else if (usb_device->bDeviceStates == USB_DEFAULT) {
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
@@ -977,7 +1005,7 @@ static u32 mic_as_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
                 usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
             } else if (usb_device->bDeviceStates == USB_CONFIGURED) {
                 tx_len = 1;
-                tx_payload[0] = 0x00;
+                tx_payload[0] = mic_itf_status;
                 usb_set_data_payload(usb_device, setup, tx_payload, tx_len);
             }
         }
@@ -1000,14 +1028,8 @@ void spk_reset(struct usb_device_t *usb_device, u32 ift_num)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
     log_debug("%s", __func__);
-#if USB_ROOT2
-    usb_disable_ep(usb_id, SPK_ISO_EP_OUT);
-    /* uac_release(usb_id); */
-#else
-    u8 *ep_buffer;
-    ep_buffer = usb_get_ep_buffer(usb_id, SPK_ISO_EP_OUT);
+    u8 *ep_buffer = uac_info->spk_dma_buffer;
     usb_g_ep_config(usb_id, SPK_ISO_EP_OUT | USB_DIR_OUT, USB_ENDPOINT_XFER_ISOC, 1, ep_buffer, SPK_FRAME_LEN);
-#endif
 }
 u32 uac_spk_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 {
@@ -1072,8 +1094,7 @@ void mic_reset(struct usb_device_t *usb_device, u32 ift_num)
     usb_disable_ep(usb_id, SPK_ISO_EP_OUT);
     /* uac_release(usb_id); */
 #else
-    u8 *ep_buffer;
-    ep_buffer = usb_get_ep_buffer(usb_id, MIC_ISO_EP_IN | USB_DIR_IN);
+    u8 *ep_buffer = uac_info->mic_dma_buffer;
     usb_g_ep_config(usb_id, MIC_ISO_EP_IN | USB_DIR_IN, USB_ENDPOINT_XFER_ISOC, 1, ep_buffer, MIC_FRAME_LEN);
 #endif
 }
@@ -1166,10 +1187,10 @@ void audio_reset(struct usb_device_t *usb_device, u32 ift_num)
     /* uac_release(usb_id); */
 #else
     u8 *ep_buffer;
-    ep_buffer = usb_get_ep_buffer(usb_id, SPK_ISO_EP_OUT);
+    ep_buffer = uac_info->spk_dma_buffer;
     usb_g_ep_config(usb_id, SPK_ISO_EP_OUT | USB_DIR_OUT, USB_ENDPOINT_XFER_ISOC, 1, ep_buffer, SPK_FRAME_LEN);
 
-    ep_buffer = usb_get_ep_buffer(usb_id, MIC_ISO_EP_IN | USB_DIR_IN);
+    ep_buffer = uac_info->mic_dma_buffer;
     usb_g_ep_config(usb_id, MIC_ISO_EP_IN | USB_DIR_IN, USB_ENDPOINT_XFER_ISOC, 1, ep_buffer, MIC_FRAME_LEN);
 #endif
 }
@@ -1283,7 +1304,7 @@ u32 uac_audio_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
     i = tptr - ptr;
     return i;
 }
-u32 uac_register()
+u32 uac_register(const usb_dev usb_id)
 {
     if (uac_info == NULL) {
 #if USB_MALLOC_ENABLE
@@ -1296,6 +1317,8 @@ u32 uac_register()
         memset(&_uac_info, 0, sizeof(struct uac_info_t));
         uac_info = &_uac_info;
 #endif
+        uac_info->spk_dma_buffer = usb_alloc_ep_dmabuffer(usb_id, SPK_ISO_EP_OUT, SPK_FRAME_LEN);
+        uac_info->mic_dma_buffer = usb_alloc_ep_dmabuffer(usb_id, MIC_ISO_EP_IN | USB_DIR_IN, MIC_FRAME_LEN);
     }
     uac_info->spk_def_vol = vol_convert(uac_get_spk_vol());
     uac_info->spk_left_vol = uac_info->spk_def_vol;

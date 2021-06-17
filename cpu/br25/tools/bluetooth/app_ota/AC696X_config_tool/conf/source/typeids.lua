@@ -41,6 +41,8 @@ HW_CFG = {
 	charge =    	{id = 535},   --充电
 	lowpower =      {id = 536},   --低电电压
     mic_type =      {id = 537},  -- mic类型配置
+	sys_com_vol =   {id = 538},  -- 系统联合音量
+	call_com_vol =  {id = 539},  -- 电话联合音量
 };
 
 

@@ -151,7 +151,10 @@
 		*(.adpcm_encode_sparse_code)
 		*(.adpcm_encode_sparse_const)
 		. = ALIGN(4);
+		*(.lc3_decoder_code)
+		*(.lc3_decoder_const)
 
+		. = ALIGN(4);
 
 		*(.m4a_dec_sparse_code)
 		*(.m4a_dec_sparse_const)

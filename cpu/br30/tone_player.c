@@ -925,8 +925,8 @@ int tone_file_dec_start()
     extern u8 get_tone_once_vol(void);
     app_audio_state_switch(APP_AUDIO_STATE_WTONE, get_tone_once_vol());
 #else
-    app_audio_set_volume(APP_AUDIO_STATE_WTONE, get_tone_vol(), 1);
     app_audio_state_switch(APP_AUDIO_STATE_WTONE, get_tone_vol());
+    app_audio_set_volume(APP_AUDIO_STATE_WTONE, get_tone_vol(), 1);
 #endif
 #endif
 #if TCFG_USER_TWS_ENABLE

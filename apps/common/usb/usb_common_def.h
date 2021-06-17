@@ -24,6 +24,9 @@
 #define     USB_ROOT2   0
 
 /// board文件没有定义的宏,在这里定义,防止编译报warning
+#ifndef TCFG_PC_ENABLE
+#define TCFG_PC_ENABLE  0
+#endif
 #ifndef TCFG_UDISK_ENABLE
 #define TCFG_UDISK_ENABLE     0
 #endif

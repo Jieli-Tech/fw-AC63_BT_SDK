@@ -22,6 +22,9 @@
 
 #define FILE_DEC_DEST_PLAY			0 // 指定时间播放
 
+#define FILE_DEC_SAVE_FAT_TABLE_EN  1//seek 加速， 优化ape/m4a歌曲卡音问题
+#define FILE_DEC_SAVE_FAT_TABLE_SIZE	512
+
 enum {
     FILE_DEC_STREAM_CLOSE = 0,
     FILE_DEC_STREAM_OPEN,
@@ -35,7 +38,7 @@ struct file_dec_hdl {
     struct audio_eq_drc *eq_drc;//eq drc句柄
     struct audio_dec_breakpoint *dec_bp; // 断点
     s_pitchspeed_hdl *p_pitchspeed_hdl; // 变速变调句柄
-#if TCFG_EQ_DIVIDE_ENABLE
+#if defined(TCFG_EQ_DIVIDE_ENABLE) && TCFG_EQ_DIVIDE_ENABLE
     struct audio_eq_drc *eq_drc_rl_rr;//eq drc句柄
     struct audio_vocal_tract vocal_tract;//声道合并目标句柄
     struct audio_vocal_tract_ch synthesis_ch_fl_fr;//声道合并句柄
@@ -51,6 +54,7 @@ struct file_dec_hdl {
     u32 pcm_enc_flag : 1;	// pcm压缩成数据帧发送（如WAV等）
     u32 read_err : 2;		// 读数出错 0:no err， 1:fat err,  2:disk err
     u32 ab_repeat_status : 3;	// AB复读状态
+    u32 wait_add : 1;	// 是否马上得到执行
 
 #if TCFG_DEC_DECRYPT_ENABLE
     CIPHER mply_cipher;		// 解密播放
@@ -66,6 +70,10 @@ struct file_dec_hdl {
     u8 repeat_num;			// 无缝循环次数
     struct fixphase_repair_obj repair_buf;	// 无缝循环句柄
 #endif
+
+#if FILE_DEC_SAVE_FAT_TABLE_EN
+    u8	*fat_table;
+#endif//FILE_DEC_SAVE_FAT_TABLE_EN
 
     struct audio_dec_breakpoint *bp;	// 断点信息
 
@@ -110,9 +118,13 @@ int file_dec_get_status(void);
 void file_dec_set_stream_set_hdl(struct file_dec_hdl *dec,
                                  void (*stream_handler)(void *priv, int event, struct file_dec_hdl *),
                                  void *stream_priv);
-
+// 改变解码后充电状态
+void set_file_dec_start_pause(u8 file_dec_initial);
 // 获取文件解码hdl
 void *get_file_dec_hdl();
+
+//根据书签打开
+int file_dec_by_tmark(void *breakpoint, u16 size);
 
 #if (FILE_DEC_AB_REPEAT_EN)
 int file_dec_ab_repeat_switch(void);

@@ -17,7 +17,7 @@
  *默认是没有音量同步的，将音量设置到最大值，可以在vol_sync.c
  *该宏里面修改相应的设置。
  */
-#define TCFG_VOL_RESET_WHEN_NO_SUPPORT_VOL_SYNC	 1 //不支持音量同步的设备默认最大音量
+#define TCFG_VOL_RESET_WHEN_NO_SUPPORT_VOL_SYNC	 0 //不支持音量同步的设备默认最大音量
 
 #define MC_BIAS_ADJUST_DISABLE			0	//省电容mic偏置校准关闭
 #define MC_BIAS_ADJUST_ONE			 	1	//省电容mic偏置只校准一次（跟dac trim一样）

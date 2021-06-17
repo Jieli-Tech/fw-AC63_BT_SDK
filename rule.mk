@@ -25,27 +25,42 @@ objs_ver_out=$(objs_ver_out1:.o=.z.o)
 
 obj_files = $(objs_out) $(objs_cxx_out) $(obj_ls_out) $(obj_bs_out) $(objs_ver_out)
 dep_files = $(obj_files:.o=.d)
- 
+
+ifeq ($(cibuild),y)
+CC_ARGS += -w
+endif
+
 .PHONY: out archive clean dry_run
 
 .SUFFIXES:
 
 out: object
 ifeq ($(NEED_USED_LIST),y)
-	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU)/sdk_used_list.c -o $(ROOT)/cpu/$(CPU)/sdk_used_list.d
-	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU)/sdk_used_list.c -o $(ROOT)/cpu/$(CPU)/sdk_used_list.used
+	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU_DIR)/sdk_used_list.c -o $(ROOT)/cpu/$(CPU_DIR)/sdk_used_list.d
+	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU_DIR)/sdk_used_list.c -o $(ROOT)/cpu/$(CPU_DIR)/sdk_used_list.used
 endif
-	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU)/sdk_ld.c -o $(ROOT)/cpu/$(CPU)/sdk_ld.d
-	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU)/sdk_ld.c -o $(ROOT)/cpu/$(CPU)/sdk.ld
-ifneq (,$(wildcard $(ROOT)/cpu/$(CPU)/tools/download.c))
-	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU)/tools/download.c -o $(ROOT)/cpu/$(CPU)/tools/download.d || true 
-	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU)/tools/download.c -o $(POST_BUILD_SCRIPT) || true 
-endif
+	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU_DIR)/sdk_ld.c -o $(ROOT)/cpu/$(CPU_DIR)/sdk_ld.d
+	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU_DIR)/sdk_ld.c -o $(ROOT)/cpu/$(CPU_DIR)/sdk.ld
 
-ifneq (,$(wildcard $(ROOT)/cpu/$(CPU)/tools/isd_config.c))
-	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU)/tools/isd_config.c -o $(ROOT)/cpu/$(CPU)/tools/isd_config.d || true 
-	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU)/tools/isd_config.c -o $(ROOT)/cpu/$(CPU)/tools/isd_config.ini || true 
+
+#ifneq (,$(filter $(APP_CASE), hid))
+ifeq ($(SoC),br30)
+ifneq (,$(wildcard $(ROOT)/cpu/$(CPU_DIR)/tools/isd_config.c))
+	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU_DIR)/tools/isd_config.c -o $(ROOT)/cpu/$(CPU_DIR)/tools/isd_config.d || true 
+	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU_DIR)/tools/isd_config.c -o $(ROOT)/cpu/$(CPU_DIR)/tools/isd_config.ini || true 
 endif
+ifneq (,$(wildcard $(ROOT)/cpu/$(CPU_DIR)/tools/download.c))
+	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU_DIR)/tools/download.c -o $(ROOT)/cpu/$(CPU_DIR)/tools/download.d || true 
+	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU_DIR)/tools/download.c -o $(POST_BUILD_SCRIPT) || true 
+endif
+else  
+ifneq (,$(wildcard $(ROOT)/cpu/$(CPU_DIR)/tools/download.c))
+	@$(CC) -MM $(SYS_INCLUDES) $(includes) -D__LD__ $(CC_DEFINE) $(ROOT)/cpu/$(CPU_DIR)/tools/download.c -o $(ROOT)/cpu/$(CPU_DIR)/tools/download.d || true 
+	$(V) $(CC) $(SYS_INCLUDES) $(includes) -E -D__LD__ $(CC_DEFINE) -P $(ROOT)/cpu/$(CPU_DIR)/tools/download.c -o $(POST_BUILD_SCRIPT) || true 
+endif
+endif  #APP_CASE
+
+
 
 	$(V) $(LD) $(LD_ARGS) -o $(OUTPUT_ELF) $(obj_files) $(SYS_LIBS) $(LIBS) $(LINKER) 
 ifneq ($(cibuild),y)
@@ -60,6 +75,11 @@ endif
 endif
 ifeq ($(HOST_OS),windows)
 	@cd $(DIR_OUTPUT) && $(POST_BUILD_SCRIPT) $(ELF)
+endif
+ifeq ($(cibuild),y)
+ifneq (,$(wildcard $(ROOT)/cpu/$(CPU_DIR)/tools/export_postprocess.sh))
+	@cd $(DIR_OUTPUT) && bash $(ROOT)/cpu/$(CPU_DIR)/tools/export_postprocess.sh
+endif
 endif
 
 archive: object 

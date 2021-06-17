@@ -41,8 +41,13 @@ struct high_bass {
 
 typedef struct eq_fade {
     u16 tmr;
+#ifdef EQ_CORE_V1
+    float cur_gain[2];
+    float use_gain[2];
+#else
     int cur_gain[2];
     int use_gain[2];
+#endif
 } audio_eq_fade_cfg;
 
 
@@ -93,39 +98,4 @@ void audio_eq_drc_close(struct audio_eq_drc *hdl);
 int  audio_eq_drc_parm_update(struct  audio_eq_drc  *hdl,  u32 cmd, void  *parm);
 
 
-
-
-/*----------------------------------------------------------------------------*/
-/**@brief    audio_eq_open重新封装，简化使用,该接口不接入audio_stream流处理
-   @param    *parm: eq参数句柄,参数详见结构体struct audio_eq_param
-   @return   eq句柄
-   @note
-*/
-/*----------------------------------------------------------------------------*/
-struct audio_eq *audio_dec_eq_open(struct audio_eq_param *parm);
-/*----------------------------------------------------------------------------*/
-/**@brief    audio_eq_close重新封装，简化使用,该接口不接入audio_stream流处理
-   @param    eq句柄
-   @return
-   @note
-*/
-/*----------------------------------------------------------------------------*/
-void audio_dec_eq_close(struct audio_eq *eq);
-
-/*----------------------------------------------------------------------------*/
-/**@brief    audio_drc_open重新封装，简化使用,该接口不接入audio_stream流处理
-   @param    *parm: drc参数句柄,参数详见结构体struct audio_drc_param
-   @return   eq句柄
-   @note
-*/
-/*----------------------------------------------------------------------------*/
-struct audio_drc *audio_dec_drc_open(struct audio_drc_param *parm);
-/*----------------------------------------------------------------------------*/
-/**@brief    audio_drc_close重新封装，简化使用,该接口不接入audio_stream流处理
-   @param    drc句柄
-   @return
-   @note
-*/
-/*----------------------------------------------------------------------------*/
-void audio_dec_drc_close(struct audio_drc *drc);
 #endif

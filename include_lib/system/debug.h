@@ -4,6 +4,23 @@
 #include "asm/cpu.h"
 #include "generic/typedef.h"
 
+// -- output terminal color
+#define RedBold             "\033[31;1m" // 红色加粗
+#define RedBoldBlink        "\033[31;1;5m" // 红色加粗、闪烁
+#define GreenBold             "\033[32;1m" // 红色加粗
+#define GreenBoldBlink        "\033[32;1;5m" // 红色加粗、闪烁
+#define YellowBold             "\033[33;1m" // 红色加粗
+#define YellowBoldBlink        "\033[33;1;5m" // 红色加粗、闪烁
+#define BlueBold            "\033[34;1m" // 蓝色加粗
+#define BlueBoldBlink       "\033[34;1;5m" // 蓝色加粗、闪烁
+#define PurpleBold          "\033[35;1m"   // 紫色加粗
+#define PurpleBoldBlink     "\033[35;1;5m" // 紫色加粗、闪烁
+#define DGreenBold             "\033[36;1m" // 红色加粗
+#define DGreenBoldBlink        "\033[36;1;5m" // 红色加粗、闪烁
+#define WhiteBold             "\033[37;1m" // 红色加粗
+#define WhiteBoldBlink        "\033[37;1;5m" // 红色加粗、闪烁
+#define Reset               "\033[0;25m"   // 颜色复位
+
 #define LOG_ASSERT_ENABLE
 
 void printf_buf(u8 *buf, u32 len);

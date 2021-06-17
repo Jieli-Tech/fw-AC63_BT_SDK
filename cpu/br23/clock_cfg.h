@@ -95,6 +95,7 @@ enum {
     AI_SPEECH_CLK,
     SMARTBOX_ACTION_CLK,
 
+    ADAPTER_PROCESS_CLK,
     ENUM_MAX_CLK = 63	,
 };
 

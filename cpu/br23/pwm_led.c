@@ -394,7 +394,7 @@ static int _led_pwm0_clk_set(enum _PWM0_CLK clk0)
         }
         pwm0_clk_div_val = CLK_DIV_1;  		//RC32k div 1 = 32k
     } else {
-#if CONFIG_FPGA_ENABLE
+#ifdef CONFIG_FPGA_ENABLE
         //12M
         if (clk0 == PWM0_CLK_46K) {
             pwm0_clk_div_val = CLK_DIV_x256(CLK_DIV_1);  //12M div 256 = 46875Hz

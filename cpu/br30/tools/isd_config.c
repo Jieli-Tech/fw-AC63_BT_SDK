@@ -14,7 +14,7 @@
 
 #if CONFIG_DOUBLE_BANK_ENABLE
 BR22_TWS_DB=YES;	//dual bank flash framework enable
-FLASH_SIZE=1M;		//flash_size cfg
+FLASH_SIZE=2M;		//flash_size cfg
 BR22_TWS_VERSION=0; //default fw version
 
 DB_UPDATE_DATA=YES; //generate db_update_data.bin

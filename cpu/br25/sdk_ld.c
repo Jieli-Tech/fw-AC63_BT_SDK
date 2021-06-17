@@ -371,7 +371,7 @@ SECTIONS
         . = ALIGN(4);
 		*(.non_volatile_ram)
 		. = ALIGN(32);
-#if TCFG_VIR_UDISK_ENABLE == 1
+#if (USB_MEM_NO_USE_OVERLAY_EN)
         *(.usb_audio_play_dma)
         *(.usb_audio_rec_dma)
         *(.uac_rx)
@@ -643,7 +643,7 @@ SECTIONS
 		}
         .overlay_pc
 		{
-#if TCFG_VIR_UDISK_ENABLE == 0
+#if (!USB_MEM_NO_USE_OVERLAY_EN)
             *(.usb_audio_play_dma)
             *(.usb_audio_rec_dma)
             *(.uac_rx)

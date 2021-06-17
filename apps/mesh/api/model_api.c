@@ -1,6 +1,5 @@
 #include "btstack/bluetooth.h"
 #include "system/includes.h"
-#include "device/vm.h"
 #include "bt_common.h"
 #include "api/sig_mesh_api.h"
 #include "model_api.h"
@@ -26,16 +25,10 @@ typedef enum _INFO_SETTING_INDEX {
     // ...more to add
 } INFO_SETTING_INDEX;
 
-/* #define vm_write            syscfg_write */
-/* #define vm_read             syscfg_read */
-/* #define vm_open(...)        MAC_ADDR_INDEX */
 
 u16_t primary_addr;
 static u16_t primary_net_idx;
 
-extern s32 vm_open(u16 index);
-extern s32 vm_write(vm_hdl hdl, u8 *data_buf, u16 len);
-extern s32 vm_read(vm_hdl hdl, u8 *data_buf, u16 len);
 extern void pseudo_random_genrate(uint8_t *dest, unsigned size);
 extern uint32_t btctler_get_rand_from_assign_range(uint32_t rand, uint32_t min, uint32_t max);
 extern char *bd_addr_to_str(u8 addr[6]);
@@ -85,12 +78,11 @@ static bool info_load(INFO_SETTING_INDEX index, void *buf, u16 len)
 {
     int ret;
 
-    vm_hdl hdl = vm_open(index);
-    log_info("vm hdl=0x%x", hdl);
-    ret = vm_read(hdl, (u8 *)buf, len);
+    log_info("syscfg id = 0x%x", index);
+    ret = syscfg_read(index, (u8 *)buf, len);
     log_info("ret = %d\n", ret);
     if (ret != len) {
-        log_info("vm_read err\n");
+        log_info("syscfg_read err\n");
         log_info("ret = %d\n", ret);
         return 1;
     }
@@ -102,18 +94,11 @@ static void info_store(INFO_SETTING_INDEX index, void *buf, u16 len)
 {
     int ret;
 
-    vm_check_all(0);
-
-    vm_hdl hdl = vm_open(index);
-    log_info("vm hdl=0x%x", hdl);
-    ret = vm_write(hdl, (u8 *)buf, len);
-    if (ret != len) {
-        log_info("vm_read err\n");
-        log_info("ret = %d\n", ret);
-    }
+    log_info("syscfg id = 0x%x", index);
+    ret = syscfg_write(index, (u8 *)buf, len);
 
     if (ret != len) {
-        log_info("vm_write err\n");
+        log_info("syscfg_write err\n");
         log_info("ret = %d\n", ret);
     }
 }

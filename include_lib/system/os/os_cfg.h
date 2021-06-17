@@ -114,4 +114,22 @@ date : 2014-07-03 09:09
 #define OS_CPU_NUM  					CPU_CORE_NUM
 #endif /* #ifndef OS_CPU_NUM */
 
+
+#ifndef OS_MBOX_EN
+#define OS_MBOX_EN 0
+#endif
+
+#ifndef OS_MEM_EN
+#define OS_MEM_EN 0
+#endif
+
+
+#ifndef configAPPLICATION_ALLOCATED_HEAP
+#define configAPPLICATION_ALLOCATED_HEAP 0
+#endif
+
+#ifndef configUSE_MALLOC_FAILED_HOOK
+#define configUSE_MALLOC_FAILED_HOOK 0
+#endif
+
 #endif

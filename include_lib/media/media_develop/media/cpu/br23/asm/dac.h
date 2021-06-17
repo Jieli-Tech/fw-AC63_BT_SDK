@@ -319,7 +319,8 @@ void audio_dac_irq_handler(struct audio_dac_hdl *dac);
  *=======================================================================*/
 int audio_dac_set_buff(struct audio_dac_hdl *dac, s16 *buf, int len);
 
-int audio_dac_write(struct audio_dac_hdl *dac, void *buf, int len);
+
+int audio_dac_write(struct audio_dac_channel *ch, void *buf, int len);
 
 s16 *audio_dac_get_write_ptr(struct audio_dac_hdl *dac, int *len);
 
@@ -357,6 +358,8 @@ int audio_dac_ch_set_analog_vol(struct audio_dac_hdl *dac, u8 channel, u16 vol);
 int audio_dac_start(struct audio_dac_hdl *dac);
 
 int audio_dac_stop(struct audio_dac_hdl *dac);
+
+int audio_dac_channel_stop(struct audio_dac_channel *ch);
 
 int audio_dac_idle(struct audio_dac_hdl *dac);
 

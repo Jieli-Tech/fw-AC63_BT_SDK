@@ -1,9 +1,9 @@
-#ifndef _RCSP_ADV_TWS_OTA_H
-#define _RCSP_ADV_TWS_OTA_H
+#ifndef _UPRATE_TWS_NEW_H
+#define _UPRATE_TWS_NEW_H
 
 #include "app_config.h"
 
-#if (OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || TME_EN || XM_MMA_EN || GMA_EN))
+#if (OTA_TWS_SAME_TIME_ENABLE &&  OTA_TWS_SAME_TIME_NEW)//(RCSP_ADV_EN || AI_APP_PROTOCOL))
 
 #define SYS_BT_OTA_EVENT_TYPE_STATUS (('O' << 24) | ('T' << 16) | ('A' << 8) | '\0')
 #define TWS_FUNC_ID_OTA_TRANS	(('O' << (3 * 8)) | ('T' << (2 * 8)) | ('A' << (1 * 8)) | ('\0'))

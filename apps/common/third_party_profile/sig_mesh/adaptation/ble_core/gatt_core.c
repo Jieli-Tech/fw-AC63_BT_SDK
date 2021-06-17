@@ -11,6 +11,8 @@
 #include "prov.h"
 #include "ble/hci_ll.h"
 #include "btstack/bluetooth.h"
+#include "ble_user.h"
+#include "app_config.h"
 
 #define LOG_TAG             "[MESH-gatt_core]"
 #define LOG_INFO_ENABLE
@@ -19,6 +21,17 @@
 #define LOG_ERROR_ENABLE
 #define LOG_DUMP_ENABLE
 #include "mesh_log.h"
+
+static u8 ble_work_state = 0;      //ble 状态变化
+static void (*app_recieve_callback)(void *priv, void *buf, u16 len) = NULL;
+static void (*app_ble_state_callback)(void *priv, ble_state_e state) = NULL;
+static void (*ble_resume_send_wakeup)(void) = NULL;
+
+#if RCSP_BTMATE_EN
+#define ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE 0x82
+#define ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE 0x84
+#define ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE 0x85
+#endif
 
 #if ADAPTATION_COMPILE_DEBUG
 
@@ -123,6 +136,8 @@ static const struct bt_data node_id_ad[] = {
 #define BLE_DEV_NAME            'J', 'L', '_','M', 'E', 'S', 'H'
 #define BLE_DEV_NAME_LEN        BYTE_LEN(BLE_DEV_NAME)
 
+static u8 ble_mesh_gap_name[32] = {'J', 'L', '_', 'M', 'E', 'S', 'H', 0};
+static u8 ble_mesh_gap_name_len = 7;
 /*
  * Mesh_v1.0 7.1 Mesh Provisioning Service
  */
@@ -142,8 +157,15 @@ static const u8 Provisioning_Service(profile_data)[] = {
     ///--Primary Service Declaration:Generic Access
     10, 0x00,                    0x02, 0x00,    0x01, 0x00,                     0x00, 0x28,     0x00, 0x18,                                     //primary service declaration
     //< characteristic declaration:Device Name
-    13, 0x00,                    0x02, 0x00,    0x02, 0x00,                     0x03, 0x28,     0x02, 0x03, 0x00, 0x00, 0x2A,                   //characteristic declaration
-    8 + BLE_DEV_NAME_LEN, 0x00,  0x02, 0x00,    0x03, 0x00,                     0x00, 0x2A,     BLE_DEV_NAME,                                   //device name
+    /* 13, 0x00,                    0x02, 0x00,    0x02, 0x00,                     0x03, 0x28,     0x02, 0x03, 0x00, 0x00, 0x2A,                   //characteristic declaration */
+    /* 8 + BLE_DEV_NAME_LEN, 0x00,  0x02, 0x00,    0x03, 0x00,                     0x00, 0x2A,     BLE_DEV_NAME,                                   //device name */
+
+    /* CHARACTERISTIC,  2a00, READ | DYNAMIC, */
+    // 0x0002 CHARACTERISTIC 2a00 READ | DYNAMIC
+    0x0d, 0x00, 0x02, 0x00, 0x02, 0x00, 0x03, 0x28, 0x02, 0x03, 0x00, 0x00, 0x2a,
+    // 0x0003 VALUE 2a00 READ | DYNAMIC
+    0x08, 0x00, 0x02, 0x01, 0x03, 0x00, 0x00, 0x2a,
+
 
     ///--Primary Service Declaration:Generic Attribute
     10, 0x00,                    0x02, 0x00,    0x04, 0x00,                     0x00, 0x28,     0x01, 0x18,                                     //primary service declaration
@@ -163,6 +185,28 @@ static const u8 Provisioning_Service(profile_data)[] = {
     //< client characteristic configuration
     10, 0x00,                    0x0A, 0x01,    MESH_PROV_CONFIG_HANDLE, 0x00,  0x02, 0x29,     0x00, 0x00,
 
+#if RCSP_BTMATE_EN
+    //////////////////////////////////////////////////////
+    //
+    // 0x0080 PRIMARY_SERVICE  ae00
+    //
+    //////////////////////////////////////////////////////
+    0x0a, 0x00, 0x02, 0x00, 0x80, 0x00, 0x00, 0x28, 0x00, 0xae,
+
+    /* CHARACTERISTIC,  ae01, WRITE_WITHOUT_RESPONSE | DYNAMIC, */
+    // 0x0081 CHARACTERISTIC ae01 WRITE_WITHOUT_RESPONSE | DYNAMIC
+    0x0d, 0x00, 0x02, 0x00, 0x81, 0x00, 0x03, 0x28, 0x04, 0x82, 0x00, 0x01, 0xae,
+    // 0x0082 VALUE ae01 WRITE_WITHOUT_RESPONSE | DYNAMIC
+    0x08, 0x00, 0x04, 0x01, ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE,  0x00, 0x01, 0xae,
+
+    /* CHARACTERISTIC,  ae02, NOTIFY, */
+    // 0x0083 CHARACTERISTIC ae02 NOTIFY
+    0x0d, 0x00, 0x02, 0x00, 0x83, 0x00, 0x03, 0x28, 0x10, 0x84, 0x00, 0x02, 0xae,
+    // 0x0084 VALUE ae02 NOTIFY
+    0x08, 0x00, 0x10, 0x00, ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE,  0x00, 0x02, 0xae,
+    // 0x0085 CLIENT_CHARACTERISTIC_CONFIGURATION
+    0x0a, 0x00, 0x0a, 0x01, ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE, 0x00, 0x02, 0x29, 0x00, 0x00,
+#endif
     // END
     0x00, 0x00,
 };
@@ -177,8 +221,14 @@ static const uint8_t Proxy_Service(profile_data)[] = {
     ///--Primary Service Declaration:Generic Access
     10, 0x00,                    0x02, 0x00,    0x01, 0x00,                     0x00, 0x28,     0x00, 0x18,                                     //primary service declaration
     //< characteristic declaration:Device Name
-    13, 0x00,                    0x02, 0x00,    0x02, 0x00,                     0x03, 0x28,     0x02, 0x03, 0x00, 0x00, 0x2A,                   //characteristic declaration
-    8 + BLE_DEV_NAME_LEN, 0x00,  0x02, 0x00,    0x03, 0x00,                     0x00, 0x2A,     BLE_DEV_NAME,                                   //device name
+    /* 13, 0x00,                    0x02, 0x00,    0x02, 0x00,                     0x03, 0x28,     0x02, 0x03, 0x00, 0x00, 0x2A,                   //characteristic declaration */
+    /* 8 + BLE_DEV_NAME_LEN, 0x00,  0x02, 0x00,    0x03, 0x00,                     0x00, 0x2A,     BLE_DEV_NAME,                                   //device name */
+
+    /* CHARACTERISTIC,  2a00, READ | DYNAMIC, */
+    // 0x0002 CHARACTERISTIC 2a00 READ | DYNAMIC
+    0x0d, 0x00, 0x02, 0x00, 0x02, 0x00, 0x03, 0x28, 0x02, 0x03, 0x00, 0x00, 0x2a,
+    // 0x0003 VALUE 2a00 READ | DYNAMIC
+    0x08, 0x00, 0x02, 0x01, 0x03, 0x00, 0x00, 0x2a,
 
     ///--Primary Service Declaration:Generic Attribute
     10, 0x00,                    0x02, 0x00,    0x04, 0x00,                     0x00, 0x28,     0x01, 0x18,                                     //primary service declaration
@@ -198,11 +248,39 @@ static const uint8_t Proxy_Service(profile_data)[] = {
     //< client characteristic configuration
     10, 0x00,                    0x0A, 0x01,    MESH_PROXY_CONFIG_HANDLE, 0x00, 0x02, 0x29,     0x00, 0x00,
 
+#if RCSP_BTMATE_EN
+    //////////////////////////////////////////////////////
+    //
+    // 0x0080 PRIMARY_SERVICE  ae00
+    //
+    //////////////////////////////////////////////////////
+    0x0a, 0x00, 0x02, 0x00, 0x80, 0x00, 0x00, 0x28, 0x00, 0xae,
+
+    /* CHARACTERISTIC,  ae01, WRITE_WITHOUT_RESPONSE | DYNAMIC, */
+    // 0x0081 CHARACTERISTIC ae01 WRITE_WITHOUT_RESPONSE | DYNAMIC
+    0x0d, 0x00, 0x02, 0x00, 0x81, 0x00, 0x03, 0x28, 0x04, 0x82, 0x00, 0x01, 0xae,
+    // 0x0082 VALUE ae01 WRITE_WITHOUT_RESPONSE | DYNAMIC
+    0x08, 0x00, 0x04, 0x01, ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE,  0x00, 0x01, 0xae,
+
+    /* CHARACTERISTIC,  ae02, NOTIFY, */
+    // 0x0083 CHARACTERISTIC ae02 NOTIFY
+    0x0d, 0x00, 0x02, 0x00, 0x83, 0x00, 0x03, 0x28, 0x10, 0x84, 0x00, 0x02, 0xae,
+    // 0x0084 VALUE ae02 NOTIFY
+    0x08, 0x00, 0x10, 0x00, ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE,  0x00, 0x02, 0xae,
+    // 0x0085 CLIENT_CHARACTERISTIC_CONFIGURATION
+    0x0a, 0x00, 0x0a, 0x01, ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE, 0x00, 0x02, 0x29, 0x00, 0x00,
+#endif
     // END
     0x00, 0x00,
 };
 
+
+#define ATT_CHARACTERISTIC_2a00_01_VALUE_HANDLE 0x0003
+
 static u8 mesh_gatt_buf[0x100];
+
+//gatt flag 0 for provisioning, 1 for proxy
+static u8 gatt_server_flag;
 
 extern struct bt_conn conn;
 extern int mesh_gatt_notify(u16 conn_handle, u16 att_handle, const void *data, u16_t len);
@@ -216,6 +294,16 @@ extern void ble_set_adv_data(u8 data_length, u8 *data);
 extern void ble_set_scan_rsp_data(u8 data_length, u8 *data);
 extern void get_mesh_adv_name(u8 *len, u8 **data);
 extern int le_controller_get_mac(void *addr);
+
+void mesh_set_gap_name(const u8 *name)
+{
+    ble_mesh_gap_name_len = strlen(name);
+    if (ble_mesh_gap_name_len > 30) {
+        ble_mesh_gap_name_len = 30;
+    }
+    memcpy(ble_mesh_gap_name, name, ble_mesh_gap_name_len);
+    ble_mesh_gap_name[ble_mesh_gap_name_len] = 0;
+}
 
 static void get_prov_properties_capabilities(u8 *adv_data)
 {
@@ -292,9 +380,58 @@ static void Proxy_Service(change_adv_info)(u16 interval_ms)
     ble_set_scan_rsp_data(rsp_len, rsp_data);
 }
 
+u8 *ble_get_scan_rsp_ptr(u16 *len)
+{
+    u8 rsp_len;
+    u8 *rsp_data;
+    get_mesh_adv_name(&rsp_len, &rsp_data);
+    if (len) {
+        *len = rsp_len;
+    }
+    return rsp_data;
+}
+
+u8 *ble_get_adv_data_ptr(u16 *len)
+{
+    if (len) {
+        *len = sizeof(Provisioning_Service(adv_data));
+    }
+    return Provisioning_Service(adv_data);
+}
+
+u8 *ble_get_gatt_profile_data(u16 *len)
+{
+    *len = (gatt_server_flag) ? sizeof(Proxy_Service(profile_data)) : sizeof(Provisioning_Service(profile_data));
+    return (gatt_server_flag) ? (u8 *)Proxy_Service(profile_data) : (u8 *)Provisioning_Service(profile_data);
+}
+
 u8 *get_server_data_addr(void)
 {
     return proxy_svc_data;
+}
+
+void mesh_can_send_now_wakeup(void)
+{
+    putchar('E');
+    if (ble_resume_send_wakeup) {
+        ble_resume_send_wakeup();
+    }
+}
+
+void mesh_set_ble_work_state(ble_state_e state)
+{
+    if (state != ble_work_state) {
+        log_info("ble_work_st:%x->%x\n", ble_work_state, state);
+        ble_work_state = state;
+        if (app_ble_state_callback) {
+            app_ble_state_callback((void *)NULL, state);
+        }
+    }
+}
+
+static ble_state_e get_ble_work_state(void)
+{
+    return ble_work_state;
 }
 
 static u16 gatt_read_callback(u16 conn_handle, u16 att_handle, u16 offset, u8 *buf, u16 buf_len)
@@ -302,12 +439,41 @@ static u16 gatt_read_callback(u16 conn_handle, u16 att_handle, u16 offset, u8 *b
     BT_INFO("read att_handle %04x", att_handle);
     BT_INFO_HEXDUMP(buf, buf_len);
 
-    return 0;
+    uint16_t  att_value_len = 0;
+    uint16_t handle = att_handle;
+
+    switch (handle) {
+    case ATT_CHARACTERISTIC_2a00_01_VALUE_HANDLE:
+        att_value_len = ble_mesh_gap_name_len;
+        if ((offset >= att_value_len) || (offset + buf_len) > att_value_len) {
+            break;
+        }
+
+        if (buf) {
+            memcpy(buf, &ble_mesh_gap_name[offset], buf_len);
+            att_value_len = buf_len;
+            log_info("------read mesh gap_name: %s\n", ble_mesh_gap_name);
+        }
+        break;
+
+#if RCSP_BTMATE_EN
+    case ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE:
+        buf[0] = att_get_ccc_config(handle);
+        buf[1] = 0;
+        att_value_len = 2;
+        break;
+#endif
+    default:
+        break;
+    }
+
+    log_info("att_value_len= %d\n", att_value_len);
+    return att_value_len;
 }
 
 static int gatt_write_callback(u16 conn_handle, u16 att_handle, u16 mode, u16 offset, u8 *buf, u16 buf_len)
 {
-    BT_INFO("write att_handle 0x%04x, mode %u", att_handle, mode);
+    printf("write att_handle 0x%04x, mode %u", att_handle, mode);
     BT_INFO_HEXDUMP(buf, buf_len);
 
     if (FALSE == bt_mesh_is_provisioned()) {
@@ -333,6 +499,23 @@ static int gatt_write_callback(u16 conn_handle, u16 att_handle, u16 mode, u16 of
                    buf,
                    buf_len, offset, 0);
         break;
+
+#if RCSP_BTMATE_EN
+    case ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE:
+        printf("rcsp_read:%x\n", buf_len);
+        if (app_recieve_callback) {
+            app_recieve_callback((void *)NULL, buf, buf_len);
+        }
+        break;
+
+    case ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE:
+        mesh_set_ble_work_state(BLE_ST_NOTIFY_IDICATE);
+        /* check_connetion_updata_deal(); */
+        log_info("\n------write ccc:%04x, %02x\n", att_handle, buf[0]);
+        att_set_ccc_config(att_handle, buf[0]);
+        mesh_can_send_now_wakeup();
+        break;
+#endif
     }
 
     return 0;
@@ -350,10 +533,12 @@ void bt_gatt_service_register(u32 uuid)
         BT_INFO("BT_UUID_MESH_PROV");
         mesh_gatt_change_profile(Provisioning_Service(profile_data));
         Provisioning_Service(change_adv_info)();
+        gatt_server_flag = 0;
         break;
     case BT_UUID_MESH_PROXY:
         BT_INFO("BT_UUID_MESH_PROXY");
         mesh_gatt_change_profile(Proxy_Service(profile_data));
+        gatt_server_flag = 1;
         break;
     default :
         break;
@@ -422,5 +607,87 @@ void proxy_gatt_init(void)
 
     mesh_gatt_init(mesh_gatt_buf, sizeof(mesh_gatt_buf));
 }
+
+#if RCSP_BTMATE_EN
+extern void ble_app_disconnect(void);
+
+static int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type)
+{
+    u32 ret = APP_BLE_NO_ERROR;
+
+    if (!handle) {
+        return APP_BLE_OPERATION_ERROR;
+    }
+
+    if (!att_get_ccc_config(handle + 1)) {
+        log_info("fail,no write ccc!!!,%04x\n", handle + 1);
+        return APP_BLE_NO_WRITE_CCC;
+    }
+
+    ret = ble_op_att_send_data(handle, data, len, handle_type);
+    if (ret == BLE_BUFFER_FULL) {
+        ret = APP_BLE_BUFF_FULL;
+    }
+
+    if (ret) {
+        log_info("app_send_fail:%d !!!!!!\n", ret);
+    }
+    return ret;
+}
+
+static int rcsp_send_user_data_do(void *priv, u8 *data, u16 len)
+{
+#if RCSP_BTMATE_EN
+    log_info("rcsp_tx:%x\n", len);
+#if PRINT_DMA_DATA_EN
+    if (len < 128) {
+        log_info("-dma_tx(%d):");
+        log_info_hexdump(data, len);
+    } else {
+        putchar('L');
+    }
+#endif
+    return app_send_user_data(ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE, data, len, ATT_OP_AUTO_READ_CCC);
+#else
+    return 0;
+#endif
+}
+
+static int regiest_wakeup_send(void *priv, void *cbk)
+{
+    ble_resume_send_wakeup = cbk;
+    return APP_BLE_NO_ERROR;
+}
+
+static int regiest_recieve_cbk(void *priv, void *cbk)
+{
+    //channel_priv = (u32)priv;
+    app_recieve_callback = cbk;
+    return APP_BLE_NO_ERROR;
+}
+
+static int regiest_state_cbk(void *priv, void *cbk)
+{
+    //channel_priv = (u32)priv;
+    app_ble_state_callback = cbk;
+    return APP_BLE_NO_ERROR;
+}
+
+static const struct ble_server_operation_t mi_ble_operation = {
+    .adv_enable = NULL,
+    .disconnect = ble_app_disconnect,
+    .get_buffer_vaild = NULL,
+    .send_data = (void *)rcsp_send_user_data_do,
+    .regist_wakeup_send = regiest_wakeup_send,
+    .regist_recieve_cbk = regiest_recieve_cbk,
+    .regist_state_cbk = regiest_state_cbk,
+};
+
+void ble_get_server_operation_table(struct ble_server_operation_t **interface_pt)
+{
+    *interface_pt = (void *)&mi_ble_operation;
+}
+#endif
+
 
 #endif /* ADAPTATION_COMPILE_DEBUG */

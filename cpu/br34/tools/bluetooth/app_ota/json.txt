@@ -1,0 +1,56 @@
+{
+    "output": "config.dat",
+    "defines":
+    {
+        "DEFINE1": "0xA",
+        "DEFINE2": "0xB",
+        "DEFINE3": "0xC",
+        "DEFINE4": "default4",
+        "DEFINE5": "default5",
+        "DEFINE6":    1234,
+        "DEFINE7":    1,
+        "DEFINE8":    2,
+        "DEFINE9":    3234,
+        "DEFINE10":  4
+    },
+    "items":
+    [
+        {
+            "name": "ver_info",
+			"说明": "版本信息:VID(2byte),PID(2byte),VER(2byte)",
+            "type":   "ARRAY",
+            "data":   "0x00, 0x02, 0x00, 0x33, 0x00, 0x01"
+        },
+		{
+			"name": "ver_info_ext",
+			"说明": "额外信息(AuthKey,ProCode)",
+			"type": "STRING",
+			"data": "hE9yfseX6UdK7rFh,jl_sdk_ac697_publish"
+		},
+		{
+			"name": "reset_io",
+			"说明": "uboot中PR口长按复位io选择,目前可配0、1、2、3",
+			"type": "STRING",
+			"data": "1"
+		},
+		{
+			"name": "pilot_lamp_io",
+			"说明": "uboot中led指示灯IO配置,目前可配PA、PB、PC、PD",
+			"type": "STRING",
+			"data": "PB03"
+		},
+		{
+			"name": "link_key",
+			"说明": "用于link_key_data的配置",
+			"type": "ARRAY",
+			"data": "0x06, 0x77, 0x5f, 0x87, 0x91, 0x8d, 0xd4, 0x23, 0x00, 0x5d, 0xf1, 0xd8, 0xcf, 0x0c, 0x14, 0x2b"
+		},
+		{
+			"name": "power_io",
+			"说明": "用与电源io的配置,0代表低电平,1代表高电平",
+			"type": "STRING",
+			"data": "PC03_1"
+		}
+    ]
+}
+

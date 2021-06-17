@@ -184,31 +184,19 @@
 //*********************************************************************************//
 #define TCFG_LP_TOUCH_KEY_ENABLE 			DISABLE_THIS_MOUDLE 		//是否使能触摸按键
 
-//*********************************************************************************//
-//                             tocuh key 配置                                      //
-//*********************************************************************************//
-#define TCFG_TOUCH_KEY_ENABLE 				DISABLE_THIS_MOUDLE 		//是否使能触摸按键
 
-/* 触摸按键计数参考时钟选择, 频率越高, 精度越高
-** 可选参数:
-	1.TOUCH_KEY_OSC_CLK,
-    2.TOUCH_KEY_MUX_IN_CLK,  //外部输入, ,一般不用, 保留
-    3.TOUCH_KEY_PLL_192M_CLK,
-    4.TOUCH_KEY_PLL_240M_CLK,
-*/
-#define TCFG_TOUCH_KEY_CLK 					TOUCH_KEY_PLL_240M_CLK 	//触摸按键时钟配置
-#define TCFG_TOUCH_KEY_CHANGE_GAIN 			4 	//变化放大倍数, 一般固定
-#define TCFG_TOUCH_KEY_PRESS_CFG 			-100//触摸按下灵敏度, 类型:s16, 数值越大, 灵敏度越高
-#define TCFG_TOUCH_KEY_RELEASE_CFG0 		-50 //触摸释放灵敏度0, 类型:s16, 数值越大, 灵敏度越高
-#define TCFG_TOUCH_KEY_RELEASE_CFG1 		-80 //触摸释放灵敏度1, 类型:s16, 数值越大, 灵敏度越高
-
+//*********************************************************************************//
+//                              tocuh key 配置                                     //
+//*********************************************************************************//
+#define TCFG_TOUCH_KEY_ENABLE               DISABLE_THIS_MOUDLE             //是否使能plcnt触摸按键
 //key0配置
-#define TCFG_TOUCH_KEY0_PORT 				IO_PORTB_06  //触摸按键IO配置
-#define TCFG_TOUCH_KEY0_VALUE 				1 		 	 //触摸按键key0 按键值
-
+#define TCFG_TOUCH_KEY0_PRESS_DELTA	   	    100//变化阈值，当触摸产生的变化量达到该阈值，则判断被按下，每个按键可能不一样，可先在驱动里加到打印，再反估阈值
+#define TCFG_TOUCH_KEY0_PORT 				IO_PORTB_06 //触摸按键key0 IO配置
+#define TCFG_TOUCH_KEY0_VALUE 				0x12 		//触摸按键key0 按键值
 //key1配置
-#define TCFG_TOUCH_KEY1_PORT 				IO_PORTB_07  //触摸按键key1 IO配置
-#define TCFG_TOUCH_KEY1_VALUE 				2 		 	 //触摸按键key1按键值
+#define TCFG_TOUCH_KEY1_PRESS_DELTA	   	    100//变化阈值，当触摸产生的变化量达到该阈值，则判断被按下，每个按键可能不一样，可先在驱动里加到打印，再反估阈值
+#define TCFG_TOUCH_KEY1_PORT 				IO_PORTB_07 //触摸按键key1 IO配置
+#define TCFG_TOUCH_KEY1_VALUE 				0x34        //触摸按键key1 按键值
 
 //*********************************************************************************//
 //                                  RTC_ALARM配置                                  //

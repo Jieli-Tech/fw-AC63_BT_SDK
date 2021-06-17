@@ -47,6 +47,7 @@
 		*(.bt_audioplc_sparse_code)
 		*(.bt_audioplc_const)
 		*(.dms_sparse_code)
+	    *(.bark_const)
 
 		*(.sms_const);
 		*(.sms_sparse_code);

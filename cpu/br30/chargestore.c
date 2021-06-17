@@ -148,6 +148,7 @@ void chargestore_open(u8 mode)
     } else {
         gpio_direction_output(__this->data->io_port, 1);
         gpio_set_hd(__this->data->io_port, 1);
+        gpio_set_hd0(__this->data->io_port, 1);
         __this->UART->CON1 |= BIT(4);
         if (__this->UART == JL_UART0) {
             gpio_set_fun_output_port(__this->data->io_port, FO_UART0_TX, 1, 1);
@@ -169,6 +170,7 @@ void chargestore_close(void)
     gpio_set_pull_up(__this->data->io_port, 0);
     gpio_set_die(__this->data->io_port, 1);
     gpio_set_hd(__this->data->io_port, 0);
+    gpio_set_hd0(__this->data->io_port, 0);
     gpio_direction_input(__this->data->io_port);
     memset((void *)uart_dma_buf, 0, sizeof(uart_dma_buf));
 }

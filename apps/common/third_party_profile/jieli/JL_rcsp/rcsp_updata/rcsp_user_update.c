@@ -487,8 +487,22 @@ void JL_rcsp_msg_deal(RCSP_MSG msg, int argc, int *argv)
         break;
     }
 }
-#endif
 
+void rcsp_update_jump_for_hid_device()
+{
+    if (RCSP_BLE == get_curr_device_type()) {
+        rcsp_printf("BLE_APP_UPDATE\n");
+        update_mode_api_v2(BLE_APP_UPDATA,
+                           rcsp_update_private_param_fill,
+                           rcsp_update_before_jump_handle);
+    } else {
+        rcsp_printf("SPP_APP_UPDATA\n");
+        update_mode_api_v2(SPP_APP_UPDATA,
+                           rcsp_update_private_param_fill,
+                           rcsp_update_before_jump_handle);
+    }
+}
+#endif
 
 static u8 rcsp_update_flag = 0;
 void set_rcsp_db_update_status(u8 value)

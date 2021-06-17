@@ -13,6 +13,8 @@
 #include "asm/efuse.h"
 #include "asm/wdt.h"
 #include "asm/debug.h"
+#include "asm/power/p33.h"
+#include "asm/timer.h"
 
 
 

@@ -131,8 +131,13 @@
 		*(.resample_fastcal_data)
 		*(.aac_data)
 		*(.alac_data)
-        . = ALIGN(4);
+                 . = ALIGN(4);
 		*(.dec2tws_mem)
+	         . = ALIGN(4);
+		*(.lc3_decoder_data)
+                 . = ALIGN(4);
+		*(.midi_mem)
+		*(.midi_ctrl_mem)
 
 		/* *(.crossOver_code) */
 		/* *(.crossOver_const) */

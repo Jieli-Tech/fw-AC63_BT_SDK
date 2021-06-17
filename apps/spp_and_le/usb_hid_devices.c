@@ -78,6 +78,9 @@ static void *get_hid_report_desc(u32 index)
 }
 
 
+static u8 *hid_ep_in_dma;
+/* static u8 *hid_ep_out_dma; */
+
 static u32 hid_tx_data(struct usb_device_t *usb_device, const u8 *buffer, u32 len)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
@@ -85,22 +88,31 @@ static u32 hid_tx_data(struct usb_device_t *usb_device, const u8 *buffer, u32 le
 }
 static void hid_rx_data(struct usb_device_t *usb_device, u32 ep)
 {
-    const usb_dev usb_id = usb_device2id(usb_device);
-    u8 *ep_buffer = usb_get_ep_buffer(usb_id, HID_EP_OUT);
-    u32 rx_len = usb_g_intr_read(usb_id, ep, NULL, 64, 0);
-    hid_tx_data(usb_device, ep_buffer, rx_len);
+    /* const usb_dev usb_id = usb_device2id(usb_device); */
+    /* u32 rx_len = usb_g_intr_read(usb_id, ep, NULL, 64, 0); */
+    /* hid_tx_data(usb_device, hid_ep_out_dma, rx_len); */
 }
 
 static void hid_endpoint_init(struct usb_device_t *usb_device, u32 itf)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
-    u8 *ep_buffer = usb_get_ep_buffer(usb_id, HID_EP_IN | USB_DIR_IN);
-    usb_g_ep_config(usb_id, HID_EP_IN | USB_DIR_IN, USB_ENDPOINT_XFER_INT, 0, ep_buffer, MAXP_SIZE_HIDIN);
+    usb_g_ep_config(usb_id, HID_EP_IN | USB_DIR_IN, USB_ENDPOINT_XFER_INT, 0, hid_ep_in_dma, MAXP_SIZE_HIDIN);
+    usb_enable_ep(usb_id, HID_EP_IN);
 
-    ep_buffer = usb_get_ep_buffer(usb_id, HID_EP_OUT);
-    usb_g_set_intr_hander(usb_id, HID_EP_OUT, hid_rx_data);
-    usb_g_ep_config(usb_id, HID_EP_OUT, USB_ENDPOINT_XFER_INT, 1, ep_buffer, MAXP_SIZE_HIDOUT);
-    usb_enable_ep(usb_id, HID_EP_OUT);
+    /* usb_g_set_intr_hander(usb_id, HID_EP_OUT, hid_rx_data); */
+    /* usb_g_ep_config(usb_id, HID_EP_OUT, USB_ENDPOINT_XFER_INT, 1, ep_buffer, MAXP_SIZE_HIDOUT); */
+}
+u32 hid_register(const usb_dev usb_id)
+{
+    hid_ep_in_dma = usb_alloc_ep_dmabuffer(usb_id, HID_EP_IN | USB_DIR_IN, MAXP_SIZE_HIDIN);
+
+    /* hid_ep_out_dma = usb_alloc_ep_dmabuffer(usb_id, HID_EP_OUT,MAXP_SIZE_HIDOUT); */
+    return 0;
+}
+
+void hid_release(const usb_dev usb_id)
+{
+    return ;
 }
 
 static void hid_reset(struct usb_device_t *usb_device, u32 itf)
@@ -108,15 +120,34 @@ static void hid_reset(struct usb_device_t *usb_device, u32 itf)
     const usb_dev usb_id = usb_device2id(usb_device);
     log_debug("%s", __func__);
 #if USB_ROOT2
-    usb_disable_ep(usb_id, HID_EP_OUT);
+    usb_disable_ep(usb_id, HID_EP_IN);
 #else
     hid_endpoint_init(usb_device, itf);
 #endif
 }
-static struct usb_device_t *hid_device;
+static u32 hid_recv_output_report(struct usb_device_t *usb_device, struct usb_ctrlrequest *setup)
+{
+    const usb_dev usb_id = usb_device2id(usb_device);
+    u32 ret = 0;
+    u8 read_ep[8];
+    u8 mute;
+    u16 volume = 0;
+    usb_read_ep0(usb_id, read_ep, MIN(sizeof(read_ep), setup->wLength));
+    ret = USB_EP0_STAGE_SETUP;
+    put_buf(read_ep, 8);
+
+
+    return ret;
+}
+
+
+static struct usb_device_t *hid_device_hdl = NULL;
 static u32 hid_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlrequest *req)
 {
-    hid_device = usb_device;
+    if (req == -1) {
+        return 0;
+    }
+    hid_device_hdl = usb_device;
 
     const usb_dev usb_id = usb_device2id(usb_device);
     u32 tx_len;
@@ -190,6 +221,9 @@ static u32 hid_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreques
             tx_payload[0] = 0;
             usb_set_data_payload(usb_device, req, tx_payload, tx_len);
             break;
+        case USB_REQ_SET_REPORT:
+            usb_set_setup_recv(usb_device, hid_recv_output_report);
+            break;
         }//bRequest @ USB_TYPE_CLASS
     }
     break;
@@ -219,6 +253,9 @@ u32 hid_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 
 u32 hid_send_data(const void *p, u32 len)
 {
-    return hid_tx_data(hid_device, p, len);
+    if (!hid_device_hdl) {
+        return 0;
+    }
+    return hid_tx_data(hid_device_hdl, p, len);
 }
 #endif

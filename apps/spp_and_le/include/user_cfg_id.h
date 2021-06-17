@@ -17,7 +17,6 @@
 #define     CFG_DONGLE_PAIR_INFO             29
 
 #define     VM_USB_MIC_GAIN                  5
-
 #define     VM_ALARM_0                  	 44
 #define     VM_ALARM_1                  	 45
 #define     VM_ALARM_2                  	 46

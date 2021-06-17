@@ -9,6 +9,7 @@ export CORE=pi32v2
 
 #配置项目文件指向(br20/br21)
 export CPU=br25
+export CPU_DIR=br25
 
 #配置项目的目标机器型号(generic(开发板)/...)
 export BOARD=generic
@@ -37,7 +38,7 @@ export THIRD_PARTY_PROFILE_ENABLE = y
 export CONFIG_BLUETOOTH_EN = y
 export AC608N = n
 
-export MIDI_DEC_ADDR = n
+
 
 export CC_DEFINE += \
 -DCONFIG_CPU_BR25 \
@@ -61,9 +62,6 @@ CC_DEFINE += -DCONFIG_EQ_SUPPORT_ASYNC
 
 CC_DEFINE += -DCONFIG_MIXER_CYCLIC
 
-ifeq ($(MIDI_DEC_ADDR),y)
-CC_DEFINE += -DCONFIG_MIDI_DEC_ADDR
-endif
 
 
 ifeq ($(MP3_WMA_LIB_SPECIAL),y)

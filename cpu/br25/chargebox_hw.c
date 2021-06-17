@@ -1,4 +1,4 @@
-#include "board_config.h"
+#include "app_config.h"
 #include "generic/typedef.h"
 #include "generic/gpio.h"
 #include "asm/gpio.h"

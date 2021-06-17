@@ -240,6 +240,7 @@
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #define TCFG_LINEIN_LR_CH					AUDIO_LIN0_LR
 #define TCFG_DEC_WAV_ENABLE					DISABLE
+#define TCFG_DEC_MIDI_ENABLE			    DISABLE//midi文件播放
 #else
 #define TCFG_DEC_PCM_ENABLE					DISABLE
 #endif/*TCFG_AUDIO_ENABLE*/
@@ -293,6 +294,8 @@ DAC硬件上的连接方式,可选的配置：
 #define VOL_TYPE_DIGITAL_HW     3   //硬件数字音量
 #define SYS_VOL_TYPE            VOL_TYPE_ANALOG
 
+
+#define AUDIO_MIDI_CTRL_CONFIG    0 //midi电子琴接口使能 ,开这个宏要关掉低功耗使能
 
 //*********************************************************************************//
 //                                 USB 配置                                        //

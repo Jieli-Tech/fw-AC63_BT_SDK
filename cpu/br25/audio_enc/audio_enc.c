@@ -160,7 +160,39 @@ static int iis_mic_output_read(s16 *buf, u16 len)
 #endif // TCFG_IIS_INPUT_EN
 
 #if	TCFG_MIC_EFFECT_ENABLE
+unsigned int jl_sr_table[] = {
+    7616,
+    10500,
+    11424,
+    15232,
+    21000,
+    22848,
+    30464,
+    42000,
+    45696,
+};
 
+unsigned int normal_sr_table[] = {
+    8000,
+    11025,
+    12000,
+    16000,
+    22050,
+    24000,
+    32000,
+    44100,
+    48000,
+};
+static u8 get_sample_rate_index(u32 sr)
+{
+    u8 i;
+    for (i = 0; i < ARRAY_SIZE(normal_sr_table); i++) {
+        if (normal_sr_table[i] == sr) {
+            return i;
+        }
+    }
+    return i - 1;
+}
 int mic_sw_src_init(u16 out_sr)
 {
     if (!esco_enc) {
@@ -173,9 +205,10 @@ int mic_sw_src_init(u16 out_sr)
     ASSERT(esco_enc->mic_sw_src_buf);
     RS_PARA_STRUCT rs_para_obj;
     rs_para_obj.nch = 1;
-    rs_para_obj.new_insample = MIC_EFFECT_SAMPLERATE;
-    rs_para_obj.new_outsample = out_sr;
-
+    /* rs_para_obj.new_insample = MIC_EFFECT_SAMPLERATE; */
+    /* rs_para_obj.new_outsample = out_sr; */
+    rs_para_obj.new_insample = jl_sr_table[get_sample_rate_index(MIC_EFFECT_SAMPLERATE)];
+    rs_para_obj.new_outsample = jl_sr_table[get_sample_rate_index(out_sr)];
     esco_enc->mic_sw_src_api->open(esco_enc->mic_sw_src_buf, &rs_para_obj);
     return 0;
 }
@@ -214,7 +247,7 @@ void esco_enc_resume(void)
 {
     if (esco_enc) {
         //os_sem_post(&esco_enc->pcm_frame_sem);
-        audio_encoder_resume(esco_enc);
+        audio_encoder_resume(&esco_enc->encoder);
     }
 }
 
@@ -292,7 +325,7 @@ const static struct audio_enc_handler esco_enc_handler = {
     .enc_output = esco_enc_output_handler,
 };
 
-static void esco_enc_event_handler(struct audio_decoder *decoder, int argc, int *argv)
+static void esco_enc_event_handler(struct audio_encoder *encoder, int argc, int *argv)
 {
     printf("esco_enc_event_handler:0x%x,%d\n", argv[0], argv[0]);
     switch (argv[0]) {
@@ -499,7 +532,7 @@ void audio_encoder_task_close(void)
 /**************************mic ladc 接口***************************************************/
 #define MIC_ADC_BUF_NUM        2
 #if TCFG_MIC_EFFECT_ENABLE
-#define MIC_ADC_IRQ_POINTS     64 //不能随便更改
+#define MIC_ADC_IRQ_POINTS    ((MIC_EFFECT_SAMPLERATE/1000)*4)  //不能随便更改
 #else
 #define MIC_ADC_IRQ_POINTS     256
 #endif

@@ -102,6 +102,35 @@ void mcpwm_set_frequency(pwm_ch_num_type ch, pwm_aligned_mode_type align, u32 fr
     }
 }
 
+static u32 old_mcpwm_clk = 0;
+static void clock_critical_enter(void)
+{
+    old_mcpwm_clk = clk_get("mcpwm");
+}
+static void clock_critical_exit(void)
+{
+    u32 new_mcpwm_clk = clk_get("mcpwm");
+    if (new_mcpwm_clk == old_mcpwm_clk) {
+        return;
+    }
+    PWM_CH_REG *pwm_reg = NULL;
+    PWM_TIMER_REG *timer_reg = NULL;
+    for (u8 ch = 0; ch < 4; ch++) {
+        if (JL_MCPWM->MCPWM_CON0 & BIT(ch + 8)) {
+            pwm_reg = get_pwm_ch_reg(ch);
+            timer_reg = get_pwm_timer_reg(ch);
+            if (new_mcpwm_clk > old_mcpwm_clk) {
+                timer_reg->tmr_pr = timer_reg->tmr_pr * (new_mcpwm_clk / old_mcpwm_clk);
+                pwm_reg->ch_cmpl = pwm_reg->ch_cmpl * (new_mcpwm_clk / old_mcpwm_clk);
+            } else {
+                timer_reg->tmr_pr = timer_reg->tmr_pr / (old_mcpwm_clk / new_mcpwm_clk);
+                pwm_reg->ch_cmpl = pwm_reg->ch_cmpl / (old_mcpwm_clk / new_mcpwm_clk);
+            }
+            pwm_reg->ch_cmph = pwm_reg->ch_cmpl;
+        }
+    }
+}
+CLOCK_CRITICAL_HANDLE_REG(mcpwm, clock_critical_enter, clock_critical_exit)
 
 /*
  * @brief 设置一个通道的占空比
@@ -399,7 +428,7 @@ void io_ext_interrupt_test(void)
 
 /**
  * @param JL_TIMERx : JL_TIMER0/1/2/3
- * @param pwm_io : JL_PORTA_01, JL_PORTB_02,,,等等，br30支持任意普通IO
+ * @param pwm_io : JL_PORTA_01, JL_PORTB_02,,,等等，支持任意普通IO
  * @param fre : 频率，单位Hz
  * @param duty : 初始占空比，0~10000对应0~100%
  */
@@ -432,7 +461,7 @@ void timer_pwm_init(JL_TIMER_TypeDef *JL_TIMERx, u32 pwm_io, u32 fre, u32 duty)
     JL_TIMERx->PWM = (JL_TIMERx->PRD * duty) / 10000;	//设置初始占空比，0~10000对应0~100%
     JL_TIMERx->CON |= (0b01 << 0);						//计数模式
     JL_TIMERx->CON |= BIT(8);							//PWM使能
-    //设置初始占空比
+    //设置引脚状态
     gpio_set_die(pwm_io, 1);
     gpio_set_pull_up(pwm_io, 0);
     gpio_set_pull_down(pwm_io, 0);

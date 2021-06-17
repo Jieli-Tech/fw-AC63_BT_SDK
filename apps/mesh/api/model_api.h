@@ -13,7 +13,7 @@
 // more...
 
 //< Config whick example will use in <examples>
-#define CONFIG_MESH_MODEL                   SIG_MESH_ALIGENIE_SOCKET
+#define CONFIG_MESH_MODEL                   SIG_MESH_GENERIC_ONOFF_SERVER
 
 /* Tmall Update tool */
 #define TMALL_UPDATE_TOOL						0

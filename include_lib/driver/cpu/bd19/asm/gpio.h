@@ -151,6 +151,8 @@ struct gpio_reg {
     volatile unsigned int dieh;
 };
 
+struct gpio_reg *gpio2reg(u32 gpio);
+
 struct gpio_platform_data {
     unsigned int gpio;
 };
@@ -598,6 +600,24 @@ enum PFI_TABLE {
     // PFI_PLNK_DAT1 = ((u32)(&(JL_IMAP->FI_PLNK_DAT1))),
     PFI_TOTAl = ((u32)(&(JL_IMAP->FI_TOTAL))),
 };
+
+//=================================================================================//
+//@brief: CrossBar 获取某IO的输出映射寄存器
+//@input:
+// 		gpio: 需要输出外设信号的IO口; 如IO_PORTA_00
+//@return:
+// 		输出映射寄存器地址; 如&(JL_OMAP->PA0_OUT)
+//=================================================================================//
+u32 *gpio2crossbar_outreg(u32 gpio);
+
+//=================================================================================//
+//@brief: CrossBar 获取某IO的输入映射序号
+//@input:
+// 		gpio: 需要输出外设信号的IO口; 如IO_PORTA_00
+//@return:
+// 		输出映射序号; 如PA0_IN
+//=================================================================================//
+u32 gpio2crossbar_inport(u32 gpio);
 
 //=================================================================================//
 //@brief: CrossBar 输出设置 API, 将指定IO口设置为某个外设的输出

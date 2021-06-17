@@ -166,6 +166,8 @@
 //*********************************************************************************//
 //                                  蓝牙配置                                       //
 //*********************************************************************************//
+#define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能
+
 #define USER_SUPPORT_PROFILE_SPP    0
 #define USER_SUPPORT_PROFILE_HFP    1
 #define USER_SUPPORT_PROFILE_A2DP   1

@@ -61,6 +61,7 @@ struct audio_stream_group {
 struct audio_stream_entry {
     u8  pass_by;    // 1-同步处理（即往后传的buf就是上层传入的buf）；
     // 0-异步处理（数据存到其他buf再往后传）
+    u8  remain;		// 1-上次数据没输出完。0-上次数据输出完
     u16 offset;		// 同步处理时的数据偏移
     struct audio_stream *stream;		// 所属的数据流
     struct audio_stream_entry *input;	// 上一个节点

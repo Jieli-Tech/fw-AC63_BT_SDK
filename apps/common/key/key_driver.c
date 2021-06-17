@@ -10,6 +10,7 @@
 #include "asm/power_interface.h"
 #include "app_config.h"
 #include "rdec_key.h"
+#include "tent600_key.h"
 #if TCFG_KEY_TONE_EN
 #include "tone_player.h"
 #endif
@@ -314,6 +315,15 @@ int key_driver_init(void)
     if (err == 0) {
     }
 #endif
+#if TCFG_TENT600_KEY_ENABLE
+    extern const struct tent600_key_platform_data key_data ;
+    extern struct key_driver_para tent600_key_scan_para;
+    err = tent600_key_init(&key_data);
+    if (err == 0) {
+        sys_s_hi_timer_add((void *)&tent600_key_scan_para, key_driver_scan, tent600_key_scan_para.scan_time); //注册按键扫描定时器
+    }
+#endif
+
     return 0;
 }
 

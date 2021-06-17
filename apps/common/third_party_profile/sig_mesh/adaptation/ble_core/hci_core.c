@@ -9,6 +9,9 @@
 #include "adaptation.h"
 #include "bluetooth.h"
 #include "ble/hci_ll.h"
+#include "app_config.h"
+#include "rcsp_bluetooth.h"
+#include "custom_cfg.h"
 
 #define LOG_TAG             "[MESH-hci_core]"
 #define LOG_INFO_ENABLE
@@ -18,6 +21,12 @@
 #define LOG_DUMP_ENABLE
 #include "mesh_log.h"
 
+#if 1//RCSP_BTMATE_EN
+#define ATT_LOCAL_PAYLOAD_SIZE    (200)                   //note: need >= 20
+#define ATT_SEND_CBUF_SIZE        (512)                   //note: need >= 20,缓存大小，可修改
+#define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_PAYLOAD_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
+static u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
+#endif
 
 #if ADAPTATION_COMPILE_DEBUG
 
@@ -69,6 +78,8 @@ static struct bt_conn_cb *callback_list;
 extern void mesh_hci_init(void);
 extern void resume_mesh_gatt_proxy_adv_thread(void);
 extern void handle_scan_callback(uint8_t *packet, uint16_t size);
+extern void mesh_can_send_now_wakeup(void);
+extern void mesh_set_ble_work_state(ble_state_e state);
 
 void ble_read_local_p256_public_key(void)
 {
@@ -237,15 +248,31 @@ static inline void le_dhkey_complete(u8 *buf, u16 size)
 #define HCI_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE_EVENT    0x08
 #define HCI_LE_GENERATE_DHKEY_COMPLETE_EVENT                0x09
 
+_WEAK_
+u8 ble_update_get_ready_jump_flag(void)
+{
+    return 0;
+}
+
 void mesh_hci_event_callback(u8 packet_type, u8 channel, u8 *packet, u16 size)
 {
     switch (packet_type) {
     case HCI_EVENT:
         switch (packet[0]) {
+        case ATT_EVENT_CAN_SEND_NOW:
+            mesh_can_send_now_wakeup();
+            break;
         case HCI_DISCONNECTION_COMPLETE_EVENT:
             BT_INFO("HCI_DISCONNECTION_COMPLETE_EVENT");
+            mesh_set_ble_work_state(BLE_ST_DISCONN);
+#if RCSP_BTMATE_EN
+            rcsp_exit();
+#endif
             hci_set_disconn_run();
-            resume_mesh_gatt_proxy_adv_thread();
+            if (!ble_update_get_ready_jump_flag()) {
+                printf("resume_mesh_gatt_proxy_adv_thread\n");
+                resume_mesh_gatt_proxy_adv_thread();
+            }
             break;
         case HCI_LE_META_EVENT:
             switch (packet[2]) {
@@ -255,6 +282,16 @@ void mesh_hci_event_callback(u8 packet_type, u8 channel, u8 *packet, u16 size)
                 hci_set_conn_run(connection_handle);
                 BT_INFO("connection handle =0x%x", connection_handle);
                 resume_mesh_gatt_proxy_adv_thread();
+                ble_user_cmd_prepare(BLE_CMD_ATT_SEND_INIT, 4, connection_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_PAYLOAD_SIZE);
+#if RCSP_BTMATE_EN
+                mesh_set_ble_work_state(BLE_ST_CONNECT);
+#if (defined(BT_CONNECTION_VERIFY) && (0 == BT_CONNECTION_VERIFY))
+                void JL_rcsp_auth_reset(void);
+                JL_rcsp_auth_reset();
+#endif
+                //rcsp_dev_select(RCSP_BLE);
+                rcsp_init();
+#endif
                 break;
             case HCI_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE_EVENT:
                 BT_INFO("HCI_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE_EVENT");

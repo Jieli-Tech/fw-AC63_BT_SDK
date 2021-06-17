@@ -30,13 +30,14 @@ export SERVER_CORE = lite
 export NEW_BREDR ?= y
 export BR30_C_VERSION ?= n
 export NEW_ECC ?= y
-export THIRD_PARTY_PROFILE_ENABLE = y
+export THIRD_PARTY_PROFILE_ENABLE ?= y
 export MOVABLE_ENABLE ?= n
 export WIFI_DETECT_ENABLE ?= y
 
 export CC_DEFINE += \
 -DCONFIG_CPU_BR30 \
 #-DCONFIG_RELEASE_ENABLE
+
 
 
 export cibuild ?= n
@@ -92,7 +93,21 @@ export CONFIG_MMU_ENABLE = y
 
 export CONFIG_PSRAM_ENABLE = n
 
+
+#n:media_origin
+#y:media_new
+#d:media_develop代码开发整理
+ifeq ($(APP_CASE), soundbox)
+export MEDIA_NEW_ENABLE = d
+export CPU_DIR=br30_develop
+else ifeq ($(APP_CASE), adapter)
+export MEDIA_NEW_ENABLE = d
+export CPU_DIR=br30_develop
+else
 export MEDIA_NEW_ENABLE = y
+export CPU_DIR=br30
+endif
+
 export CONFIG_SBC_CODEC_HW = y
 export CONFIG_MSBC_CODEC_HW = y
 export CONFIG_AAC_CODEC_HW = n
@@ -110,6 +125,15 @@ export CONFIG_CURRENT_SOUND_DEAL?= y
 #VER_PI32		: BR21
 #export CONFIG_AEC_VER = VER_PI32V2_V2_STATIC
 export CONFIG_AEC_VER = VER_PI32V2_V2_DMS_STATIC
+
+#NS_Ver Define:
+#ANS:经典单mic降噪算法
+#DNN_NS:神经网络单mic降噪算法
+export CONFIG_NS_VER = ANS
+#export CONFIG_NS_VER = DNN_NS
+ifeq ($(CONFIG_NS_VER),DNN_NS)
+CC_DEFINE += -DCONFIG_DNS_ENABLE
+endif
 
 ifeq ($(CONFIG_CURRENT_SOUND_DEAL),y)
 CC_DEFINE += -DCONFIG_CURRENT_SOUND_DEAL_ENABLE
@@ -168,6 +192,12 @@ ifeq ($(MEDIA_NEW_ENABLE),y)
 CC_DEFINE += -DCONFIG_MEDIA_NEW_ENABLE
 endif
 
+ifeq ($(MEDIA_NEW_ENABLE),d)
+CC_DEFINE += -DCONFIG_MEDIA_DEVELOP_ENABLE
+CC_DEFINE += -DCONFIG_MEDIA_EFFECT_DISABLE
+CC_DEFINE += -DCONFIG_MIXER_CYCLIC
+endif
+
 CC_DEFINE += -D__GCC_PI32V2__
 
 ifeq ($(NEW_ECC),y)
@@ -176,15 +206,15 @@ endif
 
 # --------------Project path Setting-----------------------
 #
-export DIR_OUTPUT = $(ROOT)/cpu/$(CPU)/tools
+export DIR_OUTPUT = $(ROOT)/cpu/$(CPU_DIR)/tools
 ifneq ($(cibuild),y)
 ifeq ($(HOST_OS), linux)
-export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.sh
+export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU_DIR)/tools/download.sh
 else
-export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.bat
+export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU_DIR)/tools/download.bat
 endif
 else
-export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU)/tools/download.bat
+export POST_BUILD_SCRIPT = $(ROOT)/cpu/$(CPU_DIR)/tools/download.bat
 endif
 
 # - output file
@@ -196,7 +226,7 @@ BUILD_LD=sdk.ld
 BUILD_MAP=sdk.map
 
 export LINKER = \
--T$(addprefix $(ROOT)/cpu/$(CPU)/, $(BUILD_LD)) \
+-T$(addprefix $(ROOT)/cpu/$(CPU_DIR)/, $(BUILD_LD)) \
 -M=$(addprefix $(DIR_OUTPUT)$(SLASH), $(BUILD_MAP))
 
 

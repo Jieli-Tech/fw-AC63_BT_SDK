@@ -77,6 +77,9 @@ struct aec_s_attr {
 
     float AEC_RefEngThr;
     float AEC_DT_AggressiveFactor;
+
+    /*Extended-Parameters*/
+    u16 ref_sr;
 };
 
 /*双工通话接口*/

@@ -2,7 +2,7 @@
 objs += \
 $(ROOT)/apps/common/debug/debug.o \
 
-include $(ROOT)/cpu/$(CPU)/Makefile
+include $(ROOT)/cpu/$(CPU_DIR)/Makefile
 
 include $(ROOT)/apps/$(APP_CASE)/Makefile
 

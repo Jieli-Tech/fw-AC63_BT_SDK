@@ -75,6 +75,12 @@ enum {
     FS_IOCTL_GET_ENCFOLDER_INFO, //获取录音文件信息
 
     FS_IOCTL_GET_OUTFLASH_ADDR, //获取外置flash实际物理地址（暂时用于手表case,特殊fat系统）
+    FS_IOCTL_FLUSH_WBUF, //刷新wbuf
+
+    FS_IOCTL_SAVE_FAT_TABLE, //seek加速处理
+
+    FS_IOCTL_INSERT_FILE, //插入文件
+    FS_IOCTL_DIVISION_FILE, //分割文件
 };
 
 
@@ -182,7 +188,7 @@ struct vfs_operations {
     int (*fpos)(FILE *);
     int (*fcopy)(FILE *, FILE *);
     int (*fget_name)(FILE *, u8 *name, int len);
-    int (*fget_path)(FILE *, u8 *name, int len, u8 is_relative_path);
+    int (*fget_path)(FILE *, struct vfscan *, u8 *name, int len, u8 is_relative_path);
     int (*frename)(FILE *, const char *path);
     int (*fclose)(FILE *);
     int (*fdelete)(FILE *);
@@ -275,7 +281,7 @@ int fdelete_by_name(const char *fname);
 
 int fget_free_space(const char *path, u32 *space);
 
-int fget_path(FILE *file, u8 *name, int len, u8 is_relative_path);
+int fget_path(FILE *file, struct vfscan *fscan, u8 *name, int len, u8 is_relative_path);
 
 /* arg:
  * -t  文件类型
@@ -329,7 +335,7 @@ int fenter_dir_info(FILE *file, void *dir_dj); //进入目录
 int fexit_dir_info(FILE *file); //退出
 int fget_dir_info(FILE *file, u32 start_num, u32 total_num, void *buf_info); ////获取目录信息
 
-int fget_fat_outflash_addr(FILE *file, void *buf_info);//获取外置flash实际物理地址（暂时用于手表case,特殊fat系统）
+int fget_fat_outflash_addr(FILE *file, char *name, void *buf_info);//获取外置flash实际物理地址（暂时用于手表case,特殊fat系统）
 
 int fget_file_byname_indir(FILE *file, FILE **newFile, void *ext_name); //由歌曲名称获得歌词
 
@@ -346,6 +352,12 @@ int get_last_num(void); //录音获取最后序号。
 void set_bp_info(u32 clust, u32 fsize, u32 *flag); //扫描前设置断点参数，需要put_bp_info对应释放buf.
 void put_bp_info(void);
 
+int fsave_fat_table(FILE *file, u16 btr, u8 *buf);
+int f_flush_wbuf(const char *path);
+
+int finsert_file(FILE *file, FILE *i_file, u32 fptr);
+
+int fdicvision_file(FILE *file, char *file_name, u32 fptr);
 #endif  /* VFS_ENABLE */
 
 #endif  /* __FS_H__ */

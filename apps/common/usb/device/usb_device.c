@@ -28,11 +28,13 @@ static void usb_device_init(const usb_dev usb_id)
     usb_config(usb_id);
     usb_g_sie_init(usb_id);
     usb_slave_init(usb_id);
-    usb_set_dma_raddr(usb_id, 0, usb_get_ep_buffer(usb_id, 0));
-    usb_set_dma_raddr(usb_id, 1, usb_get_ep_buffer(usb_id, 0));
-    usb_set_dma_raddr(usb_id, 2, usb_get_ep_buffer(usb_id, 0));
-    usb_set_dma_raddr(usb_id, 3, usb_get_ep_buffer(usb_id, 0));
-    usb_set_dma_raddr(usb_id, 4, usb_get_ep_buffer(usb_id, 0));
+    u8 *ep0_dma_buffer = usb_alloc_ep_dmabuffer(usb_id, 0, 64);
+
+    usb_set_dma_raddr(usb_id, 0, ep0_dma_buffer);
+    usb_set_dma_raddr(usb_id, 1, ep0_dma_buffer);
+    usb_set_dma_raddr(usb_id, 2, ep0_dma_buffer);
+    usb_set_dma_raddr(usb_id, 3, ep0_dma_buffer);
+    usb_set_dma_raddr(usb_id, 4, ep0_dma_buffer);
 
     usb_write_intr_usbe(usb_id, INTRUSB_RESET_BABBLE | INTRUSB_SUSPEND);
     usb_clr_intr_txe(usb_id, -1);
@@ -55,6 +57,7 @@ static void usb_device_hold(const usb_dev usb_id)
 static int usb_ep_conflict_check(const usb_dev usb_id);
 int usb_device_mode(const usb_dev usb_id, const u32 class)
 {
+
     /* usb_device_set_class(CLASS_CONFIG); */
     u8 class_index = 0;
     if (class == 0) {
@@ -76,21 +79,30 @@ int usb_device_mode(const usb_dev usb_id, const u32 class)
 #if TCFG_USB_SLAVE_MSD_ENABLE
         msd_release(usb_id);
 #endif
+
 #if TCFG_USB_SLAVE_AUDIO_ENABLE
         uac_release(usb_id);
 #endif
+
 #if TCFG_USB_SLAVE_CDC_ENABLE
         cdc_release(usb_id);
+#endif
+#if TCFG_USB_SLAVE_HID_ENABLE
+        hid_release(usb_id);
 #endif
         usb_device_hold(usb_id);
         return 0;
     }
 
-    int ret = usb_ep_conflict_check(usb_id);
-    if (ret) {
-        return ret;
-    }
+    /* int ret = usb_ep_conflict_check(usb_id); */
+    /* if (ret) {                               */
+    /*     return ret;                          */
+    /* }                                        */
+
+    usb_memory_init();
+
     usb_add_desc_config(usb_id, MAX_INTERFACE_NUM, NULL);
+
 #if TCFG_USB_SLAVE_MSD_ENABLE
     if ((class & MASSSTORAGE_CLASS) == MASSSTORAGE_CLASS) {
         log_info("add desc msd");
@@ -103,21 +115,22 @@ int usb_device_mode(const usb_dev usb_id, const u32 class)
     if ((class & AUDIO_CLASS) == AUDIO_CLASS) {
         log_info("add audio desc");
         usb_add_desc_config(usb_id, class_index++, uac_audio_desc_config);
-        uac_register();
+        uac_register(usb_id);
     } else if ((class & SPEAKER_CLASS) == SPEAKER_CLASS) {
         log_info("add desc speaker");
         usb_add_desc_config(usb_id, class_index++, uac_spk_desc_config);
-        uac_register();
+        uac_register(usb_id);
     } else if ((class & MIC_CLASS) == MIC_CLASS) {
         log_info("add desc mic");
         usb_add_desc_config(usb_id, class_index++, uac_mic_desc_config);
-        uac_register();
+        uac_register(usb_id);
     }
 #endif
 
 #if TCFG_USB_SLAVE_HID_ENABLE
     if ((class & HID_CLASS) == HID_CLASS) {
         log_info("add desc std hid");
+        hid_register(usb_id);
         usb_add_desc_config(usb_id, class_index++, hid_desc_config);
     }
 #endif
@@ -204,15 +217,13 @@ __exit:
 u32 usb_otg_sof_check_init(const usb_dev id)
 {
     /* return 0;// */
-
-    u32 ep = 0;
-    u8 *ep_buffer = usb_get_ep_buffer(id, ep);
+    u8 *ep0_dma_buffer = usb_alloc_ep_dmabuffer(id, 0, 64);
 
     usb_g_sie_init(id);
 
-    usb_set_dma_raddr(id, ep, ep_buffer);
+    usb_set_dma_raddr(id, 0, ep0_dma_buffer);
 
-    for (ep = 1; ep < USB_MAX_HW_EPNUM; ep++) {
+    for (int ep = 1; ep < USB_MAX_HW_EPNUM; ep++) {
         usb_disable_ep(id, ep);
     }
     usb_sof_clr_pnd(id);

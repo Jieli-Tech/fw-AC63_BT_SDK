@@ -29,6 +29,7 @@
 #include "app_chargestore.h"
 #include "app_power_manage.h"
 #include "le_client_demo.h"
+#include "ble_qiot_template.h"
 
 #define LOG_TAG_CONST       SPP_AND_LE
 #define LOG_TAG             "[SPP_AND_LE]"
@@ -39,10 +40,10 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
-
 #if CONFIG_APP_SPP_LE
 
-#if TCFG_USER_EDR_ENABLE && BEACON_MODE_EN
+#if TCFG_USER_EDR_ENABLE && (BEACON_MODE_EN || TRANS_NONCON_24G_EN || LL_SYNC_EN)
+//默认应用不需要打开edr,有需要自己添加
 #error "need disable TCFG_USER_EDR_ENABLE !!!!!!"
 #endif
 
@@ -880,7 +881,11 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 #if TCFG_AUDIO_ENABLE
 #include "tone_player.h"
 #include "media/includes.h"
+#include "key_event_deal.h"
+
+extern void midi_paly_test(u32 key);
 #endif/*TCFG_AUDIO_ENABLE*/
+
 static void app_key_event_handler(struct sys_event *event)
 {
     /* u16 cpi = 0; */
@@ -918,6 +923,15 @@ static void app_key_event_handler(struct sys_event *event)
             /* extern int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 code_type); */
             /* audio_mic_enc_open(NULL, AUDIO_CODING_OPUS);//opus encode test */
             /* audio_mic_enc_open(NULL, AUDIO_CODING_SPEEX);//speex encode test */
+
+
+
+            /*midi test*/
+
+            /* printf(">>>key0:open midi\n"); */
+            // midi_paly_test(KEY_IR_NUM_0);
+
+
         }
         if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE1) {
             printf(">>>key1:tone_play_test\n");
@@ -927,9 +941,28 @@ static void app_key_event_handler(struct sys_event *event)
             //br30 tone play test
             /* tone_play(TONE_NUM_8, 1); */
             /* tone_play(TONE_SIN_NORMAL, 1); */
+            /* printf(">>>key0:set  midi\n"); */
+            // midi_paly_test(KEY_IR_NUM_1);
+
         }
+
+
+        if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE2) {
+            /* printf(">>>key2:play  midi\n"); */
+            // midi_paly_test(KEY_IR_NUM_2);
+        }
+
 #endif/*TCFG_AUDIO_ENABLE*/
 
+#if LL_SYNC_EN
+        if (event_type == KEY_EVENT_CLICK && (key_value == TCFG_ADKEY_VALUE0)) {
+            ll_sync_led_switch();
+        }
+
+        //if (event_type == KEY_EVENT_CLICK && (key_value == TCFG_ADKEY_VALUE1)) {
+        //	ll_sync_unbind();
+        //}
+#endif
 
         if (event_type == KEY_EVENT_TRIPLE_CLICK
             && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {

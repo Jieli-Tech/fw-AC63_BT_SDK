@@ -1,5 +1,5 @@
 #include "adaptation.h"
-#include "vm.h"
+#include "syscfg_id.h"
 
 #define LOG_TAG                 "[MESH-storage]"
 /* #define LOG_INFO_ENABLE */
@@ -12,18 +12,12 @@
 #define NODE_INFO_CLEAR_DEBUG_EN    1
 #define NODE_INFO_STORE_DEBUG_EN    !NODE_INFO_CLEAR_DEBUG_EN
 
-extern s32 vm_open(u16 index);
-extern s32 vm_write(vm_hdl hdl, u8 *data_buf, u16 len);
-extern s32 vm_read(vm_hdl hdl, u8 *data_buf, u16 len);
-
 void node_info_store(int index, void *buf, u16 len)
 {
     u32 ret = 0;
     u16 w_len = len + 1;
 
     BT_INFO("--func=%s", __FUNCTION__);
-
-    vm_check_all(0);
 
 #if NODE_INFO_CLEAR_DEBUG_EN
     u8 temp_buf[64];
@@ -33,21 +27,19 @@ void node_info_store(int index, void *buf, u16 len)
         temp_buf[0] = 1;
         memcpy(temp_buf + 1, (u8 *)buf, len);
     }
-    vm_hdl hdl = vm_open(index);
-    BT_INFO("vm hdl=0x%x", hdl);
-    ret = vm_write(hdl, (u8 *)temp_buf, w_len);
+    BT_INFO("syscfg id = 0x%x", index);
+    ret = syscfg_write(index, (u8 *)temp_buf, w_len);
     if (ret != w_len) {
-        BT_ERR("vm_write err");
+        BT_ERR("syscfg_write err");
         BT_ERR("ret = %d", ret);
     }
 #else /*NODE_INFO_CLEAR_DEBUG_EN*/
 
 #if !NODE_INFO_STORE_DEBUG_EN
-    vm_hdl hdl = vm_open(index);
-    BT_INFO("vm hdl=0x%x", hdl);
-    ret = vm_write(hdl, (u8 *)buf, len);
+    BT_INFO("syscfg id = 0x%x", index);
+    ret = syscfg_write(index, (u8 *)buf, len);
     if (ret != len) {
-        BT_ERR("vm_write err");
+        BT_ERR("syscfg_write err");
         BT_ERR("ret = %d", ret);
     }
 #endif /* NODE_INFO_STORE_DEBUG_EN */
@@ -69,16 +61,15 @@ bool node_info_load(int index, void *buf, u16 len)
     BT_INFO("--func=%s", __FUNCTION__);
 #if NODE_INFO_CLEAR_DEBUG_EN
     u8 temp_buf[64];
-    vm_hdl hdl = vm_open(index);
-    BT_INFO("vm hdl=0x%x", hdl);
-    ret = vm_read(hdl, (u8 *)temp_buf, r_len);
+    BT_INFO("syscfg id = 0x%x", index);
+    ret = syscfg_read(index, (u8 *)temp_buf, r_len);
     if (ret != r_len) {
-        BT_ERR("vm_read err");
+        BT_ERR("syscfg_read err");
         BT_ERR("ret = %d", ret);
         return 1;
     }
     if (temp_buf[0] == 0) {
-        BT_INFO("vm_read clear");
+        BT_INFO("syscfg_read clear");
         return 1;
     }
     memcpy((u8 *)buf, temp_buf + 1, len);
@@ -89,11 +80,10 @@ bool node_info_load(int index, void *buf, u16 len)
 #if NODE_INFO_STORE_DEBUG_EN
     return 1;
 #else
-    vm_hdl hdl = vm_open(index);
-    BT_INFO("vm hdl=0x%x", hdl);
-    ret = vm_read(hdl, (u8 *)buf, len);
+    BT_INFO("syscfg id = 0x%x", index);
+    ret = syscfg_read(index, (u8 *)buf, len);
     if (ret != len) {
-        BT_ERR("vm_read err");
+        BT_ERR("syscfg_read err");
         BT_ERR("ret = %d", ret);
         return 1;
     }

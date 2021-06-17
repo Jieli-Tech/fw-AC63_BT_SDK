@@ -78,11 +78,12 @@ int soft_iic_init(soft_iic_dev iic)
     IIC_SCL_DIR(scl, 0);
     IIC_SCL_SET_PD(scl, 0);
     IIC_SCL_SET_DIE(scl, 1);
-    IIC_SCL_H(scl);
+    IIC_SCL_L(scl);
     IIC_SDA_DIR(sda, 0);
     IIC_SDA_SET_PD(sda, 0);
     IIC_SDA_SET_DIE(sda, 1);
     IIC_SDA_H(sda);
+    IIC_SCL_H(scl);
     if (iic_get_io_pu(iic)) {
         IIC_SCL_SET_PU(scl, 1);
         IIC_SDA_SET_PU(sda, 1);

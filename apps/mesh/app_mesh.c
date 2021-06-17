@@ -144,7 +144,7 @@ static int bt_hci_event_handler(struct bt_event *bt)
 static int bt_connction_status_event_handler(struct bt_event *bt)
 {
 
-    log_info("-----------------------bt_connction_status_event_handler %d", bt->event);
+    printf("-----------------------bt_connction_status_event_handler %d", bt->event);
 
     switch (bt->event) {
     case BT_STATUS_INIT_OK:

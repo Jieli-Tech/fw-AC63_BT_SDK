@@ -13,6 +13,7 @@
 *********************************************************************************************/
 #include "app_config.h"
 #include "system/includes.h"
+#include "media/includes.h"
 
 
 #if (TCFG_AUDIO_DECODER_OCCUPY_TRACE)
@@ -179,6 +180,16 @@ const int WMA_OUTPUT_LEN = 1;
 // wav最大支持比特率，单位kbps
 const int WAV_MAX_BITRATEV = (48 * 2 * 24);
 
+// 解码一次输出点数,建议范围32到900,例如128代表128对点
+// 超过128时，解码需要使用malloc，如config_wav_dec_use_malloc=1
+const int  WAV_DECODER_PCM_POINTS = 128;
+
+// output超过128时，如果不使用malloc，需要增大对应buf
+// 可以看打印中解码器需要的大小，一般输出每增加1长度增加4个字节
+int wav_mem_ext[(1316  + 3) / 4] SEC(.wav_mem); //超过128要增加这个数组的大小
+
+
+
 // mixer在单独任务中输出
 const int config_mixer_task = 0;
 
@@ -225,6 +236,11 @@ const int const_surround_en = 0;
 
 
 
+#ifdef CONFIG_MIDI_DEC_ADDR
+const int MIDI_TONE_MODE = 0;//0是地址访问(仅支持在内置flash,读数快，消耗mips低)，1 是文件访问(内置、外挂flash,sd,u盘均可,读数慢，消耗mips较大)
+#else
+const int MIDI_TONE_MODE = 1;
+#endif
 
 
 #if TCFG_MEDIA_LIB_USE_MALLOC
@@ -243,6 +259,7 @@ const int config_ape_dec_use_malloc     = 1;
 const int config_aac_dec_use_malloc     = 1;
 const int config_aptx_dec_use_malloc    = 1;
 const int config_midi_dec_use_malloc    = 1;
+const int config_lc3_dec_use_malloc     = 1;
 #else
 const int config_mp3_dec_use_malloc     = 0;
 const int config_mp3pick_dec_use_malloc = 0;
@@ -263,6 +280,7 @@ const int config_ape_dec_use_malloc     = 0;
 const int config_aac_dec_use_malloc     = 0;
 const int config_aptx_dec_use_malloc    = 0;
 const int config_midi_dec_use_malloc    = 0;
+const int config_lc3_dec_use_malloc     = 0;
 #endif
 const int vc_pitchshift_fastmode_flag        = 1;
 const  int  vc_pitchshift_downmode_flag = 0;  //变声下采样处理使能
@@ -272,6 +290,7 @@ const int config_howling_enable_pemafrow_mode = 0;
 const int config_howling_enable_trap_mode     = 0;//陷波啸叫抑制模式使能
 const int config_howling_enable_pitchps_mode  = 1; //移频啸叫抑制模式使能
 const  int DOWN_S_FLAG 				= 0; //混响降采样处理使能
+const  int  ECHO_INT_VAL_OUT = 0;       //  置1: echo的输出是int 后级需接DRC限幅 功能未实现
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DONGLE)
 const int config_mp3_enc_use_layer_3	= 1;
@@ -287,6 +306,44 @@ const int config_mp3_dec_speed_mode 	= 0; //FAST_FREQ_restrict | FAST_FILTER_res
 
 // 快进快退到文件end返回结束消息
 const int config_decoder_ff_fr_end_return_event_end = 0;
+
+
+
+// 解码任务测试
+const int audio_decoder_test_en = 0;
+// 当audio_decoder_test_en使能时需要实现以下接口
+#if 0
+void audio_decoder_test_out_before(struct audio_decoder *dec, void *buff, int len) {} ;
+void audio_decoder_test_out_after(struct audio_decoder *dec, int wlen) {} ;
+void audio_decoder_test_read_before(struct audio_decoder *dec, int len, u32 offset) {} ;
+void audio_decoder_test_read_after(struct audio_decoder *dec, u8 *data, int rlen) {} ;
+void audio_decoder_test_get_frame_before(struct audio_decoder *dec) {} ;
+void audio_decoder_test_get_frame_after(struct audio_decoder *dec, u8 *frame, int rlen) {} ;
+void audio_decoder_test_fetch_before(struct audio_decoder *dec) {} ;
+void audio_decoder_test_fetch_after(struct audio_decoder *dec, u8 *frame, int rlen) {} ;
+void audio_decoder_test_run_before(struct audio_decoder *dec) {} ;
+void audio_decoder_test_run_after(struct audio_decoder *dec, int err) {} ;
+#else
+// 接口实现示例
+#include "audio/demo/audio_decoder_test.c"
+#endif
+
+
+// 编码任务测试
+const int audio_encoder_test_en = 0;
+// 当audio_encoder_test_en使能时需要实现以下接口
+#if 0
+void audio_encoder_test_out_before(struct audio_encoder *enc, void *buff, int len) {} ;
+void audio_encoder_test_out_after(struct audio_encoder *enc, int wlen) {} ;
+void audio_encoder_test_get_frame_before(struct audio_encoder *enc, u16 frame_len) {} ;
+void audio_encoder_test_get_frame_after(struct audio_encoder *enc, s16 *frame, int rlen) {} ;
+void audio_encoder_test_run_before(struct audio_encoder *enc) {} ;
+void audio_encoder_test_run_after(struct audio_encoder *enc, int err) {} ;
+#else
+// 接口实现示例
+#include "audio/demo/audio_encoder_test.c"
+#endif
+
 
 
 /**

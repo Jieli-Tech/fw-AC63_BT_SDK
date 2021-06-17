@@ -31,6 +31,5 @@ enum {
 };
 
 void spp_get_operation_table(struct spp_operation_t **interface_pt);
-void dma_spp_init(void);
 
 #endif//__SPP_USER_H__

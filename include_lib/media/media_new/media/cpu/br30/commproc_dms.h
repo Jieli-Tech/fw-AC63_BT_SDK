@@ -101,6 +101,12 @@ struct dms_attr {
     float target_signal_degradation;//default:1,range[0:1]
     float enc_aggressfactor;		//default:4.f,range[0:4]
     float enc_minsuppress;			//default:0.09f,range[0:0.1]
+    /*BCS*/
+    int bone_process_maxfreq;
+    int bone_process_minfreq;
+    float bone_init_noise_lvl;
+    int Bone_AEC_Process_MaxFrequency;
+    int Bone_AEC_Process_MinFrequency;
     /*common*/
     float global_minsuppress;		//default:0.0,range[0.0:0.09]
     /*data handle*/
@@ -118,5 +124,14 @@ s32 aec_dms_fill_ref_data(void *dat, u16 len);
 void aec_dms_toggle(u8 toggle);
 int aec_dms_cfg_update(AEC_DMS_CONFIG *cfg);
 int aec_dms_reboot(u8 enablebit);
+
+s32 aec_dms_flexible_init(struct dms_attr *attr);
+s32 aec_dms_flexible_exit();
+s32 aec_dms_flexible_fill_in_data(void *dat, u16 len);
+int aec_dms_flexible_fill_in_ref_data(void *dat, u16 len);
+s32 aec_dms_flexible_fill_ref_data(void *dat, u16 len);
+void aec_dms_flexible_toggle(u8 toggle);
+int aec_dms_flexible_cfg_update(AEC_DMS_CONFIG *cfg);
+int aec_dms_flexible_reboot(u8 enablebit);
 
 #endif/*_COMMPROC_DMS_H_*/

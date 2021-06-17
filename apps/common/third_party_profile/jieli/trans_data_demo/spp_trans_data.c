@@ -24,7 +24,7 @@ extern void printf_buf(u8 *buf, u32 len);
 /* #define DEBUG_ENABLE */
 /* #include "debug_log.h" */
 #include "spp_trans_data.h"
-#if TRANS_DATA_EN || TRANS_MULTI_SPP_EN
+#if TRANS_DATA_EN || TRANS_MULTI_SPP_EN || TUYA_TRANS_EN
 
 #if TEST_SPP_DATA_RATE
 #define SPP_TIMER_MS            (100)

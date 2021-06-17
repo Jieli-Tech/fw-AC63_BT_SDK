@@ -17,6 +17,7 @@ extern "C"
 #include "os/os_type.h"
 
 
+typedef void *TaskHandle_t;
 
 #define Q_MSG           0x100000
 #define Q_EVENT         0x200000
@@ -439,6 +440,10 @@ int os_q_query(OS_QUEUE *pevent);
 int os_q_valid(OS_QUEUE *pevent);
 
 int task_queue_post_event(const char *name, void *data, int len);
+
+void *os_task_get_handle(const char *name);
+
+void os_system_info_output(void);
 
 #ifdef __cplusplus
 }

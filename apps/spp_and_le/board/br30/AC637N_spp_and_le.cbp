@@ -24,6 +24,7 @@
 <Add option="-Wundef" />
 <Add option="-fms-extensions" />
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
+<Add option="-w" />
 <Add option="-DCONFIG_CPU_BR30" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
 <Add option="-DCONFIG_SUPPORT_WIFI_DETECT" />
@@ -47,9 +48,11 @@
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_SPP_AND_LE_CASE_ENABLE" />
 <Add option="-DCONFIG_TRANSFER_ENABLE" />
+<Add option="-DCONFIG_LITE_AEC_ENABLE=0" />
 <Add option="-DCONFIG_LITE_AUDIO" />
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
+<Add option="-DCONFIG_LINK_DISTURB_SCAN_ENABLE=0" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
 <Add option="-DCONFIG_OTA_UPDATA_ENABLE" />
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
@@ -97,6 +100,9 @@
 <Add directory="../../../../include_lib/btstack" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata" />
+<Add directory="../../../../apps/common/third_party_profile/Tecent_LL/include" />
+<Add directory="../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo" />
+<Add directory="../../../../apps/common/cJSON" />
 <Add directory="../../../../apps/common/audio" />
 <Add directory="../../../../cpu/br30/audio_dec" />
 <Add directory="../../../../cpu/br30/audio_enc" />
@@ -158,8 +164,8 @@
 <ExtraCommands>
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_used_list.c -o ..\..\..\..\cpu\br30\sdk_used_list.used" />
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_ld.c -o ..\..\..\..\cpu\br30\sdk.ld" />
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\download.c -o ..\..\..\..\cpu\br30\tools\download.bat" />
 <Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\isd_config.c -o ..\..\..\..\cpu\br30\tools\isd_config.ini" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\download.c -o ..\..\..\..\cpu\br30\tools\download.bat" />
 <Mode before="always" />
 <Add after="..\..\..\..\cpu\br30\tools\download.bat sdk" />
 <Mode after="always" />
@@ -172,6 +178,8 @@
 <Unit filename="../../../../apps/common/audio/sine_make.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/audio/sine_make.h" />
 <Unit filename="../../../../apps/common/bt_common/bt_test_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/cJSON/cJSON.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/cJSON/cJSON.h" />
 <Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/norflash/norflash.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/include/bt_common.h" />
@@ -190,10 +198,43 @@
 <Unit filename="../../../../apps/common/music/music_decrypt.h" />
 <Unit filename="../../../../apps/common/music/music_id3.h" />
 <Unit filename="../../../../apps/common/phone_message/phone_message.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_common.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_config.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_crc.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_export.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_hmac.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_import.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_llsync_data.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_llsync_device.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_llsync_event.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_llsync_ota.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_log.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_md5.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_param_check.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_service.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_sha1.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_template.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_utils_base64.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo/ll_demo.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo/ll_demo.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo/ll_task.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo/ll_task.h" />
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_import.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_llsync_data.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_llsync_device.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_llsync_event.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_llsync_ota.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_service.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_template.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_base64.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_crc.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_hmac.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_log.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_md5.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_sha1.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/3th_profile_api.h" />
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.h" />
-<Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data/le_rcsp_adv_module.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_msg.h" />
@@ -211,6 +252,7 @@
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_client_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_client_demo.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_common.h" />
+<Unit filename="../../../../apps/common/third_party_profile/jieli/le_nonconn_24g.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/multi_demo/le_multi_client.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/multi_demo/le_multi_common.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/multi_demo/le_multi_common.h" />
@@ -226,6 +268,7 @@
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.h" />
 <Unit filename="../../../../apps/common/update/testbox_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/uart_update.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/update/uart_update_master.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/cdc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/usb/device/cdc.h" />
@@ -365,17 +408,13 @@
 <Unit filename="../../../../include_lib/btstack/btstack_event.h" />
 <Unit filename="../../../../include_lib/btstack/btstack_task.h" />
 <Unit filename="../../../../include_lib/btstack/btstack_typedef.h" />
-<Unit filename="../../../../include_lib/btstack/frame_queque.h" />
 <Unit filename="../../../../include_lib/btstack/le/att.h" />
 <Unit filename="../../../../include_lib/btstack/le/ble_api.h" />
 <Unit filename="../../../../include_lib/btstack/le/ble_data_types.h" />
 <Unit filename="../../../../include_lib/btstack/le/gatt.h" />
+<Unit filename="../../../../include_lib/btstack/le/le_common_define.h" />
 <Unit filename="../../../../include_lib/btstack/le/le_user.h" />
 <Unit filename="../../../../include_lib/btstack/le/sm.h" />
-<Unit filename="../../../../include_lib/btstack/third_party/baidu/dma_protobuf.h" />
-<Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_dma.h" />
-<Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_dma_pb.h" />
-<Unit filename="../../../../include_lib/btstack/third_party/baidu/dueros_platform.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/common/ble_config.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/common/ble_user.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/common/btstack_3th_protocol_user.h" />
@@ -391,6 +430,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/charge.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/chargestore.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/clock.h" />
+<Unit filename="../../../../include_lib/driver/cpu/br30/asm/clock_define.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/clock_hw.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/cpu.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/crc16.h" />
@@ -417,6 +457,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/sdmmc.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/spi.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/spiflash.h" />
+<Unit filename="../../../../include_lib/driver/cpu/br30/asm/timer.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/uart.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/uart_dev.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/usb.h" />
@@ -436,7 +477,6 @@
 <Unit filename="../../../../include_lib/driver/device/usb/scsi.h" />
 <Unit filename="../../../../include_lib/driver/device/usb/usb_phy.h" />
 <Unit filename="../../../../include_lib/media/audio_stream.h" />
-<Unit filename="../../../../include_lib/media/media_new/media/anc_btspp.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/application/audio_dec_app.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/application/audio_drc.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/application/audio_energy_detect.h" />
@@ -491,6 +531,7 @@
 <Unit filename="../../../../include_lib/system/device/key_driver.h" />
 <Unit filename="../../../../include_lib/system/device/rdec_key.h" />
 <Unit filename="../../../../include_lib/system/device/slidekey.h" />
+<Unit filename="../../../../include_lib/system/device/tent600_key.h" />
 <Unit filename="../../../../include_lib/system/device/touch_key.h" />
 <Unit filename="../../../../include_lib/system/device/vm.h" />
 <Unit filename="../../../../include_lib/system/event.h" />

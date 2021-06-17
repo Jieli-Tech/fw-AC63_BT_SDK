@@ -55,7 +55,7 @@ void *sin_tone_open(const struct sin_param *param, int num, u8 channel, u8 repea
     sin->channel = channel;
     sin->repeat = repeat;
 #if (defined CONFIG_CPU_BR18 || \
-     CONFIG_CPU_BR21)
+     defined CONFIG_CPU_BR21)
     /*这里如果加多fade points，会导致结束的时候有噪声,不是在淡出尾部*/
     sin->fade_points = 0;
 #else
@@ -238,11 +238,19 @@ int sin_tone_make(void *_maker, void *data, int len)
             if (win) {
                 /*hw_sin_value(win_sin_index, &win_sin_value, 0);*/
                 win_sin_value = __asm_sine((s64)win_sin_index, 2);
+#ifdef CONFIG_CPU_BR36
+                sin_value = ((s64)sin_value * (s64)win_sin_value) >> 44;
+#else
                 sin_value = ((s64)sin_value * (s64)win_sin_value) >> 34;
+#endif
                 win_sin_index += win_add_idx;
                 win_sin_index &= 0x1ffffff;
             } else {
+#ifdef CONFIG_CPU_BR36
+                sin_value = ((s64)volume * sin_value) >> 39;
+#else
                 sin_value = ((s64)volume * sin_value) >> 34;
+#endif
             }
             sin_index += add_idx;
             sin_index &= 0x1ffffff;

@@ -459,7 +459,9 @@ enum {
  *-------------------P3_ANA_CON6
  */
 
-#define VDC13_VOL_SEL(sel)      P33_CON_SET(P3_ANA_CON6, 0, 3, sel)
+
+void VDC13_VOL_SEL(u8 sel);
+
 //Macro for VDC13_VOL_SEL
 enum {
     VDC13_VOL_SEL_105V = 0,
@@ -647,6 +649,8 @@ enum {
 /*
  *-------------------P3_ANA_CON13
  */
+#define WVDD_VOL_SEL_MAX	0xf
+
 #define PVD_HD_H_SEL(sel)      P33_CON_SET(P3_ANA_CON13, 4, 1, sel)
 
 /*
@@ -658,6 +662,8 @@ enum {
 /*
  *-------------------P3_PVDD1_AUTO
  */
+
+#define PVDD_VOL_SEL_MAX       0xf
 
 #define PVD_VOL_SEL(sel)       P33_CON_SET(P3_PVDD1_AUTO, 0, 4, sel)
 

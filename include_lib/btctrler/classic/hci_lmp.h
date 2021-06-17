@@ -94,6 +94,7 @@ void lmp_hci_user_confirmation_request_negative_reply(u8 *addr);
 
 int lmp_hci_disconnect(u16 handle, u8 reason);
 int lmp_hci_test_key_cmd(u8 cmd, u16 handle);
+int lmp_hci_send_user_info_cmd(u32 info, u16 handle);
 
 void lmp_hci_accept_connection_request(u8 *addr, u8 role);
 

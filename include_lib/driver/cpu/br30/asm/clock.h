@@ -4,7 +4,9 @@
 #include "typedef.h"
 
 #include "clock_hw.h"
+#include "asm/clock_define.h"
 
+#if 0
 ///原生时钟源作系统时钟源
 #define         SYS_CLOCK_INPUT_RC  0
 #define         SYS_CLOCK_INPUT_BT_OSC  1          //BTOSC 双脚(12-26M)
@@ -17,6 +19,7 @@
 #define         SYS_CLOCK_INPUT_PLL_RTOSCH  6
 #define         SYS_CLOCK_INPUT_PLL_PAT     7
 #define         SYS_CLOCK_INPUT_PLL_RCL     8
+#endif
 
 typedef int SYS_CLOCK_INPUT;
 

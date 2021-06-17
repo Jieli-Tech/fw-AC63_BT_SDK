@@ -42,9 +42,9 @@ export TIDY_FILTER=/opt/utils/tidy-filter
 #export SoC?=bd29
 #export SoC?=br30
 #export SoC?=br30c
-#export SoC?=br34
+export SoC?=br34
 #export SoC?=br28
-export SoC?=bd19
+#export SoC?=bd19
 #export SoC?=br36
 
 
@@ -53,15 +53,16 @@ export SoC?=bd19
 #export APP_CASE?=qcy_case
 #export APP_CASE?=soundbox
 #export APP_CASE?=dongle
-#export APP_CASE?=spp_and_le
-export APP_CASE?=hid
+export APP_CASE?=spp_and_le
+#export APP_CASE?=hid
 #export APP_CASE?=mesh
-#export APP_CASE?=watch
+# export APP_CASE?=watch
 #export APP_CASE?=iot
 #export APP_CASE?=bt_udisk
 #export APP_CASE?=multi_link
 #export APP_CASE?=le_audio
 #export APP_CASE?=adapter
+#export APP_CASE?=ICrecorder
 
 
 # --------------common var begin-----------------------
@@ -102,7 +103,7 @@ endif
 
 
 
-.PHONY: all clean lib clean_lib libs clean_libs dry_run debug usage cbp winmake app
+.PHONY: all clean lib clean_lib libs clean_libs dry_run debug usage cbp winmake app doc sphinx_doc
 
 all: pre_make $(ADDITION_DEP)
 	@$(MAKE) -C apps || exit 1
@@ -206,6 +207,14 @@ winrelease: cbp winmake
 
 branch_jenkins:
 	$(V) python3 /opt/utils/jenkins-gen-build-config.py --config jenkins/jenkins-librepo.json --project $(project) > jenkins/jenkins-build-branch.json
+
+doc:
+	@mkdir -p doxygen_out
+	doxygen Doxyfile
+	$(MAKE) -C docsrc html
+
+sphinx_doc:
+	$(MAKE) -C docsrc html
 
 
 usage:

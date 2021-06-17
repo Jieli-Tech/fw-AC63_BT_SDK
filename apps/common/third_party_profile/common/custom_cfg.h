@@ -8,14 +8,10 @@
 
 #define BT_CONNECTION_VERIFY        0   // 0是校验,1是不校验
 
-#if (XIAOMI_EN)
-#define VER_INFO_EXT_COUNT          0   //2
-#else
 #if (JL_EARPHONE_APP_EN && RCSP_UPDATE_EN)
 #define VER_INFO_EXT_COUNT          2   //2
 #else
 #define VER_INFO_EXT_COUNT          0   //2
-#endif
 #endif
 #define VER_INFO_EXT_MAX_LEN        24
 

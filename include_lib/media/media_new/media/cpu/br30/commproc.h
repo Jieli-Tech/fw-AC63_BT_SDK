@@ -3,6 +3,10 @@
 
 #include "generic/typedef.h"
 
+/*降噪版本定义*/
+#define ANS_V100	0xA1
+#define ANS_V200	0xA2
+
 //aec_cfg:
 typedef struct __AEC_CONFIG {
     u8 mic_again;			//DAC增益,default:3(0~14)
@@ -83,6 +87,9 @@ struct aec_s_attr {
     int (*aec_post)(s16 *dat, u16 len);		//算法后处理回调函数
     int (*aec_update)(u8 aec_mode);			//动态参数调节回调函数
     int (*output_handle)(s16 *dat, u16 len);//输出回调函数
+
+    /*Extended-Parameters*/
+    u16 ref_sr;
 };
 
 /*

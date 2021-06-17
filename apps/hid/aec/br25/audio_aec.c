@@ -64,6 +64,11 @@ const u8 CONST_AEC_EXPORT = 0;
 /*ANS等级:0 or 1,等级1比等级0多6k左右的ram*/
 const u8 CONST_ANS_MODE = 1;
 
+/*参考数据变采样处理*/
+const u8 CONST_REF_SRC = 0;
+
+
+
 /*
  *AEC复杂等级，等级越高，ram和mips越大，适应性越好
  *回音路径不定/回音失真等情况才需要比较高的等级
@@ -113,6 +118,10 @@ const u8 CONST_AEC_SIMPLEX = 0;
 #define AEC_IN_DUMP_PACKET		1
 
 extern struct adc_platform_data adc_data;
+__attribute__((weak))u32 usb_mic_is_running()
+{
+    return 0;
+}
 
 /*复用lmp rx buf(一般通话的时候复用)
  *rx_buf概率产生碎片，导致alloc失败，因此默认配0
@@ -500,6 +509,10 @@ int audio_aec_open(u16 sample_rate, s16 enablebit, int (*out_hdl)(s16 *data, u16
     aec_param->aec_probe = audio_aec_probe;
     aec_param->aec_post = audio_aec_post;
     aec_param->output_handle = audio_aec_output;
+    aec_param->ref_sr  = usb_mic_is_running();
+    if (aec_param->ref_sr == 0) {
+        aec_param->ref_sr = sample_rate;
+    }
 
     audio_aec_param_read_config(aec_param);
     if (enablebit >= 0) {

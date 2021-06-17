@@ -230,7 +230,7 @@ static void ble_report_data_deal(att_data_report_t *report_data, target_uuid_t *
 }
 
 static struct ble_client_operation_t *ble_client_api;
-static const u8 dongle_remoter_name1[] = "BD19_DV(BLE)";//
+static const u8 dongle_remoter_name1[] = "JL_MOUSE(BLE)";//
 
 //匹配配置的名字
 static const client_match_cfg_t match_dev01 = {

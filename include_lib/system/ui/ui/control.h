@@ -86,10 +86,10 @@ struct ui_image_list_t {
     u16 image[64];
 };
 
-#define UI_TEXT_LIST_MAX_NUM    4
+#define UI_TEXT_LIST_MAX_NUM    3
 struct ui_text_list_t {
     u16 num;
-    char str[16];
+    u16 str[16];
 };
 
 struct ui_button_info {

@@ -7,7 +7,7 @@
 
 
 #ifdef CONFIG_RELEASE_ENABLE
-#define LIB_DEBUG    0
+#define LIB_DEBUG    1
 #else
 #define LIB_DEBUG    1
 #endif
@@ -16,23 +16,28 @@
 
 #define CONFIG_DEBUG_ENABLE
 
-#define CONFIG_BEACON_ENABLE              1
-
 //app case 选择,只能选1个,要配置对应的board_config.h
 #define CONFIG_APP_SPP_LE                 1 //SPP + LE or LE's client
 #define CONFIG_APP_AT_COM                 0 //AT com HEX格式命令
 #define CONFIG_APP_AT_CHAR_COM            0 //AT com 字符串格式命令
 #define CONFIG_APP_DONGLE                 0 //board_dongle ,TCFG_PC_ENABLE
 #define CONFIG_APP_MULTI                  0 //蓝牙LE多连
-
+// #define CONFIG_APP_TUYA                   0 //tuya_ble
 //配置对应的APP的蓝牙功能
+
+// #if CONFIG_APP_TUYA
+// #define TUYA_TRANS_EN                     1 //蓝牙双模透传
+// #endif
+
 #if CONFIG_APP_SPP_LE
 #define TRANS_DATA_EN                     1 //蓝牙双模透传
 #define TRANS_CLIENT_EN                   0 //蓝牙(ble主机)透传
 #define BEACON_MODE_EN                    0 //蓝牙BLE ibeacon
-#define XM_MMA_EN                         0
+#define XM_MMA_EN                         0 //no used
+#define TRANS_NONCON_24G_EN               0 //2.4G 非连接收发
+#define LL_SYNC_EN                        0 //腾讯连连
 
-#if (TRANS_DATA_EN + TRANS_CLIENT_EN + XM_MMA_EN + BEACON_MODE_EN> 1)
+#if (TRANS_DATA_EN + TRANS_CLIENT_EN + XM_MMA_EN + BEACON_MODE_EN + LL_SYNC_EN + TUYA_TRANS_EN> 1)
 #error "they can not enable at the same time!"
 #endif
 
@@ -194,11 +199,15 @@
 //#define DEV_UPDATE_SUPPORT_JUMP           //目前只有br23\br25支持
 #endif
 
-#if (defined(CONFIG_CPU_BR23) || defined(CONFIG_CPU_BR25) || defined(CONFIG_CPU_BD29))
-#define USER_UART_UPDATE_ENABLE           0//用于客户开发上位机或者多MCU串口升级方案
+#if (defined(CONFIG_CPU_BR23) || defined(CONFIG_CPU_BR25) || defined(CONFIG_CPU_BD29) || defined(CONFIG_CPU_BD19))
+#define USER_UART_UPDATE_ENABLE           0//用于客户开发上位机或者多MCU串口升级方案,请确保串口通信前已经退出powerdown,需要在对应的board添加初始化和唤醒口配置参考board_ac632n_demo.c
 
 #define UART_UPDATE_SLAVE	0
 #define UART_UPDATE_MASTER	1
+
+//配置串口升级IO
+#define UART_UPDATE_RX_PORT               IO_PORTA_02
+#define UART_UPDATE_TX_PORT               IO_PORTA_03
 
 //配置串口升级的角色
 #define UART_UPDATE_ROLE	UART_UPDATE_SLAVE

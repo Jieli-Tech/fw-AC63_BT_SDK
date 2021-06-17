@@ -7,11 +7,13 @@
 
 #include "audio_config.h"
 
-#include "audio_dec.h"
+//#include "audio_dec.h"
 
 #include "application/audio_output_dac.h"
 #include "application/audio_dig_vol.h"
 struct audio_dac_hdl dac_hdl;
+
+extern struct audio_dac_channel default_dac;
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
 #include "fm_emitter/fm_emitter_manage.h"
@@ -480,13 +482,13 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
                     if (audio_dig_vol_group_hdl_get(sys_digvol_group, music_dig_logo[i]) == NULL) {
                         continue;
                     }
-                    audio_dig_vol_set(audio_dig_vol_group_hdl_get(sys_digvol_group, music_dig_logo[i]),  AUDIO_DIG_VOL_ALL_CH, volume);
+                    audio_dig_vol_group_vol_set(sys_digvol_group, music_dig_logo[i],  AUDIO_DIG_VOL_ALL_CH, volume);
                 }
             } else {
                 if (audio_dig_vol_group_hdl_get(sys_digvol_group, digvol_type) == NULL) {
                     return;
                 }
-                audio_dig_vol_set(audio_dig_vol_group_hdl_get(sys_digvol_group, digvol_type),  AUDIO_DIG_VOL_ALL_CH, volume);
+                audio_dig_vol_group_vol_set(sys_digvol_group, digvol_type, AUDIO_DIG_VOL_ALL_CH, volume);
             }
         }
 
@@ -1495,7 +1497,7 @@ int app_audio_output_channel_set(u8 channel)
 int app_audio_output_write(void *buf, int len)
 {
 #if AUDIO_OUTPUT_INCLUDE_DAC
-    return audio_dac_write(&dac_hdl, buf, len);
+    return audio_dac_write(&default_dac, buf, len);
 #elif AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM
     return fm_emitter_cbuf_write(buf, len);
 #endif
@@ -1524,7 +1526,8 @@ int app_audio_output_start(void)
 int app_audio_output_stop(void)
 {
 #if AUDIO_OUTPUT_INCLUDE_DAC
-    audio_dac_stop(&dac_hdl);
+    audio_dac_channel_stop(&default_dac);
+
 #endif
     return 0;
 }

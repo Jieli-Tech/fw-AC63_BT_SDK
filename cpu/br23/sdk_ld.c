@@ -176,6 +176,11 @@ SECTIONS
         gsensor_dev_end = .;
 
 		. = ALIGN(4);
+        codec_dev_begin = .;
+        KEEP(*(.codec_dev))
+        codec_dev_end = .;
+
+		. = ALIGN(4);
         hrsensor_dev_begin = .;
         KEEP(*(.hrsensor_dev))
         hrsensor_dev_end = .;
@@ -189,6 +194,33 @@ SECTIONS
         fm_emitter_dev_begin = .;
         KEEP(*(.fm_emitter_dev))
         fm_emitter_dev_end = .;
+
+		. = ALIGN(4);
+        adapter_idev_begin = .;
+        KEEP(*(.adapter_idev))
+        adapter_idev_end = .;
+
+		. = ALIGN(4);
+        adapter_odev_begin = .;
+        KEEP(*(.adapter_odev))
+        adapter_odev_end = .;
+
+		. = ALIGN(4);
+        adapter_enc_begin = .;
+        KEEP(*(.adapter_enc))
+        adapter_enc_end = .;
+
+
+		. = ALIGN(4);
+        adapter_decoder_begin = .;
+        KEEP(*(.adapter_decoder))
+        adapter_decoder_end = .;
+
+		. = ALIGN(4);
+        adapter_encoder_begin = .;
+        KEEP(*(.adapter_encoder))
+        adapter_encoder_end = .;
+
 
 		/* . = ALIGN(4); */
         /* storage_device_begin = .; */
@@ -670,7 +702,7 @@ SECTIONS
 		}
         .overlay_pc
 		{
-#if TCFG_VIR_UDISK_ENABLE == 0
+#if (!USB_MEM_NO_USE_OVERLAY_EN)
             *(.usb_audio_play_dma)
             *(.usb_audio_rec_dma)
             *(.uac_rx)

@@ -29,6 +29,8 @@ srcdir = cfg.projDir .. "/conf/source/";
 download_path = projdir .. '/../'; --下载目录的路径
 state_output_path = projdir .. '/conf/output/';
 
+aec_reference_book_path = projdir .. '/doc/JL通话调试手册.pdf';
+
 text_output_path = state_output_path;
 c_out_path = text_output_path;
 h_out_path = text_output_path;
@@ -52,6 +54,8 @@ c_out_path = text_output_path;
 h_out_path = text_output_path;
 state_out_path = state_output_path;
 default_out_path = state_output_path;
+
+aec_reference_book_path = download_path .. 'JL通话调试手册.pdf';
 
 bin_out_path = download_path;
 ver_out_path = download_path;

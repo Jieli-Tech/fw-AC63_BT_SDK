@@ -72,7 +72,6 @@ struct mass_storage {
 
 enum usb_async_mode {
     BULK_ASYNC_MODE_EXIT = 0, //取消异步模式
-    BULK_ASYNC_MODE_ENTER, //异步512预读
     BULK_ASYNC_MODE_SEM_PEND, //异步预读等待信号量
 };
 

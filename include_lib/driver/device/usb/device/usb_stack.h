@@ -7,7 +7,7 @@
 #include "usb/otg.h"
 
 
-#define     MAX_INTERFACE_NUM       5
+#define     MAX_INTERFACE_NUM       6
 #define     USB_SUSPEND_RESUME      0
 #define     USB_SETUP_SIZE         (512)
 

@@ -2,11 +2,12 @@
 #define AUDIO_ANC_H
 
 #include "generic/typedef.h"
-#include "anc.h"
+#include "asm/anc.h"
+#include "anc_btspp.h"
 #include "app_config.h"
 #include "in_ear_detect/in_ear_manage.h"
 
-
+/*ANC普通配置*/
 #define ANC_COEFF_SAVE_ENABLE	1	/*ANC滤波器表保存使能*/
 #define ANC_INFO_SAVE_ENABLE	0	/*ANC信息记忆:保存上一次关机时所处的降噪模式等等*/
 #define ANC_TONE_PREEMPTION		0	/*ANC提示音打断播放(1)还是叠加播放(0)*/
@@ -14,6 +15,15 @@
 #define ANC_BOX_READ_COEFF		1	/*支持通过工具读取ANC训练系数*/
 #define ANC_FADE_EN				1	/*ANC淡入淡出使能*/
 #define ANC_MODE_SYSVDD_EN 		0	/*ANC模式提高SYSVDD，避免某些IC电压太低导致ADC模块工作不正常*/
+#define ANC_MIC_DMA_EXPORT		0	/*BYPASS ANC DMA 导出MIC的数据使能*/
+
+/*
+   通透配置
+  ANC_MUTE_EN 	静音训练使能
+  ANC_NOISE_EN  通透FIR使能
+ */
+#define ANC_TRANS_ADVANCE_MODE  0//ANC_MUTE_EN 	//通透高级模式，可调试滤波器
+#define ANC_TRANS_AIM_POW 		0//650		//通透训练自动调整增益，写0表示不调整，数值越大，增益越大
 
 #define ANC_TRAIN_MODE			ANC_FF_EN
 #define ANC_MIC_TYPE			(A_MIC0|A_MIC1)	/*ANC 硬件MIC类型：模拟MIC0|模拟MIC1*/
@@ -23,7 +33,7 @@
 /***************************************ANC训练参数配置*********************************************/
 #define ANC_SZ_LOW_THR			10000		/*在未收敛情况下，MIC的下限阈值，用于判断MIC是否能工作*/
 #define ANC_FZ_LOW_THR			50          /*在未收敛情况下，MIC的下限阈值，用于判断MIC是否能工作*/
-#define	ANC_NON_ADAPTIVE_TIME   2000		/*静音训练关闭自适应时间(单位:ms)*/
+#define	ANC_NON_ADAPTIVE_TIME   1000		/*静音训练关闭自适应时间(单位:ms)*/
 #define	ANC_SZ_ADAPTIVE_TIME    3000		/*静音训练SZ打开自适应时间*/
 #define	ANC_FZ_ADAPTIVE_TIME    3000		/*静音训练FZ打开自适应时间*/
 #define	ANC_WZ_TRAIN_TIME	    15000		/*噪声训练WZ训练时间*/
@@ -36,7 +46,9 @@ static const char *anc_mode_str[] = {
     "ANC_OFF",		/*关闭模式*/
     "ANC_ON",		/*降噪模式*/
     "Transparency",	/*通透模式*/
+    "ANC_BYPASS",	/*BYPASS模式*/
     "ANC_TRAIN",	/*训练模式*/
+    "ANC_TRANS_TRAIN",	/*通透训练模式*/
 };
 
 /*ANC状态调试信息*/
@@ -44,13 +56,6 @@ static const char *anc_state_str[] = {
     "anc_close",	/*关闭状态*/
     "anc_init",		/*初始化状态*/
     "anc_open",		/*打开状态*/
-};
-
-/*ANC状态*/
-enum {
-    ANC_STA_CLOSE = 0,
-    ANC_STA_INIT,
-    ANC_STA_OPEN,
 };
 
 /*ANC MSG List*/
@@ -65,32 +70,27 @@ enum {
 
 #ifdef CONFIG_ANC_30C_ENABLE
 //混合馈训练相关配置
+#define ANC_CHIP_VERSION				ANC_VERSION_BR30C
 #if(ANC_TRAIN_MODE & ANC_HYBRID_EN)
-#define ANC_FILT_ORDER		   			2	/*range(1-3)*/
-#define ANC_SR							4
-#if(ANC_FILT_ORDER * 2 / ( ANC_SR - 2 ) > ANC_FILT_ORDER_MAX)
-#error "FILT overflow"
-#endif//(ANC_FILT_ORDER * 2 / ( ANC_SR - 2 ) > ANC_FILT_ORDER_MAX)
-
+#define ANC_FILT_ORDER		   			2	/*range(1-2)*/
+#define ANC_SAMPLE_RATE					96000
 //前馈训练相关配置
 #else
-#define ANC_FILT_ORDER		   			2	/*range(1-3)*/
-#define ANC_SR							3
-#if(ANC_FILT_ORDER / ( ANC_SR - 2 ) > ANC_FILT_ORDER_MAX)
-#error "FILT overflow"
-#endif//(ANC_FILT_ORDER / ( ANC_SR - 2 ) > ANC_FILT_ORDER_MAX)
-#endif//(ANC_TRAIN_MODE & ANC_HYBRID_EN)
+#define ANC_FILT_ORDER		   			2	/*range(1-4)*/
+#define ANC_SAMPLE_RATE					96000
+#endif/*(ANC_TRAIN_MODE & ANC_HYBRID_EN)*/
 
-#define ANC_TRANS_FILT_ORDER			1	/*range(1-3)*/
+#else		/* 30B */
+#undef ANC_TRAIN_MODE
+#define ANC_TRAIN_MODE					ANC_FF_EN		//30b只跑FF
+#define ANC_CHIP_VERSION				ANC_VERSION_BR30
+#define ANC_FILT_ORDER		   			1
+#define ANC_SAMPLE_RATE					48000
+#endif/*CONFIG_ANC_30C_ENABLE*/
+#define ANC_TRANS_FILT_ORDER			1	/*range(1-4)*/
+#define ANC_TRANS_SAMPLE_RATE			96000
 
-#endif//CONFIG_ANC_30C_ENABLE
-
-#define ANC_TRAIN_WAY 			ANC_AUTO_BT_SPP//ANC_MANA_UART
-#if ((ANC_TRAIN_WAY == ANC_AUTO_BT_SPP) && TCFG_AUDIO_ANC_ENABLE)
-#if (APP_ONLINE_DEBUG == 0) //在线APP调试
-#error "Need to open APP_ONLINE_DEBUG"
-#endif
-#endif
+#define ANC_TRAIN_WAY 			ANC_AUTO_BT_SPP
 
 
 /*ANC记忆信息*/
@@ -107,7 +107,7 @@ typedef struct {
 void anc_init(void);
 
 /*ANC训练模式*/
-void anc_train_open(void);
+void anc_train_open(u8 mode);
 
 /*ANC关闭训练*/
 void anc_train_close(void);
@@ -156,12 +156,20 @@ void anc_mode_enable_set(u8 mode_enable);
  */
 u8 anc_train_status_get(void);
 
+/*anc coeff 长度大小获取*/
+int anc_coeff_size_get(void);
 /*
  *查询当前ANC是否处于训练状态
  *@return 1:处于训练状态
  *@return 0:其他状态
  */
 int anc_train_open_query(void);
+
+/*ANC在线调试繁忙标志设置*/
+void anc_online_busy_set(u8 en);
+
+/*ANC在线调试繁忙标志获取*/
+u8 anc_online_busy_get(void);
 
 /*tws同步播放模式提示音，并且同步进入anc模式*/
 void anc_tone_sync_play(int tone_name);
@@ -179,10 +187,13 @@ void anc_suspend(void);
 void anc_resume(void);
 
 /*设置结果回调函数*/
-void anc_api_set_callback(void (*callback)(u8, u8), void (*pow_callback)(u8, u8));
+void anc_api_set_callback(void (*callback)(u8, u8), void (*pow_callback)(anc_ack_msg_t *, u8));
 
 /*设置淡入淡出使能*/
 void anc_api_set_fade_en(u8 en);
+
+/*设置通透目标能量值*/
+void anc_api_set_trans_aim_pow(u32 pow);
 
 /*获取参数结构体*/
 anc_train_para_t *anc_api_get_train_param(void);
@@ -193,7 +204,7 @@ u8 anc_api_get_train_step(void);
 #define ANC_CFG_READ	0x01
 #define ANC_CFG_WRITE	0x02
 int anc_cfg_online_deal(u8 cmd, anc_gain_t *cfg);
-void anc_param_fill(anc_gain_t *cfg);
+void anc_param_fill(u8 cmd, anc_gain_t *cfg);
 
 extern int anc_uart_write(u8 *buf, u8 len);
 extern void ci_send_packet(u32 id, u8 *packet, int size);

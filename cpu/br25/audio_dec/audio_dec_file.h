@@ -22,6 +22,9 @@
 
 #define FILE_DEC_DEST_PLAY			0 // 指定时间播放
 
+#define FILE_DEC_SAVE_FAT_TABLE_EN  1//seek 加速， 优化ape/m4a歌曲卡音问题
+#define FILE_DEC_SAVE_FAT_TABLE_SIZE	512
+
 enum {
     FILE_DEC_STREAM_CLOSE = 0,
     FILE_DEC_STREAM_OPEN,
@@ -46,6 +49,7 @@ struct file_dec_hdl {
     u32 pcm_enc_flag : 1;	// pcm压缩成数据帧发送（如WAV等）
     u32 read_err : 2;		// 读数出错 0:no err， 1:fat err,  2:disk err
     u32 ab_repeat_status : 3;	// AB复读状态
+    u32 wait_add : 1;
 
 #if TCFG_DEC_DECRYPT_ENABLE
     CIPHER mply_cipher;		// 解密播放
@@ -61,6 +65,10 @@ struct file_dec_hdl {
     u8 repeat_num;			// 无缝循环次数
     struct fixphase_repair_obj repair_buf;	// 无缝循环句柄
 #endif
+
+#if FILE_DEC_SAVE_FAT_TABLE_EN
+    u8	*fat_table;
+#endif//FILE_DEC_SAVE_FAT_TABLE_EN
 
     struct audio_dec_breakpoint *bp;	// 断点信息
 

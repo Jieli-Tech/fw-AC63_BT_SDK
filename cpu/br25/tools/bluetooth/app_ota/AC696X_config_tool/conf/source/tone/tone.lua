@@ -13,13 +13,20 @@ local tone_defaults =  {
 	{"蓝牙模式",  srcdir .. '/tone_file/bt.wtg'},
 	{"连接成功",  srcdir .. '/tone_file/bt_conn.wtg'},
 	{"断开连接",  srcdir .. '/tone_file/bt_dconn.wtg'},
-    {"对耳连接成功",  srcdir .. '/tone_file/tws_conn.wtg'},
-	{"对耳断开连接",  srcdir .. '/tone_file/tws_dconn.wtg'},
+    {"对箱连接成功",  srcdir .. '/tone_file/tws_conn.wtg'},
+	{"对箱断开连接",  srcdir .. '/tone_file/tws_dconn.wtg'},
 	{"低电提示音",srcdir .. '/tone_file/low_power.wtg'},
 	{"关机",      srcdir .. '/tone_file/power_off.wtg'},
 	{"开机",      srcdir .. '/tone_file/power_on.wtg'},
 	{"来电",      srcdir .. '/tone_file/ring.wtg'},
 	{"最大音量",  srcdir .. '/tone_file/vol_max.wtg'},
+	{"配对模式",  srcdir .. '/tone_file/paired.wtg'},
+	{"linein模式",  srcdir .. '/tone_file/linein.wtg'},
+	{"music模式",  srcdir .. '/tone_file/music.wtg'},
+	{"fm模式",  srcdir .. '/tone_file/fm.wtg'},
+	{"record模式",  srcdir .. '/tone_file/record.wtg'},
+	{"rtc模式",  srcdir .. '/tone_file/rtc.wtg'},
+	{"pc模式",  srcdir .. '/tone_file/pc.wtg'},
 };
 
 -- 设置中文名称对应的文件名
@@ -37,13 +44,20 @@ cfg:addToneNameMap{
 	{"蓝牙模式",        "bt"},
 	{"连接成功",        "bt_conn"},
 	{"断开连接",        "bt_dconn"},
-    {"对耳连接成功",    "tws_conn"},
-	{"对耳断开连接",    "tws_dconn"},
+    {"对箱连接成功",    "tws_conn"},
+	{"对箱断开连接",    "tws_dconn"},
 	{"低电提示音",      "low_power"},
 	{"关机",            "power_off"},
 	{"开机",            "power_on"},
 	{"来电",            "ring"},
 	{"最大音量",        "vol_max"},
+	{"配对模式",  		"paired"},	
+	{"linein模式",		"linein"},
+	{"music模式", 		"music"},
+	{"fm模式",  		"fm"},
+	{"record模式",		"record"},
+	{"rtc模式",  		"rtc"},
+	{"pc模式", 			"pc"},
 	-- 添加更多
 	-- 如果没有，就会使用文件名
 };
@@ -70,6 +84,13 @@ cfg:addToneNameMapLang("en", {
 	{"power on",          "power_on"},
 	{"ringing",           "ring"},
 	{"max volume",        "vol_max"},
+	{"paired",			  "paired"},
+	{"linein",            "linein"},
+	{"music",             "music"},
+	{"fm",                "fm"},
+	{"record",            "record"},
+	{"rtc",               "rtc"},
+	{"pc",                "pc"},
 	-- 添加更多
 	-- 如果没有，就会使用文件名
 });
@@ -91,7 +112,7 @@ tv:setMainFormatSelector({
 	{"sbc (高音质)", "sbc"},
 	{"sin (正弦波)", "sin"},
 	{"mty (全音质) 请设置输出采样率和码率", "mty"},
-	{"sst (简易合成,低音质)",          "sst"},	{"保留原有格式", "*"},});
+	{"sst (简易合成,低音质)",          "sst"},    {"保留原有格式", "*"},});
 
 local tone_list_view = cfg:vBox{
 	tv

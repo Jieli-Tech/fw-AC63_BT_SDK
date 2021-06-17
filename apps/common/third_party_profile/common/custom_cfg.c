@@ -1,4 +1,3 @@
-#include "board_config.h"
 #include "custom_cfg.h"
 #include "app_config.h"
 
@@ -12,7 +11,11 @@
 #include "smartbox_adv_bluetooth.h"
 #endif
 
-#if RCSP_ADV_EN || RCSP_BTMATE_EN || SMART_BOX_EN || XM_MMA_EN
+#if AI_APP_PROTOCOL
+#include "app_protocol_api.h"
+#endif
+
+#if RCSP_ADV_EN || RCSP_BTMATE_EN || SMART_BOX_EN || APP_PROTOCOL_READ_CFG_EN
 #include "app_config.h"
 #include "fs.h"
 //#include "crc_api.h"
@@ -1170,10 +1173,9 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
         fclose(fp);
     }
     custom_cfg_item_write(CFG_ITEM_MD5, md5, sizeof(md5));
-#if XM_MMA_EN
     u8 sdk_type = 0;
-#else
-    u8 sdk_type = RCSP_SDK_TYPE;
+#if RCSP_ADV_EN || RCSP_BTMATE_EN
+    sdk_type = RCSP_SDK_TYPE;
 #endif
     custom_cfg_item_write(CFG_ITEM_SDK_TYPE, &sdk_type, sizeof(sdk_type));
     return 0;

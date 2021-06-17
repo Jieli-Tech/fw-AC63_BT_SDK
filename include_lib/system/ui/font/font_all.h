@@ -79,4 +79,34 @@ struct font_info {
 
 extern const struct font_info font_info_table[];
 
+
+typedef struct {
+    u8 codepage;
+    u32 ansi_offset;
+    u32 table_offset;
+} LANG_TABLE;
+
+
+#define     CP874  (1)
+#define     CP937  (2)
+#define     CP1250 (3)
+#define     CP1251 (4)
+#define     CP1252 (5)
+#define     CP1253 (6)
+#define     CP1254 (7)
+#define     CP1255 (8)
+#define     CP1256 (9)
+#define     CP1257 (10)
+#define     CP1258 (11)
+#define     CPKSC  (12)
+#define     CPSIJS (13)
+
+
+extern const LANG_TABLE *lange_info_table;
+
+
+int font_set_offset_table(const LANG_TABLE *table);
+
+
+
 #endif

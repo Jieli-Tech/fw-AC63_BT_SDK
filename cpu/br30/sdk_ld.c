@@ -171,6 +171,14 @@ SECTIONS
 
         *(.noop_version)
 
+#ifdef CONFIG_MOVABLE_ENABLE
+		 . = ALIGN(4);
+         _SPI_CODE_START = . ;
+         *(.spi_code)
+		 . = ALIGN(4);
+         _SPI_CODE_END = . ;
+#endif
+
 		. = ALIGN(4);
 
 		*(.media.audio*)
@@ -292,13 +300,12 @@ SECTIONS
     	audio_sync_code_begin = .;
         *(.audio_sync_code)
     	audio_sync_code_end = .;
-#endif
-
 		. = ALIGN(4);
         _SPI_CODE_START = . ;
         *(.spi_code)
 		. = ALIGN(4);
         _SPI_CODE_END = . ;
+#endif
 		. = ALIGN(4);
 
         data_code_pc_limit_end = .;
@@ -350,6 +357,7 @@ SECTIONS
 			*(.dms_code)
 			*(.dms_const)
 			*(.dms_data)
+			*(.agc_code)
             . = ALIGN(4);
 			*(.aec_mux)
             . = ALIGN(4);

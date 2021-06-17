@@ -473,7 +473,9 @@ static u8 pvdd_trim(u8 trim)
             }
         }
         if (v < PVDD_VOL_MIN) {
-            lev++;
+            if (lev < PVDD_VOL_SEL_MAX) {
+                lev++;
+            }
         }
 
         //update_pvdd_trim_level(lev);

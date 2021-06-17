@@ -884,6 +884,16 @@ void uart_disable_for_ota()
     JL_UART2->CON0 = BIT(13) | BIT(12) | BIT(10);
 }
 
+u32 uart_read_hrxcnt(uart_bus_t *ut)
+{
+    u32 temp = 0;
+    JL_UART_TypeDef *uartx = (JL_UART_TypeDef *)(ut->argv);
+    uartx->CON0 |= BIT(7);
+    temp = uartx->HRXCNT;
+    uartx->CON0 |= BIT(7);
+    temp = uartx->HRXCNT;
+    return temp;
+}
 /* REGISTER_UPDATE_TARGET(uart_update_target) = { */
 /*     .name = "uart", */
 /*     .driver_close = uart_disable_for_ota, */

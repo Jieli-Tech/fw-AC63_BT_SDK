@@ -734,6 +734,9 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
         printf("\n-ae01_rx(%d):", buffer_size);
         printf_buf(buffer, buffer_size);
 
+        if (app_recieve_callback) {
+            app_recieve_callback(0, buffer, buffer_size);
+        }
         //收发测试，自动发送收到的数据;for test
         if (app_send_user_data_check(buffer_size)) {
             app_send_user_data(ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE, buffer, buffer_size, ATT_OP_AUTO_READ_CCC);

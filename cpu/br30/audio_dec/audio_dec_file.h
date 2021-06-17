@@ -70,6 +70,7 @@ struct file_dec_hdl {
     u32 pick_flag : 1;		// 挑出数据帧发送（如MP3等)。不是输出pcm，后级不能接任何音效处理等
     u32 pcm_enc_flag : 1;	// pcm压缩成数据帧发送（如WAV等）
     u32 read_err : 2;		// 读数出错 0:no err， 1:fat err,  2:disk err
+    u32 wait_add : 1;	// 是否马上得到执行
 
 #if TCFG_DEC_DECRYPT_ENABLE
     CIPHER mply_cipher;		// 解密播放

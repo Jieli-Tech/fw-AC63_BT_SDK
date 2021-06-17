@@ -38,12 +38,12 @@ extern void charge_reset_pb5_pd_status(void);
 extern void nvram_set_boot_state(u32 state);
 extern void local_irq_disable();
 void hw_mmu_disable(void);
-void update_close_hw(void);
+void update_close_hw(void *filter_name);
 
 void uart_update_set_nvram()
 {
     local_irq_disable();
-    update_close_hw();
+    update_close_hw("null");
     hw_mmu_disable();
 
     nvram_set_boot_state(UPGRADE_UART_SOFT_KEY);

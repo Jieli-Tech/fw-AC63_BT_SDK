@@ -145,28 +145,23 @@ const struct iokey_platform_data iokey_data = {
 
 /************************** TOUCH_KEY ****************************/
 #if TCFG_TOUCH_KEY_ENABLE
-const struct touch_key_port touch_key_list[] = {
-	{
-		.port 		= TCFG_TOUCH_KEY0_PORT,
-		.key_value 	= TCFG_TOUCH_KEY0_VALUE, 	 	//该值由时钟配置和硬件结构决定, 需要调试
-	},
-
-	{
-		.port 		= TCFG_TOUCH_KEY1_PORT,
-		.key_value 	= TCFG_TOUCH_KEY1_VALUE, 	 	//该值由时钟配置和硬件结构决定, 需要调试
-	},
+const const struct touch_key_port touch_key_list[] = {
+    {
+	    .press_delta    = TCFG_TOUCH_KEY0_PRESS_DELTA,
+        .port           = TCFG_TOUCH_KEY0_PORT,
+        .key_value      = TCFG_TOUCH_KEY0_VALUE,
+    },
+    {
+	    .press_delta    = TCFG_TOUCH_KEY1_PRESS_DELTA,
+	    .port           = TCFG_TOUCH_KEY1_PORT,
+        .key_value      = TCFG_TOUCH_KEY1_VALUE,
+    },
 };
 
 const struct touch_key_platform_data touch_key_data = {
-	.num = ARRAY_SIZE(touch_key_list),
-	.clock = TCFG_TOUCH_KEY_CLK,
-	.change_gain 	= TCFG_TOUCH_KEY_CHANGE_GAIN,
-	.press_cfg		= TCFG_TOUCH_KEY_PRESS_CFG,
-	.release_cfg0 	= TCFG_TOUCH_KEY_RELEASE_CFG0,
-	.release_cfg1 	= TCFG_TOUCH_KEY_RELEASE_CFG1,
-	.port_list = touch_key_list,
+    .num = ARRAY_SIZE(touch_key_list),
+    .port_list = touch_key_list,
 };
-
 #endif  /* #if TCFG_TOUCH_KEY_ENABLE */
 
 #if MULT_KEY_ENABLE
@@ -339,6 +334,18 @@ void board_init()
 	}
 #endif
 
+#if USER_UART_UPDATE_ENABLE
+        {
+#include "uart_update.h"
+            uart_update_cfg  update_cfg = {
+                .rx = UART_UPDATE_RX_PORT,
+                .tx = UART_UPDATE_TX_PORT,
+                .output_channel = CH2_UT1_TX,
+                .input_channel = INPUT_CH0
+            };
+            uart_update_init(&update_cfg);
+        }
+#endif
 }
 
 enum {
@@ -481,6 +488,16 @@ struct port_wakeup port1 = {
 };
 #endif
 
+#if USER_UART_UPDATE_ENABLE
+struct port_wakeup port0 = {
+	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
+	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+    .both_edge          = 0,
+	.iomap              = UART_UPDATE_RX_PORT,               //唤醒口选择
+    .filter             = PORT_FLT_2ms,
+};
+#endif
+
 #if TCFG_CHARGE_ENABLE
 struct port_wakeup charge_port = {
     .edge               = RISING_EDGE,                       //唤醒方式选择,可选：上升沿\下降沿\双边沿
@@ -515,6 +532,11 @@ const struct wakeup_param wk_param = {
 #if TCFG_TEST_BOX_ENABLE
 	.port[2] = &port1,
 #endif
+
+#if USER_UART_UPDATE_ENABLE
+	.port[2] = &port1,
+#endif
+
 #if TCFG_CHARGE_ENABLE
     .aport[0] = &charge_port,
     .aport[1] = &vbat_port,

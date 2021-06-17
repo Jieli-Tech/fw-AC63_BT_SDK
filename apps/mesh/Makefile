@@ -7,6 +7,9 @@ includes += \
 	-I$(ROOT)/apps/common/config/include \
 	-I$(ROOT)/apps/mesh/include \
 	-I$(ROOT)/apps/common/third_party_profile/common/ \
+    -I$(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/ \
+	-I$(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp \
+	-I$(ROOT)/apps/common/third_party_profile/jieli/ \
 
 # include_lib include
 includes += \
@@ -43,6 +46,10 @@ objs += \
 	$(ROOT)/apps/$(APP_CASE)/user_cfg.o \
 	$(ROOT)/apps/common/update/update.o \
     $(ROOT)/apps/common/update/testbox_update.o \
+	$(ROOT)/apps/common/third_party_profile/common/custom_cfg.o \
+    $(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.o \
+    $(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_user_update.o \
+	$(ROOT)/apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_ch_loader_download.o \
 
 objs += \
 	$(ROOT)/apps/common/key/iokey.o \

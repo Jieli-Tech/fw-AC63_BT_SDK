@@ -11,7 +11,7 @@ extern const int support_dual_bank_update_en;
 
 struct __tws_ota_para {
     u32 fm_size;
-    u16 fm_crc16;
+    u32 fm_crc;
     u16 max_pkt_len;
 };
 
@@ -34,6 +34,11 @@ typedef struct _update_op_api_tws {
     int (*tws_ota_user_chip_update_send)(u8 cmd, u8 *buf, u16 len);
 } update_op_tws_api_t;  //给tws同步升级用的接口
 
+update_op_tws_api_t *get_tws_update_api(void);
+void tws_sync_update_crc_handler_register(void (*crc_init_hdl)(void), u32(*crc_calc_hdl)(u32 init_crc, u8 *data, u32 len));
+void update_start_exit_sniff(void);
+void set_ota_status(u8 status);
+
 typedef struct _update_op_api_t {
     void (*ch_init)(void (*resume_hdl)(void *priv), int (*sleep_hdl)(void *priv));
     u16(*f_open)(void);
@@ -53,6 +58,12 @@ extern const update_op_api_t rcsp_update_op;
 enum {
     UPDATE_LOADER_OK  = 1,
     UPDATE_LOADER_ERR,
+};
+
+enum {
+    PKT_FLAG_MIDDLE = 0,
+    PKT_FLAG_FIRST,
+    PKT_FLAG_LAST,
 };
 
 //update result code bitmap
@@ -85,6 +96,7 @@ enum {
     UPDATE_RESULT_OTA_TWS_START_ERR,        //对耳启动升级失败
     UPDATE_RESULT_OTA_TWS_CRC_ERROR,            //对耳校验失败
     UPDATE_RESULT_OTA_APP_EXIT,             //升级过程APP强制退出
+    UPDATE_RESULT_TWS_NO_CONNECT,           //对耳未连接
 };
 
 #include "system/task.h"
@@ -171,6 +183,22 @@ void update_tws_api_register(const update_op_tws_api_t *op);
 
 int app_active_update_task_init(update_mode_info_t *info);
 int update_file_verify(u32 ufw_addr, u16(*ufw_read)(void *buf, u32 addr, u32 len));
+
+//==========================================================//
+//  		           获取升级进度信息                     //
+//注意: 只有双备份升级可以获取该信息                        //
+//==========================================================//
+typedef struct _update_percent_info {
+    u32 total_len;  //固件总升级大小
+    u32 finish_len; //当前完成升级大小
+    u32 percent;    //当前进度百分比
+} update_percent_info;
+
+//注册升级进度更新回调函数:
+void register_update_percent_info_callback_handle(void (*handle)(update_percent_info *info));
+
+//查询当前升级进度信息:
+void update_percent_info_query(update_percent_info *info);
 
 #endif /*_UPDATE_LOADER_DOWNLOAD_H_*/
 

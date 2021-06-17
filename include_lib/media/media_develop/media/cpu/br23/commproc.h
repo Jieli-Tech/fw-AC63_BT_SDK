@@ -77,6 +77,9 @@ struct aec_s_attr {
 
     float AEC_RefEngThr;
     float AEC_DT_AggressiveFactor;
+
+    /*Extended-Parameters*/
+    u16 ref_sr;
 };
 
 s32 aec_init(struct aec_s_attr *attr);

@@ -27,7 +27,7 @@ u32 msd_set_wakeup_handle(void (*handle)(struct usb_device_t *usb_device));
 u32 msd_register_disk(const char *name, void *arg);
 u32 msd_unregister_disk(const char *name);
 u32 msd_unregister_all();
-u32 msd_register();
+u32 msd_register(const usb_dev id);
 u32 msd_release();
 void msd_set_reset_wakeup_handle(void (*handle)(struct usb_device_t *usb_device, u32 itf_num));
 void msd_reset(struct usb_device_t *usb_device, u32 itf_num);

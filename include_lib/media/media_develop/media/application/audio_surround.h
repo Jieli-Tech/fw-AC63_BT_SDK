@@ -15,7 +15,7 @@ typedef struct _surround_update_parm {
 } surround_update_parm;
 
 typedef struct _surround_open_parm {
-    u8 channel;                         //通道数
+    u8 channel;                         //通道数立体声配2， 左声道配EFFECT_CH_L, 右声道配EFFECT_CH_R
     u8 surround_effect_type;            //默认的环绕音效类型
 } surround_open_parm;
 
@@ -42,6 +42,7 @@ enum {
     EFFECT_GLORY_OF_KINGS,              //王者荣耀
     EFFECT_FOUR_SENSION_BATTLEFIELD,    //四季战场
 
+    EFFECT_SUR2,             //一种新的环绕声(仿某耳机的环绕音效)需将const_surround_en|BIT(2)
     /*如使用以下效果，需将const_surround_en|BIT(1), mips占用 55M ram33k*/
     EFFECT_3D_PANORAMA2,                //3d全景另一种效果
     EFFECT_KTV,       	                //ktv模式
@@ -50,7 +51,8 @@ enum {
     EFFECT_VOICE,                       //清澈人声
     EFFECT_SUR,                         //全景环绕
 
-    EFFECT_OFF,                         //音效开关
+    EFFECT_OFF2,               //音效开关(数据会经过模块，但不做处理,保证数据延续，避免由音效开关引起的哒哒音，)
+    EFFECT_OFF,               //音效开关(数据直接不经过模块)
 };
 
 

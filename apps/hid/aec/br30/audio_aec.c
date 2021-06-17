@@ -47,6 +47,12 @@
 extern const int  VC_KINDO_TVM;
 extern struct adc_platform_data adc_data;
 extern struct audio_dac_hdl dac_hdl;
+__attribute__((weak))u32 usb_mic_is_running()
+{
+    return 0;
+}
+
+
 
 #ifdef CONFIG_FPGA_ENABLE
 const u8 CONST_AEC_ENABLE = 1;
@@ -70,6 +76,11 @@ const u8 CONST_AEC_DLY_EST = 0;
 
 /*ANS等级:0 or 1,等级1比等级0多6k左右的ram*/
 const u8 CONST_ANS_MODE = 1;
+
+/*参考数据变采样处理*/
+const u8 CONST_REF_SRC = 0;
+
+
 
 /*Splittingfilter模式：0 or 1
  *mode = 0:运算量和ram小，高频会跌下来
@@ -489,6 +500,11 @@ int audio_aec_open(u16 sample_rate, s16 enablebit, int (*out_hdl)(s16 *data, u16
     aec_param->aec_update = audio_aec_update;
 #endif/*TCFG_AEC_TOOL_ONLINE_ENABLE*/
     aec_param->output_handle = audio_aec_output;
+    aec_param->ref_sr  = usb_mic_is_running();
+    if (aec_param->ref_sr == 0) {
+        aec_param->ref_sr = sample_rate;
+    }
+
     aec_param->far_noise_gate = 10;
 
     audio_aec_param_init(aec_param);

@@ -3,7 +3,6 @@
 
 #include "generic/typedef.h"
 #include "app_config.h"
-#include "board_config.h"
 
 #define AUDIO_MIXER_LEN			(128 * 4 * 2)
 
@@ -25,7 +24,6 @@
  */
 #define TCFG_VOL_RESET_WHEN_NO_SUPPORT_VOL_SYNC	 0	//不支持音量同步的设备默认最大音量
 
-#if TCFG_MIC_CAPLESS_ENABLE
 /*
  *省电容mic偏置电压自动调整(因为校准需要时间，所以有不同的方式)
  *1、烧完程序（完全更新，包括配置区）开机校准一次
@@ -36,6 +34,8 @@
 #define MC_BIAS_ADJUST_ONE			1	//省电容mic偏置只校准一次（跟dac trim一样）
 #define MC_BIAS_ADJUST_POWER_ON		2	//省电容mic偏置每次上电复位都校准(Power_On_Reset)
 #define MC_BIAS_ADJUST_ALWAYS		3	//省电容mic偏置每次开机都校准(包括上电复位和其他复位)
+
+#if TCFG_MIC_CAPLESS_ENABLE
 #define TCFG_MC_BIAS_AUTO_ADJUST	MC_BIAS_ADJUST_POWER_ON
 #define TCFG_MC_CONVERGE_TRACE		0	//省电容mic收敛值跟踪
 #else

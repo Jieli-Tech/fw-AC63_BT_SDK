@@ -7,6 +7,7 @@
 /* #include "bt_tws.h" */
 #include "classic/tws_api.h"
 #include "key_event_deal.h"
+#include "btstack/avctp_user.h"
 #include "app_config.h"
 
 #define LOG_TAG_CONST       LP_KEY
@@ -18,7 +19,11 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+#if (TCFG_LP_TOUCH_KEY_ENABLE || TCFG_LP_EARTCH_KEY_ENABLE)
 
+//需要开debug的情况
+//1.内置触摸调试工具
+//2.入耳检测
 #define CTMU_CH0_MODULE_DEBUG 	0
 #define CTMU_CH1_MODULE_DEBUG 	0
 
@@ -110,9 +115,11 @@ enum CTMU_M2P_CMD {
 
 
 enum {
-    BT_RES_MSG,
+    BT_CH0_RES_MSG,
+    BT_CH1_RES_MSG,
     BT_EVENT_HW_MSG,
     BT_EVENT_SW_MSG,
+    BT_EVENT_VDDIO,
 };
 
 struct ctmu_key {
@@ -128,6 +135,9 @@ struct ctmu_key {
     u16 long_timer;
     u16 ear_in_timer;
     u32 lrc_hz;
+    u8 ch1_inear_ok;
+    u16 ch1_trim_value;
+    u16 ch1_trim_flag;
     const struct lp_touch_key_platform_data *config;
 };
 
@@ -201,6 +211,9 @@ const static struct ch_adjust_table ch1_sensitivity_table[] = {
     {10, 		15, 		 50}, //cap检测灵敏度级数9
 };
 
+#define CH1_SOFT_INEAR_VAL  180
+#define CH1_SOFT_OUTEAR_VAL 120
+
 int eartch_event_deal_init(void);
 
 #define __this 		(&_ctmu_key)
@@ -210,6 +223,8 @@ static int lp_touch_key_online_debug_init(void);
 static int lp_touch_key_online_debug_send(u8 ch, u16 val);
 static int lp_touch_key_online_debug_key_event_handle(u8 ch_index, struct sys_event *event);
 #endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
+
+static volatile u8 is_lpkey_active = 0;
 
 //init io HZ
 static void ctmu_port_init(u8 port)
@@ -334,6 +349,12 @@ void lp_touch_key_init(const struct lp_touch_key_platform_data *config)
         log_info("M2P_CTMU_CH0_SOFTOFF_LONG_TIMEH  = 0x%x", M2P_CTMU_CH0_SOFTOFF_LONG_TIMEH);
         log_info("M2P_CTMU_CH0_PRD1L = 0x%x", M2P_CTMU_CH0_PRD1_L);
         log_info("M2P_CTMU_CH0_PRD1H = 0x%x", M2P_CTMU_CH0_PRD1_H);
+
+#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+        M2P_CTMU_CH0_RES_SEND = 1;
+#else
+        M2P_CTMU_CH0_RES_SEND = 0;
+#endif
     }
 
     if (__this->config->ch1.enable) {
@@ -377,6 +398,35 @@ void lp_touch_key_init(const struct lp_touch_key_platform_data *config)
             sys_timeout_add(NULL, eartch_hardware_suspend, 500);
         }
 #endif /* #if (TCFG_EARTCH_EVENT_HANDLE_ENABLE && TCFG_LP_EARTCH_KEY_ENABLE) */
+
+#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+        M2P_CTMU_CH1_RES_SEND = 1;
+#else
+        M2P_CTMU_CH1_RES_SEND = 0;
+#endif
+        u16 trim_value;
+        int ret = syscfg_read(LP_KEY_CH1_TRIM_VALUE, &trim_value, sizeof(trim_value));
+        __this->ch1_trim_flag = 0;
+        __this->ch1_inear_ok = 0;
+
+        if (ret > 0) {
+            __this->ch1_trim_value = trim_value;
+            M2P_CTMU_CH1_TRIM_VALUE_L = (__this->ch1_trim_value & 0xFF);
+            M2P_CTMU_CH1_TRIM_VALUE_H = ((__this->ch1_trim_value >> 8) & 0xFF);
+            __this->ch1_inear_ok = 1;
+            log_info("ch1_trim_value = %d", __this->ch1_trim_value);
+        } else {
+            __this->ch1_trim_value = 0;
+            //没有trim的情况下用不了
+            M2P_CTMU_CH1_TRIM_VALUE_L = (10000 & 0xFF);
+            M2P_CTMU_CH1_TRIM_VALUE_H = ((10000 >> 8) & 0xFF);
+        }
+
+        //软件触摸灵敏度调试
+        M2P_CTM_INEAR_VALUE_L = CH1_SOFT_INEAR_VAL & 0xFF;
+        M2P_CTM_INEAR_VALUE_H = CH1_SOFT_INEAR_VAL >> 8;
+        M2P_CTM_OUTEAR_VALUE_L = CH1_SOFT_OUTEAR_VAL & 0xFF;
+        M2P_CTM_OUTEAR_VALUE_H = CH1_SOFT_OUTEAR_VAL >> 8;
     }
 
     //CTMU 时基配置
@@ -400,7 +450,8 @@ void lp_touch_key_init(const struct lp_touch_key_platform_data *config)
 
 #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
     lp_touch_key_online_debug_init();
-#endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
+#endif/* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
+
 }
 
 int __attribute__((weak)) lp_touch_key_event_remap(struct sys_event *e)
@@ -632,44 +683,229 @@ static void tws_send_event_data(int msg, int type)
     }
 }
 
-static void tws_send_res_data(int res, int type)
+void tws_send_vddio_data(u8 data)
+{
+    tws_send_event_data(data, BT_EVENT_VDDIO);
+}
+
+static void tws_send_res_data(int data1, int data2, int data3, int type)
 {
     u32 event_data[4];
     if (tws_api_get_tws_state() & TWS_STA_SIBLING_CONNECTED) {
         event_data[0] = type;
-        event_data[1] = res;
-        tws_api_send_data_test(event_data, 2 * sizeof(int), TWS_FUNC_ID_VOL_LP_KEY);
+        event_data[1] = data1;
+        event_data[2] = data2;
+        event_data[3] = data3;
+        tws_api_send_data_test(event_data, 4 * sizeof(int), TWS_FUNC_ID_VOL_LP_KEY);
     }
 }
+
+__attribute__((weak))
+u32 user_send_cmd_prepare(USER_CMD_TYPE cmd, u16 param_len, u8 *param)
+{
+    return 0;
+}
+
+static u8 lp_touch_key_testbox_remote_test(u8 event)
+{
+    u8 ret = true;
+    u8 key_report = 0;
+
+    switch (event) {
+    case CTMU_P2M_CH0_FALLING_EVENT:
+        key_report = 0xF1;
+        log_info("Notify testbox CH0 Down");
+        break;
+    case CTMU_P2M_CH0_RAISING_EVENT:
+        key_report = 0xF2;
+        log_info("Notify testbox CH0 Up");
+        break;
+
+    case CTMU_P2M_CH0_LONG_EVENT:
+    case CTMU_P2M_CH0_SHORT_EVENT:
+        break;
+    default:
+        ret = false;
+        break;
+    }
+
+    if (key_report) {
+        user_send_cmd_prepare(USER_CTRL_TEST_KEY, 1, &key_report); //音量加
+    }
+
+    return ret;
+}
+
+void lp_touch_key_testbox_inear_trim(u8 flag)
+{
+#if (!TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE)
+    if (flag == 1) {
+        __this->ch1_trim_flag = 1;
+        __this->ch1_inear_ok = 0;
+        __this->ch1_trim_value == 0;
+        M2P_CTMU_CH1_RES_SEND = 1;
+        log_info("__this->ch1_trim_flag = %d", __this->ch1_trim_flag);
+        is_lpkey_active = 1;
+    } else {
+        __this->ch1_trim_flag = 0;
+        M2P_CTMU_CH1_RES_SEND = 0;
+        log_info("__this->ch1_trim_flag = %d", __this->ch1_trim_flag);
+    }
+#endif
+}
+
+//======================================================//
+//                 测试盒测试标志接口                   //
+//======================================================//
+extern u8 testbox_get_key_action_test_flag(void *priv);
+
+#if CFG_CH1_USE_ALGORITHM_ENABLE
+extern u8 _last_state;
+extern EarphoneDetection epd;
+static int test[1000] = {0};
+#endif
+
+u8 last_state = CTMU_P2M_CH1_OUT_EVENT;
+//extern void spp_printf(const char *format, ...);
 
 void p33_ctmu_key_event_irq_handler()
 {
     static u32 cnt0 = 0;
     static u32 cnt1 = 0;
-    u8 ctmu_event = P2M_CTMU_KEY_EVENT;
-    int res = 0;
+    static u32 cnt2 = 0;
     u8 ret = 0;
     u32 data[4];
     u32 event_data[4];
     //log_debug("ctmu msg: 0x%x", ctmu_event);
+
+    u8 ctmu_event = P2M_CTMU_KEY_EVENT;
+    u16 ch0_res = 0, ch1_res = 0, ch0_iir = 0, ch1_diff = 0, ch1_trim = 0;
+
+
+    if (testbox_get_key_action_test_flag(NULL)) {
+        ret = lp_touch_key_testbox_remote_test(ctmu_event);
+        if (ret == true) {
+            return;
+        }
+    }
+
+    /*log_debug("ctmu msg: 0x%x", ctmu_event);*/
     switch (ctmu_event) {
     case CTMU_P2M_CH0_DEBUG_EVENT:
-        //log_debug("CH0: debug: %d, RES = 0x%x", cnt0++, (P2M_CTMU_CH0_H_RES << 8) | P2M_CTMU_CH0_L_RES);
-        res = (P2M_CTMU_CH0_H_RES << 8) | P2M_CTMU_CH0_L_RES;
+        ch0_res = ((P2M_CTMU_CH0_H_RES << 8) | (P2M_CTMU_CH0_L_RES));
+        ch0_iir = ((P2M_CTMU_CH0_H_IIR_VALUE << 8) | P2M_CTMU_CH0_L_IIR_VALUE);
+        /*printf("ch0_res: %d, ch0_iir: %d\n", ch0_res, ch0_iir);*/
+        /*spp_printf("ch0_res: %d, ch0_iir: %d\n", ch0_res, ch0_iir);*/
+
 #if TWS_BT_SEND_CH0_RES_DATA_ENABLE
-        log_debug("CH1: debug %d, RES = 0x%x", cnt1++, res);
-        tws_send_res_data(res, BT_RES_MSG);
+        tws_send_res_data(((ch0_res << 16) | ch0_iir), 0, 0, BT_CH0_RES_MSG);
 #endif /* #if TWS_BT_SEND_CH0_RES_DATA_ENABLE */
+
+
 #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
-        lp_touch_key_online_debug_send(0, res);
+        lp_touch_key_online_debug_send(0, ch0_res);
 #endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
+
         break;
+
+
     case CTMU_P2M_CH1_DEBUG_EVENT:
-        res = (P2M_CTMU_CH1_H_RES << 8) | P2M_CTMU_CH1_L_RES;
-        //log_debug("CH1: debug %d, RES = 0x%x", cnt1++, res);
+        ch1_diff = ((P2M_CTMU_CH1_H_DIFF_VALUE << 8) | P2M_CTMU_CH1_L_DIFF_VALUE);
+        ch1_trim = ((P2M_CTMU_CH1_H_TRIM_VALUE << 8) | P2M_CTMU_CH1_L_TRIM_VALUE);
+        ch0_res = ((P2M_CTMU_CH0_H_RES << 8) | P2M_CTMU_CH0_L_RES);
+        ch1_res = ((P2M_CTMU_CH1_H_RES << 8) | P2M_CTMU_CH1_L_RES);
+        ch0_iir = (P2M_CTMU_CH0_H_IIR_VALUE << 8 | P2M_CTMU_CH0_L_IIR_VALUE);
+
+        /*log_debug("ch1_diff: %d, ch1_trim: %d, ch0_res: %d, ch1_res: %d, ch0_iir: %d\n", ch1_diff, ch1_trim, ch0_res, ch1_res, ch0_iir);	*/
+
+        /*printf("ch1_diff: %d, ch1_trim: %d, ch0_res: %d, ch1_res: %d, ch0_iir: %d\n", ch1_diff, ch1_trim, ch0_res, ch1_res, ch0_iir);*/
+        //spp_printf("ch1_diff: %d, ch1_trim: %d, ch0_res: %d, ch1_res: %d, ch0_iir: %d\n", ch1_diff, ch1_trim, ch0_res, ch1_res, ch0_iir);
+
+#if !TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
+        if (__this->ch1_trim_flag) {
+            if (__this->ch1_trim_value == 0) {
+                __this->ch1_trim_value = ch1_diff;
+            } else {
+                __this->ch1_trim_value = ((ch1_diff + __this->ch1_trim_value) >> 1);
+            }
+            if (__this->ch1_trim_flag++ > 20) {
+                __this->ch1_trim_flag = 0;
+                M2P_CTMU_CH1_RES_SEND = 0;
+                int ret = syscfg_write(LP_KEY_CH1_TRIM_VALUE, &(__this->ch1_trim_value), sizeof(__this->ch1_trim_value));
+                log_info("write ret = %d", ret);
+                if (ret > 0) {
+                    M2P_CTMU_CH1_TRIM_VALUE_L = (__this->ch1_trim_value & 0xFF);
+                    M2P_CTMU_CH1_TRIM_VALUE_H = ((__this->ch1_trim_value >> 8) & 0xFF);
+                    __this->ch1_inear_ok = 1;
+#if TCFG_EARTCH_EVENT_HANDLE_ENABLE
+                    eartch_state_update(EARTCH_STATE_TRIM_OK);
+#endif
+                    log_info("trim: %d\n", __this->ch1_inear_ok);
+                    is_lpkey_active = 0;
+                } else {
+                    __this->ch1_inear_ok = 0;
+#if TCFG_EARTCH_EVENT_HANDLE_ENABLE
+                    eartch_state_update(EARTCH_STATE_TRIM_ERR);
+#endif
+                    log_info("trim: %d\n", __this->ch1_inear_ok);
+                    is_lpkey_active = 0;
+                }
+            }
+            log_debug("ch1 trim value: %d, res = %d", __this->ch1_trim_value, ch1_diff);
+        }
+#endif
+
+#if TWS_BT_SEND_CH1_RES_DATA_ENABLE
+        if (tws_api_get_tws_state() & TWS_STA_SIBLING_CONNECTED) {
+            tws_send_res_data(((ch1_trim << 16) | ch0_res), ((ch0_iir << 16) | ch1_res), ch1_diff, BT_CH1_RES_MSG);
+        }
+
+#endif /* #if TWS_BT_SEND_CH1_RES_DATA_ENABLE */
+
+        if (P2M_CTMU_CTMU_KEY_CNT != last_state) {
+            last_state = P2M_CTMU_CTMU_KEY_CNT;
+            if (last_state == CTMU_P2M_CH1_IN_EVENT) {
+#if TWS_BT_SEND_EVENT_ENABLE
+                tws_send_event_data(CH1_EAR_IN, BT_EVENT_SW_MSG);
+#endif /* #if TWS_BT_SEND_EVENT_ENABLE */
+                if (__this->ch1_inear_ok) {
+                    ctmu_ch1_event_handle(CH1_EAR_IN);
+                }
+
+            } else if (last_state == CTMU_P2M_CH1_OUT_EVENT) {
+#if TWS_BT_SEND_EVENT_ENABLE
+                tws_send_event_data(CH1_EAR_OUT, BT_EVENT_SW_MSG);
+#endif /* #if TWS_BT_SEND_EVENT_ENABLE */
+                if (__this->ch1_inear_ok) {
+                    ctmu_ch1_event_handle(CH1_EAR_OUT);
+                }
+
+            }
+        }
+
 #if CFG_CH1_USE_ALGORITHM_ENABLE
-        //log_debug("CH1: debug %d, RES = 0x%x", cnt1++, res);
         ret = lp_touch_key_epd_update_res(res);
+        if (_last_state == EPD_OUT) {
+            res |= BIT(0);
+        } else {
+            res &= ~BIT(0);
+        }
+        //tws_send_res_data(epd.tracking_down_th, BT_RES_MSG);
+        //tws_send_res_data(epd.tracking_peak, BT_RES_MSG);
+
+        if (cnt1 < ARRAY_SIZE(test)) {
+            test[cnt1++] = (epd.tracking_down_th << 16) | res;
+        }
+
+        if (tws_api_get_tws_state() & TWS_STA_SIBLING_CONNECTED) {
+            if (cnt2 < ARRAY_SIZE(test)) {
+                tws_send_res_data(test[cnt2++], BT_RES_MSG);
+            } else {
+                tws_send_res_data((epd.tracking_down_th << 16) | res, BT_RES_MSG);
+            }
+        }
+
+        //tws_send_event_data(_last_state, BT_EVENT_SW_MSG);
 
         if (ret != EPD_STATE_NO_CHANCE) {
             if (ret == EPD_IN) {
@@ -686,15 +922,12 @@ void p33_ctmu_key_event_irq_handler()
 
 #else
 
-#if TWS_BT_SEND_CH1_RES_DATA_ENABLE
-        tws_send_res_data(res, BT_RES_MSG);
-#endif /* #if TWS_BT_SEND_CH1_RES_DATA_ENABLE */
-
 #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
-        lp_touch_key_online_debug_send(1, res);
+        lp_touch_key_online_debug_send(1, ch1_res);
 #endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
 
 #endif /* #if CFG_CH1_USE_ALGORITHM_ENABLE */
+
         break;
 
     case CTMU_P2M_CH0_SHORT_EVENT:
@@ -711,6 +944,7 @@ void p33_ctmu_key_event_irq_handler()
     case CTMU_P2M_CH0_RAISING_EVENT:
         if (!(__this->ch_init & BIT(0))) {
             __this->ch_init |= BIT(0);
+            load_p11_bank_code2ram(1, 1);
             return;
         }
         ctmu_raise_click_handle();
@@ -724,7 +958,7 @@ void p33_ctmu_key_event_irq_handler()
         log_debug("CH1 HW: IN");
 
 #if (CFG_CH1_USE_ALGORITHM_ENABLE == 0)
-        ctmu_ch1_event_handle(CH1_EAR_IN);
+        //ctmu_ch1_event_handle(CH1_EAR_IN);
 #endif /* #if CFG_CH1_USE_ALGORITHM_ENABLE */
         break;
     case CTMU_P2M_CH1_OUT_EVENT:
@@ -739,7 +973,7 @@ void p33_ctmu_key_event_irq_handler()
         log_debug("CH1 HW: OUT");
 
 #if (CFG_CH1_USE_ALGORITHM_ENABLE == 0)
-        ctmu_ch1_event_handle(CH1_EAR_OUT);
+        //ctmu_ch1_event_handle(CH1_EAR_OUT);
 #endif /* #if CFG_CH1_USE_ALGORITHM_ENABLE */
         break;
     default:
@@ -867,10 +1101,16 @@ static int tws_api_send_data_test(void *data, int len, u32 func_id)
 
 static void res_receive_handle(void *_data, u16 len, bool rx)
 {
+    static u32 cnt0 = 0;
+    static u32 cnt1 = 0;
     u32 *data = _data;
     if (rx) {
-        if (data[0] == BT_RES_MSG) {
-            log_debug("len = %d, RES = %d", len, data[1]);
+        if (data[0] == BT_CH0_RES_MSG) {
+            /*log_debug("len = %d, RES0 = %08d", len, data[1]);*/
+            log_debug("cnt: %08d, ch0: %08d, iir: %08d\n", cnt1++, (data[1] >> 16), (data[1] & 0xffff));
+        } else if (data[0] == BT_CH1_RES_MSG) {
+            /*log_debug("RES1 ORIGIN = %08d", data[1] & 0xFFFF);*/
+            log_debug("cnt: %08d, trim: %08d, ch0: %08d, ch0_iir: %08d, ch1: %08d, ch0-ch1 %08d", cnt1++, (data[1] >> 16), data[1] & 0xFFFF, (data[2] >> 16), data[2] & 0xFFFF, (data[1] & 0xFFFF));
         } else if (data[0] == BT_EVENT_SW_MSG) {
             log_debug("len = %d, %d ms", len, data[1]);
             if (data[2] == EPD_IN) {
@@ -885,6 +1125,8 @@ static void res_receive_handle(void *_data, u16 len, bool rx)
             } else if (data[2] == CH1_EAR_OUT) {
                 log_debug("HW: OUT");
             }
+        } else if (data[0] == BT_EVENT_VDDIO) {
+            log_debug("BT_EVENT_VDDIO: %d", data[2]);
         }
     }
 }
@@ -1036,6 +1278,9 @@ static int lp_touch_key_debug_reinit(u8 update_state)
     }
     __this->last_key = CTMU_KEY_NULL;
     __this->ch_init = 0;
+
+    load_p11_bank_code2ram(1, 0);
+
     //CTMU 初始化命令
     lp_touch_key_send_cmd(CTMU_M2P_INIT);
 
@@ -1148,5 +1393,19 @@ int lp_touch_key_online_debug_exit(void)
 {
     return 0;
 }
+
 #endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
 
+static u8 lpkey_idle_query(void)
+{
+    return !is_lpkey_active;
+}
+#if TCFG_LP_TOUCH_KEY_ENABLE
+REGISTER_LP_TARGET(key_lp_target) = {
+    .name = "lpkey",
+    .is_idle = lpkey_idle_query,
+};
+#endif /* #if !TCFG_LP_TOUCH_KEY_ENABLE */
+
+
+#endif

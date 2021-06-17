@@ -17,6 +17,8 @@
 #include "app_action.h"
 #include "custom_cfg.h"
 #include "btstack_3th_protocol_user.h"
+#include "update.h"
+
 
 
 
@@ -830,12 +832,17 @@ static void JL_rcsp_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
         JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, NULL, 0);
 #if RCSP_UPDATE_EN
         if (get_jl_update_flag()) {
+#if CONFIG_HID_CASE_ENABLE
+            void rcsp_update_jump_for_hid_device();
+            rcsp_update_jump_for_hid_device();
+#else
             if (RCSP_BLE == JL_get_cur_bt_channel_sel()) {
                 rcsp_printf("BLE_ CON START DISCON\n");
                 rcsp_msg_post(MSG_JL_DEV_DISCONNECT, 0);
             } else {
                 rcsp_printf("WAIT_FOR_SPP_DISCON\n");
             }
+#endif
         }
 #endif
         break;

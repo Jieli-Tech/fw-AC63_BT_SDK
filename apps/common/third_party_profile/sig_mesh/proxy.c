@@ -47,7 +47,6 @@
  *  expires, the Proxy Server shall disconnect."
  */
 #define PROXY_SAR_TIMEOUT  K_SECONDS(20)
-
 #define SAR_COMPLETE       0x00
 #define SAR_FIRST          0x01
 #define SAR_CONT           0x02
@@ -86,6 +85,12 @@ static enum {
     MESH_GATT_PROV,
     MESH_GATT_PROXY,
 } gatt_svc = MESH_GATT_NONE;
+
+_WEAK_
+u8 ble_update_get_ready_jump_flag(void)
+{
+    return 0;
+}
 
 static struct bt_mesh_proxy_client *find_client(struct bt_conn *conn)
 {
@@ -569,6 +574,7 @@ static void proxy_connected(struct bt_conn *conn, u8_t err)
     net_buf_simple_reset(&client->buf);
 }
 
+
 static void proxy_disconnected(struct bt_conn *conn, u8_t reason)
 {
     int i;
@@ -593,7 +599,9 @@ static void proxy_disconnected(struct bt_conn *conn, u8_t reason)
         }
     }
 
-    bt_mesh_adv_update();
+    if (!ble_update_get_ready_jump_flag()) {
+        bt_mesh_adv_update();
+    }
 }
 
 struct net_buf_simple *bt_mesh_proxy_get_buf(void)
@@ -769,13 +777,18 @@ void bt_mesh_proxy_gatt_disconnect(void)
     for (i = 0; i < ARRAY_SIZE(clients); i++) {
         struct bt_mesh_proxy_client *client = &clients[i];
 
-        if (client->conn && (client->filter_type == WHITELIST ||
-                             client->filter_type == BLACKLIST)) {
+        if (client->conn) { // && (client->filter_type == WHITELIST ||
+            // client->filter_type == BLACKLIST)) {
             client->filter_type = NONE;
             bt_conn_disconnect(client->conn,
                                BT_HCI_ERR_REMOTE_USER_TERM_CONN);
         }
     }
+}
+
+void ble_app_disconnect(void)
+{
+    bt_mesh_proxy_gatt_disconnect();
 }
 
 int bt_mesh_proxy_gatt_disable(void)

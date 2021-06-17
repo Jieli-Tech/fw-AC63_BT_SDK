@@ -6,11 +6,12 @@
 #include "app_config.h"
 #include "cpu.h"
 #include "syscfg_id.h"
-#include "vm.h"
 #include "btcontroller_modules.h"
 #include "system/includes.h"
 #include "uart_update.h"
 #include "dual_bank_updata_api.h"
+#include "btstack/avctp_user.h"
+
 #if (SMART_BOX_EN && JL_SMART_BOX_EXTRA_FLASH_OPT)
 #include "smartbox_extra_flash_opt.h"
 #endif
@@ -39,7 +40,11 @@
 extern void *dev_update_get_parm(int type);
 extern u8 get_ota_status();
 extern void get_nor_update_param(void *buf);
-extern s32 vm_write(vm_hdl hdl, u8 *data_buf, u16 len);
+extern bool get_tws_phone_connect_state(void);
+extern void tws_sniff_controle_check_disable(void);
+extern void tws_tx_unsniff_req(void);
+void sys_auto_sniff_controle(u8 enable, u8 *addr);
+
 extern const int support_norflash_update_en;
 
 
@@ -179,7 +184,7 @@ int update_result_deal()
     if (result == UPDATA_SUCC) {
 #if(JL_EARPHONE_APP_EN && RCSP_UPDATE_EN)
         u8 clear_update_flag = 0;
-        vm_write(VM_UPDATE_FLAG, &clear_update_flag, 1);
+        syscfg_write(VM_UPDATE_FLAG, &clear_update_flag, 1);
 #endif
 #if(JL_SMART_BOX_EXTRA_FLASH_OPT && RCSP_UPDATE_EN)
         smartbox_eflash_update_flag_set(0);
@@ -242,12 +247,14 @@ void set_loader_start_addr(u32 addr)
     loader_start_addr = addr;
 }
 
-void update_close_hw(void)
+void update_close_hw(void *filter_name)
 {
     const struct update_target *p;
     list_for_each_update_target(p) {
-        p->driver_close();
-        printf("close Hw Name : %s\n", p->name);
+        if (memcmp(filter_name, p->name, strlen(filter_name) != 0)) {
+            printf("close Hw Name : %s\n", p->name);
+            p->driver_close();
+        }
     }
 }
 
@@ -347,6 +354,7 @@ extern const int support_norflash_update_en;
 extern void ram_protect_close(void);
 
 extern void hwi_all_close(void);
+void wifi_det_close();
 static void update_before_jump_common_handle(UPDATA_TYPE up_type)
 {
     dev_update_close_ui();
@@ -359,10 +367,15 @@ static void update_before_jump_common_handle(UPDATA_TYPE up_type)
     local_irq_disable();
     hwi_all_close();
 
-    /* local_irq_disable();
-    for (i = 0; i < 64; i++) {
-        bit_clr_ie(i);
-    } */
+    /*跳转的时候遇到死掉的情况很可能是硬件模块没关导致，加上保护可以判断哪个异常，保护的地址根据不同SDK而定*/
+    /* u8 inv = 0; */
+    /* mpu_set(1, (u32)&test_pro_addr, (u32)test_pro_addr, inv, "0r", DBG_FM); */
+#ifdef CONFIG_SUPPORT_WIFI_DETECT
+    wifi_det_close();
+#endif
+    /*跳转的时候遇到死掉的情况很可能是硬件模块没关导致，加上保护可以判断哪个异常，保护的地址根据不同SDK而定*/
+    /* u8 inv = 0; */
+    /* mpu_set(1, (u32)&test_pro_addr, (u32)test_pro_addr, inv, "0r", DBG_FM); */
 
 }
 
@@ -469,7 +482,7 @@ void update_mode_api(UPDATA_TYPE up_type, ...)
     /* } */
     hci_controller_destory();
 #endif
-    update_close_hw();
+    update_close_hw("null");
     ram_protect_close();
     save_spi_port();
 
@@ -614,6 +627,11 @@ int update_check_sniff_en(void)
 
 static volatile u8 ota_status = 0;
 
+void set_ota_status(u8 stu)
+{
+    ota_status = stu;
+}
+
 u8 get_ota_status()
 {
     return ota_status;
@@ -701,6 +719,7 @@ static void update_common_state_cbk(update_mode_info_t *info, u32 state, void *p
     }
 }
 
+
 extern void update_module_init(void (*cbk)(update_mode_info_t *, u32, void *));
 extern void testbox_update_init(void);
 static void app_update_init(void)
@@ -710,4 +729,22 @@ static void app_update_init(void)
 }
 
 __initcall(app_update_init);
+
+
+void update_start_exit_sniff(void)
+{
+#if TCFG_USER_TWS_ENABLE
+    volatile u8 wait_tws_sniff_exit = 1;
+    if (get_tws_phone_connect_state() == TRUE) {
+        g_printf("exit sniff mode...\n");
+        user_send_cmd_prepare(USER_CTRL_ALL_SNIFF_EXIT, 0, NULL);
+    } else {
+        tws_tx_unsniff_req();
+    }
+    tws_sniff_controle_check_disable();
+#else
+    user_send_cmd_prepare(USER_CTRL_ALL_SNIFF_EXIT, 0, NULL);
+#endif
+    sys_auto_sniff_controle(0, NULL);
+}
 

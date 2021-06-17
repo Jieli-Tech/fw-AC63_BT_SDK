@@ -385,8 +385,14 @@ void ladc_capless_adjust_post(s32 dacr32, u8 begin)
                     if (mc_trim->cur_bias_res < 21) {
                         mc_trim->cur_bias_res++;
                     } else {
+                        /*找不到合适的上拉电阻，分压一个1.5v左右的偏置电压:
+                         *(1)如果mic上电时间正常，则修改mic_ldo档位继续尝试
+                         *(2)如果mic上电时间太长，则更换mic
+                         *(3)为了防止出错断言影响样机升级，这里默认修改成返回
+                         */
                         printf("[Assert]mic_bias_rsel err 1!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-                        ASSERT(0, "mic_bias_rsel err 1\n");
+                        //ASSERT(0, "mic_bias_rsel err 1\n");
+                        return;
                     }
                     bias_rsel = mic_bias_tab[mc_trim->cur_bias_res];
                     y_printf("[-]mic_bias_rsel:%d = %d", mc_trim->cur_bias_res, bias_rsel);
@@ -397,8 +403,14 @@ void ladc_capless_adjust_post(s32 dacr32, u8 begin)
                     if (mc_trim->cur_bias_res > 1) {
                         mc_trim->cur_bias_res--;
                     } else {
+                        /*找不到合适的上拉电阻，分压一个1.5v左右的偏置电压:
+                         *(1)如果mic上电时间正常，则修改mic_ldo档位继续尝试
+                         *(2)如果mic上电时间太长，则更换mic
+                         *(3)为了防止出错断言影响样机升级，这里默认修改成返回
+                         */
                         printf("[Assert]mic_bias_rsel err 2!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-                        ASSERT(0, "mic_bias_rsel err 2\n");
+                        //ASSERT(0, "mic_bias_rsel err 2\n");
+                        return;
                     }
                     bias_rsel = mic_bias_tab[mc_trim->cur_bias_res];
                     y_printf("[+]mic_bias_rsel:%d = %d", mc_trim->cur_bias_res, bias_rsel);

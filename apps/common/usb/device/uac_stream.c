@@ -33,8 +33,10 @@ struct uac_speaker_handle {
     u8 alive;
     void *buffer;
     void *audio_track;
-    void (*rx_handler)(int, void *, int);
+    //void (*rx_handler)(int, void *, int);
 };
+
+static void (*uac_rx_handler)(int, void *, int) = NULL;
 
 #if (SOUNDCARD_ENABLE)
 #define UAC_BUFFER_SIZE     (4 * 1024)
@@ -93,9 +95,10 @@ void uac_speaker_stream_buf_clear(void)
 
 void set_uac_speaker_rx_handler(void *priv, void (*rx_handler)(int, void *, int))
 {
-    if (uac_speaker) {
-        uac_speaker->rx_handler = rx_handler;
-    }
+    uac_rx_handler = rx_handler;
+    /* if (uac_speaker) { */
+    /* uac_speaker->rx_handler = rx_handler; */
+    /* } */
 }
 
 int uac_speaker_stream_sample_rate(void)
@@ -127,16 +130,18 @@ void uac_speaker_stream_write(const u8 *obuf, u32 len)
 #endif
         int wlen = cbuf_write(&uac_speaker->cbuf, (void *)obuf, len);
         if (wlen != len) {
-            putchar('W');
+            //putchar('W');
         }
-        if (uac_speaker->rx_handler) {
+        //if (uac_speaker->rx_handler) {
+        if (uac_rx_handler) {
             /* if (uac_speaker->cbuf.data_len >= UAC_BUFFER_MAX) { */
             // 马上就要满了，赶紧取走
             uac_speaker->need_resume = 1; //2020-12-22注:无需唤醒
             /* } */
             if (uac_speaker->need_resume) {
                 uac_speaker->need_resume = 0;
-                uac_speaker->rx_handler(0, (void *)obuf, len);
+                uac_rx_handler(0, (void *)obuf, len);
+                //uac_speaker->rx_handler(0, (void *)obuf, len);
             }
         }
         uac_speaker->alive = 0;
@@ -208,7 +213,7 @@ void uac_speaker_stream_open(u32 samplerate, u32 ch)
     }
 
 
-    uac_speaker->rx_handler = NULL;
+    //uac_speaker->rx_handler = NULL;
 
     cbuf_init(&uac_speaker->cbuf, uac_speaker->buffer, UAC_BUFFER_SIZE);
     speaker_stream_is_open = 1;
@@ -311,7 +316,7 @@ void uac_mute_volume(u32 type, u32 l_vol, u32 r_vol)
 }
 
 
-static int (*mic_tx_handler)(int, void *, int) SEC(.uac_rx);
+static int (*mic_tx_handler)(int, void *, int) = NULL;
 int uac_mic_stream_read(u8 *buf, u32 len)
 {
     if (mic_stream_is_open == 0) {
@@ -369,6 +374,8 @@ int uac_mic_stream_read(u8 *buf, u32 len)
             buf[i * 3 + 2] = tmp_buf[i * 2 + 1];
         }
 #endif
+    } else {
+        putchar('N');
     }
     return 0;
 #endif
@@ -386,7 +393,7 @@ u32 uac_mic_stream_open(u32 samplerate, u32 frame_len, u32 ch)
         return 0;
     }
 
-    mic_tx_handler = NULL;
+    /* mic_tx_handler = NULL; */
     log_info("%s", __func__);
 
     struct sys_event event;

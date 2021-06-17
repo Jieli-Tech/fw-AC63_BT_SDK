@@ -6,7 +6,7 @@ ifeq ($(HOST_OS), linux)
 # --------------tools path-----------------------
 export JL_TOOLS=/opt/pi32v2
 
-export CC = $(JL_TOOLS)/bin/pi32v2-uclinux-clang
+export CC = /opt/reltool/pi32v2/bin/clang
 export LD = $(JL_TOOLS)/bin/lto-wrapper
 export AR = $(JL_TOOLS)/bin/lto-ar
 
@@ -103,13 +103,13 @@ export LD_ARGS += \
 --plugin-opt=-banknum-map-file-list=$(ROOT)/apps/$(APP_CASE)/banknum_func.list \
 --plugin-opt=-banknum-section-map-file-list=$(ROOT)/apps/$(APP_CASE)/banknum_sec.list \
 --plugin-opt=-banknum-exclude-func-file-list=$(ROOT)/apps/$(APP_CASE)/banknum_exclude.list \
---plugin-opt=-custom-section-map-file-list=$(ROOT)/cpu/$(CPU)/cussec_map.ld \
+--plugin-opt=-custom-section-map-file-list=$(ROOT)/cpu/$(CPU_DIR)/cussec_map.ld \
 
 endif
 
 ifeq ($(NEED_USED_LIST),y)
 export LD_ARGS += \
---plugin-opt=-used-symbol-file=$(addprefix $(ROOT)/cpu/$(CPU)/, sdk_used_list.used)
+--plugin-opt=-used-symbol-file=$(addprefix $(ROOT)/cpu/$(CPU_DIR)/, sdk_used_list.used)
 
 endif
 

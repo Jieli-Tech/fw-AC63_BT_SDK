@@ -33,6 +33,7 @@ static void testbox_bt_classic_update_private_param_fill(UPDATA_PARM *p)
 
 extern void ll_hci_destory(void);
 extern void ram_protect_close(void);
+extern void update_close_hw(void *filter_name);
 static void testbox_bt_classic_update_before_jump_handle(int type)
 {
     if (UPDATE_MODULE_IS_SUPPORT(UPDATE_BT_LMP_EN)) {
@@ -40,6 +41,8 @@ static void testbox_bt_classic_update_before_jump_handle(int type)
         log_info("close ble hw\n");
         ll_hci_destory();
 #endif
+
+        update_close_hw("bredr");
         if (__bt_updata_save_connection_info()) {
             log_error("bt save conn info fail!\n");
             return;
@@ -55,9 +58,12 @@ static void testbox_bt_classic_update_state_cbk(int type, u32 state, void *priv)
 {
     update_ret_code_t *ret_code = (update_ret_code_t *)priv;
 
+    if (ret_code) {
+        log_info("state:%x err:%x\n", ret_code->stu, ret_code->err_code);
+    }
+
     switch (state) {
     case UPDATE_CH_EXIT:
-        log_info("state:%x err:%x\n", ret_code->stu, ret_code->err_code);
         if (UPDATE_DUAL_BANK_IS_SUPPORT()) {
             if ((0 == ret_code->stu) && (0 == ret_code->err_code)) {
                 log_info("bt update succ\n");
@@ -111,6 +117,10 @@ static void testbox_ble_update_state_cbk(int type, u32 state, void *priv)
 {
     update_ret_code_t *ret_code = (update_ret_code_t *)priv;
 
+    if (ret_code) {
+        printf("ret_code->stu:%d err_code:%d\n", ret_code->stu, ret_code->err_code);
+    }
+
     switch (state) {
     case UPDATE_CH_EXIT:
         if (UPDATE_DUAL_BANK_IS_SUPPORT()) {
@@ -123,9 +133,8 @@ static void testbox_ble_update_state_cbk(int type, u32 state, void *priv)
             }
         } else {
             if ((0 == ret_code->stu) && (0 == ret_code->err_code)) {
-#if TCFG_USER_BLE_ENABLE && ((TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_ADV)  \
-		&& (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_NULL) \
-		&& (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_CLIENT))
+#if TCFG_USER_BLE_ENABLE && (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_NULL) \
+		&& (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_CLIENT)
 
                 ble_update_ready_jump_flag = 1;
                 ble_app_disconnect();

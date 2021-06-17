@@ -9,6 +9,7 @@ export CORE=q32s
 
 #配置项目文件指向(br20/br21)
 export CPU=bd19
+export CPU_DIR=bd19
 
 #配置项目的目标机器型号(generic(开发板)/...)
 export BOARD=generic

@@ -81,7 +81,7 @@ const struct clock_type  clock_enum[] = {
 
     { DEC_TONE_CLK	, (24 + 32), "DEC_TONE_CLK	 " },
     { DEC_MP3_CLK	, (46), "DEC_MP3_CLK	 " },
-    { DEC_WAV_CLK	, (24), "DEC_WAV_CLK	 " },
+    { DEC_WAV_CLK	, (48), "DEC_WAV_CLK	 " },
     { DEC_G729_CLK	, (24), "DEC_G729_CLK	 " },
     { DEC_G726_CLK	, (24), "DEC_G726_CLK	 " },
     { DEC_PCM_CLK	, (24), "DEC_PCM_CLK	 " },

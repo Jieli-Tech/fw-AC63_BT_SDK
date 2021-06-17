@@ -107,7 +107,7 @@ struct audio_dac_sync {
     u32 fast_align : 1;
     u32 connect_sync : 1;
     u32 release_by_bt : 1;
-    u32 resevered : 1;
+    u32 slience_scale : 1;
     u32 input_num : DA_SYNC_INPUT_BITS;
     int fast_points;
     int keep_points;
@@ -166,12 +166,12 @@ struct audio_dac_hdl {
     u16 start_points;
     u16 delay_points;
     u16 prepare_points;//未开始让DAC真正跑之前写入的PCM点数
-
     u16 irq_points;
-    int timer_count;
-    u32 timer_prd_ns;
-    u8 channel_mode;
-    u8 dec_channel_num;
+    s16 protect_time;
+    s16 protect_pns;
+    s16 fadein_frames;
+    s16 fade_vol;
+    u8 protect_fadein;
     u8 vol_set_en;
 
     u8 sound_state;
@@ -184,6 +184,8 @@ struct audio_dac_hdl {
     u8 anc_dac_open;
     u8 dsm_sel;
     struct audio_dac_sync sync;
+    void *feedback_priv;
+    void (*underrun_feedback)(void *priv);
 };
 
 
@@ -273,6 +275,8 @@ int audio_dac_irq_enable(struct audio_dac_hdl *dac, int time_ms, void *priv, voi
 void audio_dac_output_enable(struct audio_dac_hdl *dac);
 
 void audio_dac_output_disable(struct audio_dac_hdl *dac);
+
+int audio_dac_set_protect_time(struct audio_dac_hdl *dac, int time, void *priv, void (*feedback)(void *));
 /*
  * 音频同步
  */
@@ -349,5 +353,8 @@ void audio_dac_set_dcc(u8 dcc);
 void audio_disable_all(void);
 
 int audio_dac_sample_rate_select(struct audio_dac_hdl *dac, u32 sample_rate, u8 high);
+
+
+int audio_dac_get_hrp(struct audio_dac_hdl *dac);
 #endif
 

@@ -265,7 +265,7 @@ void audio_mode_main_dec_open(u32 state)
 /*----------------------------------------------------------------------------*/
 u32 audio_output_nor_rate(void)
 {
-#if TCFG_IIS_ENABLE
+#if (TCFG_IIS_ENABLE && TCFG_IIS_OUTPUT_EN)
     /* return 0; */
     return TCFG_IIS_OUTPUT_SR;
 #endif
@@ -676,7 +676,7 @@ int audio_dec_init()
     // 获取音频输出声道数
     u8 ch_num = audio_output_channel_num();
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR)
-#if TCFG_EQ_DIVIDE_ENABLE || defined (CONFIG_MIXER_CYCLIC)
+#if TCFG_EQ_DIVIDE_ENABLE /* || defined (CONFIG_MIXER_CYCLIC) */
     ch_num = 4;
 #endif
 #endif
@@ -699,7 +699,7 @@ int audio_dec_init()
 
     struct audio_stream_entry *entries[8] = {NULL};
 
-#if (!TCFG_EQ_DIVIDE_ENABLE)// && (!defined(CONFIG_MIXER_CYCLIC))
+#if defined(TCFG_EQ_DIVIDE_ENABLE)&&(!TCFG_EQ_DIVIDE_ENABLE)// && (!defined(CONFIG_MIXER_CYCLIC))
 
     if (ch_num <= 2) {
         mix_eq_drc = mix_out_eq_drc_open(sr, ch_num);// 高低音
@@ -716,12 +716,7 @@ int audio_dec_init()
 
 #if AUDIO_SPECTRUM_CONFIG
     //频响能量值获取接口
-    u8 spectrum_num = ch_num;
-#if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR)
-    spectrum_ch_switch = channel_switch_open(AUDIO_CH_LR, 512);
-    spectrum_num = 2;
-#endif
-    spec_hdl = spectrum_open_demo(sr, spectrum_num);
+    spec_hdl = spectrum_open_demo(sr, ch_num);
 #endif
 
 #if AUDIO_EQUALLOUDNESS_CONFIG
@@ -770,6 +765,12 @@ int audio_dec_init()
 #endif
 #endif
 
+#if AUDIO_SPECTRUM_CONFIG
+    if (spec_hdl) {
+        entries[entry_cnt++] = &spec_hdl->entry;
+    }
+#endif
+
 #if AUDIO_VOCAL_REMOVE_EN
     if (mix_vocal_remove_hdl) {
         entries[entry_cnt++] = &mix_vocal_remove_hdl->entry;
@@ -800,18 +801,6 @@ int audio_dec_init()
     // 创建数据流，把所有节点连接起来
     mixer.stream = audio_stream_open(&mixer, audio_mixer_stream_resume);
     audio_stream_add_list(mixer.stream, entries, entry_cnt);
-
-#if AUDIO_SPECTRUM_CONFIG
-    if (spec_hdl) {
-        //频响能量值获取接口。从倒数第二个节点分流
-        if (spectrum_ch_switch) {
-            audio_stream_add_entry(entries[entry_cnt - 2], &spectrum_ch_switch->entry);
-            audio_stream_add_entry(&spectrum_ch_switch->entry, &spec_hdl->entry);
-        } else {
-            audio_stream_add_entry(entries[entry_cnt - 2], &spec_hdl->entry);
-        }
-    }
-#endif
 
 #if (!AUDIO_OUTPUT_INCLUDE_DAC)
     entry_cnt++;
@@ -1119,6 +1108,10 @@ void mix_out_automute_handler(u8 event, u8 ch)
     printf(">>>> ch:%d %s\n", ch, event ? ("MUTE") : ("UNMUTE"));
     if (ch == app_audio_output_channel_get()) {
         audio_mix_out_automute_mute(event);
+    } else {
+#if DAC_AUTO_HIGH_Z_EN
+        app_audio_output_ch_mute(BIT(ch), event);
+#endif
     }
 }
 

@@ -82,6 +82,12 @@
 #endif
 
 #endif
+
+//需要app(BLE)升级要开一下宏定义   mesh需要支持gatt特性
+#define RCSP_BTMATE_EN                    0
+#define RCSP_UPDATE_EN                    0
+#define UPDATE_MD5_ENABLE                 0
+
 #if TCFG_USER_EDR_ENABLE
 #if RCSP_BTMATE_EN
 #define CONFIG_BT_RX_BUFF_SIZE  (3 * 1024)

@@ -94,7 +94,7 @@ const int CONFIG_INQUIRY_SCAN_POWER         = 7;
 const u8 rx_fre_offset_adjust_enable = 1;
 
 const int config_bredr_fcc_fix_fre = 0;
-const int ble_disable_wait_enable = 1;
+const int ble_disable_wait_enable = 1;                      //不开启wait_enable会导致升级调用ll_destory的时候出现BT访问mmu异常
 
 const int config_btctler_eir_version_info_len = 0;
 
@@ -114,6 +114,7 @@ const int CONFIG_WIFI_DETECT_ENABLE = 0;
 const int config_bt_function  =  0;
 ///bredr 强制 做 maseter
 const int config_btctler_bredr_master = 0;
+const int config_btctler_dual_a2dp  = 0;
 
 ///afh maseter 使用app设置的map 通过USER_CTRL_AFH_CHANNEL 设置
 const int config_bredr_afh_user = 0;

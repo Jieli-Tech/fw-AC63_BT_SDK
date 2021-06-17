@@ -723,6 +723,10 @@ u32 usb_host_remount(const usb_dev id, u32 retry, u32 delay, u32 ot, u8 notify)
     if (ret) {
         goto __exit_fail;
     }
+
+    struct usb_host_device *host_dev = &host_devices[usb_id];
+    os_sem_set(host_dev->sem, 0);
+
     ret = _usb_host_mount(usb_id, retry, delay, ot);
     if (ret) {
         goto __exit_fail;

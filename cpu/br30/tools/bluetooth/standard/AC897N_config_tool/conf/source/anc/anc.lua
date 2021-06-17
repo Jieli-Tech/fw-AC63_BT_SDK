@@ -15,14 +15,29 @@ local anc_config = {
 	coeff_header = {},
 	coeff = {}, -- a fix size binary, store coeffes
 
-
 	header = {}, -- a fix size string
+
+    --old
     dac_gain = {},
     ref_mic_gain = {},
     err_mic_gain = {},
-    reserverd_cfg = {},
+    --reserverd_cfg = {}, --delete
+
+    --new
+    order = {},
+    trans_hpf_sel = {},
+    trans_lpf_sel = {},
+    trans_order = {},
+    trans_advance_mode = {},
+
+    --old
     anc_gain = {},
     transparency_gain = {},
+
+    --new
+    fb_gain = {},
+    sample_rate = {},
+    trans_sample_rate = {},
 	
 	ui = {},
 
@@ -73,12 +88,12 @@ anc_config.dac_gain.hbox_view = cfg:hBox {
 };
 
 -- 8-2 ref_mic_gain
-anc_config.ref_mic_gain.cfg = cfg:i32("ref_mic_gain:  ", 6);
+anc_config.ref_mic_gain.cfg = cfg:i32("ref_mic_gain:  ", 8);
 anc_config.ref_mic_gain.cfg:setOSize(1);
 anc_config.ref_mic_gain.hbox_view = cfg:hBox {
     cfg:stLabel(anc_config.ref_mic_gain.cfg.name .. TAB_TABLE[1]),
     cfg:ispinView(anc_config.ref_mic_gain.cfg, 0, 19, 1),
-    cfg:stLabel("(参考mic增益，设置范围: 0 ~ 19，步进：1，默认值：6)"),
+    cfg:stLabel("(参考mic增益，设置范围: 0 ~ 19，步进：1，默认值：8)"),
     cfg:stSpacer(),
 };
 
@@ -93,32 +108,194 @@ anc_config.err_mic_gain.hbox_view = cfg:hBox {
 };
 
 -- 8-4 reserverd_cfg 
-anc_config.reserverd_cfg.cfg = cfg:i32("reserverd_cfg:  ", 8);
-anc_config.reserverd_cfg.cfg:setOSize(1);
-anc_config.reserverd_cfg.hbox_view = cfg:hBox {
-    cfg:stLabel(anc_config.reserverd_cfg.cfg.name .. TAB_TABLE[1]),
-    cfg:ispinView(anc_config.reserverd_cfg.cfg, 0, 15, 1),
-    cfg:stLabel("(保留参数，设置范围: 0 ~ 15，步进：2dB 默认值：8)"),
+-- anc_config.reserverd_cfg.cfg = cfg:i32("reserverd_cfg:  ", 8);
+-- anc_config.reserverd_cfg.cfg:setOSize(1);
+-- anc_config.reserverd_cfg.hbox_view = cfg:hBox {
+    -- cfg:stLabel(anc_config.reserverd_cfg.cfg.name .. TAB_TABLE[1]),
+    -- cfg:ispinView(anc_config.reserverd_cfg.cfg, 0, 15, 1),
+    -- cfg:stLabel("(保留参数，设置范围: 0 ~ 15，步进：2dB 默认值：8)"),
+    -- cfg:stSpacer(),
+-- };
+
+-- 8-4 滤波器阶数
+anc_config.order.cfg = cfg:i32("order:  ", 1);
+anc_config.order.cfg:setOSize(1);
+anc_config.order.hbox_view = cfg:hBox {
+    cfg:stLabel(anc_config.order.cfg.name .. TAB_TABLE[1]),
+    cfg:ispinView(anc_config.order.cfg, 1, 4, 1),
+    cfg:stLabel("(滤波器阶数，设置范围: 1 ~ 4，步进：1，默认值：1)"),
     cfg:stSpacer(),
 };
 
--- 8-5 anc_gain
-anc_config.anc_gain.cfg = cfg:i32("anc_gain:  ", -8096);
+-- 8-5 通透轻量滤波器1
+anc_config.trans_hpf_sel.table = cfg:enumMap("trans_hpf_sel_table",
+    {
+        [0] = "TRANS_FILTER_CLOSE",
+        [1] = "TRANS_LPF_1K",
+        [2] = "TRANS_LPF_2K",
+        [3] = "TRANS_LPF_3K",	
+        [4] = "TRANS_LPF_4K",	
+        [5] = "TRANS_LPF_5K",	
+        [6] = "TRANS_LPF_6K",	
+        [7] = "TRANS_LPF_7K",	
+        [8] = "TRANS_LPF_8K",
+        [9] = "TRANS_HPF_0_2K",
+        [10] = "TRANS_HPF_0_2_5K",
+        [11] = "TRANS_HPF_0_3K",
+        [12] = "TRANS_HPF_0_3_5K",
+        [13] = "TRANS_HPF_0_4K",
+        [14] = "TRANS_HPF_0_5K",
+        [15] = "TRANS_HPF_0_6K",
+        [16] = "TRANS_HPF_0_7K",	
+        [17] = "TRANS_HPF_0_8K",	
+        [18] = "TRANS_HPF_1K",
+        [19] = "TRANS_HPF_1_5K",
+        [20] = "TRANS_HPF_1_8K",
+        [21] = "TRANS_HPF_2K",
+        [22] = "TRANS_HPF_2_5K",
+        [23] = "TRANS_NOTCH_1K",
+        [24] = "TRANS_NOTCH_4_5K",
+	}
+)
+anc_config.trans_hpf_sel.cfg = cfg:enum("trans_hpf_sel:  ", anc_config.trans_hpf_sel.table, 18);
+anc_config.trans_hpf_sel.cfg:setOSize(1);
+anc_config.trans_hpf_sel.hbox_view = cfg:hBox {
+    cfg:stLabel(anc_config.trans_hpf_sel.cfg.name),
+    cfg:enumView(anc_config.trans_hpf_sel.cfg),
+    cfg:stLabel("(通透轻量滤波器1，若使能MUTE_EN，则截止频率乘2，默认值：TRANS_HPF_1K)"),
+    cfg:stSpacer(),
+};
+
+-- 8-6 通透轻量滤波器2
+anc_config.trans_lpf_sel.table = cfg:enumMap("trans_lpf_sel_table",
+    {
+        [0] = "TRANS_FILTER_CLOSE",
+        [1] = "TRANS_LPF_1K",
+        [2] = "TRANS_LPF_2K",
+        [3] = "TRANS_LPF_3K",	
+        [4] = "TRANS_LPF_4K",	
+        [5] = "TRANS_LPF_5K",	
+        [6] = "TRANS_LPF_6K",	
+        [7] = "TRANS_LPF_7K",	
+        [8] = "TRANS_LPF_8K",
+        [9] = "TRANS_HPF_0_2K",
+
+        [10] = "TRANS_HPF_0_2_5K",
+        [11] = "TRANS_HPF_0_3K",
+        [12] = "TRANS_HPF_0_3_5K",
+        [13] = "TRANS_HPF_0_4K",
+        [14] = "TRANS_HPF_0_5K",
+        [15] = "TRANS_HPF_0_6K",
+        [16] = "TRANS_HPF_0_7K",	
+        [17] = "TRANS_HPF_0_8K",	
+        [18] = "TRANS_HPF_1K",
+        [19] = "TRANS_HPF_1_5K",
+        [20] = "TRANS_HPF_1_8K",
+        [21] = "TRANS_HPF_2K",
+        [22] = "TRANS_HPF_2_5K",
+        [23] = "TRANS_NOTCH_1K",
+        [24] = "TRANS_NOTCH_4_5K",
+	}
+)
+anc_config.trans_lpf_sel.cfg = cfg:enum("trans_lpf_sel:  ", anc_config.trans_lpf_sel.table, 4);
+anc_config.trans_lpf_sel.cfg:setOSize(1);
+anc_config.trans_lpf_sel.hbox_view = cfg:hBox {
+    cfg:stLabel(anc_config.trans_lpf_sel.cfg.name),
+    cfg:enumView(anc_config.trans_lpf_sel.cfg),
+    cfg:stLabel("(通透轻量滤波器2，若使能MUTE_EN，则截止频率乘2，默认值：TRANS_LPF_4K)"),
+    cfg:stSpacer(),
+};
+
+-- 8-7 trans_order
+anc_config.trans_order.cfg = cfg:i32("trans_order:  ", 1);
+anc_config.trans_order.cfg:setOSize(1);
+anc_config.trans_order.hbox_view = cfg:hBox {
+    cfg:stLabel(anc_config.trans_order.cfg.name .. TAB_TABLE[1]),
+    cfg:ispinView(anc_config.trans_order.cfg, 1, 4, 1),
+    cfg:stLabel("(通透模式滤波器阶数，设置范围: 1 ~ 4，步进：1，默认值：1)"),
+    cfg:stSpacer(),
+};
+
+-- 8-8 trans_advance_mode
+anc_config.trans_advance_mode.table = cfg:enumMap("trans_advance_mode_table",
+    {
+		[0] = "CLOSE",
+		[1] = "MUTE_EN",
+		[2] = "NOISE_EN",
+		[3] = "MUTE_EN + NOISE_EN",
+	}
+)
+anc_config.trans_advance_mode.cfg = cfg:enum("trans_advance_mode:  ", anc_config.trans_advance_mode.table, 0);
+anc_config.trans_advance_mode.cfg:setOSize(1);
+anc_config.trans_advance_mode.hbox_view = cfg:hBox {
+    cfg:stLabel(anc_config.trans_advance_mode.cfg.name),
+    cfg:enumView(anc_config.trans_advance_mode.cfg),
+    cfg:stLabel("(高级通透模式使能，默认值：0)"),
+    cfg:stSpacer(),
+};
+
+
+-- 8-9 anc_gain
+anc_config.anc_gain.cfg = cfg:i32("anc_ff_gain:  ", -1024);
 anc_config.anc_gain.cfg:setOSize(4);
 anc_config.anc_gain.hbox_view = cfg:hBox {
     cfg:stLabel(anc_config.anc_gain.cfg.name .. TAB_TABLE[1]),
     cfg:ispinView(anc_config.anc_gain.cfg, -32768, 32767, 1),
-    cfg:stLabel("(降噪模式增益，设置范围: -32768 ~ 32767，步进：1， 默认值：-8096)"),
+    cfg:stLabel("(降噪模式FF增益，设置范围: -32768 ~ 32767，步进：1， 默认值：-1024)"),
     cfg:stSpacer(),
 };
 
--- 8-6 transparency_gain
+-- 8-10 transparency_gain
 anc_config.transparency_gain.cfg = cfg:i32("transparency_gain:  ", 7096);
 anc_config.transparency_gain.cfg:setOSize(4);
 anc_config.transparency_gain.hbox_view = cfg:hBox {
     cfg:stLabel(anc_config.transparency_gain.cfg.name),
     cfg:ispinView(anc_config.transparency_gain.cfg, -32768, 32767, 1),
     cfg:stLabel("(通透模式增益，设置范围: -32768 ~ 32767，步进：2dB 默认值：7096)"),
+    cfg:stSpacer(),
+};
+
+-- 8-11 fb_gain
+anc_config.fb_gain.cfg = cfg:i32("anc_fb_gain:  ", -1024);
+anc_config.fb_gain.cfg:setOSize(4);
+anc_config.fb_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(anc_config.fb_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:ispinView(anc_config.fb_gain.cfg, -32768, 32767, 1),
+    cfg:stLabel("(降噪模式FB增益，设置范围: -32768 ~ 32767，步进：1， 默认值：-1024)"),
+    cfg:stSpacer(),
+};
+
+-- 8-11 sample_rate
+anc_config.sample_rate.table = cfg:enumMap("sample_rate_table",
+	{
+		-- [12000] = "12000",
+		-- [24000] = "24000",
+		[48000] = "低采样率",
+		[96000] = "高采样率",
+	}
+)
+anc_config.sample_rate.cfg = cfg:enum("sample_rate:  ", anc_config.sample_rate.table, 48000);
+anc_config.sample_rate.cfg:setOSize(4);
+anc_config.sample_rate.hbox_view = cfg:hBox {
+    cfg:stLabel(anc_config.sample_rate.cfg.name .. TAB_TABLE[1]),
+    cfg:enumView(anc_config.sample_rate.cfg),
+    cfg:stLabel("(采样率，默认值：低采样率)"),
+    cfg:stSpacer(),
+};
+
+-- 8-12 trans_sample_rate
+anc_config.trans_sample_rate.table = cfg:enumMap("trans_sample_rate_table",
+	{
+        [48000] = "低采样率",
+		[96000] = "高采样率",
+	}
+)
+anc_config.trans_sample_rate.cfg = cfg:enum("trans_sample_rate:  ", anc_config.trans_sample_rate.table, 96000);
+anc_config.trans_sample_rate.cfg:setOSize(4);
+anc_config.trans_sample_rate.hbox_view = cfg:hBox {
+    cfg:stLabel(anc_config.trans_sample_rate.cfg.name .. TAB_TABLE[1]),
+    cfg:enumView(anc_config.trans_sample_rate.cfg),
+    cfg:stLabel("(通透模式采样率，默认值：48000)"),
     cfg:stSpacer(),
 };
 
@@ -134,9 +311,20 @@ anc_config.output.anc_config_items = {
     anc_config.dac_gain.cfg,
     anc_config.ref_mic_gain.cfg,
     anc_config.err_mic_gain.cfg,
-    anc_config.reserverd_cfg.cfg,
+    --anc_config.reserverd_cfg.cfg,
+    --
+    anc_config.order.cfg,
+    anc_config.trans_hpf_sel.cfg,
+    anc_config.trans_lpf_sel.cfg,
+    anc_config.trans_order.cfg,
+    anc_config.trans_advance_mode.cfg,
+
     anc_config.anc_gain.cfg,
     anc_config.transparency_gain.cfg,
+
+    anc_config.fb_gain.cfg,
+    anc_config.sample_rate.cfg,
+    anc_config.trans_sample_rate.cfg,
 };
 
 anc_config.output.anc_coeff_config_output_views = {
@@ -150,8 +338,20 @@ anc_config.output.anc_config_output_views = {
     anc_config.dac_gain.hbox_view,
     anc_config.ref_mic_gain.hbox_view,
     anc_config.err_mic_gain.hbox_view,
+
     anc_config.anc_gain.hbox_view,
+    anc_config.fb_gain.hbox_view,
     anc_config.transparency_gain.hbox_view,
+
+    anc_config.trans_advance_mode.hbox_view,
+    anc_config.trans_hpf_sel.hbox_view,
+    anc_config.trans_lpf_sel.hbox_view,
+    anc_config.trans_order.hbox_view,
+    anc_config.order.hbox_view,
+
+    anc_config.sample_rate.hbox_view,
+    --anc_config.trans_sample_rate.hbox_view,
+
 	cfg:stSpacer()
 };
 

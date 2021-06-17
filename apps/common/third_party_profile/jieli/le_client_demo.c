@@ -1066,7 +1066,11 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             case HCI_SUBEVENT_LE_EXTENDED_ADVERTISING_REPORT:
                 /* log_info("APP HCI_SUBEVENT_LE_EXTENDED_ADVERTISING_REPORT"); */
                 /* log_info_hexdump(packet, size); */
-                client_report_ext_adv_data(&packet[2], packet[1]);
+                if (BLE_ST_SCAN == get_ble_work_state(cur_dev_cid)) {
+                    client_report_ext_adv_data(&packet[2], packet[1]);
+                } else {
+                    log_info("drop ext_adv_report!!!\n");
+                }
                 break;
 #endif /* EXT_ADV_MODE_EN */
             }
@@ -1104,7 +1108,11 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
         case GAP_EVENT_ADVERTISING_REPORT:
             /* putchar('@'); */
-            client_report_adv_data((void *)&packet[2], packet[1]);
+            if (BLE_ST_SCAN == get_ble_work_state(cur_dev_cid)) {
+                client_report_adv_data((void *)&packet[2], packet[1]);
+            } else {
+                log_info("drop adv_report!!!\n");
+            }
             break;
 
         case HCI_EVENT_ENCRYPTION_CHANGE:

@@ -95,6 +95,8 @@ struct audio_encoder {
 
 enum {
     AUDIO_ENCODER_IOCTRL_CMD_GET_HEAD_INFO = 0x0,
+    AUDIO_ENCODER_IOCTRL_CMD_GET_TIME,
+    AUDIO_ENCODER_IOCTRL_CMD_GET_TMARK,//书签
 };
 
 int audio_encoder_task_create(struct audio_encoder_task *task, const char *name);
@@ -103,7 +105,7 @@ int audio_encoder_task_del(struct audio_encoder_task *task);
 
 int audio_encoder_resume_all(struct audio_encoder_task *task);
 
-int audio_encoder_get_output_buff(void *_enc, void **buf);
+int audio_encoder_get_output_buff(void *_enc, s16 **buf);
 
 int audio_encoder_put_output_buff(void *_enc, void *buff, int len);
 

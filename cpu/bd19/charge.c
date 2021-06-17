@@ -46,7 +46,7 @@ void charge_check_and_set_pinr(u8 level)
     u8 pinr_io, reg;
     reg = P33_CON_GET(P3_PINR1_CON);
     //开启LDO5V_DET长按复位
-    if ((reg & BIT(0)) && (reg & BIT(3))) {
+    if ((reg & BIT(0)) && ((reg & BIT(3)) == 0)) {
         if (level == 0) {
             P33_CON_SET(P3_PINR1_CON, 2, 1, 0);
         } else {
@@ -178,7 +178,7 @@ void charge_start(void)
         }
     }
 
-    power_wakeup_enable_with_port(IO_CHGFL_DET);
+    power_awakeup_enable_with_port(IO_CHGFL_DET);
 
     CHARGE_EN(1);
 
@@ -193,7 +193,7 @@ void charge_close(void)
         CHARGE_EN(0);
     }
 
-    power_wakeup_disable_with_port(IO_CHGFL_DET);
+    power_awakeup_disable_with_port(IO_CHGFL_DET);
 
     charge_event_to_user(CHARGE_EVENT_CHARGE_CLOSE);
 
@@ -226,7 +226,7 @@ static void charge_full_detect(void *priv)
         charge_full_cnt = 0;
         usr_timer_del(__this->charge_timer);
         __this->charge_timer = 0;
-        power_wakeup_enable_with_port(IO_CHGFL_DET);
+        power_awakeup_enable_with_port(IO_CHGFL_DET);
     }
 }
 
@@ -314,7 +314,7 @@ void charge_wakeup_isr(void)
         return;
     }
     /* printf(" %s \n", __func__); */
-    power_wakeup_disable_with_port(IO_CHGFL_DET);
+    power_awakeup_disable_with_port(IO_CHGFL_DET);
     if (__this->charge_timer == 0) {
         __this->charge_timer = usr_timer_add(0, charge_full_detect, 2, 1);
     }
@@ -395,7 +395,7 @@ int charge_init(const struct dev_node *node, void *arg)
     __this->charge_online_flag = 0;
 
     /*先关闭充电使能，后面检测到充电插入再开启*/
-    power_wakeup_disable_with_port(IO_CHGFL_DET);
+    power_awakeup_disable_with_port(IO_CHGFL_DET);
     CHARGE_EN(0);
 
     /*LDO5V的100K下拉电阻使能*/

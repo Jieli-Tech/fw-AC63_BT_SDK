@@ -76,6 +76,15 @@ extern int audio_dig_vol_set(void *hdl, u32 channel, u8 vol);
 extern int audio_dig_vol_get(void *hdl, u32 channel);
 
 /*******************************************************
+* Function name	: audio_dig_max_vol_get
+* Description	: 数字音量最大等级获取
+* Parameter		:
+*   @_hdl       	句柄
+* Return        : 数字音量最大等级  -1:出错
+********************************************************/
+extern int audio_dig_max_vol_get(void *_hdl);
+
+/*******************************************************
 * Function name	: audio_dig_vol_skip
 * Description	: 数字音量跳过计算（不对数据运算）
 * Parameter		:
@@ -176,6 +185,31 @@ extern int audio_dig_vol_group_del(void *group_head, char *logo);
 * Return        : 0:正常  other:出错
 ********************************************************/
 extern int audio_dig_vol_group_close(void *group_head);
+
+
+/*******************************************************
+* Function name	: audio_dig_vol_group_vol_set
+* Description	: 设置数字音量成员的数字音量
+* Parameter		:
+*   @group_head     数字音量组句柄
+*   @logo       	成员标识字符串
+*   @channel       	通道(BIT(0)对应通道0，支持多个同时设置)
+*   @vol       		音量等级
+* Return        : 0:正常  other:出错
+********************************************************/
+int audio_dig_vol_group_vol_set(void *group_head, char *logo, u32 channel, u8 vol);
+
+/*******************************************************
+* Function name	: audio_dig_vol_group_vol_set_by_head
+* Description	: 设置数字音量成员的数字音量(匹配logo的前面部分)
+* Parameter		:
+*   @group_head     数字音量组句柄
+*   @head       	成员标识字符串的前面部分
+*   @channel       	通道(BIT(0)对应通道0，支持多个同时设置)
+*   @vol       		音量等级
+* Return        : 0:正常  other:出错
+********************************************************/
+int audio_dig_vol_group_vol_set_by_head(void *group_head, char *head, u32 channel, u8 vol);
 
 /*******************************************************
 * Function name	: audio_dig_vol_group_hdl_get

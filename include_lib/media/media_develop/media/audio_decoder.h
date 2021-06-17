@@ -857,6 +857,50 @@ int audio_decoder_out_task_ch_enable(struct audio_decoder *dec, int len);
 */
 void audio_decoder_resume_out_task(struct audio_decoder *dec);
 
+/*
+*********************************************************************
+*                  Audio Decoder Get sample_rate
+* Description: 获取配置的解码采样率
+* Arguments  : *_dec	解码句柄
+* Return	 : sample_rate
+* Note(s)    : None.
+*********************************************************************
+*/
+int audio_decoder_get_sample_rate(void *_dec);
+/*
+*********************************************************************
+*                  Audio Decoder Get bit rate
+* Description: 获取配置的比特率
+* Arguments  : *_dec	解码句柄
+* Return	 : bit rate
+* Note(s)    : None.
+*********************************************************************
+*/
+int audio_decoder_get_bit_rate(void *_dec);
+
+
+/*
+*********************************************************************
+*                  Audio Decoder Get sample_rate
+* Description: 获取配置的解码帧长
+* Arguments  : *_dec	解码句柄
+* Return	 : sample_rate
+* Note(s)    : None.
+*********************************************************************
+*/
+int audio_decoder_get_frame_len(void *_dec);
+
+/*
+*********************************************************************
+*                  Audio Decoder set dec out ch_num
+* Description: 配置解码通道数
+* Arguments  : *_dec	解码句柄  ch_num解码输出数据通道数
+* Return	 :
+* Note(s)    : None.
+*********************************************************************
+*/
+void audio_decoder_set_channel(void *_dec, u8 ch_num);
+
 
 #endif
 

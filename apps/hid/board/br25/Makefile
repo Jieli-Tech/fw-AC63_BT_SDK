@@ -32,6 +32,19 @@ LIBS += \
    $(AR_DIR)/wtgv2_dec_lib.a \
    $(AR_DIR)/wav_dec_lib.a \
 --end-group
+
+ifeq ($(MIDI_DEC_ADDR),y)
+LIBS += \
+   $(AR_DIR)/lib_midi_dec_addr.a \
+
+else
+LIBS += \
+   $(AR_DIR)/lib_midi_dec.a \
+
+endif
+
+
+
 endif
 
 objs += \

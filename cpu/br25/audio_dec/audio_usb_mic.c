@@ -4,6 +4,7 @@
 #include "device/uac_stream.h"
 #include "audio_enc.h"
 #include "app_main.h"
+#include "app_config.h"
 #include "user_cfg_id.h"
 #include "application/audio_echo_reverb.h"
 /*usb mic的数据是否经过AEC,包括里面的ANS模块*/
@@ -325,6 +326,13 @@ int usb_audio_mic_open(void *_info)
     return -EFAULT;
 }
 
+u32 usb_mic_is_running()
+{
+    if (usb_mic_hdl) {
+        return SPK_AUDIO_RATE;
+    }
+    return 0;
+}
 
 
 /*
