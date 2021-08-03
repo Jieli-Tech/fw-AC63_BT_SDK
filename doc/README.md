@@ -30,12 +30,12 @@
 635 Series Brief
 --------------
 
-详细的芯片规格书[datasheet](./datasheet/AC632N规格书/datasheet/AC635N_datasheet.pdf)和原理图，请参考[AC635规格书](./datasheet/AC635N规格书)
+详细的芯片规格书[datasheet](./datasheet/AC635N规格书/datasheet/AC635N_datasheet.pdf)和原理图，请参考[AC635规格书](./datasheet/AC635N规格书)
 
 |P/N|Core|RAM|内置充电|Flash|电源|功耗|工作电压|工作温度|蓝牙协议|蓝牙版本|蓝牙速率|应用场景|OTA|Package|
 |:-------:|:--------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|
 |AC6351D|32bit@240MHz|176KB|Yes(250mA)|256KB|LDO|Sleep@150uA<br>Systemoff@1uA<br>TX 0dBm@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[LQFN48](./datasheet/AC635N规格书/datasheet/AC6350D_Datasheet_V1.0.pdf)|
-|AC6354B|32bit@240MHz|176KB|Yes(250mA)|256KB|LDO|Sleep@150uA<br>Systemoff@1uA<br>TX 0dBm@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[LQFN48](./datasheet/AC635N规格书/datasheet/AC6354B_Datasheet_V1.0.pdf)|
+|AC6354B|32bit@240MHz|176KB|Yes(250mA)|256KB|LDO|Sleep@150uA<br>Systemoff@1uA<br>TX 0dBm@6.8mA<br>RX@|2.2~5.5V|Min:-40°C<br>Max:85°C|Classic:SDP/RFCOMM/SPP <br> LE:ATT/SM/HOGP/Mesh|SmartReady v5.1|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[LQFN52](./datasheet/AC635N规格书/datasheet/AC6354B_Datasheet_V1.0.pdf)|
 
 
 
