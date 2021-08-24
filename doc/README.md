@@ -49,8 +49,8 @@
 |AC6321A|32bit@96MHz|64+8KB|25 GPIO|Yes(250mA)|256KB|LDO/DCDC|Sleep@18uA<br>Systemoff@2uA<br>TX 0dBm@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[QFN32](./datasheet/AC632N规格书/datasheet/AC6321A_Datasheet_V1.0.pdf)|
 |AC6323A|32bit@96MHz|64+8KB|13 GPIO|Yes(250mA)|256KB|LDO/DCDC|Sleep@18uA<br>Systemoff@2uA<br>TX 0dBm@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[QFN20](./datasheet/AC632N规格书/datasheet/AC6323A_Datasheet_V1.0.pdf)|
 |AC6328A|32bit@96MHz|64+8KB|3 GPIO|No|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dBm@5mA<br>RX@|1.8~3.4V|Min:-40°C<br>Max:85°C|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP8](./datasheet/AC632N规格书/datasheet/AC6328A_Datasheet_V1.0.pdf)|
-|AC6328B|32bit@96MHz|64+8KB|2 GPIO|No|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dBm@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP8](./datasheet/AC632N规格书/datasheet/AC6328B_Datasheet_V1.0.pdf)|
-|AC6329C|32bit@96MHz|64+8KB|16 GPIO|Yes(250mA)|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dBm@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP16](./datasheet/AC632N规格书/datasheet/AC6329C_Datasheet_V1.0.pdf)|
+|AC6328B|32bit@96MHz|64+8KB|2 GPIO|No|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dBm@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP8](./datasheet/AC632N规格书/datasheet/AC6328B_Datasheet_V1.0.pdf)|
+|AC6329C|32bit@96MHz|64+8KB|8 GPIO|Yes(250mA)|256KB|LDO|Sleep@18uA<br>Systemoff@2uA<br>TX 0dBm@5mA<br>RX@|1.8~5.5V|Min:-40°C<br>Max:85°C|SmartReady v5.0|1MbpsPHY <br> 2MbpsPHY <br> CodedPHY |蓝牙防丢/<br>Beacon/<br>蓝牙HID/<br>蓝牙透传<br>|Yes|[SOP16](./datasheet/AC632N规格书/datasheet/AC6329C_Datasheet_V1.0.pdf)|
 
 638 Series Brief
 --------------
