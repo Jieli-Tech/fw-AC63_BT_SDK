@@ -673,7 +673,7 @@ void audio_record_task(void *p)
 
     usb_h_ep_read_async(usb_id, host_ep, target_ep, NULL, 0, USB_ENDPOINT_XFER_ISOC, 1); //启动iso
     while (1) {
-        ret = __os_taskq_pend(msg, ARRAY_SIZE(msg), portMAX_DELAY);
+        ret = os_taskq_pend(NULL, msg, ARRAY_SIZE(msg));
         if (ret == OS_TASKQ) {
             switch (msg[1]) {
             case 0x01:

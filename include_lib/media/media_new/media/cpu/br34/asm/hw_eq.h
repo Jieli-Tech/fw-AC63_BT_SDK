@@ -5,6 +5,7 @@
 #include "generic/typedef.h"
 #include "generic/list.h"
 #include "os/os_api.h"
+#include "application/eq_func_define.h"
 
 
 /*eq IIR type*/

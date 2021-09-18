@@ -68,6 +68,8 @@
 #define DA_SYNC_MAX_NUM                 (1 << DA_SYNC_INPUT_BITS)
 
 struct dac_platform_data {
+    void (*analog_open_cb)(struct audio_dac_hdl *);
+    void (*analog_close_cb)(struct audio_dac_hdl *);
     u32 output : 4;             //DAC输出模式
     u32 ldo_volt : 2;           //DACVDD_LDO电压档选择,0 : 1.2V, 1 : 1.25V, 2 : 1.3V, 3 : 1.35V
     u32 ldo_isel : 2;           //LDO偏置电流选择档位, 0:5u, 1:10u, 2:15u, 3:20u
@@ -144,6 +146,11 @@ struct audio_dac_fade {
     int timer;
 };
 
+struct audio_dac_sync_node {
+    void *hdl;
+    struct list_head entry;
+};
+
 struct audio_dac_hdl {
     struct analog_module analog;
     const struct dac_platform_data *pd;
@@ -184,6 +191,7 @@ struct audio_dac_hdl {
     u8 anc_dac_open;
     u8 dsm_sel;
     struct audio_dac_sync sync;
+    struct list_head sync_list;
     void *feedback_priv;
     void (*underrun_feedback)(void *priv);
 };
@@ -262,6 +270,8 @@ int audio_dac_set_bit_mode(struct audio_dac_hdl *dac, u8 bit24_mode_en);
 
 int audio_dac_get_status(struct audio_dac_hdl *dac);
 
+u8 audio_dac_init_status(void);
+
 u8 audio_dac_is_working(struct audio_dac_hdl *dac);
 
 int audio_dac_set_irq_time(struct audio_dac_hdl *dac, int time_ms);
@@ -277,6 +287,12 @@ void audio_dac_output_enable(struct audio_dac_hdl *dac);
 void audio_dac_output_disable(struct audio_dac_hdl *dac);
 
 int audio_dac_set_protect_time(struct audio_dac_hdl *dac, int time, void *priv, void (*feedback)(void *));
+
+int audio_dac_buffered_frames(struct audio_dac_hdl *dac);
+
+void audio_dac_add_syncts_handle(struct audio_dac_hdl *dac, void *syncts);
+
+void audio_dac_remove_syncts_handle(struct audio_dac_hdl *dac, void *syncts);
 /*
  * 音频同步
  */

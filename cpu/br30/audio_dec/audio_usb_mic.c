@@ -5,12 +5,16 @@
 #include "audio_enc.h"
 #include "app_main.h"
 #include "user_cfg_id.h"
+#include "board_config.h"
 /* #include "application/audio_echo_reverb.h" */
 /*usb mic的数据是否经过AEC,包括里面的ANS模块*/
 #define USB_MIC_AEC_EN				0
 #if USB_MIC_AEC_EN
 #include "aec_user.h"
 #endif/*USB_MIC_AEC_EN*/
+
+
+#if TCFG_PC_ENABLE
 
 #define PCM_ENC2USB_OUTBUF_LEN		(5 * 1024)
 
@@ -424,3 +428,5 @@ int usb_audio_mic_close(void *arg)
 
     return 0;
 }
+
+#endif /* TCFG_APP_PC_EN */

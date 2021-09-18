@@ -4,7 +4,7 @@
   os_init = ABSOLUTE(0x10fc58);
   os_start = ABSOLUTE(0x10fc5c);
   os_get_curr_tcb_var = ABSOLUTE(0x10fc60);
-  os_task_create = ABSOLUTE(0x10fc64);
+  os_task_create_rom = ABSOLUTE(0x10fc64);
   os_current_task_rom = ABSOLUTE(0x10fc68);
   os_time_dly = ABSOLUTE(0x10fc6c);
   os_time_get = ABSOLUTE(0x10fc70);
@@ -182,7 +182,7 @@
   MatrixEwMulAndSumOneDim_float_f_f_f_s1 = ABSOLUTE(0x10ff14);
   MatrixEwConjMulAndSumOneDim_float_c_c_c_s0 = ABSOLUTE(0x10ff18);
   MatrixEwConjMulAndSumOneDim_float_c_c_c_s1 = ABSOLUTE(0x10ff1c);
-  VecMeanSq_s16_f32 = ABSOLUTE(0x10ff20);
+  /* VecMeanSq_s16_f32 = ABSOLUTE(0x10ff20); */
   VecOverShift_s16_f32 = ABSOLUTE(0x10ff24);
   VecMinus_s16_f32_f32 = ABSOLUTE(0x10ff28);
   VectorCopy_f32_s16 = ABSOLUTE(0x10ff2c);

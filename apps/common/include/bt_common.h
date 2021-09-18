@@ -33,6 +33,9 @@ enum {
 enum {
     COMMON_EVENT_EDR_REMOTE_TYPE = 1,
     COMMON_EVENT_BLE_REMOTE_TYPE,
+    COMMON_EVENT_SHUTDOWN_ENABLE,
+    COMMON_EVENT_SHUTDOWN_DISABLE,
+    COMMON_EVENT_MODE_DETECT,
 };
 
 extern const int config_le_hci_connection_num;//支持同时连接个数
@@ -69,6 +72,7 @@ extern const char *bt_get_local_name();
 extern void wdt_clear(void);
 extern u8 ble_update_get_ready_jump_flag(void);
 extern void reset_PK_cb_register(void (*reset_pk)(u32 *));
+extern void reset_PK_cb_register_ext(void (*reset_pk)(u32 *, u16));
 extern void att_server_flow_enable(u8 enable);
 extern void le_device_db_init(void);
 extern bool get_remote_test_flag();
@@ -97,15 +101,6 @@ enum {
     //add here
 };
 
-/*
-参数 bt_tx_power 挡位: 功率 dbm ,超过等级默认为最高档
-BD29: rang(0~8)  {-18.3,  -14.6,  -12.1, -8.5,  -6.0,  -4.1,  -1.1,  +1.1,  +4.0, +6.1}
-BD19: rang(0~10) {-17.6,  -14.0,  -11.5, -9.6,  -6.6,  -4.4,  -0.79, -1.12, +3.8, +5.65, +8.04}
-BR23: rang(0~9)  {-15.7,  -12.5,  -10.0, -6.6,  -4.4,  -2.5,  -0.1,  +2.1,  +4.6, +6.4}
-BR25: rang(0~9)  {-15.7,  -12.5,  -10.0, -6.6,  -4.4,  -2.5,  -0.1,  +2.1,  +4.6, +6.4}
-BR30: rang(0~8)  {-17.48, -11.46, -7.96, -3.59, -0.79, +1.12, +3.8,  +6.5,  +8.44}
-BR34: rang(0~10) {-17.6, -14.0, -11.5, -9.6, -6.6, -4.4, -1.8, 0, +2.1, +4,  +6.3}
-*/
 //初始化配置蓝牙发射功率最大值范围,解析详见 btcontroller_modules.h
 void bt_max_pwr_set(u8 pwr, u8 pg_pwr, u8 iq_pwr, u8 ble_pwr);
 

@@ -2,6 +2,8 @@
 
 
 
+
+
 rem @echo off
 
 @echo *****************************************************************
@@ -10,7 +12,6 @@ rem @echo off
 @echo %date%
 
 cd %~dp0
-
 
 set OBJDUMP=C:\JL\pi32\bin\llvm-objdump.exe
 set OBJCOPY=C:\JL\pi32\bin\llvm-objcopy.exe
@@ -45,13 +46,7 @@ remove_tailing_zeros -i wmao.bin -o wma.bin -mark ff
 %OBJDUMP% -t %ELFFILE% > symbol_tbl.txt
 
 
-copy /b text.bin+data.bin+data_code.bin+bank.bin app.bin
-bluetooth\standard\download.bat %kws_cfg%
-
-
-
-
-
+copy /b text.bin+data.bin+data_code.bin+aec.bin+wav.bin+ape.bin+flac.bin+m4a.bin+amr.bin+dts.bin+fm.bin+mp3.bin+wma.bin+bank.bin app.bin
 
 del aeco.bin
 del wav.bin
@@ -71,4 +66,4 @@ del data.bin
 del data_code.bin
 del text.bin
 del *.bc
-bluetooth\standard\download.bat
+call download/data_trans/download.bat

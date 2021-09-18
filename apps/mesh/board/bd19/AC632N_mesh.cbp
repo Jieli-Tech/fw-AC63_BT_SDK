@@ -22,15 +22,22 @@
 <Add option="-Wincompatible-pointer-types" />
 <Add option="-Wundef" />
 <Add option="-fprefer-gnu-section" />
+<Add option="-Wframe-larger-than=256" />
 <Add option="-fms-extensions" />
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
-<Add option="-DCONFIG_CPU_BD19" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
+<Add option="-DCONFIG_CPU_BD19" />
 <Add option="-DCONFIG_NEW_BREDR_ENABLE" />
 <Add option="-DCONFIG_FREE_RTOS_ENABLE" />
 <Add option="-DCONFIG_EQ_SUPPORT_ASYNC" />
-<Add option="-DTCFG_APP_BT_EN=1" />
-<Add option="-DUSB_PC_NO_APP_MODE" />
+<Add option="-DEQ_DESIGN_IN_MASK" />
+<Add option="-DSINE_MAKE_IN_MASK" />
+<Add option="-DCONFIG_MMU_ENABLE" />
+<Add option="-DCONFIG_AEC_M=256" />
+<Add option="-DCONFIG_MEDIA_ORIGIN_ENABLE" />
+<Add option="-D__GCC_Q32S__" />
+<Add option="-DCONFIG_NEW_ECC_ENABLE" />
+<Add option="-DCONFIG_CRYPTO_TOOLBOX_OSIZE_IN_MASKROM" />
 <Add option="-DEVENT_HANDLER_NUM_CONFIG=2" />
 <Add option="-DEVENT_TOUCH_ENABLE_CONFIG=0" />
 <Add option="-DEVENT_POOL_SIZE_CONFIG=256" />
@@ -50,17 +57,13 @@
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
 <Add option="-DCONFIG_LINK_DISTURB_SCAN_ENABLE=0" />
+<Add option="-DCONFIG_BTCTRLER_TASK_DEL_ENABLE" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
 <Add option="-DCONFIG_OTA_UPDATA_ENABLE" />
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
-<Add option="-DEQ_DESIGN_IN_MASK" />
-<Add option="-DSINE_MAKE_IN_MASK" />
-<Add option="-DCONFIG_MMU_ENABLE" />
-<Add option="-DCONFIG_AEC_M=256" />
-<Add option="-DCONFIG_MEDIA_ORIGIN_ENABLE" />
-<Add option="-D__GCC_Q32S__" />
-<Add option="-DCONFIG_NEW_ECC_ENABLE" />
-<Add option="-DCONFIG_CRYPTO_TOOLBOX_OSIZE_IN_MASKROM" />
+<Add option="-DTCFG_APP_BT_EN=1" />
+<Add option="-DUSB_PC_NO_APP_MODE" />
+<Add option="-D__LD__" />
 <Add directory="../../../../include_lib" />
 <Add directory="../../../../include_lib/driver" />
 <Add directory="../../../../include_lib/driver/device" />
@@ -103,26 +106,29 @@
 <Add option="--plugin-opt=save-temps" />
 <Add option="--plugin-opt=-inline-normal-into-special-section=true" />
 <Add option="--plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar" />
+<Add option="--plugin-opt=-warn-stack-size=256" />
 <Add option="--sort-common" />
 <Add option="--dont-complain-call-overflow" />
 <Add option="--gc-sections" />
 <Add option="--start-group" />
-<Add option="../../../../include_lib/liba/bd19/cpu.a" />
-<Add option="../../../../include_lib/liba/bd19/system.a" />
-<Add option="../../../../include_lib/liba/bd19/btstack.a" />
-<Add option="../../../../include_lib/liba/bd19/btctrler.a" />
-<Add option="../../../../include_lib/liba/bd19/rcsp_stack.a" />
-<Add option="../../../../include_lib/liba/bd19/agreement.a" />
+<Add option="../../../../cpu/bd19/liba/cpu.a" />
+<Add option="../../../../cpu/bd19/liba/system.a" />
+<Add option="../../../../cpu/bd19/liba/btstack.a" />
+<Add option="../../../../cpu/bd19/liba/btctrler.a" />
+<Add option="../../../../cpu/bd19/liba/rcsp_stack.a" />
+<Add option="../../../../cpu/bd19/liba/agreement.a" />
+<Add option="../../../../cpu/bd19/liba/update.a" />
 <Add option="--end-group" />
-<Add option="../../../../include_lib/liba/bd19/update.a" />
 <Add option="-T../../../../cpu/bd19/sdk.ld" />
 <Add option="-M=../../../../cpu/bd19/tools/sdk.map" />
 <Add library="C:\JL\pi32\q32s-lib\libm.a" />
 </Linker>
 <ExtraCommands>
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd19\sdk_used_list.c -o ..\..\..\..\cpu\bd19\sdk_used_list.used" />
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd19\sdk_ld.c -o ..\..\..\..\cpu\bd19\sdk.ld" />
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd19\tools\download.c -o ..\..\..\..\cpu\bd19\tools\download.bat" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\bd19\sdk_used_list.c -o ..\..\..\..\cpu\bd19\sdk_used_list.used" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\bd19\sdk_ld.c -o ..\..\..\..\cpu\bd19\sdk.ld" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\bd19\tools\download.c -o ..\..\..\..\cpu\bd19\tools\download.bat" />
+<Add before="..\..\..\..\tools\utils\fixbat.exe ..\..\..\..\cpu\bd19\tools\download.bat" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\bd19\tools\isd_config_rule.c -o ..\..\..\..\cpu\bd19\tools\isd_config.ini" />
 <Mode before="always" />
 <Add after="..\..\..\..\cpu\bd19\tools\download.bat sdk" />
 <Mode after="always" />
@@ -230,20 +236,28 @@
 <Unit filename="../../../../apps/mesh/app_mesh.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6321a_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6321a_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/bd19/board_ac6321a_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6323a_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6323a_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/bd19/board_ac6323a_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6328a_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6328a_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/bd19/board_ac6328a_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6329b_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6329b_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/bd19/board_ac6329b_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6329c_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6329c_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/bd19/board_ac6329c_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6329e_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6329e_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/bd19/board_ac6329e_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6329f_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac6329f_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/bd19/board_ac6329f_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac632n_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd19/board_ac632n_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/bd19/board_ac632n_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd19/board_config.h" />
 <Unit filename="../../../../apps/mesh/examples/AliGenie_fan.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/AliGenie_light.c"><Option compilerVer="CC"/></Unit>

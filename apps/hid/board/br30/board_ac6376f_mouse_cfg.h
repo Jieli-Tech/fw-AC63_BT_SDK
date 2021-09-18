@@ -1,11 +1,13 @@
 #ifndef CONFIG_BOARD_AC6376F_MOUSE_CFG_H
 #define CONFIG_BOARD_AC6376F_MOUSE_CFG_H
 
+#include "board_ac6376f_mouse_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6376F_MOUSE
 
+
+
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
-#define CONFIG_CHIP_NAME        AD697N
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -377,7 +379,7 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动d关机时间
 #define TCFG_SYS_LVD_EN						      0   //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
-#define TCFG_HID_AUTO_SHUTDOWN_TIME              (1 * 20) //HID无操作自动关机(单位：秒)
+#define TCFG_HID_AUTO_SHUTDOWN_TIME              (2 * 60) //HID无操作自动关机(单位：秒)
 
 //*********************************************************************************//
 //                                  蓝牙配置                                       //
@@ -386,6 +388,7 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
+#if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    0
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
@@ -393,6 +396,7 @@ DAC硬件上的连接方式,可选的配置：
 #define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    1
 #define USER_SUPPORT_PROFILE_PBAP   0
+#endif
 
 #if TCFG_USER_TWS_ENABLE
 #define TCFG_BD_NUM						          1   //连接设备个数配置
@@ -415,6 +419,11 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 
 #define CONFIG_BT_NORMAL_HZ	            (48 * 1000000L)
+#define CONFIG_BT_CALL_HZ		        (48 * 1000000L)
+#define CONFIG_BT_CALL_ADVANCE_HZ       (64 * 1000000L)
+#define CONFIG_BT_CALL_16k_HZ	        (64 * 1000000L)
+#define CONFIG_BT_CALL_16k_ADVANCE_HZ   (768 * 100000L) //76.8MHz
+#define CONFIG_BT_POWER_ON_HZ           (120 * 100000L)
 
 //*********************************************************************************//
 //                                 配置结束                                        //

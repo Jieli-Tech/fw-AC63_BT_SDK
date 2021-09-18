@@ -1,11 +1,13 @@
 #ifndef CONFIG_BOARD_AC6376F_DEMO_CFG_H
 #define CONFIG_BOARD_AC6376F_DEMO_CFG_H
 
+#include "board_ac6376f_demo_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6376F_DEMO
 
+#include "board_ac6376f_demo_global_build_cfg.h"
+
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
-#define CONFIG_CHIP_NAME        AD697N
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -358,6 +360,10 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 
 #define CONFIG_BT_NORMAL_HZ	            (24 * 1000000L)
+#define CONFIG_BT_CALL_HZ		        (48 * 1000000L)
+#define CONFIG_BT_CALL_ADVANCE_HZ       (64 * 1000000L)
+#define CONFIG_BT_CALL_16k_HZ	        (64 * 1000000L)
+#define CONFIG_BT_CALL_16k_ADVANCE_HZ   (768 * 100000L) //76.8MHz
 
 //*********************************************************************************//
 //                           (Yes/No)语音识别使能                                  //

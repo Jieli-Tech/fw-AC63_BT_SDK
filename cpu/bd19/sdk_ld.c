@@ -96,6 +96,7 @@ SECTIONS
 
 		*(.LOG_TAG_CONST*)
         *(.rodata*)
+        *(.fat_data_code_ex)
 
 		. = ALIGN(4); // must at tail, make rom_code size align 4
         PROVIDE(text_rodata_end = .);

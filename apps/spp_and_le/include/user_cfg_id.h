@@ -15,6 +15,8 @@
 #define     CFG_RCSP_ADV_KEY_SETTING         27
 #define     CFG_AAP_MODE_INFO                28
 #define     CFG_DONGLE_PAIR_INFO             29
+#define     CFG_BLE_BONDING_REMOTE_INFO      30
+#define     CFG_BLE_BONDING_REMOTE_INFO2     31
 
 #define     VM_USB_MIC_GAIN                  5
 #define     VM_ALARM_0                  	 44

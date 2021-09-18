@@ -107,6 +107,9 @@ void audio_adc_demo_close(void)
         audio_adc_mic_close(&ladc->mic_ch);
         free(ladc);
         ladc = NULL;
+        extern void audio_output_stop(void);
+        audio_output_stop();
+
     }
 }
 

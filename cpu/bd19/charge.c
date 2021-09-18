@@ -23,6 +23,7 @@ typedef struct _CHARGE_VAR {
     struct charge_platform_data *data;
     volatile u8 charge_online_flag;
     volatile u8 init_ok;
+    volatile u8 detect_stop;    //检测暂停或者继续
     volatile int ldo5v_timer;   //检测LDOIN状态变化的usr timer
     volatile int charge_timer;  //检测充电是否充满的usr timer
     volatile int cc_timer;      //涓流切恒流的sys timer
@@ -238,6 +239,10 @@ static void ldo5v_detect(void *priv)
     static u16 ldo5v_keep_cnt = 0;
     static u16 ldo5v_off_cnt = 0;
 
+    if (__this->detect_stop) {
+        return;
+    }
+
     if (LVCMP_DET_GET()) {	//ldoin > vbat
         /* putchar('X'); */
         if (ldo5v_on_cnt < __this->data->ldo5v_on_filter) {
@@ -258,7 +263,7 @@ static void ldo5v_detect(void *priv)
         }
     } else if (LDO5V_DET_GET() == 0) {	//ldoin<拔出电压（0.6）
         /* putchar('Q'); */
-        if (ldo5v_off_cnt < (__this->data->ldo5v_off_filter + 10)) {
+        if (ldo5v_off_cnt < (__this->data->ldo5v_off_filter + 20)) {
             ldo5v_off_cnt++;
         } else {
             /* printf("ldo5V_OFF\n"); */
@@ -318,6 +323,11 @@ void charge_wakeup_isr(void)
     if (__this->charge_timer == 0) {
         __this->charge_timer = usr_timer_add(0, charge_full_detect, 2, 1);
     }
+}
+
+void charge_set_ldo5v_detect_stop(u8 stop)
+{
+    __this->detect_stop = stop;
 }
 
 u8 get_charge_mA_config(void)

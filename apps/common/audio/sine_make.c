@@ -322,3 +322,69 @@ void sin_tone_close(void *_maker)
 
 }
 
+#if 0
+#include "MathFunc_float.h"
+
+#ifndef DATA16
+#define DATA16		32767
+#endif
+
+/*********************************
+ * 	 fc 		: 正弦波中心频率
+ * 	 fs 		: 采样频率
+ * FrameSize	：每次计算输出点数
+ *   idx   		:当前计算起始indix
+ *   rst    	：结果存放地址
+ * *******************************/
+void SinWave_Generator(int fc, int fs, int FrameSize, int idx, short *rst)
+{
+    float tmp0, tmp1, tmp2;
+    tmp0 = (float)fc / fs;
+    for (int i = 0; i < FrameSize; i++) {
+        tmp1 = (i + idx) * tmp0 * 2;
+        sin_float(tmp1, &tmp2);
+        *rst = (short)(tmp2 * DATA16);
+        rst++;
+    }
+}
+/*********************************
+ * 	 fs 		: 采样频率
+ * FrameSize	：每次计算输出点数
+ *   idx   		:当前计算起始indix
+ *   ts   		:期望一次扫频所持续时间
+ *   rst    	：结果存放地址
+ * *******************************/
+void SweepSin_Generator(int fs, int FrameSize, int idx, float ts, short *rst)
+{
+    float fp, fc, tmp1, tmp2;
+    int Ncnt, NPoint, DPoint;
+
+    NPoint = fs * ts;
+    // fp = (fs/2)/(fs*ts);
+    fp = 1 / (2 * 2 * ts);
+
+    for (int i = 0; i < FrameSize; i++) {
+        Ncnt = (i + idx) / NPoint;
+        DPoint = (i + idx) - Ncnt * NPoint;
+        //printf("idx:%d \n",DPoint);
+        tmp1 = ((DPoint * fp) / fs) * DPoint * 2;
+        sin_float(tmp1, &tmp2);
+        //printf("Sin[%d]:%d",i,(int)(tmp2*1000));
+        *rst = (short)(tmp2 * DATA16);
+        rst++;
+    }
+}
+
+int sin_idx = 0;
+void sin_pcm_fill(void *buf, u32 len)
+{
+    SinWave_Generator(1000, 16000, len / 2, sin_idx, buf);
+    sin_idx += len / 2;
+}
+
+void sweepsin_pcm_fill(void *buf, u32 len)
+{
+    SweepSin_Generator(16000, len / 2, sin_idx, 25, buf);
+    sin_idx += len / 2;
+}
+#endif

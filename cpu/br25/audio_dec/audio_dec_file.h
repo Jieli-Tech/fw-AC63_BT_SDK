@@ -61,6 +61,12 @@ struct file_dec_hdl {
     MP3_ID3_OBJ *p_mp3_id3_v2;	// id3_v2信息
 #endif
 
+#if FILE_DEC_AB_REPEAT_EN
+    void *ab_repeat_dly;		// AB复读间隔
+    u8 ab_repeat_num;			// AB复读循环次数
+#endif
+
+
 #if FILE_DEC_REPEAT_EN
     u8 repeat_num;			// 无缝循环次数
     struct fixphase_repair_obj repair_buf;	// 无缝循环句柄
@@ -119,6 +125,8 @@ void *get_file_dec_hdl();
 #if (FILE_DEC_AB_REPEAT_EN)
 int file_dec_ab_repeat_switch(void);
 int file_dec_ab_repeat_close(void);
+void set_ab_repeat_num(u16 num);
+void set_ab_repeat_dly(u32 dly);
 #else
 #define file_dec_ab_repeat_switch()
 #define file_dec_ab_repeat_close()

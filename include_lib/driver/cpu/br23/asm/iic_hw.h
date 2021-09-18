@@ -29,7 +29,7 @@
 #define iic_pnd_clr(reg)            (reg->CON0 |= BIT(14))
 
 #define iic_set_end_ie(reg)         (reg->CON0 |= BIT(10))
-#define iic_clr_end_ie(reg)         (reg->CON0 &= BIT(10))
+#define iic_clr_end_ie(reg)         (reg->CON0 &= ~BIT(10))
 #define iic_end_pnd(reg)            (reg->CON0 & BIT(13))
 #define iic_end_pnd_clr(reg)        (reg->CON0 |= BIT(12))
 

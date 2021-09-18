@@ -5,12 +5,13 @@
 #include "typedef.h"
 #include "system/sys_time.h"
 
-
 struct rtc_dev_platform_data {
     const struct sys_time *default_sys_time;
     const struct sys_time *default_alarm;
     void (*cbfun)(u8);
     u8 x32xs;
+    u8 clk_sel;
+    u8 trim_t;
 };
 
 #define RTC_DEV_PLATFORM_DATA_BEGIN(data) \

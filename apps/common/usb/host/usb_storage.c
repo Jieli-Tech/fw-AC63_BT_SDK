@@ -1310,6 +1310,7 @@ static int _usb_stor_write(struct device *device, void *pBuf,  u32 num_lba, u32 
             goto __exit;
         }
         disk->remain_len -= tx_len;
+        disk->need_send_csw = 1;
     }
     if (disk->remain_len == 0) {
         //csw
@@ -1535,6 +1536,7 @@ int usb_stor_init(struct device *device)
         log_error("ret = %d\n", ret);
         /* return ret; */
     }
+    /* os_time_dly(10); */
 
     disk->lun = lun;
 
@@ -1550,9 +1552,11 @@ int usb_stor_init(struct device *device)
             log_info("--- inquery ---");
             ret = usb_stor_inquiry(device);
             if (ret < DEV_ERR_NONE) {
-                os_time_dly(retry);
-                if (retry == 3) {
+                os_time_dly(15);
+                if (retry == 2) {
                     ret = -DEV_ERR_OFFLINE;
+                } else {
+                    ret = DEV_ERR_NONE;
                 }
             } else {
                 state++;

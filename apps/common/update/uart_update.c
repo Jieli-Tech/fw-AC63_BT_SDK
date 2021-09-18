@@ -54,7 +54,6 @@ void uart_update_set_baud(u32 baudrate);
 void uart_close_deal(void);
 void uart_hw_init(uart_update_cfg update_cfg, void (*cb)(void *, u32));
 void uart_data_decode(u8 *buf, u16 len);
-void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len);
 
 enum {
     SEEK_SET = 0x0,
@@ -76,12 +75,6 @@ static void uart_update_hdl_register(void (*resume_hdl)(void *priv), int (*sleep
 {
     uart_update_resume_hdl = resume_hdl;
     uart_update_sleep_hdl  = sleep_hdl;
-}
-
-void sava_uart_update_param(void)
-{
-    UPDATA_UART uart_param = {.control_baud = update_baudrate, .control_io_tx = update_cfg.tx, .control_io_rx = update_cfg.rx};
-    updata_parm_set(UART_UPDATA, (u8 *)&uart_param, sizeof(UPDATA_UART));
 }
 
 /*----------------------------------------------------------------------------*/
@@ -378,7 +371,7 @@ static void update_loader_download_task(void *p)
     u32 uart_rxcnt = 0;
 
     while (1) {
-        ret = os_task_pend("taskq", msg, ARRAY_SIZE(msg));
+        ret = os_taskq_pend("taskq", msg, ARRAY_SIZE(msg));
         if (ret != OS_TASKQ) {
             continue;
         }

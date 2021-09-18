@@ -73,4 +73,58 @@ enum {
 void bt_testbox_ex_info_get_handle_register(u8 info_type, void *handle);
 u8  bredr_bulk_change_rx_bulk(u8 mode);
 void lmp_set_features_req_step(u8 *addr);
+
+struct ble_dut_tx_param_t {
+    u8 ch_index;	//data[0]
+    u8 payload_len;	//data[1]
+    u8 payload_type;//data[2]
+    u8 phy_type; 	//data[3]
+};
+
+struct ble_dut_rx_param_t {
+    u8 ch_index;	//data[0]
+    u8 phy_type;	//data[1]
+};
+
+enum BLE_DUT_CTRL_TYPE {
+    BLE_DUT_SET_RX_MODE = 0,		//param1:struct ble_dut_rx_param_t *param;
+    BLE_DUT_SET_TX_MODE,			//param1:struct ble_dut_tx_param_t *param;
+    BLE_DUT_SET_TEST_END,			//param1:u16 *pkt_valid_cnt,param2:u16 *pkt_err_cnt;
+};
+
+struct ble_dut_ops_t {
+
+    /* *****************************************************************************/
+    /**
+     * @brief :      initialize the ble dut test module
+     *
+     * @param :       void
+     *
+     * @return :      pointer to instance of test module
+     */
+    /* *****************************************************************************/
+    void *(*init)(void);
+
+    /* *****************************************************************************/
+    /**
+     * @brief :        ble dut test control api,such as setting rx/tx mode,stop testing
+     *
+     * @param :       control type,using enum BLE_DUT_CTRL_TYPE value;
+     * @param :       vary from different control type;
+     */
+    /* *****************************************************************************/
+    int (*ioctrl)(int ctrl, ...);
+
+    /* *****************************************************************************/
+    /**
+     * @brief :       exit the ble dut test module
+     *
+     * @param :       poniter to instance of test module
+     */
+    /* *****************************************************************************/
+    void (*exit)(void *priv);
+};
+
+extern const struct ble_dut_ops_t *__ble_dut_ops;
+
 #endif

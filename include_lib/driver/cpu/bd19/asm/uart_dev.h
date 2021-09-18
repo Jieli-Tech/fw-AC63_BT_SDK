@@ -163,6 +163,7 @@ typedef struct {
     KFIFO kfifo;                                        ///< ut用的循环buf结构体的指针
     UT_Semaphore  sem_rx;
     UT_Semaphore  sem_tx;
+    u32(*get_data_len)(void);
 } uart_bus_t;
 
 

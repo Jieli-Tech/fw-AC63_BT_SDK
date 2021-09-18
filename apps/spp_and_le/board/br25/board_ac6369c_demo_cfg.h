@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC6369C_DEMO_CFG_H
 #define CONFIG_BOARD_AC6369C_DEMO_CFG_H
 
+#include "board_ac6369c_demo_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6369C_DEMO
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //

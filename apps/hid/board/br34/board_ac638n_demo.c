@@ -16,6 +16,7 @@
 #include "asm/power/p33.h"
 #include "asm/power_interface.h"
 
+#include "usb/otg.h"
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
 #define LOG_ERROR_ENABLE
@@ -110,13 +111,13 @@ struct adc_platform_data adc_data = {
 /*差分mic使能*/
 	.mic_diff		= 0,
 /*MIC电容隔直模式使用内部mic偏置(PA2)*/
-	.mic_bias_inside = 0,
+	.mic_bias_inside = 1,
 /*MIC LDO电流档位设置：0:5ua    1:10ua    2:15ua    3:20ua*/
 	.mic_ldo_isel   = TCFG_AUDIO_ADC_LD0_SEL,
 /*MIC LDO电压档位设置,也会影响MIC的偏置电压
     0:1.5v  1:1.8v  2:2.1v  3:2.4v 4:2.7v */
 	.mic_ldo_vsel  = 3,
-/*MIC免电容方案需要设置，影响MIC的偏置电压
+/*MIC内部上拉电阻挡位配置，影响MIC的偏置电压
     21:1.18K	20:1.42K 	19:1.55K 	18:1.99K 	17:2.2K 	16:2.4K 	15:2.6K
 	14:2.91K	13:3.05K 	12:3.5K 	11:3.73K 	10:3.91K  	9:4.41K 	8:5.0K
 	7:5.6K		6:6K		5:6.5K		4:7K		3:7.6K		2:8.0K		1:8.5K	*/
@@ -137,6 +138,42 @@ struct adc_platform_data adc_data = {
 /* struct audio_platform_data audio_data = { */
     /* .private_data = (void *) &audio_pf_d, */
 /* }; */
+
+
+/************************** IR KEY ****************************/
+#if TCFG_IRKEY_ENABLE
+const struct irkey_platform_data irkey_data = {
+	    .enable = TCFG_IRKEY_ENABLE,                              //IR按键使能
+	    .port = TCFG_IRKEY_PORT,                                       //IR按键口
+};
+#endif
+
+/**************************CTMU_TOUCH_KEY ****************************/
+#if TCFG_CTMU_TOUCH_KEY_ENABLE
+#include "asm/ctmu.h"
+static const struct ctmu_key_port touch_ctmu_port[] = {
+    {
+	    .press_delta = TCFG_CTMU_TOUCH_KEY0_PRESS_DELTA,
+        .port = TCFG_CTMU_TOUCH_KEY0_PORT,
+        .key_value = TCFG_CTMU_TOUCH_KEY0_VALUE,
+    },
+    {
+	    .press_delta = TCFG_CTMU_TOUCH_KEY1_PRESS_DELTA,
+	    .port = TCFG_CTMU_TOUCH_KEY1_PORT,
+        .key_value = TCFG_CTMU_TOUCH_KEY1_VALUE,
+    },
+    {
+	    .press_delta = TCFG_CTMU_TOUCH_KEY2_PRESS_DELTA,
+	    .port = TCFG_CTMU_TOUCH_KEY2_PORT,
+        .key_value = TCFG_CTMU_TOUCH_KEY2_VALUE,
+    },
+};
+
+const struct ctmu_touch_key_platform_data ctmu_touch_key_data = {
+    .num = ARRAY_SIZE(touch_ctmu_port),
+    .port_list = touch_ctmu_port,
+};
+#endif  /* #if TCFG_CTMU_TOUCH_KEY_ENABLE */
 
 
 /************************** IO KEY ****************************/
@@ -207,6 +244,42 @@ const struct adkey_platform_data adkey_data = {
     },
 };
 #endif
+/************************** otg data****************************/
+#if TCFG_OTG_MODE
+struct otg_dev_data otg_data = {
+    .usb_dev_en = TCFG_OTG_USB_DEV_EN,
+	.slave_online_cnt = TCFG_OTG_SLAVE_ONLINE_CNT,
+	.slave_offline_cnt = TCFG_OTG_SLAVE_OFFLINE_CNT,
+	.host_online_cnt = TCFG_OTG_HOST_ONLINE_CNT,
+	.host_offline_cnt = TCFG_OTG_HOST_OFFLINE_CNT,
+	.detect_mode = TCFG_OTG_MODE,
+	.detect_time_interval = TCFG_OTG_DET_INTERVAL,
+};
+#endif
+REGISTER_DEVICES(device_table) = {
+    /* { "audio", &audio_dev_ops, (void *) &audio_data }, */
+
+#if TCFG_CHARGE_ENABLE
+    { "charge", &charge_dev_ops, (void *)&charge_data },
+#endif
+#if TCFG_SD0_ENABLE
+	{ "sd0", 	&sd_dev_ops, 	(void *) &sd0_data},
+#endif
+#if TCFG_OTG_MODE
+    { "otg",     &usb_dev_ops, (void *) &otg_data},
+#endif
+};
+
+
+
+/************************** PWM_LED ****************************/
+#if TCFG_PWMLED_ENABLE
+LED_PLATFORM_DATA_BEGIN(pwm_led_data)
+	.io_mode = TCFG_PWMLED_IOMODE,              //推灯模式设置:支持单个IO推两个灯和两个IO推两个灯
+	.io_cfg.one_io.pin = TCFG_PWMLED_PIN,       //单个IO推两个灯的IO口配置
+LED_PLATFORM_DATA_END()
+#endif
+
 
 void debug_uart_init(const struct uart_platform_data *data)
 {
@@ -218,12 +291,12 @@ void debug_uart_init(const struct uart_platform_data *data)
     }
 #endif
 }
-
-REGISTER_DEVICES(device_table) = {
-#if TCFG_CHARGE_ENABLE
-    { "charge", &charge_dev_ops, (void *)&charge_data },
-#endif
-};
+/*  */
+/* REGISTER_DEVICES(device_table) = { */
+/* #if TCFG_CHARGE_ENABLE */
+/*     { "charge", &charge_dev_ops, (void *)&charge_data }, */
+/* #endif */
+/* }; */
 
 static void board_devices_init(void)
 {
@@ -231,11 +304,33 @@ static void board_devices_init(void)
     pwm_led_init(&pwm_led_data);
 #endif
 
-#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE)
+#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_CTMU_TOUCH_KEY_ENABLE || TCFG_IRKEY_ENABLE)
+
 	key_driver_init();
 #endif
 }
+int io_key_is_vaild()
+{
+	int value = 0;
 
+#if TCFG_IOKEY_ENABLE
+#if(!TCFG_UART0_ENABLE)
+	if(TCFG_IOKEY_PREV_CONNECT_WAY == gpio_read(TCFG_IOKEY_PREV_ONE_PORT)){
+		value |= BIT(0);
+		/* putchar('K'); */
+	}
+#endif
+
+	if(TCFG_IOKEY_NEXT_CONNECT_WAY == gpio_read(TCFG_IOKEY_NEXT_ONE_PORT)){
+		value |= BIT(1);
+		/* putchar('k'); */
+	}
+#endif
+
+	return value;
+
+
+}
 extern void cfg_file_parse(u8 idx);
 void board_init()
 {

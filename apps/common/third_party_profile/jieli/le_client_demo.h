@@ -20,6 +20,7 @@ typedef enum {
     CLI_EVENT_DISCONNECT,//设备连接断开
     CLI_EVENT_MATCH_UUID,//搜索到匹配的UUID
     CLI_EVENT_SEARCH_PROFILE_COMPLETE, //搜索profile服务结束
+    CLI_EVENT_CONNECTION_UPDATE,//设备连接参数更新成功
 } le_client_event_e;
 
 

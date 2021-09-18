@@ -58,9 +58,20 @@ extern const u8 *ble_get_mac_addr(void);
 int ble_get_mac(char *mac)
 {
     log_info("ble_get_mac");
-    memcpy(mac, ble_get_mac_addr(), 6);
+    le_controller_set_mac(mac);
     put_buf(mac, 6);
     return 0;
+}
+
+static void (*app_set_adv_data)(u8 *adv_data, u8 adv_len) = NULL;
+static void (*app_set_rsp_data)(u8 *rsp_data, u8 rsp_len) = NULL;
+void app_set_adv_data_register(void (*handler)(u8 *adv_data, u8 adv_len))
+{
+    app_set_adv_data = handler;
+}
+void app_set_rsp_data_register(void (*handler)(u8 *rsp_data, u8 rsp_len))
+{
+    app_set_rsp_data = handler;
 }
 
 static int llsync_set_rsp_data(void)
@@ -83,6 +94,9 @@ static int llsync_set_rsp_data(void)
     //printf("rsp_data(%d):", offset);
     //printf_buf(buf, offset);
     scan_rsp_data_len = offset;
+    if (app_set_rsp_data) {
+        app_set_rsp_data(scan_rsp_data, scan_rsp_data_len);
+    }
     ble_op_set_rsp_data(offset, buf);
     return 0;
 }
@@ -111,10 +125,14 @@ static int llsync_set_adv_data(adv_info_s *adv)
     //log_info("adv_data(%d):", offset);
     //log_info_hexdump(buf, offset);
     adv_data_len = offset;
+    if (app_set_adv_data) {
+        app_set_adv_data(adv_data, adv_data_len);
+    }
     ble_op_set_adv_data(offset, buf);
     return 0;
 }
 
+static void (*llsync_ble_module_enable)(u8 en) = NULL;
 ble_qiot_ret_status_t ble_advertising_start(adv_info_s *adv)
 {
     log_info("ble_advertising_start\n");
@@ -123,25 +141,39 @@ ble_qiot_ret_status_t ble_advertising_start(adv_info_s *adv)
     llsync_set_adv_data(adv);
     llsync_set_rsp_data();
 
-    int ret;
-    ret = ble_op_adv_enable(1);
-    if (ret) {
-        log_info("ble_op_adv_enable error:%d\n", ret);
+    if (llsync_ble_module_enable) {
+        llsync_ble_module_enable(1);
     }
     return 0;
+}
+
+void llsync_ble_module_enable_register(void (*handler)(u8 en))
+{
+    llsync_ble_module_enable = handler;
 }
 
 ble_qiot_ret_status_t ble_advertising_stop(void)
 {
     log_info("ble_advertising_stop\n");
-    ble_op_adv_enable(0);
+    if (llsync_ble_module_enable) {
+        llsync_ble_module_enable(0);
+    }
     return 0;
 }
 
-extern int llsync_app_send_user_data_do(void *priv, u8 *data, u16 len);
+static int (*llsync_send_data)(void *priv, u8 *data, u16 len) = NULL;
+void llsync_send_data_register(int (*handler)(void *priv, void *buf, u16 len))
+{
+    llsync_send_data = handler;
+}
+
 ble_qiot_ret_status_t ble_send_notify(uint8_t *buf, uint8_t len)
 {
-    llsync_app_send_user_data_do(NULL, buf, len);
+    if (llsync_send_data) {
+        llsync_send_data(NULL, buf, len);
+    } else {
+        log_info("llsync_send_data no register");
+    }
     return 0;
 }
 

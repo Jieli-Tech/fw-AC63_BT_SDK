@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC6368B_DONGLE_CFG_H
 #define CONFIG_BOARD_AC6368B_DONGLE_CFG_H
 
+#include "board_ac6368b_dongle_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6368B_DONGLE
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -267,6 +268,7 @@ DAC硬件上的连接方式,可选的配置：
 //                                 USB 配置                                        //
 //*********************************************************************************//
 #define TCFG_PC_ENABLE						ENABLE_THIS_MOUDLE//PC模块使能
+#define USB_MEM_NO_USE_OVERLAY_EN	       1
 #define TCFG_USB_SLAVE_USER_HID            1
 #define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE//U盘模块使能
 #define TCFG_OTG_USB_DEV_EN                 BIT(0)//USB0 = BIT(0)  USB1 = BIT(1)
@@ -342,15 +344,15 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能
 #define TCFG_USER_EDR_ENABLE                      0   //EDR功能使能
 
-
-#define USER_SUPPORT_PROFILE_SPP    1
+#if TCFG_USER_EDR_ENABLE
+#define USER_SUPPORT_PROFILE_SPP    0
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
 #define USER_SUPPORT_PROFILE_AVCTP  0
-#define USER_SUPPORT_PROFILE_HID    0
+#define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    0
 #define USER_SUPPORT_PROFILE_PBAP   0
-
+#endif
 
 
 #if TCFG_USER_TWS_ENABLE

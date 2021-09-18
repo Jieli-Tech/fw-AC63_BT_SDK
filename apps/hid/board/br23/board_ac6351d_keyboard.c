@@ -48,6 +48,17 @@ u8 key_table[KEY_NUM_MAX][KEY_EVENT_MAX] = {
     // SHORT           LONG              HOLD              UP              DOUBLE           TRIPLE
 };
 
+#if TCFG_CHARGE_ENABLE
+CHARGE_PLATFORM_DATA_BEGIN(charge_data)
+.charge_en              = TCFG_CHARGE_ENABLE,              //内置充电使能
+ .charge_full_V          = TCFG_CHARGE_FULL_V,              //充电截止电压
+  .charge_full_mA			= TCFG_CHARGE_FULL_MA,             //充电截止电流
+         .charge_mA				= TCFG_CHARGE_MA,                  //充电电流
+                    .ldo5v_off_filter		= 0,
+                          .ldo5v_pulldown_en		= 0,                               //ldo5v的100K下拉电阻使能,若充电舱需要更大的负载才能检测到插入时，请将该变量置1
+                               CHARGE_PLATFORM_DATA_END()
+#endif//TCFG_CHARGE_ENABLE
+
 
 // *INDENT-OFF*
 /************************** UART config****************************/
@@ -103,9 +114,9 @@ const struct adkey_platform_data adkey_data = {
 /*          IO_PORTA_07, IO_PORTA_12, IO_PORTC_00, IO_PORTA_15,    IO_PORTC_01, IO_PORTB_05, IO_PORTA_13, IO_PORTA_14, \ */
 /*          IO_PORTA_09, IO_PORTA_11, IO_PORTA_10, */
 /*        }; */
-static u32 key_row[] = {IO_PORTB_06, IO_PORTB_07, IO_PORTB_08, IO_PORTB_09, IO_PORTB_10, IO_PORTB_11, IO_PORTA_00, IO_PORTC_07};
+static u32 key_row[] = {IO_PORTB_06, IO_PORTB_07, IO_PORTB_08, IO_PORTB_09, IO_PORTB_10, IO_PORTB_11, IO_PORTC_07, IO_PORTA_00};
 static u32 key_col[] = {IO_PORTC_06, IO_PORTA_01, IO_PORTA_02, IO_PORTA_03, IO_PORTA_04, IO_PORTA_05, IO_PORTA_06, IO_PORTA_07, \
-                        IO_PORTA_08, IO_PORTA_09, IO_PORTA_10,  IO_PORTA_11, IO_PORTA_12, IO_PORTA_13, IO_PORTC_00, IO_PORTA_14, \
+                        IO_PORTA_08, IO_PORTA_09, /*IO_PORTA_10,  IO_PORTA_11,*/ IO_PORTA_12, IO_PORTA_13, IO_PORTC_00, IO_PORTA_14, \
                         IO_PORTC_01, IO_PORTA_15, IO_PORTB_05,
                        };
 
@@ -180,6 +191,10 @@ void board_init()
 	/*close FAST CHARGE */
 	CHARGE_EN(0);
 	CHGBG_EN(0);
+#else
+    r_printf("123_charge\n");
+    charge_api_init(&charge_data);
+
 #endif
 }
 
@@ -229,7 +244,7 @@ struct port_wakeup port5 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = IO_PORTC_06,                       //唤醒口选择
+	.iomap              = IO_PORTA_00,                       //唤醒口选择
     .filter_enable      = ENABLE,
 };
 
@@ -290,14 +305,14 @@ void board_set_soft_poweroff(void)
     gpio_set_pu(GPIOA, 0, 16, ~porta_value, GPIO_AND);
     gpio_set_pd(GPIOA, 0, 16, ~porta_value, GPIO_AND);
     gpio_die(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_dieh(GPIOA, 0, 16, ~portc_value, GPIO_AND);
+    gpio_dieh(GPIOA, 0, 16, ~porta_value, GPIO_AND);
 
     //保留长按Reset Pin - PB1
-    gpio_dir(GPIOB, 1, 15, portb_value, GPIO_OR);
-    gpio_set_pu(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_set_pd(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_die(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_dieh(GPIOB, 0, 16, ~portc_value, GPIO_AND);
+    gpio_dir(GPIOB, 0, 16, portb_value, GPIO_OR);
+    gpio_set_pu(GPIOB, 0, 16, ~portb_value, GPIO_AND);
+    gpio_set_pd(GPIOB, 0, 16, ~portb_value, GPIO_AND);
+    gpio_die(GPIOB, 0, 16, ~portb_value, GPIO_AND);
+    gpio_dieh(GPIOB, 0, 16, ~portb_value, GPIO_AND);
 
     gpio_dir(GPIOC, 0, 16, portc_value, GPIO_OR);
     gpio_set_pu(GPIOC, 0, 16, ~portc_value, GPIO_AND);
@@ -362,6 +377,12 @@ void sleep_exit_callback(u32 usec)
 
 }
 
+//取消hold方式检测按键,加快进入低功耗
+bool power_wakeup_is_hold(void)
+{
+	return FALSE;
+}
+
 void sleep_enter_callback(u8  step)
 {
     /* 此函数禁止添加打印 */
@@ -374,9 +395,9 @@ void sleep_enter_callback(u8  step)
 			power_set_mode(PWR_LDO15);
 		}
     } else {
-        gpio_set_pull_up(IO_PORTA_03, 0);
-        gpio_set_pull_down(IO_PORTA_03, 0);
-        gpio_set_direction(IO_PORTA_03, 1);
+        /* gpio_set_pull_up(IO_PORTA_03, 0); */
+        /* gpio_set_pull_down(IO_PORTA_03, 0); */
+        /* gpio_set_direction(IO_PORTA_03, 1); */
 
         /* usb_iomode(1); */
         /*  */

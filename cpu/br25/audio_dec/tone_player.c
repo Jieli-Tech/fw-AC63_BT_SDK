@@ -624,6 +624,13 @@ int tone_get_dec_status()
     return TONE_STOP;
 }
 
+void *get_tone_dec_file_decoder()
+{
+    if (tone_dec && tone_dec->dec_file) {
+        return (&tone_dec->dec_file->dec->decoder);
+    }
+    return NULL;
+}
 
 /*----------------------------------------------------------------------------*/
 /**@brief    超时等待提示音播放解码完成

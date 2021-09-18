@@ -125,6 +125,14 @@ wav_decoder
 midi_ctrl_decoder
 #endif
 
+#if TCFG_DEC_SPEEX_ENABLE
+speex_decoder
+#endif
+
+#if TCFG_DEC_OPUS_ENABLE
+opus_decoder
+#endif
+
 
 #if TCFG_DEC_LC3_ENABLE
 lc3_decoder
@@ -167,6 +175,10 @@ opus_encoder
 
 #if TCFG_ENC_SPEEX_ENABLE
 speex_encoder
+#endif
+
+#if TCFG_ENC_AMR_ENABLE
+amr_encoder
 #endif
 
 #if TCFG_ENC_SBC_ENABLE

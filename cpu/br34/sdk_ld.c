@@ -104,6 +104,7 @@ SECTIONS
 
 		*(.LOG_TAG_CONST*)
         *(.rodata*)
+        *(.fat_data_code_ex)
 
 		. = ALIGN(4); // must at tail, make rom_code size align 4
         PROVIDE(text_rodata_end = .);
@@ -197,6 +198,16 @@ SECTIONS
 	    update_target_end = .;
 	    PROVIDE(update_target_end = .);
 		. = ALIGN(4);
+
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*( .lc3_codec_c_sparse_code)
+		*(.lc3_codec_d_code)
+		/* *(.lc3_codec_c_const) */
+		/* *(.lc3_codec_c_code) */
+#endif
+
+		. = ALIGN(32);
+
 	  } > code0
 
     . = ORIGIN(ram0);
@@ -241,6 +252,12 @@ SECTIONS
 		#include "system/system_lib_data.ld"
 
 		. = ALIGN(4);
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_const)
+		*(.lc3_codec_ari_c_data)
+		*(.lc3_codec_c_data)
+#endif
+
 	} > ram0
 
 	.bss ALIGN(32):
@@ -279,6 +296,12 @@ SECTIONS
 		*(.non_volatile_ram)
 
         . = ALIGN(32);
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_bss)
+		*(.lc3_codec_c_bss)
+#endif
+
+
 
     } > ram0
 
@@ -286,6 +309,13 @@ SECTIONS
 	{
         data_code_pc_limit_begin = .;
 		*(.bank_critical_code)
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_code)
+		*(.lc3_codec_e_code)
+		*(.lc3_codec_c_const)
+		*(.lc3_codec_c_code)
+#endif
+
         . = ALIGN(4);
     } > ram0
 

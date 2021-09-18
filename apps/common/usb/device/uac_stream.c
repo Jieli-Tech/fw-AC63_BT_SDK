@@ -41,7 +41,7 @@ static void (*uac_rx_handler)(int, void *, int) = NULL;
 #if (SOUNDCARD_ENABLE)
 #define UAC_BUFFER_SIZE     (4 * 1024)
 #else
-#define UAC_BUFFER_SIZE     (2 * 1024)
+#define UAC_BUFFER_SIZE     (1 * 1024)
 #endif
 
 #define UAC_BUFFER_MAX		(UAC_BUFFER_SIZE * 50 / 100)
@@ -275,7 +275,7 @@ int uac_get_spk_vol()
     }
     return 0;
 }
-static u32 mic_stream_is_open;
+static u8 mic_stream_is_open;
 void uac_mute_volume(u32 type, u32 l_vol, u32 r_vol)
 {
     struct sys_event event;
@@ -375,7 +375,7 @@ int uac_mic_stream_read(u8 *buf, u32 len)
         }
 #endif
     } else {
-        putchar('N');
+        //putchar('N');
     }
     return 0;
 #endif
@@ -386,9 +386,11 @@ void set_uac_mic_tx_handler(void *priv, int (*tx_handler)(int, void *, int))
 {
     mic_tx_handler = tx_handler;
 }
-
+static u32 mic_close_tid = 0;
+static u8 mic_sw;
 u32 uac_mic_stream_open(u32 samplerate, u32 frame_len, u32 ch)
 {
+    mic_sw = 1;
     if (mic_stream_is_open) {
         return 0;
     }
@@ -409,9 +411,12 @@ u32 uac_mic_stream_open(u32 samplerate, u32 frame_len, u32 ch)
     return 0;
 }
 
-void uac_mic_stream_close()
+static void uac_mic_stream_close_delay()
 {
-    if (mic_stream_is_open == 0) {
+    mic_close_tid = 0;
+    if (!mic_sw) {
+
+    } else {
         return ;
     }
     log_info("%s", __func__);
@@ -422,6 +427,22 @@ void uac_mic_stream_close()
     event.u.dev.value = (int)0;
     mic_stream_is_open = 0;
     sys_event_notify(&event);
+}
+void uac_mic_stream_close()
+{
+    mic_sw = 0;
+    if (mic_stream_is_open == 0) {
+        return ;
+    }
+    //FIXME:
+    //未知原因出现频繁开关mic，导致出现audio或者蓝牙工作异常，
+    //收到mic关闭命令后延时1s再发消息通知audio模块执行关闭动作
+    //如果在1s之内继续收到usb下发的关闭命令，则继续推迟1s。
+    if (mic_close_tid == 0) {
+        mic_close_tid = sys_hi_timeout_add(NULL, uac_mic_stream_close_delay, 1000);
+    } else {
+        sys_hi_timeout_modify(mic_close_tid, 1000);
+    }
 }
 
 _WEAK_

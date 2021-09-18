@@ -60,10 +60,11 @@
 #define TCFG_ESCO_PLC				1	//通话丢包修复
 
 #ifdef CONFIG_SOUNDBOX_FLASH_256K
-#define TCFG_ESCO_LIMITER			0  	//通话近端底噪/限幅器
+#define TCFG_ESCO_LIMITER			0  	//通话近端限幅器
 #else
-#define TCFG_ESCO_LIMITER			0  	//通话近端底噪/限幅器
+#define TCFG_ESCO_LIMITER			0  	//通话近端限幅器
 #endif
+#define TCFG_ESCO_NOISEGATE			0  	//通话近端噪声门限
 
 /*
  *[模拟音量]最大等级配置
@@ -138,6 +139,13 @@
                || (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT) \
                || (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DONGLE) \
                || (AUDIO_OUTPUT_DAC_AND_IIS))
+
+#define AUDIO_OUTPUT_INCLUDE_BT 	((defined(AUDIO_OUTPUT_WAY)) && (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT)) \
+    						    || ((defined(AUDIO_OUT_WAY_TYPE)) && (AUDIO_OUT_WAY_TYPE & AUDIO_WAY_TYPE_BT))
+
+#define AUDIO_OUTPUT_INCLUDE_FM 	((defined(AUDIO_OUTPUT_WAY)) && (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)) \
+    						    || ((defined(AUDIO_OUT_WAY_TYPE)) && (AUDIO_OUT_WAY_TYPE & AUDIO_WAY_TYPE_FM))
+
 
 u8 get_max_sys_vol(void);
 u8 get_tone_vol(void);

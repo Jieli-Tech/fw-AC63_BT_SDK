@@ -174,4 +174,30 @@ extern const int config_btctler_le_slave_conn_update_winden;
 extern const int config_btctler_le_master_multilink;
 /*-----------------------------------------------------------*/
 
+/*
+ *-------------------LE Vendor baseband CONTROL
+ */
+#define VENDOR_BB_PHY_2M            1
+#define VENDOR_BB_PHY_S2            2
+#define VENDOR_BB_PHY_S8            3
+#define VENDOR_BB_MD_CLOSE          BIT(4)
+#define VENDOR_BB_CONNECT_SLOT      BIT(5)
+#define VENDOR_BB_EVT_HOLD          BIT(6)
+#define VENDOR_BB_DUL_MODE1         BIT(7) // 双发双收优化
+#define VENDOR_BB_ADV_PDU_INT(x)    ((x) << 8)
+#define VENDOR_BB_EVT_HOLD_TRIGG(x) ((x) << 12)
+#define VENDOR_BB_EVT_HOLD_TICK(x)  ((x) << 18)
+#define VENDOR_BB_RX_PAYLOAD_LEN(x) ((x) << 25)
+#define VENDOR_BB_WL_COEX_ROLE_EN   BIT(2)
+#define VENDOR_BB_WL_COEX_ROLE      BIT(3)
+
+extern const u32 config_vendor_le_bb;
+/*-----------------------------------------------------------*/
+
+/*
+ *-------------------LE close wait
+ */
+extern const int ble_disable_wait_enable;
+/*-----------------------------------------------------------*/
+
 #endif //_LL_CONFIG_H_

@@ -60,7 +60,7 @@ void hci_core_init(void) {}
 
 struct bt_hci_evt_le_p256_public_key_complete {
     u8_t status;
-    u8_t key[64];
+    u8_t *key;
 } __packed;
 
 struct bt_hci_evt_le_generate_dhkey_complete {
@@ -215,16 +215,20 @@ static inline void le_pkey_complete(u8 *buf, u16 size)
     struct bt_hci_evt_le_p256_public_key_complete *evt = (void *)buf;
 
     BT_INFO("status: 0x%x", evt->status);
-    BT_INFO_HEXDUMP(evt->key, size);
+    BT_INFO_HEXDUMP(evt->key, 64);
+
+    u8 key[64];
+    sys_memcpy_swap(key, evt->key, 32);
+    sys_memcpy_swap(&key[32], evt->key + 32, 32);
 
     struct bt_pub_key_cb *cb;
 
     if (!evt->status) {
-        memcpy(pub_key, evt->key, 64);
+        memcpy(pub_key, key, 64);
     }
 
     for (cb = pub_key_cb; cb; cb = cb->_next) {
-        cb->func(evt->status ? NULL : evt->key);
+        cb->func(evt->status ? NULL : key);
     }
 }
 

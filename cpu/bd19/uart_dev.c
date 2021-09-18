@@ -20,6 +20,7 @@
 #endif
 
 #define UART_CLK  clk_get("uart")
+#define UART_OT_CLK  clk_get("lsb")
 
 
 
@@ -136,8 +137,11 @@ static void UT0_isr_fun(void)
         }
     }
     if ((JL_UART0->CON0 & BIT(3)) && (JL_UART0->CON0 & BIT(14))) {
+        JL_UART0->CON0 |= BIT(7);                     //DMA模式
         JL_UART0->CON0 |= BIT(12);           //清RX PND
-        uart0.kfifo.buf_in += uart0.frame_length; //每满frame_length字节则产生一次中断
+        rx_len = JL_UART0->HRXCNT;             //读当前串口接收数据的个数
+        /* uart0.kfifo.buf_in += uart0.frame_length; //每满frame_length字节则产生一次中断 */
+        uart0.kfifo.buf_in += rx_len;
         UT_OSSemPost(&uart0.sem_rx);
         if (uart0.isr_cbfun) {
             uart0.isr_cbfun(&uart0, UT_RX);
@@ -242,13 +246,22 @@ static void UT0_set_baud(u32 baud)
     JL_UART0->BAUD = ((UART_CLK + baud / 2) / baud) / 4 - 1;
     if (JL_UART0->CON0 & BIT(5)) {
         if (uart0.rx_timeout > 10) {
-            JL_UART0->OTCNT = (uart0.rx_timeout / 10) * (UART_CLK / 10) / 10;
+            JL_UART0->OTCNT = (uart0.rx_timeout / 10) * (UART_OT_CLK / 10) / 10;
         } else {
-            JL_UART0->OTCNT = uart0.rx_timeout * UART_CLK / 1000;
+            JL_UART0->OTCNT = uart0.rx_timeout * UART_OT_CLK / 1000;
         }
     }
     JL_UART0->CON0 |= BIT(13) | BIT(12) | BIT(10) | BIT(0) | BIT(1);
 }
+
+/**
+*获取串口数据长度
+*/
+static u32 uart1_get_data_len()
+{
+    return kfifo_length(&uart1.kfifo);
+}
+
 /**
  * @brief ut0使能
  */
@@ -352,8 +365,11 @@ static void UT1_isr_fun(void)
         }
     }
     if ((JL_UART1->CON0 & BIT(3)) && (JL_UART1->CON0 & BIT(14))) {
+        JL_UART1->CON0 |= BIT(7);                     //DMA模式
         JL_UART1->CON0 |= BIT(12);           //清RX PND
-        uart1.kfifo.buf_in += uart1.frame_length; //每满32字节则产生一次中断
+        rx_len = JL_UART1->HRXCNT;             //读当前串口接收数据的个数
+        /* uart1.kfifo.buf_in += uart1.frame_length; //每满32字节则产生一次中断 */
+        uart1.kfifo.buf_in += rx_len;
         UT_OSSemPost(&uart1.sem_rx);
         if (uart1.isr_cbfun) {
             uart1.isr_cbfun(&uart1, UT_RX);
@@ -459,9 +475,9 @@ static void UT1_set_baud(u32 baud)
     JL_UART1->BAUD = ((UART_CLK + baud / 2) / baud) / 4 - 1;
     if (JL_UART1->CON0 & BIT(5)) {
         if (uart1.rx_timeout > 10) {
-            JL_UART1->OTCNT = (uart1.rx_timeout / 10) * (UART_CLK / 10) / 10;
+            JL_UART1->OTCNT = (uart1.rx_timeout / 10) * (UART_OT_CLK / 10) / 10;
         } else {
-            JL_UART1->OTCNT = uart1.rx_timeout * UART_CLK / 1000;
+            JL_UART1->OTCNT = uart1.rx_timeout * UART_OT_CLK / 1000;
         }
     }
     JL_UART1->CON0 |= BIT(13) | BIT(12) | BIT(10) | BIT(0) | BIT(1);
@@ -535,6 +551,8 @@ static u8 UT2_getbyte(u8 *buf, u32 timeout)
             UT_OSSemPend(&uart2.sem_rx, timeout);
         }
         UT_OSSemSet(&uart2.sem_rx, 0);
+
+        return kfifo_get(&uart2.kfifo, buf, 1);
     } else {
         _timeout = timeout + ut_get_jiffies();
         _t_sleep = ut_msecs_to_jiffies(10) + ut_get_jiffies();
@@ -570,8 +588,11 @@ static void UT2_isr_fun(void)
         }
     }
     if ((JL_UART2->CON0 & BIT(3)) && (JL_UART2->CON0 & BIT(14))) {
+        JL_UART2->CON0 |= BIT(7);                     //DMA模式
         JL_UART2->CON0 |= BIT(12);           //清RX PND
-        uart2.kfifo.buf_in += uart2.frame_length; //每满32字节则产生一次中断
+        rx_len = JL_UART2->HRXCNT;             //读当前串口接收数据的个数
+        /* uart2.kfifo.buf_in += uart2.frame_length; //每满32字节则产生一次中断 */
+        uart2.kfifo.buf_in += rx_len;
         UT_OSSemPost(&uart2.sem_rx);
         if (uart2.isr_cbfun) {
             uart2.isr_cbfun(&uart2, UT_RX);
@@ -652,15 +673,12 @@ static void UT2_write_buf(const u8 *buf, u32 len)
     if (len == 0) {
         return;
     }
-    for (i = 0; i < len; i ++) {
-        UT2_putbyte(*(buf + i));
-    }
     if (CONFIG_UART2_ENABLE_TX_DMA) {
         UT_OSSemSet(&uart2.sem_tx, 0);
         JL_UART2->CON0 |= BIT(13);
         JL_UART2->CON0 |= BIT(2);
-        JL_UART2->TXADR |= (u32)buf;
-        JL_UART2->TXCNT |= len;
+        JL_UART2->TXADR = (u32)buf;
+        JL_UART2->TXCNT = len;
         UT_OSSemPend(&uart2.sem_tx, 0);
         JL_UART2->CON0 &= ~BIT(2);
     } else {
@@ -679,11 +697,11 @@ static void UT2_set_baud(u32 baud)
     JL_UART2->CON0 &= ~(BIT(0) | BIT(1));
     JL_UART2->CON0 |= BIT(13) | BIT(12) | BIT(10);
     JL_UART2->BAUD = ((UART_CLK + baud / 2) / baud) / 4 - 1;
-    if (JL_UART2->CON2 & BIT(5)) {
+    if (JL_UART2->CON0 & BIT(5)) {
         if (uart2.rx_timeout > 10) {
-            JL_UART2->OTCNT = (uart1.rx_timeout / 10) * (UART_CLK / 10) / 10;
+            JL_UART2->OTCNT = (uart2.rx_timeout / 10) * (UART_OT_CLK / 10) / 10;
         } else {
-            JL_UART2->OTCNT = uart1.rx_timeout * UART_CLK / 1000;
+            JL_UART2->OTCNT = uart2.rx_timeout * UART_OT_CLK / 1000;
         }
     }
     JL_UART2->CON0 |= BIT(13) | BIT(12) | BIT(10) | BIT(0) | BIT(1);
@@ -725,7 +743,7 @@ static void UT2_close(void)
 {
     UT_OSSemClose(&uart2.sem_rx);
     UT_OSSemClose(&uart2.sem_tx);
-    JL_UART2->CON0 &= ~(BIT(5) | BIT(3) | BIT(2) | BIT(0));
+    irq_disable(IRQ_UART2_IDX);
     JL_UART2->CON0 = BIT(13) | BIT(12) | BIT(10);
 }
 
@@ -750,11 +768,11 @@ static u8 uart_config(const struct uart_platform_data_t *arg, u8 tx_ch, enum PFI
         return -1;
     }
 
-    if (arg->tx_pin) {
+    if (arg->tx_pin < IO_PORT_MAX) {
         gpio_direction_output(arg->tx_pin, 1);
         gpio_set_fun_output_port(arg->tx_pin, tx_ch, 1, 1);
     }
-    if (arg->rx_pin) {
+    if (arg->rx_pin < IO_PORT_MAX) {
         gpio_direction_input(arg->rx_pin);
         gpio_set_pull_up(arg->rx_pin, 1);
         gpio_set_die(arg->rx_pin, 1);
@@ -762,17 +780,6 @@ static u8 uart_config(const struct uart_platform_data_t *arg, u8 tx_ch, enum PFI
     }
     return 0;
 }
-
-#if FLOW_CONTROL
-void flow_ctl_hw_init(void)
-{
-    struct uart_platform_data_t arg;
-    arg.tx_pin = IO_PORTA_06;
-    arg.rx_pin = IO_PORTA_05;
-    uart_config(&arg, FO_UART1_RTS, PFI_UART1_CTS);
-    JL_UART1->CON1 = BIT(14) | BIT(13) | BIT(3) | BIT(2) | BIT(1) | BIT(0);
-}
-#endif
 
 /**
  * @brief ut模块初始const struct uart_platform_data_t *arg化函数，供外部调用
@@ -791,7 +798,7 @@ const uart_bus_t *uart_dev_open(const struct uart_platform_data_t *arg)
         ut_num = 0;
     } else if (uart_is_idle(1)) {
         ut_num = 1;
-    } else if ((uart_is_idle(2)) && (!arg->rx_cbuf)) {
+    } else if ((uart_is_idle(2))) {
         ut_num = 2;
     } else {
         return NULL;
@@ -831,6 +838,7 @@ const uart_bus_t *uart_dev_open(const struct uart_platform_data_t *arg)
         uart1.read    = UT1_read_buf;
         uart1.write   = UT1_write_buf;
         uart1.set_baud = UT1_set_baud;
+        uart1.get_data_len = uart1_get_data_len;
         UT1_open(arg->baud, arg->is_9bit,
                  arg->rx_cbuf, arg->rx_cbuf_size,
                  arg->frame_length, arg->rx_timeout);
@@ -880,7 +888,49 @@ void uart_disable_for_ota()
     JL_UART2->CON0 = BIT(13) | BIT(12) | BIT(10);
 }
 
+static u8 _rts_io = -1;
+static u8 _cts_io = -1;
+void uart1_flow_ctl_init(u8 rts_io, u8 cts_io)
+{
+    JL_UART1->CON1 = 0;
+    //RTS
+    if (rts_io < IO_PORT_MAX) {
+        _rts_io = rts_io;
+        gpio_set_die(rts_io, 1);
+        gpio_set_direction(rts_io, 0);
+        gpio_set_pull_up(rts_io, 0);
+        gpio_set_pull_down(rts_io, 0);
+        gpio_write(rts_io, 0);
+        gpio_set_fun_output_port(rts_io, FO_UART1_RTS, 1, 1);
+        JL_UART1->CON1 |= BIT(13) | BIT(0);
+    }
+    //CTS
+    if (cts_io < IO_PORT_MAX) {
+        _cts_io = cts_io;
+        gpio_set_die(cts_io, 1);
+        gpio_set_direction(cts_io, 1);
+        gpio_set_pull_up(cts_io, 0);
+        gpio_set_pull_down(cts_io, 1);
+        gpio_set_fun_input_port(cts_io, PFI_UART1_CTS);
+        JL_UART1->CON1 |= BIT(14) | BIT(2);
+    }
+}
 
+void uart1_flow_ctl_rts_suspend(void)
+{
+    if (!(JL_UART1->CON1 & BIT(0))) {
+        gpio_write(_rts_io, 1);      //告诉对方，自己忙碌
+    }
+    JL_UART1->CON1 |= BIT(4);   //硬件停止接收
+}
 
-
+void uart1_flow_ctl_rts_resume(void)
+{
+    JL_UART1->CON1 &= ~BIT(4);  //硬件可以接收
+    if (JL_UART1->CON1 & BIT(0)) {
+        JL_UART1->CON1 |= BIT(13);
+    } else {
+        gpio_write(_rts_io, 0);      //表示可以继续接收数据
+    }
+}
 

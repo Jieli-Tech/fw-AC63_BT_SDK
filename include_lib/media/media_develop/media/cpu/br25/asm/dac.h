@@ -48,8 +48,9 @@
 #define AUDIO_DAC_SYNC_NO_DATA          3
 #define AUDIO_DAC_SYNC_ALIGN_COMPLETE   4
 
-#define DAC_DSM_6MHz                    0
-#define DAC_DSM_12MHz                   1
+#define DAC_DSM_DEFAULT                 0
+#define DAC_DSM_6MHz                    1
+#define DAC_DSM_12MHz                   2
 
 #define FADE_OUT_IN           1
 #define PCM_PHASE_BIT         8
@@ -338,6 +339,8 @@ int audio_dac_set_R_digital_vol(struct audio_dac_hdl *dac, u16 vol);
 void audio_dac_set_fade_handler(struct audio_dac_hdl *dac, void *priv, void (*fade_handler)(u8, u8, u8, u8));
 
 int audio_dac_power_off(struct audio_dac_hdl *dac);
+
+u8 audio_dac_init_status(void);
 
 /*************************************************************************
  * DAC采样率匹配

@@ -108,6 +108,7 @@ const struct clock_type  clock_enum[] = {
     { ENC_TWS_SBC_CLK, (48), "ENC_TWS_SBC_CLK" },
     { ENC_MSBC_CLK	, (12), "ENC_MSBC_CLK	 "  },
     { ENC_CVSD_CLK	, (8), "ENC_CVSD_CLK	 "  },
+    { ENC_AMR_CLK	, (48), "ENC_AMR_CLK	 "  },
 
     { SYNC_CLK	, (4), "SYNC_CLK	     "  },
     { AUTOMUTE_CLK	, (16), "AUTOMUTE_CLK" },
@@ -158,6 +159,10 @@ const struct clock_type  clock_enum[] = {
 
     {AI_SPEECH_CLK, (120),	"AI_SPEECH_CLK"   },
     {SMARTBOX_ACTION_CLK, (160),	"SMARTBOX_ACTION_CLK"   },
+
+#ifdef CONFIG_ADAPTER_ENABLE
+    {ADAPTER_PROCESS_CLK, (64),	"ADAPTER_PROCESS_CLK"   },
+#endif
 };
 
 

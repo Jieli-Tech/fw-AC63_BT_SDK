@@ -435,12 +435,16 @@ void _adc_init(u32 sys_lvd_en)
 
     if (config_bt_temperature_pll_trim) {
         u32 dtemp_ch = adc_add_sample_ch(AD_CH_DTEMP);
-        adc_set_sample_freq(AD_CH_DTEMP, 1500);
+        adc_set_sample_freq(AD_CH_DTEMP, 500);
         adc_sample(AD_CH_DTEMP);
         while (!(JL_ADC->CON & BIT(7)));
         adc_queue[dtemp_ch].value = JL_ADC->RES;
         JL_ADC->CON |= BIT(6);
         temperature_pll_trim_init();
+    } else {
+        /*for fsck trim*/
+        adc_add_sample_ch(AD_CH_DTEMP);
+        adc_set_sample_freq(AD_CH_DTEMP, 500);
     }
 
     request_irq(IRQ_SARADC_IDX, 0, adc_isr, 0);
@@ -498,7 +502,7 @@ static u8 wvdd_trim(u8 trim)
         do {
             P33_CON_SET(P3_ANA_CON13, 0, 4, wvdd_lev);
             delay(2000);//1ms * n
-            if (get_vdd_voltage(AD_CH_WVDD) > 700) {
+            if (get_vdd_voltage(AD_CH_WVDD) > 750) {
                 break;
             }
             wvdd_lev ++;

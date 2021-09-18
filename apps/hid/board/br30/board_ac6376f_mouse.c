@@ -643,7 +643,10 @@ void board_set_soft_poweroff(void)
 	u32 portb_value = 0xffff;
 	u32 portc_value = 0xffff;
 
+#if TCFG_OMSENSOR_ENABLE
 	optical_mouse_sensor_led_switch(0);
+#endif
+
 	gSensor_wkupup_disable();
 
 	log_info("%s",__FUNCTION__);

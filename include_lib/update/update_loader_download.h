@@ -130,16 +130,6 @@ typedef struct _succ_report_t {
 #define UPDATE_APP_EN	     	BIT(3)   //包括APP升级还有其他升级方式，如串口升级（非测试盒方式）
 #define UPDATE_BLE_TEST_EN		BIT(4)
 
-void bt_lmp_update_loader_download_init(void);
-void ble_test_update_loader_download_init(void);
-void storage_update_loader_download_init(
-    int  type,
-    char *update_path,
-    void (*cb)(void *priv, int type, u8 cmd),
-    void *cb_priv,
-    u8 task_en
-);
-
 typedef struct _user_chip_update_t {
     u8 *file_name;
     int (*update_init)(void *priv, update_op_api_t *file_ops);
@@ -173,13 +163,6 @@ enum UPDATE_SIZE_TYPE {
 
 void register_user_chip_update_handle(const user_chip_update_t *user_update_ins);
 void rcsp_update_loader_download_init(int update_type, void (*result_cbk)(void *priv, u8 type, u8 cmd));
-
-void app_update_loader_downloader_init(
-    int update_type,
-    void (*result_cbk)(void *priv, u8 type, u8 cmd),
-    void *cbk_priv,
-    update_op_api_t *p_op_api);
-void update_tws_api_register(const update_op_tws_api_t *op);
 
 int app_active_update_task_init(update_mode_info_t *info);
 int update_file_verify(u32 ufw_addr, u16(*ufw_read)(void *buf, u32 addr, u32 len));

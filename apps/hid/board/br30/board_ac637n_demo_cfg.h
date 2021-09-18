@@ -1,11 +1,11 @@
 #ifndef CONFIG_BOARD_AC637N_DEMO_CFG_H
 #define CONFIG_BOARD_AC637N_DEMO_CFG_H
 
+#include "board_ac637n_demo_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC637N_DEMO
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
-#define CONFIG_CHIP_NAME        AD697N
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -227,6 +227,20 @@
 #define TCFG_DEC_CVSD_CLOSE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#define TCFG_ENC_LC3_ENABLE                 DISABLE
+#define TCFG_ENC_ADPCM_ENABLE               DISABLE
+#define TCFG_ENC_SBC_ENABLE                 DISABLE
+
+//lc3 编码参数配置
+#if TCFG_ENC_LC3_ENABLE
+#define LC3_CODING_SAMPLERATE  16000 //lc3 编码的采样率
+#define LC3_CODING_FRAME_LEN   100  //帧长度，只支持25，50，100
+#define LC3_CODING_CHANNEL     2  //lc3 的通道数
+#endif
+
+//enc 编码 demo文件
+#define ENC_DEMO_EN                        DISABLE
+
 #define TCFG_DEC_WAV_ENABLE				   DISABLE
 #else
 #define TCFG_DEC_PCM_CLOSE
@@ -399,6 +413,7 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
+#if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    0
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
@@ -406,6 +421,7 @@ DAC硬件上的连接方式,可选的配置：
 #define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    1
 #define USER_SUPPORT_PROFILE_PBAP   0
+#endif
 
 #if TCFG_USER_TWS_ENABLE
 #define TCFG_BD_NUM						          1   //连接设备个数配置

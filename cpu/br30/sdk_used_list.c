@@ -118,5 +118,31 @@ speex_encoder
 #endif
 
 
+#if TCFG_DEC_LC3_ENABLE
+lc3_decoder
+#endif
+
+
+#if TCFG_ENC_LC3_ENABLE
+lc3_encoder
+#endif
+
+#if TCFG_ENC_ADPCM_ENABLE
+adpcm_encoder
+#endif
+
+
+#if TCFG_DEC_OPUS_ENABLE
+opus_decoder
+#endif
+
+#if TCFG_DEC_SPEEX_ENABLE
+speex_decoder
+#endif
+
+#if TCFG_ENC_SBC_ENABLE
+sbc_encoder
+#endif
+
 
 

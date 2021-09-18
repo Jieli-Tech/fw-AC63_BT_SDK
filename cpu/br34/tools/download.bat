@@ -2,9 +2,20 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 rem @echo off
 @echo *********************************************************************
-@echo AC698N SDK
+@echo BR34
 @echo *********************************************************************
 @echo %date%
 
@@ -44,9 +55,6 @@ echo %bank_files
 
 copy /b text.bin+data.bin+data_code.bin+aec.bin+aac.bin+bank.bin+aptx.bin app.bin
 
-
+del bank*.bin common.bin text.bin data.bin bank.bin aac.bin aec.bin aptx.bin
 )
-copy app.bin bluetooth\standard\app.bin
-copy br34loader.bin bluetooth\standard\br34loader.bin
-
-bluetooth\standard\download.bat
+call download/data_trans/download.bat

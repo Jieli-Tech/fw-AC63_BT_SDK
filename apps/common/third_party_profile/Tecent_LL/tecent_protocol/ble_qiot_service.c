@@ -628,7 +628,10 @@ int ble_ota_msg_handle(const char *buf, uint16_t len)
     switch (data_type) {
     case BLE_QIOT_OTA_MSG_REQUEST:
         clk_set("sys", BLE_QIOT_OTA_HZ);
+
+#if (!defined CONFIG_TRANSFER_ENABLE)
         update_start_exit_sniff();
+#endif
         set_ota_status(1);
         ret = ble_ota_request_handle(p_data + 3, p_data_len);
         break;

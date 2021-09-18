@@ -1,3 +1,9 @@
+/*****************************************************************
+>file name : audio_dec_tone.c
+>note : 该模块主要调用audio_dec_app.h中的函数实现。audio_dec_app中有些弱函数
+    是在apps/common/decode/decode.c中重定义的，用于一些共用的初始化配置，如输出参数p_mixer等
+	    用于提示音的解码器不要使用overlay，在lib_media_config.c中配置，如config_mp3_dec_use_malloc
+*****************************************************************/
 #include "system/includes.h"
 #include "media/includes.h"
 #include "tone_player.h"
@@ -23,6 +29,59 @@ extern int audio_dec_sine_app_play_end(struct audio_dec_sine_app_hdl *sine_dec);
 static int tone_dec_list_play(struct tone_dec_handle *dec, u8 next);
 
 //////////////////////////////////////////////////////////////////////////////
+
+#if TONE_DEC_REPEAT_EN
+/*----------------------------------------------------------------------------*/
+/**@brief    循环播放回调接口
+   @param    *priv: 私有参数
+   @return   0：循环播放
+   @return   非0：结束循环
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+static int tone_dec_repeat_cb(void *priv)
+{
+    struct tone_dec_handle *dec = priv;
+    y_printf("tone_dec_repeat_cb\n");
+    if (dec->repeat_num) {
+        dec->repeat_num--;
+    } else {
+        y_printf("tone_dec_repeat_cb end\n");
+        return -1;
+    }
+    return 0;
+}
+
+/*----------------------------------------------------------------------------*/
+/**@brief    设置循环播放次数
+   @param    *file_dec: 解码句柄
+   @param    repeat_num: 循环次数
+   @return   true：成功
+   @return   false：失败
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+int tone_dec_repeat_set(struct audio_dec_file_app_hdl *file_dec, u8 repeat_num)
+{
+    struct tone_dec_handle *dec = file_dec->priv;
+    switch (file_dec->dec->decoder.dec_ops->coding_type) {
+    case AUDIO_CODING_MP3:
+    case AUDIO_CODING_WAV: {
+        dec->repeat_num = repeat_num;
+        struct audio_repeat_mode_param rep = {0};
+        rep.flag = 1; //使能
+        rep.headcut_frame = 2; //依据需求砍掉前面几帧，仅mp3格式有效
+        rep.tailcut_frame = 2; //依据需求砍掉后面几帧，仅mp3格式有效
+        rep.repeat_callback = tone_dec_repeat_cb;
+        rep.callback_priv = dec;
+        rep.repair_buf = &dec->repair_buf;
+        audio_decoder_ioctrl(&file_dec->dec->decoder, AUDIO_IOCTRL_CMD_REPEAT_PLAY, &rep);
+    }
+    return true;
+    }
+    return false;
+}
+#endif /* #if TONE_DEC_REPEAT_EN */
 
 /*----------------------------------------------------------------------------*/
 /**@brief    tone解码数据流推送stop
@@ -324,6 +383,9 @@ static int tone_dec_file_app_evt_cb(void *priv, enum audio_dec_app_event event, 
 
         clock_add_set(DEC_TONE_CLK);
         audio_dec_file_app_init_ok(file_dec);
+#if TONE_DEC_REPEAT_EN
+        tone_dec_repeat_set(file_dec, 3);
+#endif /* #if TONE_DEC_REPEAT_EN */
         break;
     case AUDIO_DEC_APP_EVENT_DEC_CLOSE:
         if (!audio_dec_app_mix_en) {
@@ -477,6 +539,13 @@ static void _tone_dec_app_comm_deal(struct audio_dec_app_hdl *dec, struct tone_d
     if (dec->dec_type == AUDIO_CODING_SBC) {
         audio_dec_app_set_frame_info(dec, 0x4e, dec->dec_type);
     }
+
+#if 0  //文件类型的speex解码和opus解码解析不到采样率，所以要自定义文件采样率
+    if (dec->dec_type == AUDIO_CODING_OPUS || dec->dec_type == AUDIO_CODING_SPEEX) {
+        dec->sample_rate = 16000;
+    }
+#endif
+
 #if AUDIO_DEC_TONE_WAIT_USE_PRIO
     if (dec->dec_mix == 0) {
         dec->wait.priority = 3;

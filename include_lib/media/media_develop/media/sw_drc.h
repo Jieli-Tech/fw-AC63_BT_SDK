@@ -4,9 +4,11 @@
 #include "generic/typedef.h"
 #include "generic/list.h"
 #include "os/os_api.h"
+#include "drc_api.h"
 
 #define DRC_TYPE_LIMITER		1
 #define DRC_TYPE_COMPRESSOR		2
+#define WDRC_TYPE		        3   //wdc 要求，硬件输出24bit、32bit
 
 
 struct drc_limiter {
@@ -22,9 +24,28 @@ struct drc_compressor {
     int ratio[3];     //ratio[0]为固定值100， ratio[1] ratio[2]为界面参数
 };
 
+struct threshold_group {
+    float in_threshold;
+    float out_threshold;
+};
+
+struct wdrc_struct {
+    u16 attacktime;   //启动时间
+    u16 releasetime;  //释放时间
+    struct threshold_group threshold[5];
+    u8 threshold_num;
+    u8 rms_time;
+    u8 algorithm;//0:PEAK  1:RMS
+    u8 mode;//0:PERPOINT  1:TWOPOINT
+};
+//对耳wdrc处理，区分左右声道
+#define L_wdrc   0x10
+#define LL_wdrc  0x20
+#define R_wdrc   0x40
+#define RR_wdrc  0x80
 struct drc_ch {
     u8 nband;		//max<=3，1：全带 2：两段 3：三段
-    u8 type;		//0:没有使能限幅和压缩器，1:限幅器   2:压缩器
+    u8 type;		//0:没有使能限幅和压缩器，1:限幅器   2:压缩器  3:wdrc
     u8 reserved[2];     //reserved[1]保留,未用, reserved[0]记录了 多带限幅时，是否再开启一次全带限幅
     int low_freq;       //中低频分频点
     int high_freq;      //中高频分频点
@@ -32,11 +53,9 @@ struct drc_ch {
     union {
         struct drc_limiter		limiter[4];   //限幅器
         struct drc_compressor	compressor[3];//压缩器
+        struct wdrc_struct  wdrc[2];// [0]wdrc左声道，[1]wdrc右声道
     } _p;
 };
-
-
-
 struct sw_drc {
     void *work_buf[4];    //drc内部驱动句柄
     void *crossoverBuf;   //分频器句柄
@@ -50,7 +69,6 @@ struct sw_drc {
     u32 sample_rate;      //采样率
     u8 nsection;          //分频器eq段数
     u8 other_band_en;     //多带限幅器之后，是否需要再做一次全带的限幅器  1：需要，0：不需要
-
 };
 extern void *get_low_sosmatrix();
 extern void *get_high_sosmatrix();
@@ -70,6 +88,4 @@ void audio_hw_crossover_close(struct sw_drc *drc);
 void audio_hw_crossover_run(struct sw_drc *drc, s16 *data, int len);
 void audio_hw_crossover_update(struct sw_drc *drc, int (*L_coeff)[3], u8 nsection);
 #endif
-extern const int config_audio_drc_en;
-extern const int hw_eq_support_multi_channels;
 #endif

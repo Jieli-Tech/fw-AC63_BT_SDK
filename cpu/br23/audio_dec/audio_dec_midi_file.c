@@ -17,10 +17,15 @@
 #include "app_main.h"
 #include "MIDI_DEC_API.h"
 #include "audio_dec_file.h"
+#include "lfwordana_enc_api.h"
 
 #if defined(TCFG_DEC_MIDI_ENABLE) && TCFG_DEC_MIDI_ENABLE
-//midi文件播放时，对应的音色文件路径
+//midi文件播放时，对应的音色文件路径(用户可修改路径)
 #define MIDI_FILE_PATH  SDFILE_RES_ROOT_PATH"MIDI.bin\0"
+//替换主旋律的音色库，由录音得到(用户可修改路径)
+int *MIDI_W2S_FILE_PATH = "storage/sd0/C/W2S/W2S.raw\0";
+//替换主旋律音色库对应的参数文件,录音时生成(用户可修改路径)
+#define MIDI_W2S_PARM_PATH "storage/sd0/C/W2S/parmout.raw\0"
 
 static const u16 midi_samplerate_tab[9] = {
     48000,
@@ -53,6 +58,11 @@ u32 melody_trigger(void *priv, u8 key, u8 vel)
     return 0;
 }
 
+u32 melody_stop_trigger(void *priv, u8 key)
+{
+    return 0;
+}
+
 u32 timDiv_trigger(void *priv)
 {
     return 0;
@@ -71,7 +81,6 @@ u32 beat_trigger(void *priv, u8 val1/*一节多少拍*/, u8 val2/*每拍多少�
 /*----------------------------------------------------------------------------*/
 int midi_fread(void *file, void *buf, u32 len)
 {
-
 #ifndef CONFIG_MIDI_DEC_ADDR
     FILE *hd = (FILE *)file;
     if (hd) {
@@ -105,7 +114,7 @@ int midi_fseek(void *file, u32 offset, int seek_mode)
    @note
 */
 /*----------------------------------------------------------------------------*/
-void init_midi_info_val(MIDI_INIT_STRUCT  *midi_init_info_v, u8 *addr)
+void init_midi_info_val(MIDI_INIT_STRUCT  *midi_init_info_v, void *addr)
 {
     //midi初始化表
     midi_init_info_v->init_info.player_t = 8;
@@ -116,30 +125,33 @@ void init_midi_info_val(MIDI_INIT_STRUCT  *midi_init_info_v, u8 *addr)
 
 
     //midi的模式初始化
-    midi_init_info_v->mode_info.mode = 0; //CMD_MIDI_CTRL_MODE_2;
-    /* midi_init_info_v->mode_info.mode = 1;//CMD_MIDI_CTRL_MODE_2; */
+    midi_init_info_v->mode_info.mode = CMD_MIDI_CTRL_MODE_0; //CMD_MIDI_CTRL_MODE_2;
 
     //midi节奏初始化
     midi_init_info_v->tempo_info.tempo_val = 1042;
 
-    midi_init_info_v->tempo_info.decay_val = ((u16)31 << 11) | 1024;
+    for (u32 tmp_i = 0; tmp_i < 16; tmp_i++) {
+        midi_init_info_v->tempo_info.decay_val[tmp_i] = ((u16)31 << 11) | 1024;
+    }
     midi_init_info_v->tempo_info.mute_threshold = (u16)1L << 29;
 
     //midi主轨道初始化
-    midi_init_info_v->mainTrack_info.chn = 17; //把哪个轨道当成主轨道
+    midi_init_info_v->mainTrack_info.chn = 17; //把哪个轨道当成主轨道 , 17:库内自动分配
 
     //midi外部音量初始化
-    {
-        u32 tmp_i;
-        for (tmp_i = 0; tmp_i < 16; tmp_i++) {
-            midi_init_info_v->vol_info.cc_vol[tmp_i] = 4096; //4096即原来的音量
-        }
+    for (u32 tmp_i = 0; tmp_i < 16; tmp_i++) {
+        midi_init_info_v->vol_info.cc_vol[tmp_i] = 4096; //4096即原来的音量
     }
+    midi_init_info_v->vol_info.ex_vol_use_chn = 1;
 
     //midi的主轨道乐器设置
     midi_init_info_v->prog_info.prog = 0;
     midi_init_info_v->prog_info.ex_vol = 1024;
     midi_init_info_v->prog_info.replace_mode = 0;
+
+    //OKON 模式设置
+    midi_init_info_v->okon_info.Melody_Key_Mode = CMD_MIDI_MELODY_KEY_0;
+    midi_init_info_v->okon_info.OKON_Mode = CMD_MIDI_OKON_MODE_0;
 
 
     //midi的mark控制初始化
@@ -150,6 +162,10 @@ void init_midi_info_val(MIDI_INIT_STRUCT  *midi_init_info_v, u8 *addr)
     midi_init_info_v->moledy_info.priv = NULL; //&file_melody;
     midi_init_info_v->moledy_info.melody_trigger = melody_trigger;
 
+    //midi的melody stop控制初始化
+    midi_init_info_v->moledy_stop_info.priv = NULL;
+    midi_init_info_v->moledy_stop_info.melody_stop_trigger = melody_stop_trigger;//主旋律音符停止播放回调
+
     //midi的小节回调控制初始化
     midi_init_info_v->tmDiv_info.priv = NULL;
     midi_init_info_v->tmDiv_info.timeDiv_trigger = timDiv_trigger;
@@ -159,24 +175,67 @@ void init_midi_info_val(MIDI_INIT_STRUCT  *midi_init_info_v, u8 *addr)
     midi_init_info_v->beat_info.beat_trigger = beat_trigger;
 
     //使能位控制
-    midi_init_info_v->switch_info = MELODY_PLAY_ENABLE | MELODY_ENABLE | EX_VOL_ENABLE;            //主轨道播放使能
+    midi_init_info_v->switch_info = MELODY_PLAY_ENABLE;// | MELODY_ENABLE | EX_VOL_ENABLE;            //主轨道播放使能
 
+#if defined(MIDI_SUPPORT_W2S) && MIDI_SUPPORT_W2S
+    //设置替换主轨道的声音的音源
+    void *cache_addr;
+    extern int midi_w2s_get_cfg_addr(void **addr);
+    if (midi_w2s_get_cfg_addr(&cache_addr)) {
+        log_e("get midi w2s addr err\n");
+        return;
+    }
+    midi_w2s_parm_get(&midi_init_info_v->w2s_info);
+    midi_init_info_v->w2s_info.key_diff = -7;////与音高成反比
+    midi_init_info_v->w2s_info.rec_data = (u32)cache_addr;
+#endif/*MIDI_SUPPORT_W2S*/
     return;
 }
 
-FILE  *midi_file = NULL;
-int midi_get_cfg_addr(u8 **addr)
+FILE  *midi_w2s_file = NULL;
+int midi_w2s_get_cfg_addr(void **addr)
 {
 #ifndef CONFIG_MIDI_DEC_ADDR
     //音色文件支持在外部存储卡或者外挂flash,sdk默认使用本方式
     //获取音色文件
-    /* FILE  *file = fopen("storage/sd0/C/MIDI.bin\0", "r"); */
+    FILE  *file = fopen(MIDI_W2S_FILE_PATH, "r");
+    if (!file) {
+        log_e("MIDI.bin open err\n");
+        return -1;
+    }
+    *addr = (void *)file;
+    midi_w2s_file = file;
+    log_i("midi_w2s_file %x\n", midi_w2s_file);
+#else
+    //音色文件仅支持在内置flash
+    FILE  *file = fopen(MIDI_W2S_FILE_PATH, "r");
+    if (!file) {
+        log_e("MIDI.bin open err\n");
+        return -1;
+    }
+
+    struct vfs_attr attr = {0};
+    fget_attrs(file, &attr);
+    *addr = (void *)attr.sclust;
+    fclose(file);
+#endif
+
+    return 0;
+}
+
+
+FILE  *midi_file = NULL;
+int midi_get_cfg_addr(void **addr)
+{
+#ifndef CONFIG_MIDI_DEC_ADDR
+    //音色文件支持在外部存储卡或者外挂flash,sdk默认使用本方式
+    //获取音色文件
     FILE  *file = fopen(MIDI_FILE_PATH, "r");
     if (!file) {
         log_e("MIDI.bin open err\n");
         return -1;
     }
-    *addr = (u8 *)file;
+    *addr = (void *)file;
     midi_file = file;
     log_i("midi_file %x\n", midi_file);
 #else
@@ -189,7 +248,7 @@ int midi_get_cfg_addr(u8 **addr)
 
     struct vfs_attr attr = {0};
     fget_attrs(file, &attr);
-    *addr = (u8 *)attr.sclust;
+    *addr = (void *)attr.sclust;
     fclose(file);
 #endif
 
@@ -210,6 +269,11 @@ int midi_uninit()
         fclose(midi_file);
         midi_file = NULL;
     }
+
+    if (midi_w2s_file) {
+        fclose(midi_w2s_file);
+        midi_w2s_file = NULL;
+    }
 #endif
     return 0;
 }
@@ -222,7 +286,7 @@ int midi_uninit()
 /*----------------------------------------------------------------------------*/
 int midi_init(void *info)
 {
-    u8 *cache_addr;
+    void *cache_addr;
     if (midi_get_cfg_addr(&cache_addr)) {
         log_e("get midi addr err\n");
         return -1;
@@ -256,7 +320,11 @@ void midi_ioctrl(u32 cmd, void *priv)
 
     int status = file_dec_get_status();
     if (status == FILE_DEC_STATUS_STOP) {
-        log_w("file dec is stop\n");
+        if (tone_get_dec_status()) {
+            audio_decoder_ioctrl(get_tone_dec_file_decoder(), cmd, priv);
+        } else {
+            log_w("file dec is stop\n");
+        }
         return ;
     }
 
@@ -281,5 +349,82 @@ void *ex_vol_test()
 }
 #endif
 
-#endif /*TCFG_DEC_MIDI_ENABLE*/
 
+#if defined(MIDI_SUPPORT_W2S) && MIDI_SUPPORT_W2S
+int midi_w2s_init(void *info)
+{
+    struct _AUDIO_DECODE_PARA {
+        u32 mode;
+    };
+    struct _AUDIO_DECODE_PARA *mode_parm = (struct _AUDIO_DECODE_PARA *)info;
+    mode_parm->mode = CMD_MIDI_CTRL_MODE_W2S;
+    return 0;
+}
+
+
+/*----------------------------------------------------------------------------*/
+/**@brief    midi主旋律是否用录音文件替换主旋律
+   @param    flag:1(替换主旋律)  0(不替换主旋律)
+   @return   无
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void midi_mode_change(u8 flag)
+{
+    struct _AUDIO_DECODE_PARA {
+        u32 mode;
+    };
+    struct _AUDIO_DECODE_PARA mode_parm = {0};
+    if (flag) {
+        mode_parm.mode = CMD_MIDI_CTRL_MODE_W2S;
+    } else {
+        mode_parm.mode = CMD_MIDI_CTRL_MODE_0;
+    }
+    midi_ioctrl(CMD_MIDI_CTRL_MODE, &mode_parm);
+}
+
+void midi_mode_test(void *p)
+{
+    static u8 flag = 0;
+    midi_mode_change(flag);
+    flag = !flag;
+}
+#endif/*MIDI_SUPPORT_W2S*/
+
+/*----------------------------------------------------------------------------*/
+/**@brief    midi预处理的音色，对应的输出的参数
+   @param    data:参数地址
+   @param    len:参数长度
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void midi_w2s_parm_set(void *data, u32 len)
+{
+    MIDI_W2S_STRUCT *w2s_parmOut;
+    void *fp = fopen(MIDI_W2S_PARM_PATH, "wb");
+    if (fp) {
+        fwrite(fp, data, len);
+        fclose(fp);
+        fp = NULL;
+    }
+}
+/*----------------------------------------------------------------------------*/
+/**@brief    获取midi预处理的音色，对应的参数
+   @param    parm:参数返回地址
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+void midi_w2s_parm_get(void *parm)
+{
+    void *fp = fopen(MIDI_W2S_PARM_PATH, "r");
+    if (fp) {
+        fread(fp, parm, sizeof(MIDI_W2S_STRUCT));
+        fclose(fp);
+        fp = NULL;
+    }
+}
+
+
+#endif /*TCFG_DEC_MIDI_ENABLE*/

@@ -3,6 +3,7 @@
 
 #include "generic/typedef.h"
 #include "system/task.h"
+#include "media/audio_def.h"
 
 enum {
     ANCDB_ERR_CRC = 1,
@@ -70,10 +71,6 @@ typedef enum {
     ANC_VERSION_BR30 	= 0x01,	//BR30
     ANC_VERSION_BR30C	= 0x02,	//BR30C
 } ANC_version_t;
-
-#define ANC_FF_EN 		 			BIT(0)
-#define ANC_FB_EN  					BIT(1)
-#define ANC_HYBRID_EN  			 	BIT(2)
 
 #define A_MIC0					BIT(0)		//模拟MIC0	PA1 PA2
 #define A_MIC1        			BIT(1)		//模拟MIC1	PB7 PB8

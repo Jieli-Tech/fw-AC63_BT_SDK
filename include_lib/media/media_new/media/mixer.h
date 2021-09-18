@@ -11,7 +11,9 @@ enum {
     MIXER_EVENT_CH_CLOSE,
     MIXER_EVENT_CH_RESET,
 };
-
+#define BIT16_MODE  0
+#define BIT24_MODE  BIT(0)
+#define BIT32_MODE  BIT(1)
 
 struct audio_mixer;
 
@@ -41,6 +43,8 @@ struct audio_mixer {
     const struct audio_mix_handler *mix_handler;
     void (*evt_handler)(struct audio_mixer *, int);
     volatile u8 active;
+    volatile u8 bit_mode_en;
+    volatile u8 point_len;
 };
 
 struct audio_mixer_ch {
@@ -49,6 +53,7 @@ struct audio_mixer_ch {
     u8 open;
     u32 no_wait : 1;	// 不等待有数
     u32 lose : 1;		// 丢数标记
+    u32 need_resume : 1;
     u8 start_by_position;
     u16 offset;
     u16 sample_rate;
@@ -60,12 +65,15 @@ struct audio_mixer_ch {
     u32 ext_out_mask;	// 标记该通道输出的扩展通道，如输出到第0和第2个，ext_flag |= BTI(0)|BIT(2)
     u8  main_out_dis;	// 不输出到主通道
 #endif
+    u32 slience_samples;
     u32 mix_timeout;
     u32 starting_position : 20;
     void *priv;
     void (*event_handler)(void *priv, int event);
     void *lose_priv;
     void (*lose_callback)(void *lose_priv, int lose_len);
+    void *resume_data;
+    void (*resume_callback)(void *);
 };
 
 
@@ -98,6 +106,10 @@ void audio_mixer_ch_pause(struct audio_mixer_ch *ch, u8 pause);
 
 int audio_mixer_ch_data_len(struct audio_mixer_ch *ch);
 
+int audio_mixer_ch_add_slience_samples(struct audio_mixer_ch *ch, int samples);
+
+void audio_mixer_ch_set_resume_handler(struct audio_mixer_ch *ch, void *priv, void (*resume)(void *));
+
 int audio_mixer_get_active_ch_num(struct audio_mixer *mixer);
 
 void audio_mixer_ch_set_event_handler(struct audio_mixer_ch *ch, void *priv, void (*handler)(void *, int));
@@ -126,9 +138,7 @@ u32 audio_mixer_get_input_position(struct audio_mixer *mixer);
 
 int audio_mixer_get_start_ch_num(struct audio_mixer *mixer);
 
-
-
-
+void audio_mixer_set_mode(struct audio_mixer *mixer, u8 point_len, u8 bit_mode_en);
 
 
 

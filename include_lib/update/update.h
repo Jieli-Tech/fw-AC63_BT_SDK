@@ -31,7 +31,7 @@ typedef enum {
     DUAL_BANK_UPDATA,
     BLE_TEST_UPDATA,
     NORFLASH_UPDATA,
-    //NOTE:以上的定义不要调整,新升级方式在此下面定义;
+    //NOTE:以上的定义不要调整,新升级方式在此添加,注意加在USER_NORFLASH_UFW_UPDATA之前;
     USER_NORFLASH_UFW_UPDATA,
 
     NON_DEV = 0xFFFF,
@@ -96,6 +96,18 @@ typedef struct _UPDATA_PARM {
     u16 ext_arg_crc;
     //8 byte
 } UPDATA_PARM;
+
+enum EXT_ARG_TYPE {
+    EXT_LDO_TRIM_RES = 0,
+    EXT_TYPE_MAX = 0xff,
+};
+
+struct ext_arg_t {
+    u8 type;
+    u8 len;
+    u8 *data;
+};
+
 //8+64+8+32 =112;
 #else
 typedef struct _UPDATA_PARM {
@@ -108,8 +120,8 @@ typedef struct _UPDATA_PARM {
 #endif
 #define UPDATE_PRIV_PARAM_LEN	32
 
-void update_mode_api(UPDATA_TYPE type, ...);
 void update_mode_api_v2(UPDATA_TYPE type, void (*priv_param_fill_hdl)(UPDATA_PARM *p), void (*priv_update_jump_handle)(int type));
+void update_param_priv_fill(UPDATA_PARM *p, void *priv, u16 priv_len);
 u16 update_result_get(void);
 bool device_is_first_start();
 int update_result_deal();

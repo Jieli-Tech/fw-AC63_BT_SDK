@@ -18,22 +18,34 @@
 //app case 选择,只选1,要配置对应的board_config.h
 #define CONFIG_APP_KEYBOARD                 1//hid按键 ,default case
 #define CONFIG_APP_KEYFOB                   0//自拍器,  board_ac6368a,board_6318,board_6379b
-#define CONFIG_APP_MOUSE                    0//mouse,   board_mouse
+#define CONFIG_APP_MOUSE_SINGLE             0//单模切换
+#define CONFIG_APP_MOUSE_DUAL               0//同时开双模
 #define CONFIG_APP_STANDARD_KEYBOARD        0//标准HID键盘,board_ac6351d
 #define CONFIG_APP_KEYPAGE                  0//翻页器
 #define CONFIG_APP_GAMEBOX                  0//吃鸡王座
-
-#if CONFIG_APP_MOUSE
-#define  CONFIG_APP_MOUSE_SINGLE            1 //单模切换
-#define  CONFIG_APP_MOUSE_DUAL              0 //同时开双模
-#endif
+#define CONFIG_APP_REMOTE_CONTROL           0//语音遥控
+#define CONFIG_APP_IDLE                     0//IDLE
 
 //edr sniff模式选择; sniff参数需要调整,移植可具体参考app_keyboard.c
-#if CONFIG_APP_MOUSE || CONFIG_APP_STANDARD_KEYBOARD //|| CONFIG_APP_KEYBOARD
-#define SNIFF_MODE_RESET_ANCHOR             1//键盘鼠标SNIFF模式
+#if CONFIG_APP_MOUSE_SINGLE || CONFIG_APP_MOUSE_DUAL || CONFIG_APP_STANDARD_KEYBOARD || CONFIG_APP_REMOTE_CONTROL //|| CONFIG_APP_KEYBOARD
+#define SNIFF_MODE_RESET_ANCHOR             1//键盘鼠标sniff模式,固定小周期发包,多按键响应快
 #else
-#define SNIFF_MODE_RESET_ANCHOR             0
+#define SNIFF_MODE_RESET_ANCHOR             0//待机固定500ms sniff周期,待机功耗较低,按键唤醒有延时
 #endif
+
+#define CONFIG_HOGP_COMMON_ENABLE          1 //公共的hogp
+
+//蓝牙BLE配置
+#define CONFIG_BT_GATT_COMMON_ENABLE       1 //配置使用gatt公共模块
+#define CONFIG_BT_SM_SUPPORT_ENABLE        1 //配置是否支持加密
+#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数(app not support)
+#define CONFIG_BT_GATT_SERVER_NUM          1 //配置从机server个数
+#define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //配置连接个数
+
+#if CONFIG_BT_GATT_CONNECTION_NUM > 8
+#error "SUPPORT MAX IS 8 !!!"
+#endif
+
 
 //APP应用默认配置
 #define TCFG_AEC_ENABLE                     1
@@ -48,7 +60,12 @@
 
 #define APP_PRIVATE_PROFILE_CFG
 
-#if (CONFIG_BT_MODE != BT_NORMAL)
+#if (CONFIG_BT_MODE == BT_NORMAL)
+//enable dut mode,need disable sleep
+#define TCFG_NORMAL_SET_DUT_MODE                  0
+
+#else
+
 #undef  TCFG_BD_NUM
 #define TCFG_BD_NUM						          1
 
@@ -93,17 +110,22 @@
 
 #undef TCFG_UART0_ENABLE
 #define TCFG_UART0_ENABLE					DISABLE_THIS_MOUDLE
+
 #endif
 
-
-#define SIG_MESH_EN                       0
 
 #define BT_FOR_APP_EN                     0
 
 //需要app(BLE)升级要开一下宏定义
+#if CONFIG_APP_OTA_ENABLE
+#define RCSP_BTMATE_EN                    1
+#define RCSP_UPDATE_EN                    1
+#define UPDATE_MD5_ENABLE                 0
+#else
 #define RCSP_BTMATE_EN                    0
 #define RCSP_UPDATE_EN                    0
 #define UPDATE_MD5_ENABLE                 0
+#endif
 
 
 #ifdef CONFIG_SDFILE_ENABLE

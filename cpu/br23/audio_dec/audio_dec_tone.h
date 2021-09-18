@@ -11,6 +11,8 @@
 #include "application/audio_dec_app.h"
 #include "tone_player.h"
 
+#define TONE_DEC_REPEAT_EN				0 // 无缝循环播放
+
 // 提示音解码结束缘由
 #define TONE_DEC_STOP_NOR				0 // 正常播放关闭
 #define TONE_DEC_STOP_BY_OTHER_PLAY		1 // 被其他播放打断关闭
@@ -64,6 +66,11 @@ struct tone_dec_handle {
     struct tone_dec_list_handle *cur_list;		// 当前播放list
     struct sin_param *(*get_sine)(u8 id, u8 *num);	// 按序列号获取sine数组
     OS_MUTEX mutex;		// 互斥
+
+#if TONE_DEC_REPEAT_EN
+    u8 repeat_num;			// 无缝循环次数
+    struct fixphase_repair_obj repair_buf;	// 无缝循环句柄
+#endif /* #if TONE_DEC_REPEAT_EN */
 };
 
 /*----------------------------------------------------------------------------*/

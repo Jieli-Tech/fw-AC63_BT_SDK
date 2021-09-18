@@ -291,6 +291,7 @@ int audio_decoder_running_number(struct audio_decoder_task *task);
 int audio_decoder_ioctrl(struct audio_decoder *dec, u32 cmd, void *parm);
 
 void audio_decoder_set_channel(void *_dec, u8 ch_num);
+int audio_decoder_get_channel(void *_dec);
 int audio_decoder_get_frame_len(void *_dec);
 int audio_decoder_get_sample_rate(void *_dec);
 int audio_decoder_get_bit_rate(void *_dec);

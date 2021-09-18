@@ -67,7 +67,8 @@
 
 #define TCFG_ESCO_PLC				1  //通话丢包修复
 
-#define TCFG_ESCO_LIMITER			0  	//通话近端底噪/限幅器
+#define TCFG_ESCO_LIMITER			0  	//通话近端限幅器
+#define TCFG_ESCO_NOISEGATE			0  	//通话近端底噪抑制
 
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_MONO_LR_DIFF || \
      TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_DUAL_LR_DIFF)
@@ -127,6 +128,12 @@
 		|| (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT) \
 		|| (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DONGLE) \
 		|| (AUDIO_OUTPUT_DAC_AND_IIS))
+
+#define AUDIO_OUTPUT_INCLUDE_BT 	((defined(AUDIO_OUTPUT_WAY)) && (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT)) \
+    						    || ((defined(AUDIO_OUT_WAY_TYPE)) && (AUDIO_OUT_WAY_TYPE & AUDIO_WAY_TYPE_BT))
+
+#define AUDIO_OUTPUT_INCLUDE_FM 	((defined(AUDIO_OUTPUT_WAY)) && (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)) \
+    						    || ((defined(AUDIO_OUT_WAY_TYPE)) && (AUDIO_OUT_WAY_TYPE & AUDIO_WAY_TYPE_FM))
 
 
 u8 get_max_sys_vol(void);

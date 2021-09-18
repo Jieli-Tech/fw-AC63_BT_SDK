@@ -57,8 +57,10 @@ enum {
     EQ_ONLINE_CMD_MAX,//最后一个
 };
 
+#define CONSTRAINT_OP_DRC_L_R_CH  0x01
+#define CONSTRAINT_OP_DRC_WDRC_SINGLE_CH 0x02
+#define CONSTRAINT_OP_DRC_WDRC_DUAL_CH 0x03
 
-extern u32 EQ_PRIV_SECTION_NUM;
 
 /*eq online packet*/
 typedef struct {
@@ -364,7 +366,7 @@ EQ_MODE eq_mode_get_cur(void);
    @param    *eq_cfg:*eq_cfg:配置句柄
    @param    *path:eq效果文件路径
    @return
-   @note  可用该接口切换eq效果文件，需使能TCFG_USE_EQ_FILE,config_audio_eq_file_sw_en
+   @note  可用该接口切换eq效果文件，需使能宏TCFG_USE_EQ_FILE,以及在config_audio_eq_en上使能 EQ_FILE_SW_EN
 */
 /*----------------------------------------------------------------------------*/
 s32 eq_file_get_cfg(EQ_CFG *eq_cfg, u8 *path);
@@ -446,11 +448,6 @@ int eq_mode_get_freq(u8 mode, u16 index);
 /*----------------------------------------------------------------------------*/
 void eq_app_run_check(struct audio_eq *eq);
 
-extern const int config_audio_eq_online_en;
-extern const int config_audio_eq_file_en;
-extern const int config_audio_eq_file_sw_en;
-extern const int config_filter_coeff_fade_en;
-extern const int config_filter_coeff_limit_zero;
 
 #if 0
 static const struct eq_seg_info your_audio_out_eq_tab[] = {
@@ -533,6 +530,54 @@ int drc_get_filter_info_demo(void *drc, struct audio_drc_filter_info *info)
     return 0;
 }
 
+
+
+
+struct drc_ch drc_fliter2 = {0};
+#define your_threshold1  (0)
+#define your_threshold2  (0)
+/*----------------------------------------------------------------------------*/
+/**@brief    自定义压缩器系数回调
+   @param    *drc: 句柄
+   @param    *info: 系数结构地址
+   @return
+   @note
+*/
+/*----------------------------------------------------------------------------*/
+int drc_get_filter_info_demo2(void *drc, struct audio_drc_filter_info *info)
+{
+    int th1 = your_threshold1;//-60 ~0db
+    int th2 = your_threshold2;//-60 ~0db
+
+    int your_ratio0 = 800;//100~1000
+    int your_ratio1 = 900;//100~1000
+
+
+    if (th2 < th1) { //阈值2需大于等于阈值1
+        th2 = th1;
+    }
+    if (your_ratio1 < your_ratio0) { //压缩比2需要大于等于压缩比1
+        your_ratio1 = your_ratio0;
+    }
+
+    int threshold0 = round(pow(10.0, th1 / 20.0) * 32768); // 0db:32768, -60db:33
+    int threshold1 = round(pow(10.0, th2 / 20.0) * 32768); // 0db:32768, -60db:33
+
+    drc_fliter2.nband = 1;//全带
+    drc_fliter2.type = 2;//压缩器
+    drc_fliter2._p.compressor[0].attacktime = 5;
+    drc_fliter2._p.compressor[0].releasetime = 300;
+    drc_fliter2._p.compressor[0].threshold[0] = threshold0;
+    drc_fliter2._p.compressor[0].threshold[1] = threshold1;
+    drc_fliter2._p.compressor[0].threshold[2] = 32768;
+
+    drc_fliter2._p.compressor[0].ratio[0] = 100;
+    drc_fliter2._p.compressor[0].ratio[1] = your_ratio0;
+    drc_fliter2._p.compressor[0].ratio[2] = your_ratio1;
+
+    info->pch = info->R_pch = &drc_fliter2;
+    return 0;
+}
 
 //修改自定义模式eq系数表，更新系数到eq 方法
 // 板极头文件中 这两宏 配0

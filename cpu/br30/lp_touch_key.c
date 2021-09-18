@@ -1035,6 +1035,11 @@ u8 lp_touch_key_power_on_status()
 void lp_touch_key_disable(void)
 {
     log_debug("%s", __func__);
+
+    while (!__this->ch_init & BIT(0)) {
+        asm volatile("nop");
+    }
+
     //__this->ch_init = 0;
     P2M_CTMU_CTMU_WKUP_MSG &= (~(BIT(1)));
     lp_touch_key_send_cmd(CTMU_M2P_DISABLE);
@@ -1054,6 +1059,11 @@ void lp_touch_key_charge_mode_enter()
 {
 #if (!LP_TOUCH_KEY_CHARGE_MODE_SW_DISABLE)
     log_debug("%s", __func__);
+
+    while (!__this->ch_init & BIT(0)) {
+        asm volatile("nop");
+    }
+
     //__this->ch_init = 0;
     P2M_CTMU_CTMU_WKUP_MSG &= (~(BIT(1)));
     lp_touch_key_send_cmd(CTMU_M2P_CHARGE_ENTER_MODE);

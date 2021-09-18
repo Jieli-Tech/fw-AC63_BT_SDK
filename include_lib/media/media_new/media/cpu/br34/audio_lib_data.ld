@@ -15,6 +15,9 @@
     *(.lc3_decoder_data)
     *(.wtgv2_data)
     *(.wtgv2dec_data)
+	*(.mp3tsy_dec_data)
+	*(.mp3tsy_data)
+        *(.sbc_encoder_data)
 
     *(.anc_data)
     *(.anc_user_data)
@@ -23,3 +26,4 @@
     *(.anc_debug_data)
 
 	*(.sms_data)
+	*(.audio_track_data)

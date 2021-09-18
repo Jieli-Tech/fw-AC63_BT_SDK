@@ -75,7 +75,7 @@ static void usb_task(void *p)
     int ret = 0;
     int msg[16];
     while (1) {
-        ret = os_task_pend("taskq", msg, ARRAY_SIZE(msg));
+        ret = os_taskq_pend("taskq", msg, ARRAY_SIZE(msg));
         if (ret != OS_TASKQ) {
             continue;
         }

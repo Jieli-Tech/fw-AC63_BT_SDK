@@ -28,6 +28,8 @@ enum {
     SPP_USER_ST_CONNECT,
     SPP_USER_ST_DISCONN,
     SPP_USER_ST_WAIT_DISC,
+    SPP_USER_ST_CONNECT_OTA,
+    SPP_USER_ST_DISCONN_OTA,
 };
 
 void spp_get_operation_table(struct spp_operation_t **interface_pt);

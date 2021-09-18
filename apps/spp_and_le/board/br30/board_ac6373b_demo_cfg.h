@@ -1,11 +1,11 @@
 #ifndef CONFIG_BOARD_AC6373B_DEMO_CFG_H
 #define CONFIG_BOARD_AC6373B_DEMO_CFG_H
 
+#include "board_ac6373b_demo_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6373B_DEMO
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
-#define CONFIG_CHIP_NAME        AD697N
 
 //*********************************************************************************//
 //                                 配置开始                                        //

@@ -140,7 +140,8 @@ static void UT0_isr_fun(void)
         JL_UART0->CON0 |= BIT(7);                     //DMA模式
         JL_UART0->CON0 |= BIT(12);           //清RX PND
         rx_len = JL_UART0->HRXCNT;             //读当前串口接收数据的个数
-        uart0.kfifo.buf_in += uart0.frame_length; //每满frame_length字节则产生一次中断
+        /* uart0.kfifo.buf_in += uart0.frame_length; //每满frame_length字节则产生一次中断 */
+        uart0.kfifo.buf_in += rx_len;
         UT_OSSemPost(&uart0.sem_rx);
         if (uart0.isr_cbfun) {
             uart0.isr_cbfun(&uart0, UT_RX);
@@ -367,7 +368,8 @@ static void UT1_isr_fun(void)
         JL_UART1->CON0 |= BIT(7);                     //DMA模式
         JL_UART1->CON0 |= BIT(12);           //清RX PND
         rx_len = JL_UART1->HRXCNT;             //读当前串口接收数据的个数
-        uart1.kfifo.buf_in += uart1.frame_length; //每满32字节则产生一次中断
+        /* uart1.kfifo.buf_in += uart1.frame_length; //每满32字节则产生一次中断 */
+        uart1.kfifo.buf_in += rx_len;
         UT_OSSemPost(&uart1.sem_rx);
         if (uart1.isr_cbfun) {
             uart1.isr_cbfun(&uart1, UT_RX);
@@ -589,7 +591,8 @@ static void UT2_isr_fun(void)
         JL_UART2->CON0 |= BIT(7);                     //DMA模式
         JL_UART2->CON0 |= BIT(12);           //清RX PND
         rx_len = JL_UART2->HRXCNT;             //读当前串口接收数据的个数
-        uart2.kfifo.buf_in += uart2.frame_length; //每满32字节则产生一次中断
+        /* uart2.kfifo.buf_in += uart2.frame_length; //每满32字节则产生一次中断 */
+        uart2.kfifo.buf_in += rx_len;
         UT_OSSemPost(&uart2.sem_rx);
         if (uart2.isr_cbfun) {
             uart2.isr_cbfun(&uart2, UT_RX);
@@ -765,11 +768,11 @@ static u8 uart_config(const struct uart_platform_data_t *arg, u8 tx_ch, enum PFI
         return -1;
     }
 
-    if (arg->tx_pin) {
+    if (arg->tx_pin < IO_PORT_MAX) {
         gpio_direction_output(arg->tx_pin, 1);
         gpio_set_fun_output_port(arg->tx_pin, tx_ch, 1, 1);
     }
-    if (arg->rx_pin) {
+    if (arg->rx_pin < IO_PORT_MAX) {
         gpio_direction_input(arg->rx_pin);
         gpio_set_pull_up(arg->rx_pin, 1);
         gpio_set_die(arg->rx_pin, 1);

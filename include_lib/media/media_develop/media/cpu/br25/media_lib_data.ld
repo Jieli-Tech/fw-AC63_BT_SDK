@@ -41,9 +41,15 @@
 		/* *(.wav_data) */
 		*(.wma_data)
 		*(.wma_dec_data)
+                *(.speex_dec_data)
+	        *(.speex_data)
+	        *(.opus_data)
+
 		/* *(.aac_data) */
 		*(.amr_data)
 		*(.midi_data)
+		*(.speex_data)
+		*(.speex_dec_data)
 		/* *(.ape_data) */
 		*(.audio_decoder_data)
 		/* *(.dts_data) */
@@ -110,6 +116,7 @@
 		*(.speex_encoder_data)
 		*(.sbc_encoder_data)
 		*(.opus_encoder_data)
+		*(.amr_encoder_data)
 		*(.prevent_task_fill_data)
 		*(.audio_cfifo_data)
 		*(.audio_track_data)
@@ -140,6 +147,7 @@
 		*(.midi_mem)
 		*(.midi_ctrl_mem)
 
+		*(.lfwordana_data)
 		/* *(.crossOver_code) */
 		/* *(.crossOver_const) */
 		/* *(.bt_crossOver_const) */

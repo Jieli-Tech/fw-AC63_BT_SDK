@@ -9,7 +9,7 @@
  * */
 extern struct audio_dac_hdl dac_hdl;
 
-#define MIDI_KEY_NUM  (18)//(支持多少个key同时发声(1~18)， 越大，需要的时钟越大)
+#define MIDI_KEY_NUM  (10)//(支持多少个key同时发声(1~18)， 越大，需要的时钟越大)
 
 static const u16 midi_samplerate_tab[9] = {
     48000,
@@ -251,22 +251,49 @@ void midi_ctrl_confing(u32 cmd, void *priv)
 
 /*----------------------------------------------------------------------------*/
 /**@brief   midi keyboard 设置按键按下音符发声的衰减系数
-   @param   obj:控制句柄
-   @param   samp:对应samplerate_tab坐标
+   @param   val:((衰减系数&0x7fff) | (延时系数&0x1f <<11))
    @return
    @note    低11bit为调节衰减系数，值越小，衰减越快， 1024为默认值， 范围：0~1024
             大于11bit为延时系数，节尾音长度的，值越大拉德越长，0为默认值,31延长1s,范围：0~31(延时系数无效)
    @example midi_ctrl_confing_set_melody_decay((衰减系数&0x7fff) | (延时系数&0x1f <<11));
+			u16 val = ((1024&0x7ff) | (31&0x1f << 11));
+			midi_ctrl_confing_set_melody_decay(val);
 */
 /*----------------------------------------------------------------------------*/
 void midi_ctrl_confing_set_melody_decay(u16 val)
 {
     u32 cmd = CMD_MIDI_CTRL_TEMPO;
     MIDI_PLAY_CTRL_TEMPO tempo = {0};
-    tempo.decay_val = val;
+    for (int i = 0; i < 16; i++) {
+        tempo.decay_val[i] = val;
+    }
     tempo.tempo_val = 1024;//设置为固定1024即可
     midi_ctrl_confing(cmd, (void *)&tempo);
 }
+/*----------------------------------------------------------------------------*/
+/**@brief   midi keyboard 设置每个通道按下音符发声的衰减系数
+   @param   val:16个值的数组，每个值组成组成结构((衰减系数&0x7fff) | (延时系数&0x1f <<11))
+   @return
+   @note    低11bit为调节衰减系数，值越小，衰减越快， 1024为默认值， 范围：0~1024
+            大于11bit为延时系数，节尾音长度的，值越大拉德越长，0为默认值,31延长1s,范围：0~31(延时系数无效)
+   @example u16 val[16];
+   			for (int i = 0; i< 16; i++){
+			    val[i] = ((1024&0x7ff) | (31&0x1f << 11));
+			}
+   			midi_ctrl_confing_set_melody_decay(val);
+*/
+/*----------------------------------------------------------------------------*/
+void midi_ctrl_confing_set_melody_decay_each_chn(u16 *val)
+{
+    u32 cmd = CMD_MIDI_CTRL_TEMPO;
+    MIDI_PLAY_CTRL_TEMPO tempo = {0};
+    if (val) {
+        memcpy(tempo.decay_val, val, sizeof(tempo.decay_val));
+    }
+    tempo.tempo_val = 1024;//设置为固定1024即可
+    midi_ctrl_confing(cmd, (void *)&tempo);
+}
+
 /*----------------------------------------------------------------------------*/
 /**@brief  弯音轮配置
    @param   pitch_val:弯音轮值,1 - 65535 ；256是正常值,对音高有作用

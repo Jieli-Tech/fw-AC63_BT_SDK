@@ -147,6 +147,7 @@ SECTIONS
 		*(.bt_aac_dec_core_sparse_code)
 
 		*(.dts_dec_const)
+        *(.fat_data_code_ex)
 
 #if  (!TCFG_LED7_RUN_RAM)
         *(.gpio_ram)
@@ -169,74 +170,20 @@ SECTIONS
 #endif
 		*(.cvsd_const)
 		*(.cvsd_code)
+		. = ALIGN(4);
 
 		. = ALIGN(4);
-        gsensor_dev_begin = .;
-        KEEP(*(.gsensor_dev))
-        gsensor_dev_end = .;
+        KEEP(*(.rec_const))
 
 		. = ALIGN(4);
-        codec_dev_begin = .;
-        KEEP(*(.codec_dev))
-        codec_dev_end = .;
+        KEEP(*(.bark_const))
 
 		. = ALIGN(4);
-        hrsensor_dev_begin = .;
-        KEEP(*(.hrsensor_dev))
-        hrsensor_dev_end = .;
+        KEEP(*(.rec_sparse_code))
 
 		. = ALIGN(4);
-        fm_dev_begin = .;
-        KEEP(*(.fm_dev))
-        fm_dev_end = .;
+        KEEP(*(.rec_code))
 
-		. = ALIGN(4);
-        fm_emitter_dev_begin = .;
-        KEEP(*(.fm_emitter_dev))
-        fm_emitter_dev_end = .;
-
-		. = ALIGN(4);
-        adapter_idev_begin = .;
-        KEEP(*(.adapter_idev))
-        adapter_idev_end = .;
-
-		. = ALIGN(4);
-        adapter_odev_begin = .;
-        KEEP(*(.adapter_odev))
-        adapter_odev_end = .;
-
-		. = ALIGN(4);
-        adapter_enc_begin = .;
-        KEEP(*(.adapter_enc))
-        adapter_enc_end = .;
-
-
-		. = ALIGN(4);
-        adapter_decoder_begin = .;
-        KEEP(*(.adapter_decoder))
-        adapter_decoder_end = .;
-
-		. = ALIGN(4);
-        adapter_encoder_begin = .;
-        KEEP(*(.adapter_encoder))
-        adapter_encoder_end = .;
-
-
-		/* . = ALIGN(4); */
-        /* storage_device_begin = .; */
-        /* KEEP(*(.storage_device)) */
-        /* storage_device_end = .; */
-
-		/* . = ALIGN(4); */
-		/* ui_main_begin = .; */
-		/* KEEP(*(.ui_main)) */
-		/* ui_main_end = .; */
-		/* . = ALIGN(4); */
-
-        chargeIc_dev_begin = .;
-        KEEP(*(.chargeIc_dev))
-            chargeIc_dev_end = .;
-        . = ALIGN(4);
 
 		/********maskrom arithmetic ****/
         *(.opcore_table_maskrom)
@@ -262,30 +209,12 @@ SECTIONS
         __VERSION_END = .;
         *(.noop_version)
 
-#if TCFG_DEC_WAV_ENABLE
-        	*(.wav_dec_sparse_code)
-			*(.wav_dec_sparse_const)
-
-			*(.wav_dec_code)
-			*(.wav_dec_const)
-	        *(.wav_const)
-			*(.wav_code)
-#endif
-
-
-
-
 		. = ALIGN(4);
 	    update_target_begin = .;
 	    PROVIDE(update_target_begin = .);
 	    KEEP(*(.update_target))
 	    update_target_end = .;
 	    PROVIDE(update_target_end = .);
-		. = ALIGN(4);
-
-        *(.text*)
-        *(.LOG_TAG_CONST*)
-        *(.rodata*)
 		. = ALIGN(4);
 
         text_code_end = .;
@@ -389,6 +318,11 @@ SECTIONS
 #if TCFG_FM_INSIDE_ENABLE
         *(.fm_code)
 #endif
+		. = ALIGN(4);
+		*(.rec_data)
+		. = ALIGN(4);
+		*(.rec_bss)
+		. = ALIGN(4);
 
         . = ALIGN(4);
 		#include "media/cpu/br23/media_lib_data_text.ld"
@@ -397,26 +331,6 @@ SECTIONS
     	_data_code_end = . ;
 
     	_cpu_store_begin = . ;
-		. = ALIGN(4);
-        *(.data*)
-
-		*(.cvsd_data)
-
-		. = ALIGN(4);
-		dec_board_param_mem_begin = .;
-		KEEP(*(.dec_board_param_mem))
-		dec_board_param_mem_end = .;
-
-        . = ALIGN(4);
-		*(.sbc_eng_code)
-        . = ALIGN(4);
-
-#if TCFG_DEC_WAV_ENABLE
-
-            *(.wav_dec_data)
-
-			*(.wav_data)
-#endif
 
         . = ALIGN(32);
 		#include "btstack/btstack_lib_data.ld"
@@ -448,13 +362,6 @@ SECTIONS
 
     .bss ALIGN(32) :
     {
-        *(.usb_h_dma)   //由于usb有个bug，会导致dma写的数据超出预设的buf，最长可能写超1k，为了避免死机，所以usb dma buffer后面放一些其他模块的buff来避免死机
-        *(.usb_ep0)
-        *(.dec_mix_buff)
-        *(.sd0_var)
-        *(.sd1_var)
-        *(.dac_buff)
-
         *(.bss)
         *(COMMON)
 		*(.cvsd_bss)
@@ -464,12 +371,6 @@ SECTIONS
 		#include "btstack/btstack_lib_bss.ld"
 		#include "system/system_lib_bss.ld"
 		#include "media/cpu/br23/media_lib_bss.ld"
-
-#if TCFG_DEC_WAV_ENABLE
-        	*(.wav_bss)
-			*(.wav_dec_bss)
-#endif
-		. = (( . + 31) / 32 * 32);
 
 		. = ALIGN(4);
     } > ram0
@@ -482,18 +383,6 @@ SECTIONS
     //cpu end
     _cpu_store_end = . ;
 
-    _prp_store_begin = . ;
-    .prp_bss ALIGN(32) :
-    {
-        //bt
-        //
-        //sbc
-        //
-        //audio
-		. = (( . + 31) / 32 * 32);
-    } > ram0
-    _prp_store_end = . ;
-
     .bss ALIGN(32) :
 	{
 		NVRAM_DATA_START = .;
@@ -503,222 +392,12 @@ SECTIONS
 		NVRAM_END = .;
 		_nv_pre_begin = . ;
 
-        *(.src_filt)
-        *(.src_dma)
 		. = ALIGN(4);
 
     } > ram0
 
 	overlay_begin = .;
-	OVERLAY : NOCROSSREFS AT(0x200000) SUBALIGN(4)
-    {
-
-		.overlay_aec
-		{
-			LONG(0xFFFFFFFF);
-			/* *(.aec_bss_id) */
-			o_aec_end = .;
-
-			*(.aec_mem)
-            *(.msbc_enc)
-		}
-		.overlay_mp3
-		{
-#ifdef CONFIG_MP3_WMA_LIB_SPECIAL
-			*(.mp3_decstream_const)
-			*(.mp3_decstream_code)
-			*(.mp3_decstream_sparse_code)
-			*(.mp3_decstream_sparse_const)
-
-			*(.mp3_dec_sparse_code)
-			*(.mp3_dec_sparse_const)
-
-			*(.mp3_dec_code)
-			*(.mp3_dec_const)
-			/* *(.mp3_dec_data) */
-			/* *(.mp3_dec_bss) */
-
-			/* *(.mp3_bss) */
-			/* *(.mp3_data) */
-			*(.mp3_const)
-			*(.mp3_code)
-#endif
-			LONG(0xFFFFFFFF);
-			/* *(.mp3_bss_id) */
-			o_mp3_end = .;
-
-			*(.mp3_mem)
-			*(.mp3_ctrl_mem)
-			*(.mp3pick_mem)
-			*(.mp3pick_ctrl_mem)
-		}
-		.overlay_wma
-		{
-#ifdef CONFIG_MP3_WMA_LIB_SPECIAL
-			*(.wma_code)
-			*(.wma_const)
-			*(.wma_dec_code)
-			*(.wma_dec_const)
-			/* *(.wma_dec_data) */
-			/* *(.wma_dec_bss) */
-
-			/* *(.wma_bss) */
-			/* *(.wma_data) */
-#endif
-			LONG(0xFFFFFFFF);
-			/* *(.wma_bss_id) */
-			o_wma_end = .;
-
-			*(.wma_mem)
-			*(.wma_ctrl_mem)
-			*(.wmapick_mem)
-			*(.wmapick_ctrl_mem)
-		}
-		.overlay_wav
-		{
-						LONG(0xFFFFFFFF);
-			/* *(.wav_bss_id) */
-
-			*(.wav_mem)
-			*(.wav_ctrl_mem)
-		}
-
-		.overlay_ape
-        {
-            *(.ape_mem)
-            *(.ape_ctrl_mem)
-
-			*(.ape_dec_sparse_code)
-			*(.ape_dec_sparse_const)
-
-			*(.ape_dec_code)
-			*(.ape_dec_const)
-			*(.ape_dec_data)
-			*(.ape_dec_bss)
-
-			LONG(0xFFFFFFFF);
-			/* *(.ape_bss_id) */
-
-			*(.ape_bss)
-			*(.ape_data)
-			*(.ape_const)
-			*(.ape_code)
-
-		}
-		.overlay_flac
-        {
-			*(.flac_dec_sparse_code)
-			*(.flac_dec_sparse_const)
-
-			*(.flac_dec_code)
-			*(.flac_dec_const)
-			*(.flac_dec_data)
-
-			*(.flac_data)
-			*(.flac_const)
-			*(.flac_code)
-
-			LONG(0xFFFFFFFF);
-			/* *(.flac_bss_id) */
-
-            *(.flac_mem)
-            *(.flac_ctrl_mem)
-			*(.flac_dec_bss)
-			*(.flac_bss)
-		}
-
-		.overlay_m4a
-        {
-			*(.m4a_dec_code)
-			*(.m4a_dec_ff_const)
-			*(.m4a_dec_const)
-			*(.m4a_dec_data)
-
-			*(.m4a_data)
-			*(.m4a_const)
-			*(.m4a_code)
-			*(.m4apick_mem)
-			*(.m4apick_ctrl_mem)
-
-			LONG(0xFFFFFFFF);
-			/* *(.m4a_bss_id) */
-
-            *(.m4a_mem)
-            *(.m4a_ctrl_mem)
-			*(.m4a_dec_bss)
-			*(.m4a_bss)
-			*(.aac_ctrl_mem)
-			*(.aac_bss)
-
-			*(.alac_ctrl_mem)
-			*(.alac_bss)
-		}
-
-
-		.overlay_amr
-        {
-			*(.amr_dec_sparse_code)
-			*(.amr_dec_sparse_const)
-			*(.amr_dec_code)
-
-			*(.amr_dec_data)
-
-			LONG(0xFFFFFFFF);
-			/* *(.amr_bss_id) */
-
-            *(.amr_mem)
-            *(.amr_ctrl_mem)
-			*(.amr_dec_bss)
-		}
-		.overlay_dts
-        {
-			*(.dts_dec_code)
-			*(.dts_dec_data)
-
-			*(.dts_data)
-			*(.dts_const)
-			*(.dts_code)
-
-			LONG(0xFFFFFFFF);
-			/* *(.dts_bss_id) */
-
-            *(.dts_mem)
-            *(.dts_ctrl_mem)
-			*(.dts_dec_bss)
-			*(.dts_bss)
-
-		}
-
-
-
-		.overlay_fm
-		{
-			LONG(0xFFFFFFFF);
-			/* *(.fm_bss_id) */
-			o_fm_end = .;
-
-			*(.fm_mem)
-			*(.linein_pcm_mem)
-		}
-        .overlay_pc
-		{
-#if (!USB_MEM_NO_USE_OVERLAY_EN)
-            *(.usb_audio_play_dma)
-            *(.usb_audio_rec_dma)
-            *(.uac_rx)
-            *(.mass_storage)
-
-            *(.usb_msd_dma)
-            *(.usb_hid_dma)
-            *(.usb_iso_dma)
-            *(.usb_cdc_dma)
-            *(.uac_var)
-            *(.usb_config_var)
-            *(.cdc_var)
-#endif
-		}
-    } > ram0
-
+    #include "app_overlay.ld"
 	overlay_end = .;
 
 	ASSERT(overlay_end <= overlay_begin + 64k, "overlay overflow 64k!")
@@ -757,7 +436,7 @@ SECTIONS
 /********************************************/
 }
 
-
+#include "app.ld"
 #include "update/update.ld"
 #include "driver/cpu/br23/driver_lib.ld"
 
@@ -829,6 +508,9 @@ wma_size = o_wma_end - wma_addr;
 
 #endif
 
+ASSERT(RAM_USED > bss_begin,"RAM_USED < bss_begin");
+ASSERT(RAM_USED > data_addr,"RAM_USED < data_addr");
+ASSERT(RAM_USED > overlay_begin,"RAM_USED < overlay_begin");
 
 _HEAP_BEGIN = RAM_USED;
 PROVIDE(HEAP_BEGIN = RAM_USED);

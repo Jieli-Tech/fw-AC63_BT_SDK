@@ -1,49 +1,501 @@
-LIBS = \
---start-group \
-   $(AR_DIR)/cpu.a \
-   $(AR_DIR)/system.a \
-   $(AR_DIR)/btstack.a \
-   $(AR_DIR)/btctrler.a \
-   $(AR_DIR)/rcsp_stack.a \
-   $(AR_DIR)/libepmotion.a \
-   $(AR_DIR)/libAptFilt_pi32v2_OnChip.a \
-   $(AR_DIR)/libEchoSuppress_pi32v2_OnChip.a \
-   $(AR_DIR)/libNoiseSuppress_pi32v2_OnChip.a \
-   $(AR_DIR)/libSplittingFilter_pi32v2_OnChip.a \
-   $(AR_DIR)/libDelayEstimate_pi32v2_OnChip.a \
-   $(AR_DIR)/libOpcore_maskrom_pi32v2_OnChip.a \
-   $(AR_DIR)/wtg_dec_lib.a \
-   $(AR_DIR)/libFFT_pi32v2_OnChip.a \
-   $(AR_DIR)/crypto_toolbox_Ospeed.a \
-   $(AR_DIR)/agreement.a \
-   $(AR_DIR)/compressor.a \
-   $(AR_DIR)/crossover_coff.a \
-   $(AR_DIR)/limiter.a \
---end-group
 
-LIBS += \
-   $(AR_DIR)/update.a \
+# make 编译并下载
+# make VERBOSE=1 显示编译详细过程
+# make clean 清除编译临时文件
 
-ifeq ($(AUDIO_LITE_VERSION),y)
-LIBS += \
---start-group \
-	$(AR_DIR)/media.a \
-	$(AR_DIR)/media_app.a \
-	$(AR_DIR)/wtg_dec_lib.a \
-	$(AR_DIR)/wtgv2_dec_lib.a \
-        $(AR_DIR)/wav_dec_lib.a \
-	$(AR_DIR)/opus_enc_lib.a \
-    	$(AR_DIR)/speex_enc_lib.a \
---end-group
+# 工具路径设置
+ifeq ($(OS), Windows_NT)
+# Windows 下工具链位置
+TOOL_DIR := C:/JL/pi32/bin
+CC    := clang.exe
+CXX   := clang.exe
+LD    := pi32v2-lto-wrapper.exe
+AR    := pi32v2-lto-ar.exe
+MKDIR := mkdir_win -p
+RM    := rm -rf
+
+SYS_LIB_DIR := C:/JL/pi32/pi32v2-lib/r3
+SYS_INC_DIR := C:/JL/pi32/pi32v2-include
+
+## 后处理脚本
+POST_SCRIPT     := ..\..\..\..\cpu\br30\tools\download.bat
+RUN_POST_SCRIPT := $(POST_SCRIPT)
+else
+# Linux 下工具链位置
+TOOL_DIR := /opt/jieli/pi32v2/bin
+CC    := clang
+CXX   := clang++
+LD    := lto-wrapper
+AR    := lto-ar
+MKDIR := mkdir -p
+RM    := rm -rf
+
+SYS_LIB_DIR := $(TOOL_DIR)/../lib/r3
+SYS_INC_DIR := $(TOOL_DIR)/../include
+
+## 后处理脚本
+POST_SCRIPT     := ../../../../cpu/br30/tools/download.sh
+RUN_POST_SCRIPT := bash $(POST_SCRIPT)
 endif
 
-objs += \
-	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac637n_demo.o \
-	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6373b_demo.o \
-	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6376f_demo.o \
-	  $(ROOT)/apps/$(APP_CASE)/board/$(CPU)/board_ac6379b_demo.o \
+CC  := $(TOOL_DIR)/$(CC)
+CXX := $(TOOL_DIR)/$(CXX)
+LD  := $(TOOL_DIR)/$(LD)
+AR  := $(TOOL_DIR)/$(AR)
+# 输出文件设置
+OUT_ELF   := ../../../../cpu/br30/tools/sdk.elf
+OBJ_FILE  := $(OUT_ELF).objs.txt
+# 编译路径设置
+BUILD_DIR := objs
+# 工程路径前缀
+ROOT_PREFIX := ../../../..
 
-#algorithm in mask
-#$(AR_DIR)/libOpcore_maskrom_pi32v2_OnChip.a \
-   $(AR_DIR)/bt_aac_dec_lib_br30_seg_2.a \
-   $(AR_DIR)/bfilterfun_lib.a \
+# 编译参数设置
+CFLAGS := \
+	-target pi32v2 \
+	-mcpu=r3 \
+	-integrated-as \
+	-flto \
+	-Wuninitialized \
+	-Wno-invalid-noreturn \
+	-fno-common \
+	-integrated-as \
+	-Oz \
+	-g \
+	-flto \
+	-fallow-pointer-null \
+	-fprefer-gnu-section \
+	-Wno-shift-negative-value \
+	-Wundef \
+	-Wframe-larger-than=256 \
+	-fms-extensions \
+	-w \
+
+
+# 宏定义
+DEFINES := \
+	-DSUPPORT_MS_EXTENSIONS \
+	-DCONFIG_RELEASE_ENABLE \
+	-DCONFIG_CPU_BR30 \
+	-DCONFIG_SUPPORT_WIFI_DETECT \
+	-DCONFIG_NEW_BREDR_ENABLE \
+	-DCONFIG_FREE_RTOS_ENABLE \
+	-DCONFIG_EQ_SUPPORT_ASYNC \
+	-DCONFIG_ASR_ENABLE \
+	-DCONFIG_DMS_MALLOC \
+	-DCONFIG_MMU_ENABLE \
+	-DCONFIG_SBC_CODEC_HW \
+	-DCONFIG_MSBC_CODEC_HW \
+	-DCONFIG_AEC_M=256 \
+	-DCONFIG_AUDIO_ONCHIP \
+	-DCONFIG_MEDIA_NEW_ENABLE \
+	-D__GCC_PI32V2__ \
+	-DCONFIG_NEW_ECC_ENABLE \
+	-DEVENT_HANDLER_NUM_CONFIG=2 \
+	-DEVENT_TOUCH_ENABLE_CONFIG=0 \
+	-DEVENT_POOL_SIZE_CONFIG=256 \
+	-DCONFIG_EVENT_KEY_MAP_ENABLE=0 \
+	-DTIMER_POOL_NUM_CONFIG=10 \
+	-DAPP_ASYNC_POOL_NUM_CONFIG=0 \
+	-DVFS_ENABLE=1 \
+	-DUSE_SDFILE_NEW=1 \
+	-DVFS_FILE_POOL_NUM_CONFIG=0 \
+	-DSDFILE_VERSION=0x020000 \
+	-DVM_MAX_SIZE_CONFIG=16*1024 \
+	-DVM_ITEM_MAX_NUM=128 \
+	-DCONFIG_TWS_ENABLE \
+	-DCONFIG_SPP_AND_LE_CASE_ENABLE \
+	-DCONFIG_TRANSFER_ENABLE \
+	-DCONFIG_LITE_AEC_ENABLE=0 \
+	-DCONFIG_LITE_AUDIO \
+	-DCONFIG_LMP_RESET_ENABLE \
+	-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE \
+	-DCONFIG_LINK_DISTURB_SCAN_ENABLE=0 \
+	-DCONFIG_BTCTRLER_TASK_DEL_ENABLE \
+	-DCONFIG_UPDATA_ENABLE \
+	-DCONFIG_OTA_UPDATA_ENABLE \
+	-DCONFIG_ITEM_FORMAT_VM \
+	-DTCFG_APP_BT_EN=1 \
+	-DUSB_PC_NO_APP_MODE \
+	-D__LD__ \
+
+
+# 头文件搜索路径
+INCLUDES := \
+	-I../../../../include_lib \
+	-I../../../../include_lib/driver \
+	-I../../../../include_lib/driver/device \
+	-I../../../../include_lib/driver/cpu/br30 \
+	-I../../../../include_lib/system \
+	-I../../../../include_lib/system/generic \
+	-I../../../../include_lib/system/device \
+	-I../../../../include_lib/system/fs \
+	-I../../../../include_lib/system/ui \
+	-I../../../../include_lib/btctrler \
+	-I../../../../include_lib/btctrler/port/br30 \
+	-I../../../../include_lib/update \
+	-I../../../../include_lib/agreement \
+	-I../../../../include_lib/btstack/third_party/common \
+	-I../../../../include_lib/btstack/third_party/rcsp \
+	-I../../../../include_lib/media/media_new \
+	-I../../../../include_lib/media/media_new/media \
+	-I../../../../include_lib/media/media_new/media/cpu/br30 \
+	-I../../../../include_lib/media/media_new/media/cpu/br30/asm \
+	-I../../../../apps/spp_and_le/include \
+	-I../../../../apps/spp_and_le/board/br30 \
+	-I../../../../apps/common \
+	-I../../../../apps/common/include \
+	-I../../../../apps/common/power_manage \
+	-I../../../../cpu/br30 \
+	-I../../../../apps/common/third_party_profile/jieli \
+	-I../../../../apps/common/third_party_profile/jieli/JL_rcsp \
+	-I../../../../apps/common/third_party_profile/common \
+	-I../../../../include_lib/ai_stack/JL_rcsp \
+	-I../../../../include_lib/btstack \
+	-I../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data \
+	-I../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata \
+	-I../../../../apps/common/third_party_profile/jieli/gatt_common \
+	-I../../../../apps/common/third_party_profile/Tecent_LL/include \
+	-I../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo \
+	-I../../../../apps/spp_and_le/examples/ll_sync \
+	-I../../../../apps/common/cJSON \
+	-I../../../../apps/common/third_party_profile/tuya_protocol \
+	-I../../../../apps/common/third_party_profile/tuya_protocol/app/demo \
+	-I../../../../apps/common/third_party_profile/tuya_protocol/app/product_test \
+	-I../../../../apps/common/third_party_profile/tuya_protocol/app/uart_common \
+	-I../../../../apps/common/third_party_profile/tuya_protocol/extern_components/mbedtls \
+	-I../../../../apps/common/third_party_profile/tuya_protocol/port \
+	-I../../../../apps/common/third_party_profile/tuya_protocol/sdk/include \
+	-I../../../../apps/common/third_party_profile/tuya_protocol/sdk/lib \
+	-I../../../../apps/spp_and_le/examples/tuya \
+	-I../../../../apps/common/audio \
+	-I../../../../cpu/br30/audio_dec \
+	-I../../../../cpu/br30/audio_enc \
+	-I../../../../apps/common/usb \
+	-I../../../../apps/common/usb/device \
+	-I../../../../apps/common/usb/host \
+	-I$(SYS_INC_DIR) \
+
+
+# 需要编译的 .c 文件
+c_SRC_FILES := \
+	../../../../apps/common/audio/decode/decode.c \
+	../../../../apps/common/audio/sine_make.c \
+	../../../../apps/common/bt_common/bt_test_api.c \
+	../../../../apps/common/cJSON/cJSON.c \
+	../../../../apps/common/debug/debug.c \
+	../../../../apps/common/device/norflash/norflash.c \
+	../../../../apps/common/jl_kws/jl_kws_algo.c \
+	../../../../apps/common/jl_kws/jl_kws_audio.c \
+	../../../../apps/common/jl_kws/jl_kws_event.c \
+	../../../../apps/common/jl_kws/jl_kws_main.c \
+	../../../../apps/common/key/adkey.c \
+	../../../../apps/common/key/iokey.c \
+	../../../../apps/common/key/key_driver.c \
+	../../../../apps/common/key/touch_key.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo/ll_task.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_import.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_llsync_data.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_llsync_device.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_llsync_event.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_llsync_ota.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_service.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_template.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_base64.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_crc.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_hmac.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_log.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_md5.c \
+	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_sha1.c \
+	../../../../apps/common/third_party_profile/common/custom_cfg.c \
+	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.c \
+	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_ch_loader_download.c \
+	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_user_update.c \
+	../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_client.c \
+	../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_common.c \
+	../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_server.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/app/demo/tuya_ble_app_demo.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/app/demo/tuya_ota.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/app/product_test/tuya_ble_app_production_test.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/app/uart_common/tuya_ble_app_uart_common_handler.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/extern_components/mbedtls/aes.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/extern_components/mbedtls/ccm.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/extern_components/mbedtls/hmac.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/extern_components/mbedtls/md5.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/extern_components/mbedtls/sha1.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/extern_components/mbedtls/sha256.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/port/tuya_ble_port.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/port/tuya_ble_port_JL.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/port/tuya_ble_port_peripheral.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_api.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_bulk_data.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_data_handler.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_event.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_event_handler.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_event_handler_weak.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_feature_weather.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_gatt_send_queue.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_heap.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_main.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_mem.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_mutli_tsf_protocol.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_queue.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_storage.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_unix_time.c \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_utils.c \
+	../../../../apps/common/update/testbox_update.c \
+	../../../../apps/common/update/uart_update.c \
+	../../../../apps/common/update/uart_update_master.c \
+	../../../../apps/common/update/update.c \
+	../../../../apps/common/usb/device/cdc.c \
+	../../../../apps/common/usb/device/descriptor.c \
+	../../../../apps/common/usb/device/hid.c \
+	../../../../apps/common/usb/device/msd.c \
+	../../../../apps/common/usb/device/msd_upgrade.c \
+	../../../../apps/common/usb/device/task_pc.c \
+	../../../../apps/common/usb/device/uac1.c \
+	../../../../apps/common/usb/device/uac_stream.c \
+	../../../../apps/common/usb/device/usb_device.c \
+	../../../../apps/common/usb/device/user_setup.c \
+	../../../../apps/common/usb/host/adb.c \
+	../../../../apps/common/usb/host/aoa.c \
+	../../../../apps/common/usb/host/audio.c \
+	../../../../apps/common/usb/host/audio_demo.c \
+	../../../../apps/common/usb/host/hid.c \
+	../../../../apps/common/usb/host/usb_bulk_transfer.c \
+	../../../../apps/common/usb/host/usb_ctrl_transfer.c \
+	../../../../apps/common/usb/host/usb_host.c \
+	../../../../apps/common/usb/host/usb_storage.c \
+	../../../../apps/common/usb/usb_config.c \
+	../../../../apps/common/usb/usb_host_config.c \
+	../../../../apps/spp_and_le/app_main.c \
+	../../../../apps/spp_and_le/board/br30/board_ac6373b_demo.c \
+	../../../../apps/spp_and_le/board/br30/board_ac6376f_demo.c \
+	../../../../apps/spp_and_le/board/br30/board_ac6379b_demo.c \
+	../../../../apps/spp_and_le/board/br30/board_ac637n_demo.c \
+	../../../../apps/spp_and_le/config/lib_btctrler_config.c \
+	../../../../apps/spp_and_le/config/lib_btstack_config.c \
+	../../../../apps/spp_and_le/config/lib_driver_config.c \
+	../../../../apps/spp_and_le/config/lib_media_config.c \
+	../../../../apps/spp_and_le/config/lib_profile_config.c \
+	../../../../apps/spp_and_le/config/lib_system_config.c \
+	../../../../apps/spp_and_le/config/lib_update_config.c \
+	../../../../apps/spp_and_le/config/log_config.c \
+	../../../../apps/spp_and_le/examples/at_char_com/app_at_char_com.c \
+	../../../../apps/spp_and_le/examples/at_char_com/at_char_cmds.c \
+	../../../../apps/spp_and_le/examples/at_char_com/at_char_uart.c \
+	../../../../apps/spp_and_le/examples/at_char_com/ble_at_char_client.c \
+	../../../../apps/spp_and_le/examples/at_char_com/ble_at_char_com.c \
+	../../../../apps/spp_and_le/examples/at_com/app_at_com.c \
+	../../../../apps/spp_and_le/examples/at_com/at_cmds.c \
+	../../../../apps/spp_and_le/examples/at_com/at_uart.c \
+	../../../../apps/spp_and_le/examples/at_com/ble_at_client.c \
+	../../../../apps/spp_and_le/examples/at_com/ble_at_com.c \
+	../../../../apps/spp_and_le/examples/at_com/spp_at_trans.c \
+	../../../../apps/spp_and_le/examples/ble_beacon/app_beacon.c \
+	../../../../apps/spp_and_le/examples/ble_beacon/ble_beacon.c \
+	../../../../apps/spp_and_le/examples/ble_central/app_central.c \
+	../../../../apps/spp_and_le/examples/ble_central/ble_central.c \
+	../../../../apps/spp_and_le/examples/dongle/app_dongle.c \
+	../../../../apps/spp_and_le/examples/dongle/ble_dg_central.c \
+	../../../../apps/spp_and_le/examples/dongle/edr_hid_user.c \
+	../../../../apps/spp_and_le/examples/dongle/usb_hid_devices.c \
+	../../../../apps/spp_and_le/examples/idle/app_idle.c \
+	../../../../apps/spp_and_le/examples/ll_sync/app_ll_sync.c \
+	../../../../apps/spp_and_le/examples/ll_sync/ll_sync_demo.c \
+	../../../../apps/spp_and_le/examples/multi_conn/app_multi_conn.c \
+	../../../../apps/spp_and_le/examples/multi_conn/ble_multi.c \
+	../../../../apps/spp_and_le/examples/multi_conn/ble_multi_central.c \
+	../../../../apps/spp_and_le/examples/multi_conn/ble_multi_peripheral.c \
+	../../../../apps/spp_and_le/examples/nonconn_24g/app_nonconn_24g.c \
+	../../../../apps/spp_and_le/examples/nonconn_24g/ble_24g_deal.c \
+	../../../../apps/spp_and_le/examples/trans_data/app_spp_and_le.c \
+	../../../../apps/spp_and_le/examples/trans_data/ble_trans.c \
+	../../../../apps/spp_and_le/examples/tuya/app_tuya.c \
+	../../../../apps/spp_and_le/examples/tuya/tuya_demo.c \
+	../../../../apps/spp_and_le/modules/bt/app_comm_ble.c \
+	../../../../apps/spp_and_le/modules/bt/app_comm_edr.c \
+	../../../../apps/spp_and_le/modules/bt/edr_emitter.c \
+	../../../../apps/spp_and_le/modules/bt/spp_trans.c \
+	../../../../apps/spp_and_le/modules/misc.c \
+	../../../../apps/spp_and_le/modules/power/app_charge.c \
+	../../../../apps/spp_and_le/modules/power/app_chargestore.c \
+	../../../../apps/spp_and_le/modules/power/app_power_manage.c \
+	../../../../apps/spp_and_le/modules/rtc_alarm.c \
+	../../../../apps/spp_and_le/modules/tone_table.c \
+	../../../../apps/spp_and_le/modules/user_cfg.c \
+	../../../../apps/spp_and_le/version.c \
+	../../../../cpu/br30/adc_api.c \
+	../../../../cpu/br30/app_audio.c \
+	../../../../cpu/br30/audio_codec_clock.c \
+	../../../../cpu/br30/audio_dec.c \
+	../../../../cpu/br30/audio_dec/audio_dec_pc.c \
+	../../../../cpu/br30/audio_dec/audio_usb_mic.c \
+	../../../../cpu/br30/audio_enc.c \
+	../../../../cpu/br30/audio_mic_capless.c \
+	../../../../cpu/br30/audio_mic_codec.c \
+	../../../../cpu/br30/charge.c \
+	../../../../cpu/br30/chargestore.c \
+	../../../../cpu/br30/clock_manager.c \
+	../../../../cpu/br30/ctmu.c \
+	../../../../cpu/br30/iic_hw.c \
+	../../../../cpu/br30/iic_slave_test.c \
+	../../../../cpu/br30/iic_soft.c \
+	../../../../cpu/br30/irflt.c \
+	../../../../cpu/br30/lp_touch_key.c \
+	../../../../cpu/br30/lp_touch_key_epd.c \
+	../../../../cpu/br30/power_api.c \
+	../../../../cpu/br30/pwm_led.c \
+	../../../../cpu/br30/setup.c \
+	../../../../cpu/br30/spi.c \
+	../../../../cpu/br30/tone_player.c \
+	../../../../cpu/br30/uart_dev.c \
+
+
+# 需要编译的 .S 文件
+S_SRC_FILES :=
+
+
+# 需要编译的 .s 文件
+s_SRC_FILES :=
+
+
+# 需要编译的 .cpp 文件
+cpp_SRC_FILES :=
+
+
+# 链接参数
+LFLAGS := \
+	--plugin-opt=-pi32v2-always-use-itblock=false \
+	--plugin-opt=-enable-ipra=true \
+	--plugin-opt=-pi32v2-merge-max-offset=4096 \
+	--plugin-opt=-pi32v2-enable-simd=true \
+	--plugin-opt=mcpu=r3 \
+	--plugin-opt=-global-merge-on-const \
+	--plugin-opt=-inline-threshold=5 \
+	--plugin-opt=-inline-max-allocated-size=32 \
+	--plugin-opt=-inline-normal-into-special-section=true \
+	--plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar \
+	--plugin-opt=save-temps \
+	--plugin-opt=-pi32v2-enable-rep-memop \
+	--plugin-opt=-warn-stack-size=256 \
+	--sort-common \
+	--dont-complain-call-overflow \
+	--plugin-opt=-used-symbol-file=../../../../cpu/br30/sdk_used_list.used \
+	--start-group \
+	../../../../cpu/br30/liba/cpu.a \
+	../../../../cpu/br30/liba/system.a \
+	../../../../cpu/br30/liba/btstack.a \
+	../../../../cpu/br30/liba/btctrler.a \
+	../../../../cpu/br30/liba/rcsp_stack.a \
+	../../../../cpu/br30/liba/libepmotion.a \
+	../../../../cpu/br30/liba/libAptFilt_pi32v2_OnChip.a \
+	../../../../cpu/br30/liba/libEchoSuppress_pi32v2_OnChip.a \
+	../../../../cpu/br30/liba/libNoiseSuppress_pi32v2_OnChip.a \
+	../../../../cpu/br30/liba/libSplittingFilter_pi32v2_OnChip.a \
+	../../../../cpu/br30/liba/libDelayEstimate_pi32v2_OnChip.a \
+	../../../../cpu/br30/liba/libOpcore_maskrom_pi32v2_OnChip.a \
+	../../../../cpu/br30/liba/wtg_dec_lib.a \
+	../../../../cpu/br30/liba/libFFT_pi32v2_OnChip.a \
+	../../../../cpu/br30/liba/crypto_toolbox_Ospeed.a \
+	../../../../cpu/br30/liba/agreement.a \
+	../../../../cpu/br30/liba/compressor.a \
+	../../../../cpu/br30/liba/crossover_coff.a \
+	../../../../cpu/br30/liba/limiter.a \
+	../../../../apps/common/third_party_profile/tuya_protocol/sdk/lib/libtuya_lib.a \
+	../../../../cpu/br30/liba/update.a \
+	../../../../cpu/br30/liba/media.a \
+	../../../../cpu/br30/liba/media_app.a \
+	../../../../cpu/br30/liba/wtg_dec_lib.a  \
+	../../../../cpu/br30/liba/wtgv2_dec_lib.a \
+	../../../../cpu/br30/liba/wav_dec_lib.a \
+	../../../../cpu/br30/liba/opus_enc_lib.a \
+	../../../../cpu/br30/liba/speex_enc_lib.a \
+	--end-group \
+	-T../../../../cpu/br30/sdk.ld \
+	-M=../../../../cpu/br30/tools/sdk.map \
+	--plugin-opt=mcpu=r3 \
+	--plugin-opt=-mattr=+fprev1 \
+
+
+LIBPATHS := \
+	-L$(SYS_LIB_DIR) \
+
+
+LIBS := \
+	$(SYS_LIB_DIR)/libm.a \
+	$(SYS_LIB_DIR)/libc.a \
+	$(SYS_LIB_DIR)/libm.a \
+	$(SYS_LIB_DIR)/libcompiler-rt.a \
+
+
+
+c_OBJS    := $(c_SRC_FILES:%.c=%.c.o)
+S_OBJS    := $(S_SRC_FILES:%.S=%.S.o)
+s_OBJS    := $(s_SRC_FILES:%.s=%.s.o)
+cpp_OBJS  := $(cpp_SRC_FILES:%.cpp=%.cpp.o)
+
+OBJS      := $(c_OBJS) $(S_OBJS) $(s_OBJS) $(cpp_OBJS)
+DEP_FILES := $(OBJS:%.o=%.d)
+
+
+OBJS      := $(addprefix $(BUILD_DIR)/, $(OBJS:$(ROOT_PREFIX)/%=%))
+DEP_FILES := $(addprefix $(BUILD_DIR)/, $(DEP_FILES:$(ROOT_PREFIX)/%=%))
+
+
+VERBOSE ?= 0
+ifeq ($(VERBOSE), 1)
+QUITE :=
+else
+QUITE := @
+endif
+
+.PHONY: all clean pre_build
+
+all: pre_build $(OUT_ELF)
+	@echo +POST-BUILD
+	$(QUITE) $(RUN_POST_SCRIPT) sdk
+
+pre_build:
+	@echo +PRE-BUILD
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br30/sdk_used_list.c -o ../../../../cpu/br30/sdk_used_list.used
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br30/sdk_ld.c -o ../../../../cpu/br30/sdk.ld
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br30/tools/download.c -o $(POST_SCRIPT)
+	$(QUITE) ..\..\..\..\tools\utils\fixbat.exe $(POST_SCRIPT)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br30/tools/isd_config_rule.c -o ../../../../cpu/br30/tools/isd_config.ini
+
+clean:
+	$(QUITE) $(RM) $(OUT_ELF)
+	$(QUITE) $(RM) $(OBJS)
+	$(QUITE) $(RM) $(DEP_FILES)
+
+$(OUT_ELF): $(OBJS)
+	@echo +LINK $@
+	$(file >$(OBJ_FILE), $(OBJS))
+	$(QUITE) $(LD) -o $(OUT_ELF) @$(OBJ_FILE) $(LFLAGS) $(LIBPATHS) $(LIBS)
+
+$(BUILD_DIR)/%.c.o : $(ROOT_PREFIX)/%.c
+	@echo +CC $<
+	@$(MKDIR) $(@D)
+	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+
+$(BUILD_DIR)/%.S.o : $(ROOT_PREFIX)/%.S
+	@echo +AS $<
+	@$(MKDIR) $(@D)
+	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+
+$(BUILD_DIR)/%.s.o : $(ROOT_PREFIX)/%.s
+	@echo +AS $<
+	@$(MKDIR) $(@D)
+	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+
+$(BUILD_DIR)/%.cpp.o : $(ROOT_PREFIX)/%.cpp
+	@echo +CXX $<
+	@$(MKDIR) $(@D)
+	@$(CXX) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
+	$(QUITE) $(CXX) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+
+-include $(DEP_FILES)

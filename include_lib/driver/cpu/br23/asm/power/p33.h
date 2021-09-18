@@ -358,6 +358,8 @@ static void P33_CON_DEBUG(void)
 
 #define VDC13_LOAD_EN(en)       P33_TX_NBIT(P3_ANA_CON1, BIT(4), en)
 
+#define VDC13_DESHOT_EN(en)		P33_TX_NBIT(P3_ANA_CON1, BIT(5), en)
+
 #define SYSVDD_RES_SHORT_EN(en) P33_TX_NBIT(P3_ANA_CON1, BIT(6), en)
 
 #define SYSVDD_BYPASS_EN(en)    P33_TX_NBIT(P3_ANA_CON1, BIT(7), en)
@@ -369,6 +371,8 @@ static void P33_CON_DEBUG(void)
 #define VCM_DET_EN(en)          P33_TX_NBIT(P3_ANA_CON2, BIT(3), en)
 
 #define D2SH_EN_SW(en)          P33_TX_NBIT(P3_ANA_CON2, BIT(4), en)
+
+#define FAST_UP_EN(en)          P33_TX_NBIT(P3_ANA_CON2, BIT(5), en)
 
 #define VDDOK_DIS(dis)          P33_TX_NBIT(P3_ANA_CON2, BIT(6), dis)
 

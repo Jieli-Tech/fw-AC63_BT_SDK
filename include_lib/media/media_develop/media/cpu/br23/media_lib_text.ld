@@ -85,6 +85,13 @@
 		/* *(.wav_code) */
 		/* *(.wav_const) */
 
+		*(.speex_dec_code)
+		*(.speex_dec_const)
+	        *(.speex_const)
+		*(.speex_code)
+                *(.opus_code)
+                *(.opus_const)
+
 #ifndef CONFIG_MP3_WMA_LIB_SPECIAL
 		*(.wma_code)
 		*(.wma_const)
@@ -103,6 +110,17 @@
 		*(.amr_const)
 		*(.midi_code)
 		*(.midi_const)
+
+	    *(.lfwordnan_const)
+	    *(.lfwordana_const)
+		*(.lfwordana_code)
+		*(.lfwordana_sparse_code)
+
+		*(.speex_code)
+		*(.speex_const)
+		*(.speex_dec_code)
+		*(.speex_dec_const)
+
 
 		/* *(.ape_code) */
 		/* *(.ape_const) */
@@ -295,6 +313,8 @@
 		*(.sbc_encoder_const)
 		*(.opus_encoder_code)
 		*(.opus_encoder_const)
+		*(.amr_encoder_code)
+		*(.amr_encoder_const)
 		*(.prevent_task_fill_code)
 		*(.prevent_task_fill_const)
 		*(.audio_cfifo_code)

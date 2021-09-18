@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC636N_DEMO_CFG_H
 #define CONFIG_BOARD_AC636N_DEMO_CFG_H
 
+#include "board_ac636n_demo_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC636N_DEMO
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //

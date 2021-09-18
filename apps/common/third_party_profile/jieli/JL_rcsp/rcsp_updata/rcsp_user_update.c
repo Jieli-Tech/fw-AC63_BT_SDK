@@ -1,16 +1,12 @@
 #include "rcsp_user_update.h"
 #include "app_config.h"
 #if RCSP_UPDATE_EN
-//#include "msg.h"
 #include "uart.h"
-//#include "common/sys_timer.h"
 #include "system/timer.h"
 #include "update.h"
 #include "custom_cfg.h"
-//#include "irq_api.h"
 #include "btstack/avctp_user.h"
 #include "JL_rcsp_packet.h"
-//#include "JJL_rcsp_api.h"
 #include "JL_rcsp_protocol.h"
 #include "rcsp_bluetooth.h"
 #include "update_loader_download.h"
@@ -42,25 +38,36 @@ typedef enum {
     UPDATA_STOP,
 } UPDATA_BIT_FLAG;
 
-#if 0
-static update_file_id_t update_file_id_info = {
-    .ver[0] = 0xff,
-    .ver[1] = 0xff,
-};
-#else
+typedef struct _update_mode_t {
+    u8 opcode;
+    u8 opcode_sn;
+
+} update_mode_t;
+
+
+extern const int support_dual_bank_update_en;
+extern void JL_ble_disconnect(void);
+extern void set_curr_update_type(u8 type);
+extern u8 check_le_pakcet_sent_finish_flag(void);
+extern void register_receive_fw_update_block_handle(void (*handle)(u8 state, u8 *buf, u16 len));
+extern void rcsp_update_data_api_register(u32(*data_send_hdl)(void *priv, u32 offset, u16 len), u32(*send_update_handl)(void *priv, u8 state));
+extern void rcsp_update_handle(void *buf, int len);
+extern u32 ex_cfg_fill_content_api(void);
+extern void update_result_set(u16 result);
+
+static u8 rcsp_update_flag = 0;
+static u8 rcsp_update_status;
+static u8 update_flag = 0;
+static u16 ble_discon_timeout;
+static void (*fw_update_block_handle)(u8 state, u8 *buf, u16 len) = NULL;
+
 static update_file_ext_id_t update_file_id_info = {
     .update_file_id_info.ver[0] = 0xff,
     .update_file_id_info.ver[1] = 0xff,
 };
-#endif
 
-extern const int support_dual_bank_update_en;
-extern void JL_ble_disconnect(void);
-extern void updata_parm_set(UPDATA_TYPE up_type, void *priv, u32 len);
-extern u8 check_le_pakcet_sent_finish_flag(void);
+static update_mode_t update_record_info;
 
-static u8 update_flag = 0;
-static u8 disconnect_flag = 0;
 u8 get_jl_update_flag(void)
 {
     printf("get_update_flag:%x\n", update_flag);
@@ -72,14 +79,6 @@ void set_jl_update_flag(u8 flag)
     update_flag = flag;
     printf("update_flag:%x\n", update_flag);
 }
-
-typedef struct _update_mode_t {
-    u8 opcode;
-    u8 opcode_sn;
-
-} update_mode_t;
-
-static update_mode_t update_record_info;
 
 void JL_controller_save_curr_cmd_para(u8 OpCode, u8 OpCode_SN)
 {
@@ -93,13 +92,11 @@ void JL_controller_get_curr_cmd_para(u8 *OpCode, u8 *OpCode_SN)
     *OpCode_SN = update_record_info.opcode_sn;
 }
 
-static void (*fw_update_block_handle)(u8 state, u8 *buf, u16 len) = NULL;
 void register_receive_fw_update_block_handle(void (*handle)(u8 state, u8 *buf, u16 len))
 {
     fw_update_block_handle = handle;
 }
 
-static u16  ble_discon_timeout;
 static void ble_discon_timeout_handle(void *priv)
 {
     rcsp_msg_post(MSG_JL_UPDATE_START, 0);
@@ -123,7 +120,6 @@ void JL_rcsp_update_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
         //if (DEV_UPDATE_FILE_INFO_LEN == len) {
         if (len) {
             //memcpy((u8 *)&update_file_id_info, data, DEV_UPDATE_FILE_INFO_LEN);
-            extern void set_curr_update_type(u8 type);
             set_curr_update_type(data[0]);
             rcsp_msg_post(MSG_JL_INQUIRE_DEVEICE_IF_CAN_UPDATE, 3, OpCode, OpCode_SN, 0x00);
         }
@@ -311,7 +307,6 @@ void JL_rcsp_update_cmd_receive_resp(void *priv, u8 OpCode, u8 status, u8 *data,
     }
 }
 
-void update_result_set(u16 result);
 static void rcsp_loader_download_result_handle(void *priv, u8 type, u8 cmd)
 {
     if (UPDATE_LOADER_OK == cmd) {
@@ -331,22 +326,18 @@ static void rcsp_loader_download_result_handle(void *priv, u8 type, u8 cmd)
     }
 }
 
-extern void register_receive_fw_update_block_handle(void (*handle)(u8 state, u8 *buf, u16 len));
-extern void rcsp_update_data_api_register(u32(*data_send_hdl)(void *priv, u32 offset, u16 len), u32(*send_update_handl)(void *priv, u8 state));
-extern void rcsp_update_handle(void *buf, int len);
-static u8 rcsp_update_status;
+
 u32 get_jl_rcsp_update_status()
 {
     return rcsp_update_status;
 }
 
-extern u32 ex_cfg_fill_content_api(void);
 static void rcsp_update_private_param_fill(UPDATA_PARM *p)
 {
     u32 exif_addr;
 
     exif_addr = ex_cfg_fill_content_api();
-    memcpy(p->parm_priv, (u8 *)&exif_addr, sizeof(exif_addr));
+    update_param_priv_fill(p, (void *)&exif_addr, sizeof(exif_addr));
 }
 
 static void rcsp_update_before_jump_handle(int type)
@@ -504,7 +495,6 @@ void rcsp_update_jump_for_hid_device()
 }
 #endif
 
-static u8 rcsp_update_flag = 0;
 void set_rcsp_db_update_status(u8 value)
 {
     rcsp_update_flag = value;

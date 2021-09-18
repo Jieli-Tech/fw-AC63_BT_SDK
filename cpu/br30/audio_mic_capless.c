@@ -348,8 +348,8 @@ void mic_trim_run()
             mic_capless_trim_exit(0);
         } else {
             log_info("mc_trim ok\n");
-            mc_var.dtb_step_limit = TCFG_MC_DTB_STEP_LIMIT;
             mic_capless_trim_exit(1);
+            mc_var.dtb_step_limit = TCFG_MC_DTB_STEP_LIMIT;
         }
     } else {
         log_info("mc_need't trim");

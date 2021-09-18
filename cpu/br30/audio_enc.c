@@ -198,6 +198,7 @@ static void audio_plnk_mic_output(void *buf, u16 len)
 }
 
 #if TCFG_AUDIO_INPUT_IIS
+s16 temp_iis_input_data[ALNK_BUF_POINTS_NUM * 3];
 static void audio_iis_mic_output(s16 *data, u32 len)
 {
     int wlen = len;
@@ -209,18 +210,18 @@ static void audio_iis_mic_output(s16 *data, u32 len)
         }
         len >>= 1;
         if (sw_src_api) {
-            len = sw_src_api->run(sw_src_buf, data, len >> 1, data);
+            len = sw_src_api->run(sw_src_buf, data, len >> 1, temp_iis_input_data);
             len <<= 1;
         }
 #if (defined(TCFG_PHONE_MESSAGE_ENABLE) && (TCFG_PHONE_MESSAGE_ENABLE))
-        int ret = phone_message_mic_write(data, len);
+        int ret = phone_message_mic_write(temp_iis_input_data, len);
         if (ret >= 0) {
             esco_enc_resume();
             return ;
         }
 #endif/*TCFG_PHONE_MESSAGE_ENABLE*/
 
-        wlen = cbuf_write(&esco_enc->iis_cbuf, data, len);
+        wlen = cbuf_write(&esco_enc->iis_cbuf, temp_iis_input_data, len);
         if (wlen != len) {
             printf("wlen:%d,len:%d\n", wlen, len);
         }

@@ -128,6 +128,7 @@ int sdfile_len(SDFILE *fp);
 int sdfile_get_name(SDFILE *fp, u8 *name, int len);
 int sdfile_get_attrs(SDFILE *fp, struct vfs_attr *attr);
 
+#if 0
 #define fopen 	sdfile_open
 #define fread 	sdfile_read
 #define fseek 	sdfile_seek
@@ -137,6 +138,46 @@ int sdfile_get_attrs(SDFILE *fp, struct vfs_attr *attr);
 #define fpos 	sdfile_pos
 #define fget_name 	sdfile_get_name
 #define fget_attrs 	sdfile_get_attrs
+#else
+
+static inline SDFILE *fopen(const char *path, const char *mode)
+{
+    return sdfile_open(path, mode);
+}
+static inline int fread(SDFILE *fp, void *buf, u32 len)
+{
+    return sdfile_read(fp, buf, len);
+}
+static inline int fwrite(SDFILE *fp, void *buf, u32 len)
+{
+    return sdfile_write(fp, buf, len);
+}
+static inline int fseek(SDFILE *fp, u32 offset, u32 fromwhere)
+{
+    return sdfile_seek(fp, offset, fromwhere);
+}
+static inline int fclose(SDFILE *fp)
+{
+    return sdfile_close(fp);
+}
+static inline int fpos(SDFILE *fp)
+{
+    return sdfile_pos(fp);
+}
+static inline int flen(SDFILE *fp)
+{
+    return sdfile_len(fp);
+}
+static inline int fget_name(SDFILE *fp, u8 *name, int len)
+{
+    return sdfile_get_name(fp, name, len);
+}
+static inline int fget_attrs(SDFILE *fp, struct vfs_attr *attr)
+{
+    return sdfile_get_attrs(fp, attr);
+}
+
+#endif
 
 #endif  /* VFS_ENABLE */
 

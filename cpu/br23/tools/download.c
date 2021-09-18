@@ -7,19 +7,17 @@
 ${OBJDUMP} -D -address-mask=0x1ffffff -print-dbg $1.elf > $1.lst
 ${OBJCOPY} -O binary -j .text $1.elf text.bin
 ${OBJCOPY} -O binary -j .data $1.elf data.bin
-${OBJCOPY} -O binary -j .data_code $1.elf data_code.bin
 
-${OBJCOPY} -O binary -j .overlay_aec $1.elf aeco.bin
 ${OBJCOPY} -O binary -j .overlay_wav $1.elf wav.bin
 ${OBJCOPY} -O binary -j .overlay_ape $1.elf ape.bin
 ${OBJCOPY} -O binary -j .overlay_flac $1.elf flac.bin
 ${OBJCOPY} -O binary -j .overlay_m4a $1.elf m4a.bin
 ${OBJCOPY} -O binary -j .overlay_amr $1.elf amr.bin
+${OBJCOPY} -O binary -j .overlay_aec $1.elf aeco.bin
 ${OBJCOPY} -O binary -j .overlay_dts $1.elf dts.bin
 ${OBJCOPY} -O binary -j .overlay_fm $1.elf fmo.bin
 ${OBJCOPY} -O binary -j .overlay_mp3 $1.elf mp3o.bin
 ${OBJCOPY} -O binary -j .overlay_wma $1.elf wmao.bin
-
 
 
 /opt/utils/remove_tailing_zeros -i aeco.bin -o aec.bin -mark ff
@@ -28,66 +26,28 @@ ${OBJCOPY} -O binary -j .overlay_wma $1.elf wmao.bin
 /opt/utils/remove_tailing_zeros -i wmao.bin -o wma.bin -mark ff
 
 
+bank_files=
+for i in $(seq 0 20)
+do
+    ${OBJCOPY} -O binary -j .overlay_bank$i $1.elf bank$i.bin
+    if [ ! -s bank$i.bin ]
+    then
+        break
+    fi
+    bank_files=$bank_files"bank$i.bin 0x0 "
+done
+echo $bank_files
+lz4_packet -dict text.bin -input common.bin 0 $bank_files -o bank.bin
+
+
 ${OBJDUMP} -section-headers -address-mask=0x1ffffff $1.elf
 ${OBJSIZEDUMP} -lite -skip-zero -enable-dbg-info $1.elf | sort -k 1 >  symbol_tbl.txt
 
+cat text.bin data.bin aec.bin wav.bin ape.bin flac.bin m4a.bin amr.bin dts.bin fm.bin  mp3.bin wma.bin > app.bin
 
-files="app.bin br23loader.bin br23loader.uart uboot.boot uboot.boot_debug uboot_no_ota.boot uboot_no_ota.boot_debug ota_all.bin ota_all_debug.bin ota_nor.bin ota_nor_debug.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe packres.exe json_to_res.exe md5sum.exe"
+files="app.bin ${CPU}loader.* uboot*  ota*.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
 
-#if(CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE)
-#if RCSP_UPDATE_EN
-
-NICKNAME="br23_app_ota"
-
-cp bluetooth/app_ota/isd_config.ini ./
-cp bluetooth/app_ota/download.bat ./
-
-#else
-
-NICKNAME="br23_sdk"
-
-cp bluetooth/standard/isd_config.ini ./
-cp bluetooth/standard/download.bat ./
-
-#endif
-
-cat text.bin data.bin data_code.bin \
-	> app.bin
-
-#else
-
-NICKNAME="br23_sdk"
-
-#if  CONFIG_WATCH_CASE_ENABLE
-#if  CONFIG_DOUBLE_BANK_ENABLE
-cp download/watch/isd_config_double_bank.ini ./isd_config.ini
-#else
-cp download/watch/isd_config.ini ./
-#endif
-cp download/watch/download.bat ./
-#elif  CONFIG_ICRECORDER_CASE_ENABLE
-cp download/ICrecorder/isd_config.ini ./
-cp download/ICrecorder/download.bat ./
-#else
-cp download/standard/isd_config.ini ./
-cp download/standard/download.bat ./
-#endif
-
-cat text.bin data.bin data_code.bin \
-	aec.bin \
-	wav.bin \
-	ape.bin \
-	flac.bin \
-	m4a.bin \
-	amr.bin \
-	dts.bin \
-	fm.bin \
-	mp3.bin \
-	wma.bin \
-	bank.bin \
-	> app.bin
-
-#endif
+NICKNAME="${CPU}_sdk"
 
 host-client -project ${NICKNAME}$2_${APP_CASE} -f ${files} $1.elf
 
@@ -102,7 +62,6 @@ rem @echo off
 @echo %date%
 
 cd %~dp0
-
 
 set OBJDUMP=C:\JL\pi32\bin\llvm-objdump.exe
 set OBJCOPY=C:\JL\pi32\bin\llvm-objcopy.exe
@@ -136,22 +95,8 @@ remove_tailing_zeros -i wmao.bin -o wma.bin -mark ff
 %OBJDUMP% -section-headers -address-mask=0x1ffffff %ELFFILE%
 %OBJDUMP% -t %ELFFILE% >  symbol_tbl.txt
 
-#if CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE
-copy /b text.bin+data.bin+data_code.bin+bank.bin app.bin
 
-#if TCFG_KWS_VOICE_RECOGNITION_ENABLE
-set kws_cfg=..\..\jl_kws.cfg
-#endif
-
-#if RCSP_UPDATE_EN
-bluetooth\app_ota\download.bat %kws_cfg%
-#else
-bluetooth\standard\download.bat %kws_cfg%
-#endif
-
-#else
 copy /b text.bin+data.bin+data_code.bin+aec.bin+wav.bin+ape.bin+flac.bin+m4a.bin+amr.bin+dts.bin+fm.bin+mp3.bin+wma.bin+bank.bin app.bin
-#endif      //endif CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE
 
 del aeco.bin
 del wav.bin
@@ -172,37 +117,16 @@ del data_code.bin
 del text.bin
 del *.bc
 
-#ifdef CONFIG_BOARD_AC695X_SOUNDCARD
-
-download\soundcard\download.bat
-
-#elif  CONFIG_WATCH_CASE_ENABLE
-#if  CONFIG_DOUBLE_BANK_ENABLE
-set ini_cfg=isd_config_double_bank.ini
+#ifdef CONFIG_WATCH_CASE_ENABLE
+call download/watch/download.bat
+#elif defined(CONFIG_SOUNDBOX_CASE_ENABLE)
+call download/soundbox/download.bat
+#elif defined(CONFIG_EARPHONE_CASE_ENABLE)
+call download/earphone/download.bat
+#elif defined(CONFIG_HID_CASE_ENABLE) ||defined(CONFIG_SPP_AND_LE_CASE_ENABLE)||defined(CONFIG_MESH_CASE_ENABLE)||defined(CONFIG_DONGLE_CASE_ENABLE)    //数传
+call download/data_trans/download.bat
 #else
-set ini_cfg=isd_config.ini
-#endif
-download\watch\download.bat %ini_cfg%
-
-#elif  CONFIG_ICRECORDER_CASE_ENABLE
-
-download\ICrecorder\download.bat
-
-
-#elif CONFIG_SPP_AND_LE_CASE_ENABLE || CONFIG_HID_CASE_ENABLE || CONFIG_MESH_CASE_ENABLE || CONFIG_GAMEBOX_CASE
-
-#if RCSP_UPDATE_EN
-bluetooth\app_ota\download.bat
-#else
-bluetooth\standard\download.bat
-#endif
-
-#else
-
-download\standard\download.bat
-
-#endif      //endif CONFIG_SOUNDBOX_CASE_ENABLE
+//to do other case
+#endif  //endif app_case
 
 #endif
-
-

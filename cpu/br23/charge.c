@@ -34,6 +34,7 @@ typedef struct _CHARGE_VAR {
     struct charge_platform_data *data;
     volatile u8 charge_online_flag;
     volatile u8 init_ok;
+    volatile u8 detect_stop;
     volatile u8 timer_period;
     volatile int ldo5v_timer;
     volatile int charge_timer;
@@ -360,6 +361,10 @@ static void ldo5v_detect(void *priv)
     static u16 ldo5v_in_err_cnt = 0;
     static u16 ldo5v_off_cnt = 0;
 
+    if (__this->detect_stop) {
+        return;
+    }
+
     if (LVCMP_DET_GET()) {	//ldoin > vbat
         /* putchar('X'); */
         ldo5v_off_cnt = 0;
@@ -384,14 +389,14 @@ static void ldo5v_detect(void *priv)
                 LVCMP_EDGE_SEL(1);	//检测ldoin比vbat电压低的情况(充电仓给电池充满后会关断，此时电压会掉下来)
                 LDO5V_EDGE_SEL(1);
                 //only for br23 fix charge wkup bug (ldoin 3.3v to 5v)
-                power_wakeup_index_disable(7);
+                /* power_wakeup_index_disable(7); */
             }
         }
     } else if (LDO5V_DET_GET() == 0) {	//ldoin<拔出电压（0.6）
         /* putchar('Q'); */
         ldo5v_in_normal_cnt = 0;
         ldo5v_in_err_cnt = 0;
-        if (ldo5v_off_cnt < (__this->data->ldo5v_off_filter + 10)) {
+        if (ldo5v_off_cnt < (__this->data->ldo5v_off_filter + 20)) {
             ldo5v_off_cnt++;
         } else {
             /* printf("ldo5V_OFF\n"); */
@@ -411,7 +416,7 @@ static void ldo5v_detect(void *priv)
 
                 charge_event_to_user(CHARGE_EVENT_LDO5V_OFF);
                 //only for br23 fix charge wkup bug (ldoin 3.3v to 5v)
-                power_wakeup_index_disable(7);
+                /* power_wakeup_index_disable(7); */
             }
         }
     } else {	//拔出电压（0.6左右）< ldoin < vbat
@@ -437,7 +442,7 @@ static void ldo5v_detect(void *priv)
                 }
 
                 //only for br23 fix charge wkup bug (ldoin 3.3v to 5v)
-                power_wakeup_index_enable(7);
+                /* power_wakeup_index_enable(7); */
                 if (__this->data->ldo5v_off_filter) {
                     charge_event_to_user(CHARGE_EVENT_LDO5V_KEEP);
                 }
@@ -473,6 +478,11 @@ static void test_func(void *priv)
     }
 }
 #endif
+
+void charge_set_ldo5v_detect_stop(u8 stop)
+{
+    __this->detect_stop = stop;
+}
 
 u8 get_charge_mA_config(void)
 {
@@ -579,6 +589,7 @@ int charge_init(const struct dev_node *node, void *arg)
 
     //only for br23 fix charge wkup bug (ldoin 3.3v to 5v)
     //原因:softoff后没有rc时钟唤醒的滤波逻辑不工作给不出唤醒信号
+#if 0
     struct port_wakeup port;
     port.pullup_down_enable = 0;
     port.edge = RISING_EDGE;
@@ -586,7 +597,7 @@ int charge_init(const struct dev_node *node, void *arg)
     port.iomap = IO_LDOIN_DET;
     power_wakeup_set_wakeup_io(7, &port);
     power_wakeup_index_disable(7);
-
+#endif
     if (check_charge_state()) {
         if (__this->ldo5v_timer == 0) {
             __this->ldo5v_timer = sys_hi_timer_add(0, ldo5v_detect, 2);

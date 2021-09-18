@@ -44,6 +44,8 @@ const struct audio_dec_format_hdl decode_format_list[] = {
 #if TCFG_DEC_WTGV2_ENABLE
     {"wts", AUDIO_CODING_WTGV2},
 #endif
+    {"speex", AUDIO_CODING_SPEEX},
+    {"opus", AUDIO_CODING_OPUS},
     {0, 0},
 };
 
@@ -84,7 +86,19 @@ int audio_dec_app_create_param_init(struct audio_dec_app_hdl *dec)
         dec->out_ch_num = audio_output_channel_num();
     }
 #else
-    dec->p_dac_hdl = &dac_hdl;
+    u8 dac_connect_mode =  audio_dac_get_channel(&dac_hdl);
+    switch (dac_connect_mode) {
+    /* case DAC_OUTPUT_DUAL_LR_DIFF: */
+    case DAC_OUTPUT_LR:
+        dec->out_ch_num = 2;
+        break;
+    /* case DAC_OUTPUT_FRONT_LR_REAR_LR: */
+    /* dec->out_ch_num = 4; */
+    /* break; */
+    default :
+        dec->out_ch_num = 1;
+        break;
+    }
 #endif
     return 0;
 }
@@ -228,6 +242,13 @@ void audio_dec_app_output_sr_set(struct audio_dec_app_hdl *dec)
     /* extern u32 audio_output_rate(int input_rate); */
     /* dec->src_out_sr = audio_output_rate(dec->src_out_sr); */
     /* #endif */
+    if (dec->src_out_sr == 0) {
+        dec->src_out_sr = audio_dac_get_sample_rate(&dac_hdl);
+        if (dec->src_out_sr == 0) {
+            dec->src_out_sr = 16000;
+            log_w("src out is zero \n");
+        }
+    }
     if (dec->sample_rate == 0) {
         dec->sample_rate = dec->src_out_sr;
     }

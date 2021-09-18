@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC6328B_DONGLE_H
 #define CONFIG_BOARD_AC6328B_DONGLE_H
 
+#include "board_ac6328b_dongle_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6328B_DONGLE
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -29,6 +30,7 @@
 //                                 USB 配置                                        //
 //*********************************************************************************//
 #define TCFG_PC_ENABLE						ENABLE_THIS_MOUDLE//PC模块使能
+#define USB_MEM_NO_USE_OVERLAY_EN	        1
 #define TCFG_USB_SLAVE_USER_HID             1
 #define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE//U盘模块使能
 #define TCFG_OTG_USB_DEV_EN                 BIT(0)//USB0 = BIT(0)  USB1 = BIT(1)
@@ -248,7 +250,7 @@
     VDDIOW_VOL_21V    VDDIOW_VOL_24V    VDDIOW_VOL_28V    VDDIOW_VOL_32V*/
 #define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_28V               //弱VDDIO等级配置
 #define TCFG_LOWPOWER_OSC_TYPE              OSC_TYPE_LRC
-
+#define TCFG_VD13_CAP_EN					0							//外部无接电容不要使能，否则跑挂!
 
 //*********************************************************************************//
 //                                  g-sensor配置                                   //
@@ -274,11 +276,11 @@
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
 #define TCFG_USER_EDR_ENABLE                      0   //EDR功能使能
 
-#define USER_SUPPORT_PROFILE_SPP    1
+#define USER_SUPPORT_PROFILE_SPP    0
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
 #define USER_SUPPORT_PROFILE_AVCTP  0
-#define USER_SUPPORT_PROFILE_HID    0
+#define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    0
 #define USER_SUPPORT_PROFILE_PBAP   0
 

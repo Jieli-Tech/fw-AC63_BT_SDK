@@ -5,16 +5,14 @@
   os_init = ABSOLUTE(0x10fe08);
   os_start = ABSOLUTE(0x10fe0c);
   os_get_curr_tcb_var = ABSOLUTE(0x10fe10);
-  os_task_create = ABSOLUTE(0x10fe14);
+  os_task_create_rom = ABSOLUTE(0x10fe14);
   os_current_task_rom = ABSOLUTE(0x10fe18);
   os_time_dly = ABSOLUTE(0x10fe1c);
   os_time_get = ABSOLUTE(0x10fe20);
   os_task_del_req = ABSOLUTE(0x10fe24);
   os_task_del_res = ABSOLUTE(0x10fe28);
   os_task_del = ABSOLUTE(0x10fe2c);
-  __os_taskq_pend = ABSOLUTE(0x10fe30);
   os_taskq_pend = ABSOLUTE(0x10fe34);
-  os_task_pend_rom = ABSOLUTE(0x10fe38);
   __os_taskq_post_rom = ABSOLUTE(0x10fe3c);
   /* os_taskq_post = ABSOLUTE(0x10fe40); */
   /* os_taskq_post_type = ABSOLUTE(0x10fe44); */

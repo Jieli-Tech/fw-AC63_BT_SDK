@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC6368A_KEYFOB_H
 #define CONFIG_BOARD_AC6368A_KEYFOB_H
 
+#include "board_ac6368a_keyfob_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6368A_KEYFOB
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //

@@ -22,7 +22,7 @@
 
 #if TCFG_KWS_VOICE_RECOGNITION_ENABLE
 #include "jl_kws/jl_kws_api.h"
-#endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE */
+#endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE *//
 
 #define LOG_TAG_CONST       APP
 #define LOG_TAG             "[APP]"
@@ -33,13 +33,14 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+
 /*任务列表 */
 const struct task_info task_info_table[] = {
     {"app_core",            1,     640,   128  },
     {"sys_event",           7,     256,   0    },
     {"btctrler",            4,     512,   256  },
     {"btencry",             1,     512,   128  },
-    {"btstack",             3,     768,  256  },
+    {"btstack",             3,     768,   256  },
     {"systimer",		    7,	   128,   0		},
     {"update",				1,	   320,   0		},
 #if CONFIG_APP_GAMEBOX
@@ -108,29 +109,41 @@ void app_main()
 #endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE */
 
     init_intent(&it);
-#if (CONFIG_APP_MOUSE)
-    it.name = "mouse";
+
+#if(CONFIG_APP_KEYBOARD)
+    it.name = "hid_key";
+    it.action = ACTION_HID_MAIN;
+#elif (CONFIG_APP_MOUSE_SINGLE)
+    it.name = "mouse_single";
     it.action = ACTION_MOUSE_MAIN;
+#elif (CONFIG_APP_MOUSE_DUAL)
+    it.name = "mouse_dual";
+    it.action = ACTION_MOUSE_DUAL_MAIN;
 #elif(CONFIG_APP_KEYFOB)
     it.name = "keyfob";
     it.action = ACTION_KEYFOB;
-#elif(CONFIG_APP_KEYBOARD)
-    it.name = "hid_key";
-    it.action = ACTION_HID_MAIN;
 #elif(CONFIG_APP_STANDARD_KEYBOARD)
-    it.name = "hid_key";
-    it.action = ACTION_HID_MAIN;
+    it.name = "standard_keyboard";
+    it.action = ACTION_STANDARD_KEYBOARD;
 #elif(CONFIG_APP_KEYPAGE)
     it.name = "keypage";
     it.action = ACTION_KEYPAGE;
 #elif(CONFIG_APP_GAMEBOX)
     it.name = "gamebox";
     it.action = ACTION_GAMEBOX;
+#elif(CONFIG_APP_REMOTE_CONTROL)
+    it.name = "hid_vrc";
+    it.action = ACTION_REMOTE_CONTROL;
+#elif(CONFIG_APP_IDLE)
+    it.name = "idle";
+    it.action = ACTION_IDLE_MAIN;
 #else
-    ASSERT(0, "no app!!!");
+    while (1) {
+        printf("no app!!!");
+    }
 #endif
 
-    log_info("run app>>>%s", it.name);
+    log_info("run app>>> %s", it.name);
 
     start_app(&it);
 }

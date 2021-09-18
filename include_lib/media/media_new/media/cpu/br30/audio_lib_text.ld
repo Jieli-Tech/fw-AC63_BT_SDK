@@ -2,6 +2,9 @@
 		. = ALIGN(4);
         media_text_start = .;
 
+		. = ALIGN(4);
+        *(.dns_16k_data)
+        *(.dns_8k_data)
         /*
 		*(.aec_code)
 		*(.aec_const)
@@ -75,6 +78,10 @@
         *(.mp3_decstream_code)
         *(.mp3_decstream_const)
         *(.mp3_decstream_sparse_code)
+
+        *(.adpcm_encode_sparse_code)
+        *(.adpcm_encode_code)
+        *(.adpcm_encode_const) 
         /**(.bfilt_code)*/
 		*(.msbc_code)
 		*(.msbc_const)
@@ -82,6 +89,9 @@
 		/* *(.mty_const) */
 		*(.sbc_code)
 		*(.sbc_const)
+ *(.sbc_eng_code)
+ *(.sbc_eng_const)
+*(.sbc_encoder_code)
 		*(.sine_code)
 		*(.sine_const)
         *(.wav_code)
@@ -113,6 +123,8 @@
 		/* *(.ape_const) */
 		*(.audio_decoder_code)
 		*(.audio_decoder_const)
+        *(.audio_track_const)
+        *(.audio_track_code)
 		/* *(.cvsd_code) */
 		/* *(.cvsd_const) */
 		/* *(.dts_code) */
@@ -206,15 +218,24 @@
 		*(.limiter_const)
 		*(.bt_limiter_const)
 		*(.bt_limiter_code)
-	. = ALIGN(4);
+	    . = ALIGN(4);
 		*(.sur_cal_const)
 		*(.sur_cal_code)
-	. = ALIGN(4);
-	*(.lib_pitchshift_code)
-	*(.lib_pitchshift_const)
-	. = ALIGN(4);
+	    . = ALIGN(4);
+	    *(.lib_pitchshift_code)
+	    *(.lib_pitchshift_const)
+	    . = ALIGN(4);
         *(.lc3_decoder_code)
         *(.lc3_decoder_const)
+        *(.lf_audioplc_sparse_code)
+        *(.lf_audioplc_code)
+        *(.lf_audioplc_const)
+	    . = ALIGN(4);
+        *(.speex_code)
+	    *(.opus_code)
+	    *(.opus_encoder_code)
+	    *(.speex_encoder_code)
+	    . = ALIGN(4);
 
     	media_code_end = .;
 		. = ALIGN(4);

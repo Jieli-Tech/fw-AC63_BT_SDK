@@ -167,7 +167,7 @@ struct audio_mixer_ch {
     s16 end_sample[MIXER_AUDIO_CHANNEL_NUM];
 #endif
     u16 points_len;		// 数据长度
-    u16 start_points;	// 初始化数据长度。默认为mixer->points/2
+    u16 start_points;	// 初始化数据长度。默认为0
     u32 sample_rate;	// 当前通道采样率
     u32 sample_rate_follow;	// 当前通道follow采样率。follow_resample==1有效
     struct list_head list_entry;	// 链表

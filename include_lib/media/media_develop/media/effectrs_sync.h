@@ -117,6 +117,7 @@ int audio_sync_set_remain_len(void *c, int len);
      defined CONFIG_CPU_BR25 || \
      defined CONFIG_CPU_BR30 || \
      defined CONFIG_CPU_BR34 || \
+	 defined CONFIG_CPU_BR18 || \
      defined CONFIG_CPU_BR28)
 /*
  * BR26同步

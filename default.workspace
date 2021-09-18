@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_workspace_file>
+	<Workspace title="Workspace">
+		<Project filename="apps/hid/board/bd19/AC632N_hid.cbp" />
+		<Project filename="apps/hid/board/bd29/AC631N_hid.cbp" />
+		<Project filename="apps/hid/board/br34/AC638N_hid.cbp" />
+		<Project filename="apps/hid/board/br23/AC635N_hid.cbp" />
+		<Project filename="apps/hid/board/br30/AC637N_hid.cbp" />
+		<Project filename="apps/hid/board/br25/AC636N_hid.cbp" />
+		<Project filename="apps/mesh/board/bd19/AC632N_mesh.cbp" />
+		<Project filename="apps/mesh/board/bd29/AC631N_mesh.cbp" />
+		<Project filename="apps/mesh/board/br34/AC638N_mesh.cbp" />
+		<Project filename="apps/mesh/board/br23/AC635N_mesh.cbp" />
+		<Project filename="apps/mesh/board/br30/AC637N_mesh.cbp" />
+		<Project filename="apps/mesh/board/br25/AC636N_mesh.cbp" />
+		<Project filename="apps/spp_and_le/board/bd19/AC632N_spp_and_le.cbp" />
+		<Project filename="apps/spp_and_le/board/bd29/AC631N_spp_and_le.cbp" />
+		<Project filename="apps/spp_and_le/board/br34/AC638N_spp_and_le.cbp" />
+		<Project filename="apps/spp_and_le/board/br23/AC635N_spp_and_le.cbp" />
+		<Project filename="apps/spp_and_le/board/br30/AC637N_spp_and_le.cbp" />
+		<Project filename="apps/spp_and_le/board/br25/AC636N_spp_and_le.cbp" />
+	</Workspace>
+</CodeBlocks_workspace_file>

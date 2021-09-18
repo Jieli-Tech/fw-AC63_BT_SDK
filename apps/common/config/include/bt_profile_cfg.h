@@ -6,7 +6,7 @@
 #include "btcontroller_modules.h"
 
 
-#if (TRANS_DATA_EN || RCSP_BTMATE_EN || RCSP_ADV_EN || SMART_BOX_EN || ANCS_CLIENT_EN || LL_SYNC_EN)
+#if (TRANS_DATA_EN || RCSP_BTMATE_EN || RCSP_ADV_EN || SMART_BOX_EN || ANCS_CLIENT_EN || LL_SYNC_EN || TUYA_DEMO_EN)
 #ifndef BT_FOR_APP_EN
 #define    BT_FOR_APP_EN             1
 #endif
@@ -22,7 +22,7 @@
 
 ///---sdp service record profile- 用户选择支持协议--///
 #if (BT_FOR_APP_EN || APP_ONLINE_DEBUG || AI_APP_PROTOCOL)
-#if LL_SYNC_EN
+#if (LL_SYNC_EN || TUYA_DEMO_EN)
 #undef USER_SUPPORT_PROFILE_SPP
 #define USER_SUPPORT_PROFILE_SPP    0
 #else
@@ -41,6 +41,8 @@
 #define DEF_BLE_ANCS_ADV				  9
 #define DEF_BLE_DEMO_MULTI                11 //
 #define DEF_BLE_DEMO_LL_SYNC              13 //
+#define DEF_BLE_DEMO_WIRELESS_MIC_SERVER  14 //
+#define DEF_BLE_DEMO_WIRELESS_MIC_CLIENT  15 //
 
 //配置选择的demo
 #if TCFG_USER_BLE_ENABLE
@@ -70,6 +72,12 @@
 
 #elif AI_APP_PROTOCOL
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_NULL
+
+#elif (BLE_WIRELESS_MIC_CLIENT_EN)
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_WIRELESS_MIC_CLIENT
+
+#elif (BLE_WIRELESS_MIC_SERVER_EN)
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_WIRELESS_MIC_SERVER
 
 #else
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_ADV

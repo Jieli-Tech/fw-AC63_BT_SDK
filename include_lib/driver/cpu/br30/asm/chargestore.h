@@ -16,6 +16,8 @@ enum {
     TYPE_F95,
 };
 
+#define LDOIN_BIND_IO   IO_PORTP_00
+
 struct chargestore_platform_data {
     u32 baudrate;
     u32 io_port;

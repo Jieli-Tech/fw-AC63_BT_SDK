@@ -1,10 +1,12 @@
 ﻿#ifndef effectSUR_api_h__
 #define effectSUR_api_h__
 
-/*单声道输入时，channel设置*/
+/*单耳输入时，channel设置*/
 enum {
     EFFECT_CH_L = 0x10,                 //单声道输入，输出左声道
     EFFECT_CH_R = 0x20,                 //单声道输入，输出右声道
+    EFFECT_CH2_L = 0x30,                  //双声道输入，输出2个左声道
+    EFFECT_CH2_R = 0x40,                  //双声道输入，输出2个右声道
 };
 
 enum {

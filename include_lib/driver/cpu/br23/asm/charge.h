@@ -109,5 +109,6 @@ extern void charge_check_and_set_pinr(u8 mode);
 extern u16 get_charge_full_value(void);
 int charge_api_init(void *arg);
 extern const struct device_operations charge_dev_ops;
+extern void charge_set_ldo5v_detect_stop(u8 stop);
 
 #endif    //_CHARGE_H_

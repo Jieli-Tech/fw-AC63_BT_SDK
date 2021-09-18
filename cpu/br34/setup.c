@@ -95,6 +95,7 @@ void cpu_assert_debug()
     local_irq_disable();
     while (1);
 #else
+    P3_PCNT_SET0 = 0xac;
     cpu_reset();
 #endif
 }

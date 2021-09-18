@@ -248,7 +248,6 @@ void matrix_key_scan(void)
     //p33_tx_1byte(P3_WKUP_EN, 0xff);
     //P33_LEVEL_WKUP_EN(1);
 
-    JL_PORTC->OUT &=  ~(BIT(4));
 
     if (notify) {
         struct sys_event e;

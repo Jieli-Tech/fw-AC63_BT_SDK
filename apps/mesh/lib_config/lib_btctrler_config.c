@@ -104,9 +104,12 @@ const int config_btctler_le_rx_nums = 10;
 const int config_btctler_le_acl_packet_length = 27;
 const int config_btctler_le_acl_total_nums = 10;
 
-const int config_btctler_le_slave_conn_update_winden = 2500;//range:100 to 2500
+const int config_btctler_le_slave_conn_update_winden = 1500;//range:100 to 2500
 
 const int ble_disable_wait_enable = 1;                      //不开启wait_enable会导致升级调用ll_destory的时候出现BT访问mmu异常
+
+// LE vendor baseband
+const u32 config_vendor_le_bb = 0;
 
 /*-----------------------------------------------------------*/
 /**

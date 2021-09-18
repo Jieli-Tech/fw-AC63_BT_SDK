@@ -43,13 +43,13 @@ extern "C" {
 
 
     typedef enum {
-        ATT_OP_AUTO_READ_CCC = 0,
-        ATT_OP_NOTIFY = 1,
-        ATT_OP_INDICATE = 2,
-        ATT_OP_READ,
-        ATT_OP_READ_LONG,
-        ATT_OP_WRITE,
-        ATT_OP_WRITE_WITHOUT_RESPOND,
+        ATT_OP_AUTO_READ_CCC = 0,    //server端 检查对方使能通知CCC来控制 notify or indicate发送
+        ATT_OP_NOTIFY = 1,           //server端 默认notify方式发送，不检查使能通知CCC   (不需要对方回应答包,没有流控)
+        ATT_OP_INDICATE = 2,         //server端 默认INDICATE方式发送，不检查使能通知CCC (需要对方回应答包,有流控)
+        ATT_OP_READ,                 //client端 单次读, 用于获取<=MTU 的数据包    (需要对方回应答包,有流控)
+        ATT_OP_READ_LONG,            //client端 多次读，用于支持获取>MTU 的数据包 (需要对方回应答包,有流控)
+        ATT_OP_WRITE,                //client端 写发送 (需要对方回应答包,有流控)
+        ATT_OP_WRITE_WITHOUT_RESPOND,//client端 写发送 (不需要对方回应答包,没有流控)
         //add here
 
         ATT_OP_CMD_MAX = 15,
@@ -57,28 +57,28 @@ extern "C" {
 
 //------
     typedef struct {
-        uint16_t start_group_handle;
+        uint16_t start_group_handle;//
         uint16_t end_group_handle;
-        uint16_t uuid16;
+        uint16_t uuid16;            //为0则是 uuid128
         uint8_t  uuid128[16];
     } service_report_t; //==le_service_t
 
     typedef struct {
         uint16_t start_handle;
-        uint16_t value_handle;
+        uint16_t value_handle; //属性操作handle
         uint16_t end_handle;
-        uint16_t properties;
-        uint16_t uuid16;
+        uint16_t properties;   //属性对应 ATT_PROPERTY_XXX
+        uint16_t uuid16;       //为0则是 uuid128
         uint8_t  uuid128[16];
     } charact_report_t; //==le_characteristic_t
 
     typedef struct {
-        u16  packet_type;
-        u16  value_handle;
-        u16  value_offset;
-        u16  blob_length;
-        u8  *blob;
-        u16  conn_handle;
+        u16  packet_type;  //数据包类型(notify,indicate,read_respone,...)
+        u16  value_handle; //属性操作handle
+        u16  value_offset; //包偏移
+        u16  blob_length;  //包长度
+        u8  *blob;         //包内容
+        u16  conn_handle;  //连接handle
     } att_data_report_t;
 
 
@@ -90,14 +90,20 @@ extern "C" {
     } search_result_t;
 
     void att_ccc_config_init(void);
-
     void att_set_ccc_config(uint16_t handle, uint16_t cfg);
-
     uint16_t att_get_ccc_config(uint16_t handle);
-
     void att_server_set_exchange_mtu(u16 con_handle);
-
     void att_set_db(uint8_t const *db);//change profile_data
+
+    //多机接口
+    //初始化 CCC管理
+    void multi_att_ccc_config_init(void);
+    //设置CCC
+    void multi_att_set_ccc_config(uint16_t conn_handle, uint16_t att_handle, uint16_t cfg);
+    //获取CCC的值
+    uint16_t multi_att_get_ccc_config(uint16_t conn_handle, uint16_t att_handle);
+    //断开, 清链路CCC
+    int multi_att_clear_ccc_config(uint16_t conn_handle);
 
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value

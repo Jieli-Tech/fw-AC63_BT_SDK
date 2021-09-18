@@ -11,7 +11,7 @@
 // #define CONFIG_BOARD_AC6369C_DEMO   //
 // #define CONFIG_BOARD_AC6368A_KEYFOB   // CONFIG_APP_KEYFOB
 // #define CONFIG_BOARD_AC6369F_MOUSE    // CONFIG_APP_MOUSE
-// #define CONFIG_BOARD_AC6363F_MOUSE    // CONFIG_APP_MOUSE
+// #define CONFIG_BOARD_AC6363F_MOUSE    // CONFIG_APP_MOUSE_XXX
 
 #include "board_ac636n_demo_cfg.h"
 #include "board_ac6366c_demo_cfg.h"

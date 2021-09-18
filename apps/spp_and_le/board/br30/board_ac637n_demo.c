@@ -179,7 +179,7 @@ struct adc_platform_data adc_data = {
 	.mic_ldo_isel   = TCFG_AUDIO_ADC_LD0_SEL,
 /*MIC LDO电压档位设置,也会影响MIC的偏置电压0:1.5v  1:8v  2:2.1v  3:2.4v 4:2.7v 5:3.0 */
 	.mic_ldo_vsel  = 3,
-/*MIC免电容方案需要设置，影响MIC的偏置电压
+/*MIC内部上拉电阻挡位配置，影响MIC的偏置电压
     21:1.18K	20:1.42K 	19:1.55K 	18:1.99K 	17:2.2K 	16:2.4K 	15:2.6K		14:2.91K	13:3.05K 	12:3.5K 	11:3.73K
 	10:3.91K  	9:4.41K 	8:5.0K  	7:5.6K		6:6K		5:6.5K		4:7K		3:7.6K		2:8.0K		1:8.5K				*/
     .mic_bias_res   = 18,
@@ -196,7 +196,7 @@ struct adc_platform_data adc_data = {
 	.mic1_ldo_isel   = TCFG_AUDIO_ADC_LD0_SEL,
 /*MIC1 LDO电压档位设置,也会影响MIC的偏置电压0:1.5v  1:8v  2:2.1v  3:2.4v 4:2.7v 5:3.0 */
 	.mic1_ldo_vsel  = 3,
-/*MIC1免电容方案需要设置，影响MIC的偏置电压
+/*MIC1内部上拉电阻挡位配置，影响MIC的偏置电压
     21:1.18K	20:1.42K 	19:1.55K 	18:1.99K 	17:2.2K 	16:2.4K 	15:2.6K		14:2.91K	13:3.05K 	12:3.5K 	11:3.73K
 	10:3.91K  	9:4.41K 	8:5.0K  	7:5.6K		6:6K		5:6.5K		4:7K		3:7.6K		2:8.0K		1:8.5K				*/
     .mic1_bias_res   = 18,

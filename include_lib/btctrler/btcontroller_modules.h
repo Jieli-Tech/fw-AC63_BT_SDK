@@ -175,6 +175,16 @@ void bt_osc_offset_ext_updata(s32 offset);
  * @param ble_pwr ble 发射功率
  */
 /* ----------------------------------------------------------------------------*/
+/*
+蓝牙TX发射功率档位, 参考功率值(dbm) ,超过等级范围默认设置为最高档
+BD29: rang(0~8)  {-18.3,  -14.6,  -12.1, -8.5,  -6.0,  -4.1,  -1.1,  +1.1,  +4.0,  +6.1}
+BD19: rang(0~10) {-17.6,  -14.0,  -11.5, -9.6,  -6.6,  -4.4,  -0.79, +1.12, +3.8,  +5.65, +8.04}
+BR23: rang(0~9)  {-15.7,  -12.5,  -10.0, -6.6,  -4.4,  -2.5,  -0.1,  +2.1,  +4.6,  +6.4}
+BR25: rang(0~9)  {-15.7,  -12.5,  -10.0, -6.6,  -4.4,  -2.5,  -0.1,  +2.1,  +4.6,  +6.4}
+BR30: rang(0~8)  {-17.48, -11.46, -7.96, -3.59, -0.79, +1.12, +3.8,  +6.5,  +8.44}
+BR34: rang(0~10) {-17.6,  -14.0,  -11.5, -9.6,  -6.6,  -4.4,  -1.8,  0,     +2.1,  +4,    +6.3}
+*/
+
 void bt_max_pwr_set(u8 pwr, u8 pg_pwr, u8 iq_pwr, u8 ble_pwr);
 
 /* --------------------------------------------------------------------------*/
@@ -211,8 +221,8 @@ void bredr_set_fix_pwr(u8 fix);
 /**
  * @brief ble_rf_vendor_fixed_channel
  *
- * @param channel_index: range 0~39 fixed freq, or 0xff --close fixed
- * @param pktcnt:        range 1~3
+ * @param channel_index: 指定信道定频:          range 0~39 fixed freq, or 0xff --close fixed,default 37、38、39
+ * @param pktcnt:        adv方式,1次发包的个数: range 1~3
  * 配置ble 的 adv、scan、init 状态定频
  */
 /* ----------------------------------------------------------------------------*/
@@ -259,5 +269,9 @@ void set_bt_afh_classs_enc(u8 afh_class);
 void set_bt_enhanced_power_control(u8 en);
 
 void set_bt_full_name_event(u8 en);
+
+/* coexist between bt chips */
+void bt_wl_coex_init(uint8_t state);
+void bt_wl_coex_enable(bool enable);
 
 #endif

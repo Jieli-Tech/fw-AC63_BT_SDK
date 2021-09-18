@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC6351D_KEYBOARD_CFG_H
 #define CONFIG_BOARD_AC6351D_KEYBOARD_CFG_H
 
+#include "board_ac6351d_keyboard_global_build_cfg.h"
+
 #ifdef  CONFIG_BOARD_AC6351D_KEYBOARD
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -24,6 +25,26 @@
 #define TCFG_UART0_RX_PORT					NO_CONFIG_PORT                         //串口接收脚配置（用于打印可以选择NO_CONFIG_PORT）
 #define TCFG_UART0_TX_PORT  				IO_PORTC_05                            //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
+
+//*********************************************************************************//
+//                                 USB 配置                                        //
+//*********************************************************************************//
+
+#define TCFG_PC_ENABLE                      DISABLE_THIS_MOUDLE//PC模块使能
+#define TCFG_UDISK_ENABLE                   DISABLE_THIS_MOUDLE//U盘模块使能
+#define TCFG_HID_HOST_ENABLE                DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE  //游戏盒子模式
+#define TCFG_ADB_ENABLE                     DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
+#define TCFG_AOA_ENABLE                     DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
+
+#define TCFG_USB_SLAVE_USER_HID            1
+#define TCFG_OTG_USB_DEV_EN                0// (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
+
+
+#include "usb_std_class_def.h"
+
+///USB 配置重定义
+#undef USB_DEVICE_CLASS_CONFIG
+#define USB_DEVICE_CLASS_CONFIG                   (HID_CLASS)
 
 //*********************************************************************************//
 //                                 IIC配置                                        //
@@ -395,7 +416,11 @@ DAC硬件上的连接方式,可选的配置：
 /*强VDDIO等级配置,可选：
     VDDIOM_VOL_20V    VDDIOM_VOL_22V    VDDIOM_VOL_24V    VDDIOM_VOL_26V
     VDDIOM_VOL_30V    VDDIOM_VOL_30V    VDDIOM_VOL_32V    VDDIOM_VOL_36V*/
+#if TCFG_PC_ENABLE //need 3.4v以上
+#define TCFG_LOWPOWER_VDDIOM_LEVEL			VDDIOM_VOL_34V
+#else
 #define TCFG_LOWPOWER_VDDIOM_LEVEL			VDDIOM_VOL_30V
+#endif
 /*弱VDDIO等级配置，可选：
     VDDIOW_VOL_21V    VDDIOW_VOL_24V    VDDIOW_VOL_28V    VDDIOW_VOL_32V*/
 #define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_28V               //弱VDDIO等级配置
@@ -442,7 +467,7 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
 #define TCFG_SYS_LVD_EN						      1    //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
-#define TCFG_HID_AUTO_SHUTDOWN_TIME             (6 * 60)      //HID无操作自动关机(单位：秒)
+#define TCFG_HID_AUTO_SHUTDOWN_TIME             (1 * 30)      //HID无操作自动关机(单位：秒)
 
 //*********************************************************************************//
 //                                  蓝牙配置                                       //
@@ -451,13 +476,15 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_USER_BLE_ENABLE                      0   //BLE功能使能
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
+#if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    0
-#define USER_SUPPORT_PROFILE_HFP    1
-#define USER_SUPPORT_PROFILE_A2DP   1
-#define USER_SUPPORT_PROFILE_AVCTP  1
+#define USER_SUPPORT_PROFILE_HFP    0
+#define USER_SUPPORT_PROFILE_A2DP   0
+#define USER_SUPPORT_PROFILE_AVCTP  0
 #define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    1
 #define USER_SUPPORT_PROFILE_PBAP   0
+#endif
 
 #if TCFG_USER_TWS_ENABLE
 #define TCFG_BD_NUM						          1   //连接设备个数配置
@@ -483,7 +510,7 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 //                                 时钟切换配置                                    //
 //*********************************************************************************//
-#define CONFIG_BT_NORMAL_HZ	            (24 * 1000000L)
+#define CONFIG_BT_NORMAL_HZ	            (48 * 1000000L)
 
 //*********************************************************************************//
 //                                 配置结束                                         //

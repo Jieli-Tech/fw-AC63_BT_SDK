@@ -17,30 +17,29 @@ typedef int (*audio_drc_filter_cb)(struct audio_drc_filter_info *info);
 #endif
 
 struct audio_drc_param {
-    u32 channels : 2;           //通道数
+    u32 channels : 8;           //通道数 (channels|(L_wdrc))或(channels|(R_wdrc))
     u32 online_en : 1;          //是否支持在线调试
     u32 remain_en : 1;          //写1
     u32 stero_div : 1;          //是否左右声道 拆分的  drc效果,一般写0
-    u32 reserved : 22;
+    u32 reserved : 21;
     audio_drc_filter_cb cb;     //系数更新的回调函数，用户赋值
     u8 drc_name;                //在线调试是，根据drc_name区分更新系数,一般写0
 #ifdef EQ_CORE_V1
     u8 out_32bit;               //是否支持32bit 的输入数据处理  1:使能  0：不使能
     u32 sr;                     //数据采样率
-
 #endif
 };
 
 struct audio_drc {
     struct drc_ch sw_drc[2];    //软件drc 系数地址
-    u32 sr : 16;                    //采样率
-    u32 channels : 2;           //通道数
+    u32 sr;                    //采样率
+    u32 channels : 8;           //通道数(channels|(L_wdrc))或(channels|(R_wdrc))
     u32 remain_flag : 1;        //输出数据支持remain
     u32 updata : 1;             //系数更标志
     u32 online_en : 1;          //是否支持在线更新系数
     u32 remain_en : 1;          //是否支持remain输出
     u32 start : 1;              //无效
-    u32 run32bit : 1;           //是否使能32bit位宽数据处理1:使能  0：不使能
+    u32 run32bit : 8;           //是否使能32bit位宽数据处理1:使能  0：不使能
     u32 need_restart : 1;       //是否需要重更新系数 1:是  0：否
     u32 stero_div : 1;          //是否左右声道拆分的drc效果,1：是  0：否
     audio_drc_filter_cb cb;     //系数更新回调

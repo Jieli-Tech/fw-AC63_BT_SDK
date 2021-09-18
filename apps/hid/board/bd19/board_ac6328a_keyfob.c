@@ -33,7 +33,7 @@ const struct low_power_param power_param = {
     .vddiow_lev     = TCFG_LOWPOWER_VDDIOW_LEVEL,          //弱VDDIO等级,可选：2.1V  2.4V  2.8V  3.2V
     .osc_type       = TCFG_LOWPOWER_OSC_TYPE,
     .lpctmu_en 		= TCFG_LP_TOUCH_KEY_ENABLE,
-    /* .vd13_cap_en    = TCFG_VD13_CAP_EN,                    //配置BTVDD是否有外接电容，接了电容不开会跑不起来。 */
+    .vd13_cap_en    = TCFG_VD13_CAP_EN,
 };
 
 

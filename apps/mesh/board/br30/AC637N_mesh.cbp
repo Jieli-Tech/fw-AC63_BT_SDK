@@ -22,17 +22,26 @@
 <Add option="-fprefer-gnu-section" />
 <Add option="-Wno-shift-negative-value" />
 <Add option="-Wundef" />
+<Add option="-Wframe-larger-than=256" />
 <Add option="-fms-extensions" />
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
 <Add option="-w" />
-<Add option="-DCONFIG_CPU_BR30" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
+<Add option="-DCONFIG_CPU_BR30" />
 <Add option="-DCONFIG_SUPPORT_WIFI_DETECT" />
 <Add option="-DCONFIG_NEW_BREDR_ENABLE" />
 <Add option="-DCONFIG_FREE_RTOS_ENABLE" />
 <Add option="-DCONFIG_EQ_SUPPORT_ASYNC" />
-<Add option="-DTCFG_APP_BT_EN=1" />
-<Add option="-DUSB_PC_NO_APP_MODE" />
+<Add option="-DCONFIG_ASR_ENABLE" />
+<Add option="-DCONFIG_DMS_MALLOC" />
+<Add option="-DCONFIG_MMU_ENABLE" />
+<Add option="-DCONFIG_SBC_CODEC_HW" />
+<Add option="-DCONFIG_MSBC_CODEC_HW" />
+<Add option="-DCONFIG_AEC_M=256" />
+<Add option="-DCONFIG_AUDIO_ONCHIP" />
+<Add option="-DCONFIG_MEDIA_NEW_ENABLE" />
+<Add option="-D__GCC_PI32V2__" />
+<Add option="-DCONFIG_NEW_ECC_ENABLE" />
 <Add option="-DEVENT_HANDLER_NUM_CONFIG=2" />
 <Add option="-DEVENT_TOUCH_ENABLE_CONFIG=0" />
 <Add option="-DEVENT_POOL_SIZE_CONFIG=256" />
@@ -52,20 +61,13 @@
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
 <Add option="-DCONFIG_LINK_DISTURB_SCAN_ENABLE=0" />
+<Add option="-DCONFIG_BTCTRLER_TASK_DEL_ENABLE" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
 <Add option="-DCONFIG_OTA_UPDATA_ENABLE" />
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
-<Add option="-DCONFIG_CURRENT_SOUND_DEAL_ENABLE" />
-<Add option="-DCONFIG_ASR_ENABLE" />
-<Add option="-DCONFIG_DMS_MALLOC" />
-<Add option="-DCONFIG_MMU_ENABLE" />
-<Add option="-DCONFIG_SBC_CODEC_HW" />
-<Add option="-DCONFIG_MSBC_CODEC_HW" />
-<Add option="-DCONFIG_AEC_M=256" />
-<Add option="-DCONFIG_AUDIO_ONCHIP" />
-<Add option="-DCONFIG_MEDIA_NEW_ENABLE" />
-<Add option="-D__GCC_PI32V2__" />
-<Add option="-DCONFIG_NEW_ECC_ENABLE" />
+<Add option="-DTCFG_APP_BT_EN=1" />
+<Add option="-DUSB_PC_NO_APP_MODE" />
+<Add option="-D__LD__" />
 <Add directory="../../../../include_lib" />
 <Add directory="../../../../include_lib/driver" />
 <Add directory="../../../../include_lib/driver/device" />
@@ -115,40 +117,42 @@
 <Add option="--plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar" />
 <Add option="--plugin-opt=save-temps" />
 <Add option="--plugin-opt=-pi32v2-enable-rep-memop" />
+<Add option="--plugin-opt=-warn-stack-size=256" />
 <Add option="--sort-common" />
 <Add option="--dont-complain-call-overflow" />
 <Add option="--plugin-opt=-used-symbol-file=../../../../cpu/br30/sdk_used_list.used" />
 <Add option="--start-group" />
-<Add option="../../../../include_lib/liba/br30/cpu.a" />
-<Add option="../../../../include_lib/liba/br30/system.a" />
-<Add option="../../../../include_lib/liba/br30/btstack.a" />
-<Add option="../../../../include_lib/liba/br30/btctrler.a" />
-<Add option="../../../../include_lib/liba/br30/rcsp_stack.a" />
-<Add option="../../../../include_lib/liba/br30/libepmotion.a" />
-<Add option="../../../../include_lib/liba/br30/libAptFilt_pi32v2_OnChip.a" />
-<Add option="../../../../include_lib/liba/br30/libEchoSuppress_pi32v2_OnChip.a" />
-<Add option="../../../../include_lib/liba/br30/libNoiseSuppress_pi32v2_OnChip.a" />
-<Add option="../../../../include_lib/liba/br30/libSplittingFilter_pi32v2_OnChip.a" />
-<Add option="../../../../include_lib/liba/br30/libDelayEstimate_pi32v2_OnChip.a" />
-<Add option="../../../../include_lib/liba/br30/libOpcore_maskrom_pi32v2_OnChip.a" />
-<Add option="../../../../include_lib/liba/br30/wtg_dec_lib.a" />
-<Add option="../../../../include_lib/liba/br30/libFFT_pi32v2_OnChip.a" />
-<Add option="../../../../include_lib/liba/br30/crypto_toolbox_Ospeed.a" />
-<Add option="../../../../include_lib/liba/br30/agreement.a" />
-<Add option="../../../../include_lib/liba/br30/compressor.a" />
-<Add option="../../../../include_lib/liba/br30/crossover_coff.a" />
-<Add option="../../../../include_lib/liba/br30/limiter.a" />
+<Add option="../../../../cpu/br30/liba/cpu.a" />
+<Add option="../../../../cpu/br30/liba/system.a" />
+<Add option="../../../../cpu/br30/liba/btstack.a" />
+<Add option="../../../../cpu/br30/liba/btctrler.a" />
+<Add option="../../../../cpu/br30/liba/rcsp_stack.a" />
+<Add option="../../../../cpu/br30/liba/libepmotion.a" />
+<Add option="../../../../cpu/br30/liba/libAptFilt_pi32v2_OnChip.a" />
+<Add option="../../../../cpu/br30/liba/libEchoSuppress_pi32v2_OnChip.a" />
+<Add option="../../../../cpu/br30/liba/libNoiseSuppress_pi32v2_OnChip.a" />
+<Add option="../../../../cpu/br30/liba/libSplittingFilter_pi32v2_OnChip.a" />
+<Add option="../../../../cpu/br30/liba/libDelayEstimate_pi32v2_OnChip.a" />
+<Add option="../../../../cpu/br30/liba/libOpcore_maskrom_pi32v2_OnChip.a" />
+<Add option="../../../../cpu/br30/liba/wtg_dec_lib.a" />
+<Add option="../../../../cpu/br30/liba/libFFT_pi32v2_OnChip.a" />
+<Add option="../../../../cpu/br30/liba/crypto_toolbox_Ospeed.a" />
+<Add option="../../../../cpu/br30/liba/agreement.a" />
+<Add option="../../../../cpu/br30/liba/compressor.a" />
+<Add option="../../../../cpu/br30/liba/crossover_coff.a" />
+<Add option="../../../../cpu/br30/liba/limiter.a" />
+<Add option="../../../../cpu/br30/liba/update.a" />
 <Add option="--end-group" />
-<Add option="../../../../include_lib/liba/br30/update.a" />
 <Add option="-T../../../../cpu/br30/sdk.ld" />
 <Add option="-M=../../../../cpu/br30/tools/sdk.map" />
 <Add library="C:\JL\pi32\pi32v2-lib\r3\libm.a" />
 </Linker>
 <ExtraCommands>
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_used_list.c -o ..\..\..\..\cpu\br30\sdk_used_list.used" />
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_ld.c -o ..\..\..\..\cpu\br30\sdk.ld" />
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\isd_config.c -o ..\..\..\..\cpu\br30\tools\isd_config.ini" />
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\download.c -o ..\..\..\..\cpu\br30\tools\download.bat" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\sdk_used_list.c -o ..\..\..\..\cpu\br30\sdk_used_list.used" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\sdk_ld.c -o ..\..\..\..\cpu\br30\sdk.ld" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\tools\download.c -o ..\..\..\..\cpu\br30\tools\download.bat" />
+<Add before="..\..\..\..\tools\utils\fixbat.exe ..\..\..\..\cpu\br30\tools\download.bat" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\tools\isd_config_rule.c -o ..\..\..\..\cpu\br30\tools\isd_config.ini" />
 <Mode before="always" />
 <Add after="..\..\..\..\cpu\br30\tools\download.bat sdk" />
 <Mode after="always" />
@@ -255,12 +259,16 @@
 <Unit filename="../../../../apps/mesh/app_mesh.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/br30/board_ac6373b_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/br30/board_ac6373b_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/br30/board_ac6373b_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/br30/board_ac6376f_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/br30/board_ac6376f_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/br30/board_ac6376f_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/br30/board_ac6379b_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/br30/board_ac6379b_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/br30/board_ac6379b_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/br30/board_ac637n_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/br30/board_ac637n_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/br30/board_ac637n_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/br30/board_config.h" />
 <Unit filename="../../../../apps/mesh/examples/AliGenie_fan.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/AliGenie_light.c"><Option compilerVer="CC"/></Unit>
@@ -285,6 +293,8 @@
 <Unit filename="../../../../apps/mesh/user_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/version.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/adc_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/audio_codec_clock.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/br30/audio_codec_clock.h" />
 <Unit filename="../../../../cpu/br30/charge.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/chargestore.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/br30/clock_cfg.h" />
@@ -380,7 +390,9 @@
 <Unit filename="../../../../include_lib/driver/device/sdmmc.h" />
 <Unit filename="../../../../include_lib/driver/device/spiflash.h" />
 <Unit filename="../../../../include_lib/driver/device/uart.h" />
+<Unit filename="../../../../include_lib/media/audio_def.h" />
 <Unit filename="../../../../include_lib/media/audio_stream.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/application/eq_func_define.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/audio_base.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/audio_decoder.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/audio_encoder.h" />
@@ -390,6 +402,7 @@
 <Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/audio_linein.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/audio_src.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/audio_src_sync.h" />
+<Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/audio_sync_resample.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/cpu_includes.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/dac.h" />
 <Unit filename="../../../../include_lib/media/media_new/media/cpu/br30/asm/hw_eq.h" />

@@ -294,6 +294,7 @@ extern void ble_set_adv_data(u8 data_length, u8 *data);
 extern void ble_set_scan_rsp_data(u8 data_length, u8 *data);
 extern void get_mesh_adv_name(u8 *len, u8 **data);
 extern int le_controller_get_mac(void *addr);
+extern void bt_ble_adv_enable(u8 enable);
 
 void mesh_set_gap_name(const u8 *name)
 {
@@ -674,7 +675,7 @@ static int regiest_state_cbk(void *priv, void *cbk)
 }
 
 static const struct ble_server_operation_t mi_ble_operation = {
-    .adv_enable = NULL,
+    .adv_enable = bt_ble_adv_enable,
     .disconnect = ble_app_disconnect,
     .get_buffer_vaild = NULL,
     .send_data = (void *)rcsp_send_user_data_do,

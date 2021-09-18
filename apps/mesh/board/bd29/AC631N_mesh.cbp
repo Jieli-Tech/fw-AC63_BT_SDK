@@ -22,13 +22,16 @@
 <Add option="-Wincompatible-pointer-types" />
 <Add option="-Wundef" />
 <Add option="-fprefer-gnu-section" />
+<Add option="-Wframe-larger-than=256" />
 <Add option="-fms-extensions" />
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
-<Add option="-DCONFIG_CPU_BD29" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
+<Add option="-DCONFIG_CPU_BD29" />
 <Add option="-DCONFIG_FREE_RTOS_ENABLE" />
-<Add option="-DTCFG_APP_BT_EN=1" />
-<Add option="-DUSB_PC_NO_APP_MODE" />
+<Add option="-DCONFIG_MMU_ENABLE" />
+<Add option="-DCONFIG_MEDIA_ORIGIN_ENABLE" />
+<Add option="-D__GCC_Q32S__" />
+<Add option="-DCONFIG_NEW_ECC_ENABLE" />
 <Add option="-DEVENT_HANDLER_NUM_CONFIG=2" />
 <Add option="-DEVENT_TOUCH_ENABLE_CONFIG=0" />
 <Add option="-DEVENT_POOL_SIZE_CONFIG=256" />
@@ -48,13 +51,13 @@
 <Add option="-DCONFIG_LMP_RESET_ENABLE" />
 <Add option="-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE" />
 <Add option="-DCONFIG_LINK_DISTURB_SCAN_ENABLE=0" />
+<Add option="-DCONFIG_BTCTRLER_TASK_DEL_ENABLE" />
 <Add option="-DCONFIG_UPDATA_ENABLE" />
 <Add option="-DCONFIG_OTA_UPDATA_ENABLE" />
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
-<Add option="-DCONFIG_MMU_ENABLE" />
-<Add option="-DCONFIG_MEDIA_ORIGIN_ENABLE" />
-<Add option="-D__GCC_Q32S__" />
-<Add option="-DCONFIG_NEW_ECC_ENABLE" />
+<Add option="-DTCFG_APP_BT_EN=1" />
+<Add option="-DUSB_PC_NO_APP_MODE" />
+<Add option="-D__LD__" />
 <Add directory="../../../../include_lib" />
 <Add directory="../../../../include_lib/driver" />
 <Add directory="../../../../include_lib/driver/device" />
@@ -97,26 +100,29 @@
 <Add option="--plugin-opt=save-temps" />
 <Add option="--plugin-opt=-inline-normal-into-special-section=true" />
 <Add option="--plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar" />
+<Add option="--plugin-opt=-warn-stack-size=256" />
 <Add option="--sort-common" />
 <Add option="--dont-complain-call-overflow" />
 <Add option="--start-group" />
-<Add option="../../../../include_lib/liba/bd29/cpu.a" />
-<Add option="../../../../include_lib/liba/bd29/system.a" />
-<Add option="../../../../include_lib/liba/bd29/btctrler.a" />
-<Add option="../../../../include_lib/liba/bd29/btstack.a" />
-<Add option="../../../../include_lib/liba/bd29/update.a" />
-<Add option="../../../../include_lib/liba/bd29/crypto_toolbox_Osize.a" />
-<Add option="../../../../include_lib/liba/bd29/rcsp_stack.a" />
-<Add option="../../../../include_lib/liba/bd29/agreement.a" />
+<Add option="../../../../cpu/bd29/liba/cpu.a" />
+<Add option="../../../../cpu/bd29/liba/system.a" />
+<Add option="../../../../cpu/bd29/liba/btctrler.a" />
+<Add option="../../../../cpu/bd29/liba/btstack.a" />
+<Add option="../../../../cpu/bd29/liba/update.a" />
+<Add option="../../../../cpu/bd29/liba/crypto_toolbox_Osize.a" />
+<Add option="../../../../cpu/bd29/liba/rcsp_stack.a" />
+<Add option="../../../../cpu/bd29/liba/agreement.a" />
 <Add option="--end-group" />
 <Add option="-T../../../../cpu/bd29/sdk.ld" />
 <Add option="-M=../../../../cpu/bd29/tools/sdk.map" />
 <Add library="C:\JL\pi32\q32s-lib\libm.a" />
 </Linker>
 <ExtraCommands>
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\sdk_used_list.c -o ..\..\..\..\cpu\bd29\sdk_used_list.used" />
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\sdk_ld.c -o ..\..\..\..\cpu\bd29\sdk.ld" />
-<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\bd29\tools\download.c -o ..\..\..\..\cpu\bd29\tools\download.bat" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\bd29\sdk_used_list.c -o ..\..\..\..\cpu\bd29\sdk_used_list.used" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\bd29\sdk_ld.c -o ..\..\..\..\cpu\bd29\sdk.ld" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\bd29\tools\download.c -o ..\..\..\..\cpu\bd29\tools\download.bat" />
+<Add before="..\..\..\..\tools\utils\fixbat.exe ..\..\..\..\cpu\bd29\tools\download.bat" />
+<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\bd29\tools\isd_config_rule.c -o ..\..\..\..\cpu\bd29\tools\isd_config.ini" />
 <Mode before="always" />
 <Add after="..\..\..\..\cpu\bd29\tools\download.bat sdk" />
 <Mode after="always" />
@@ -221,16 +227,9 @@
 <Unit filename="../../../../apps/mesh/app_idle.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/app_main.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/app_mesh.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/mesh/board/bd29/board_ac630x_demo.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/mesh/board/bd29/board_ac630x_demo_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd29/board_ac6311_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/board/bd29/board_ac6311_demo_cfg.h" />
-<Unit filename="../../../../apps/mesh/board/bd29/board_ac6313_demo.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/mesh/board/bd29/board_ac6313_demo_cfg.h" />
-<Unit filename="../../../../apps/mesh/board/bd29/board_ac6318_demo.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/mesh/board/bd29/board_ac6318_demo_cfg.h" />
-<Unit filename="../../../../apps/mesh/board/bd29/board_ac6319_demo.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/mesh/board/bd29/board_ac6319_demo_cfg.h" />
+<Unit filename="../../../../apps/mesh/board/bd29/board_ac6311_demo_global_build_cfg.h" />
 <Unit filename="../../../../apps/mesh/board/bd29/board_config.h" />
 <Unit filename="../../../../apps/mesh/examples/AliGenie_fan.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/AliGenie_light.c"><Option compilerVer="CC"/></Unit>

@@ -72,6 +72,12 @@
         *(.mp3_decstream_code)
         *(.mp3_decstream_const)
         *(.mp3_decstream_sparse_code)
+
+        *(.mp3tsy_dec_code)
+	*(.mty_code)
+	*(.mp3tsy_dec_sparse_code)
+	*(.mp3tsy_dec_const)
+
 	 *( .wtg_dec_code )
         *( .wtg_dec_const)
         *( .wtg_dec_sparse_code)
@@ -84,6 +90,17 @@
 		*(.sbc_const)
         *(.sbc_msbc_code)
         *(.sbc_msbc_const)
+	*(.speex_encoder_code)
+	*(.opus_encoder_code)
+        *(.adpcm_encode_sparse_code)
+        *(.adpcm_encode_code)
+        *(.adpcm_encode_const) 
+        *(.lc3_decoder_code)
+        *(.lc3_decoder_const)
+        /**(.bfilt_code)*/
+        *(.sbc_encoder_code)
+
+
 		*(.sine_code)
 		*(.sine_const)
         *(.wav_code)
@@ -102,6 +119,8 @@
 		/* *(.ape_const) */
 		*(.audio_decoder_code)
 		*(.audio_decoder_const)
+        *(.audio_track_const)
+        *(.audio_track_code)
 		/* *(.cvsd_code) */
 		/* *(.cvsd_const) */
 		/* *(.dts_code) */

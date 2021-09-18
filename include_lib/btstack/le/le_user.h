@@ -21,10 +21,20 @@ extern "C" {
 #define BTSTACK_EVENT_STATE                                0x60
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77
 
+#define SM_EVENT_NUMERIC_COMPARISON_REQUEST                0xD6
 
 #define SM_EVENT_JUST_WORKS_REQUEST                        0xD0
 #define SM_EVENT_PASSKEY_DISPLAY_NUMBER                    0xD2
-
+#define SM_EVENT_PAIR_PROCESS                              0xDF
+//sub
+#define SM_EVENT_PAIR_SUB_RECONNECT_START                        0x01
+#define SM_EVENT_PAIR_SUB_PIN_KEY_MISS                           0x02
+#define SM_EVENT_PAIR_SUB_PAIR_FAIL                              0x03
+#define SM_EVENT_PAIR_SUB_PAIR_TIMEOUT                           0x04
+#define SM_EVENT_PAIR_SUB_ENCRYPTION_FAIL                        0x05
+#define SM_EVENT_PAIR_SUB_SEND_DISCONN                           0x0f
+#define SM_EVENT_PAIR_SUB_ADD_LIST_SUCCESS                       0x10
+#define SM_EVENT_PAIR_SUB_ADD_LIST_FAILED                        0x11
 
 
 #define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE          0
@@ -47,6 +57,7 @@ extern "C" {
 #define SM_AUTHREQ_MITM_PROTECTION      0x04
 #define SM_AUTHREQ_SECURE_CONNECTION    0x08
 #define SM_AUTHREQ_KEYPRESS             0x10
+#define SM_AUTHREQ_CT2                  0x20
 
 
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77

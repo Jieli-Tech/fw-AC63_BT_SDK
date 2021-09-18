@@ -2,6 +2,27 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 rem @echo off
 
 @echo *****************************************************************
@@ -45,13 +66,17 @@ remove_tailing_zeros -i fmo.bin -o fm.bin -mark ff
 remove_tailing_zeros -i mp3o.bin -o mp3.bin -mark ff
 remove_tailing_zeros -i wmao.bin -o wma.bin -mark ff
 
+bankfiles=
+for /L %%i in (0,1,20) do (
+ %OBJCOPY% -O binary -j .overlay_bank%%i %INELF% bank%%i.bin
+ set bankfiles=!bankfiles! bank%%i.bin 0x0
+)
 
+echo %bank_files
+%LZ4_PACKET% -dict text.bin -input common.bin 0 %bankfiles% -o bank.bin
 
 %OBJDUMP% -section-headers -address-mask=0x1ffffff %ELFFILE%
 %OBJDUMP% -t %ELFFILE% > symbol_tbl.txt
 
 copy /b text.bin+data.bin+data_code.bin+aec.bin+wav.bin+ape.bin+flac.bin+m4a.bin+amr.bin+dts.bin+fm.bin+mp3.bin+wma.bin+bank.bin app.bin
-copy app.bin bluetooth\standard\app.bin
-copy br25loader.bin bluetooth\standard\br25loader.bin
-
-bluetooth\standard\download.bat %kws_cfg%
+call download/data_trans/download.bat

@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC631N_DEMO_H
 #define CONFIG_BOARD_AC631N_DEMO_H
 
+#include "board_ac631n_demo_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC631N_DEMO
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -188,6 +189,7 @@
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
+#if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    0
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
@@ -195,7 +197,7 @@
 #define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    1
 #define USER_SUPPORT_PROFILE_PBAP   0
-
+#endif
 
 #if(TCFG_USER_TWS_ENABLE || TCFG_USER_BLE_ENABLE)
 #define TCFG_BD_NUM						          1   //连接设备个数配置

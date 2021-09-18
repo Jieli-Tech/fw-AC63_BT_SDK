@@ -967,7 +967,10 @@ static void JL_ble_status_callback(void *priv, ble_state_e status)
     case BLE_ST_DISCONN:
 #if RCSP_UPDATE_EN
         if (get_jl_update_flag()) {
-            bt_ble_adv_enable(0);
+            if (__this->rcsp_ble->adv_enable) {
+                __this->rcsp_ble->adv_enable(NULL, 0);
+            }
+            //bt_ble_adv_enable(NULL, 0);
         }
 #endif
         break;
@@ -1232,7 +1235,7 @@ void rcsp_init()
     JL_protocol_init(rcsp_buffer, size);
 
     os_sem_create(&rcsp_sem, 0);
-    __this->rcsp_timer_hdl = sys_timer_add(NULL, rcsp_process_timer, 500);
+    __this->rcsp_timer_hdl = sys_timer_add(NULL, rcsp_process_timer, 2000);
     int err = task_create(rcsp_process_task, NULL, "rcsp_task");
 
     //default use ble , can switch spp anytime

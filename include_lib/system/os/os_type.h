@@ -6,12 +6,6 @@
 
 #if defined CONFIG_UCOS_ENABLE
 
-
-#define  OS_EVENT_TYPE_UNUSED         0u
-#define  OS_EVENT_TYPE_Q              1u
-#define  OS_EVENT_TYPE_SEM            2u
-#define  OS_EVENT_TYPE_MUTEX          3u
-
 typedef struct {
     unsigned char OSEventType;
     int aa;
@@ -20,12 +14,6 @@ typedef struct {
     unsigned char prio;
     unsigned short cc;
 } OS_SEM, OS_MUTEX, OS_QUEUE;
-
-typedef struct  {
-    u8         OSFlagType;
-    void         *OSFlagWaitList;
-    u32      OSFlagFlags;
-} OS_EVENT_GRP;
 
 #include <os/ucos_ii.h>
 
@@ -39,30 +27,9 @@ typedef StaticSemaphore_t OS_SEM, OS_MUTEX;
 typedef StaticQueue_t OS_QUEUE;
 
 
-
-
 #else
 #error "no_os_defined"
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #endif

@@ -4,8 +4,12 @@
 #include "asm/hwi.h"
 #include "asm/gpio.h"
 #include "asm/clock.h"
+#include "asm/charge.h"
 #include "asm/chargestore.h"
 #include "update.h"
+#include "app_config.h"
+
+#if (TCFG_CHARGESTORE_ENABLE || TCFG_TEST_BOX_ENABLE || TCFG_ANC_BOX_ENABLE)
 
 struct chargestore_handle {
     const struct chargestore_platform_data *data;
@@ -130,6 +134,7 @@ void chargestore_open(u8 mode)
 {
     __this->UART->CON0 = BIT(13) | BIT(12) | BIT(10);
     if (mode == MODE_RECVDATA) {
+        charge_set_ldo5v_detect_stop(0);
         gpio_direction_input(__this->data->io_port);
         gpio_set_die(__this->data->io_port, 1);
         __this->UART->CON1 &= ~BIT(4);
@@ -146,6 +151,7 @@ void chargestore_open(u8 mode)
         __this->UART->RXCNT = DMA_ISR_LEN;
         __this->UART->CON0 |= BIT(6) | BIT(5) | BIT(3);
     } else {
+        charge_set_ldo5v_detect_stop(1);
         gpio_direction_output(__this->data->io_port, 1);
         gpio_set_hd(__this->data->io_port, 1);
         __this->UART->CON1 |= BIT(4);
@@ -171,6 +177,7 @@ void chargestore_close(void)
     gpio_set_hd(__this->data->io_port, 0);
     gpio_direction_input(__this->data->io_port);
     memset((void *)uart_dma_buf, 0, sizeof(uart_dma_buf));
+    charge_set_ldo5v_detect_stop(0);
 }
 
 void chargestore_set_baudrate(u32 baudrate)
@@ -235,3 +242,4 @@ static void clock_critical_exit(void)
 }
 CLOCK_CRITICAL_HANDLE_REG(chargestore, clock_critical_enter, clock_critical_exit)
 
+#endif

@@ -227,7 +227,7 @@ struct adc_platform_data adc_data = {
 #else
 	.mic_capless    = 0,
 #endif
-/*MIC免电容方案需要设置，影响MIC的偏置电压
+/*MIC内部上拉电阻挡位配置，影响MIC的偏置电压
     21:1.18K	20:1.42K 	19:1.55K 	18:1.99K 	17:2.2K 	16:2.4K 	15:2.6K		14:2.91K	13:3.05K 	12:3.5K 	11:3.73K
 	10:3.91K  	9:4.41K 	8:5.0K  	7:5.6K		6:6K		5:6.5K		4:7K		3:7.6K		2:8.0K		1:8.5K				*/
     .mic_bias_res   = 16,
@@ -356,14 +356,14 @@ void board_set_soft_poweroff(void)
     gpio_set_pu(GPIOA, 0, 16, ~porta_value, GPIO_AND);
     gpio_set_pd(GPIOA, 0, 16, ~porta_value, GPIO_AND);
     gpio_die(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_dieh(GPIOA, 0, 16, ~portc_value, GPIO_AND);
+    gpio_dieh(GPIOA, 0, 16, ~porta_value, GPIO_AND);
 
     //保留长按Reset Pin - PB1
     gpio_dir(GPIOB, 1, 15, portb_value, GPIO_OR);
     gpio_set_pu(GPIOB, 1, 15, ~portb_value, GPIO_AND);
     gpio_set_pd(GPIOB, 1, 15, ~portb_value, GPIO_AND);
     gpio_die(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_dieh(GPIOB, 0, 16, ~portc_value, GPIO_AND);
+    gpio_dieh(GPIOB, 0, 16, ~portb_value, GPIO_AND);
 
     gpio_dir(GPIOC, 0, 16, portc_value, GPIO_OR);
     gpio_set_pu(GPIOC, 0, 16, ~portc_value, GPIO_AND);

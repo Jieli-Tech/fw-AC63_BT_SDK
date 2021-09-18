@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC6321A_MOUSE_H
 #define CONFIG_BOARD_AC6321A_MOUSE_H
 
+#include "board_ac6321a_mouse_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6321A_MOUSE
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -305,7 +306,7 @@
     VDDIOW_VOL_21V    VDDIOW_VOL_24V    VDDIOW_VOL_28V    VDDIOW_VOL_32V*/
 #define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_28V               //弱VDDIO等级配置
 #define TCFG_LOWPOWER_OSC_TYPE              OSC_TYPE_LRC
-
+#define TCFG_VD13_CAP_EN					1
 
 //*********************************************************************************//
 //                                  g-sensor配置                                   //
@@ -331,6 +332,7 @@
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
+#if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    0
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
@@ -338,7 +340,7 @@
 #define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    1
 #define USER_SUPPORT_PROFILE_PBAP   0
-
+#endif
 
 #if(TCFG_USER_TWS_ENABLE || TCFG_USER_BLE_ENABLE)
 #define TCFG_BD_NUM						          1   //连接设备个数配置
@@ -365,6 +367,7 @@
 //*********************************************************************************//
 
 #define CONFIG_BT_NORMAL_HZ	            (48 * 1000000L)
+#define CONFIG_BT_POWER_ON_HZ           (96 * 100000L)
 //#define CONFIG_BT_CONNECT_HZ            (48 * 1000000L)
 
 //*********************************************************************************//

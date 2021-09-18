@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC6329E_DEMO_H
 #define CONFIG_BOARD_AC6329E_DEMO_H
 
+#include "board_ac6329e_demo_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6329E_DEMO
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -243,7 +244,7 @@
     VDDIOW_VOL_21V    VDDIOW_VOL_24V    VDDIOW_VOL_28V    VDDIOW_VOL_32V*/
 #define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_28V               //弱VDDIO等级配置
 #define TCFG_LOWPOWER_OSC_TYPE              OSC_TYPE_LRC
-
+#define TCFG_VD13_CAP_EN					0
 
 //*********************************************************************************//
 //                                  g-sensor配置                                   //

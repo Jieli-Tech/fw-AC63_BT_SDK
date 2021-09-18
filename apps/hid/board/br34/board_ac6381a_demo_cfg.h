@@ -2,10 +2,11 @@
 #ifndef CONFIG_BOARD_AC6381A_DEMO_CFG_H
 #define CONFIG_BOARD_AC6381A_DEMO_CFG_H
 
+#include "board_ac6381a_demo_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6381A_DEMO
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -327,6 +328,10 @@
 
 #define CONFIG_BT_NORMAL_HZ	            (48 * 1000000L)
 #define CONFIG_BT_CONNECT_HZ            (48 * 1000000L)
+#define CONFIG_BT_CALL_HZ		        (48 * 1000000L)
+#define CONFIG_BT_CALL_ADVANCE_HZ       (64 * 1000000L)
+#define CONFIG_BT_CALL_16k_HZ	        (64 * 1000000L)
+#define CONFIG_BT_CALL_16k_ADVANCE_HZ   (768 * 100000L) //76.8MHz
 
 
 //*********************************************************************************//

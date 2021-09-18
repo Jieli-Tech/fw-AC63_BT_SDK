@@ -19,6 +19,9 @@
 #include "application/audio_vbass.h"
 #include "audio_iis.h"
 #include "math.h"
+#include "audio_syncts.h"
+#include "media/bt_audio_timestamp.h"
+#include "audio_codec_clock.h"
 
 #if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
@@ -51,6 +54,12 @@
 #include "phone_message/phone_message.h"
 
 #define AUDIO_CODEC_SUPPORT_SYNC	1
+
+#define A2DP_AUDIO_PLC_ENABLE       1
+
+#if A2DP_AUDIO_PLC_ENABLE
+#include "media/tech_lib/LFaudio_plc_api.h"
+#endif
 
 #define A2DP_RX_AND_AUDIO_DELAY     1
 
@@ -155,16 +164,31 @@ struct a2dp_dec_hdl {
     u8 eq_remain;
     u8 fetch_lock;
     u8 state;
-    void *sync;
+    u8 stream_error;
+    u8 new_frame;
+    u32 stream_timeout_time;
+    void *syncts;
+    void *repair_pkt;
+    s16 repair_pkt_len;
+    u16 missed_num;
+    u16 repair_frames;
+    u16 overrun_seqn;
 #if AUDIO_CODEC_SUPPORT_SYNC
+    void *ts_handle;
+    u8 ts_start;
     u8 sync_step;
     u8 preempt_state;
-    u16 drop_points;
-    u16 droped_points;
+    u32 timestamp;
 #if TCFG_USER_TWS_ENABLE
     u32 wait_time;
 #endif /*TCFG_USER_TWS_ENABLE*/
+    u32 time_base;
 #endif /*AUDIO_CODEC_SUPPORT_SYNC*/
+#if A2DP_AUDIO_PLC_ENABLE
+    LFaudio_PLC_API *plc_ops;
+    void *plc_mem;
+#endif /*A2DP_AUDIO_PLC_ENABLE*/
+    u32 mix_ch_event_params[3];
     u32 pending_time;
     u16 seqn;
     u16 sample_rate;
@@ -173,12 +197,6 @@ struct a2dp_dec_hdl {
     u16 delay_time;
     u16 detect_timer;
     u8  underrun_feedback;
-    /*
-    u8  underrun_count;
-    u32 underrun_time;
-    u32 underrun_cool_time;
-    */
-
 #if A2DP_EQ_SUPPORT_32BIT
     s16 *eq_out_buf;
     int eq_out_buf_len;
@@ -220,10 +238,14 @@ struct esco_dec_hdl {
     u8 tws_mute_en;
     u8 start;
     u8 enc_start;
+    void *syncts;
 #if AUDIO_CODEC_SUPPORT_SYNC
+    void *ts_handle;
+    u8 ts_start;
     u8 sync_step;
     u8 preempt_state;
 #endif
+    u32 mix_ch_event_params[3];
     u8 esco_len;
     u16 remain;
     int data[15];/*ALIGNED(4)*/
@@ -299,7 +321,7 @@ s16 dac_sync_buff[128];
 #else
 s16 dac_sync_buff[128];
 #endif
-s16 dac_sync_filt[24 * 2];
+s16 dac_sync_filt[24 * 2 * 2];
 #endif
 s16 mix_buff[MIX_POINTS_NUM];
 
@@ -314,13 +336,12 @@ s16 audio_src_hw_filt[24 * 2 * MAX_SRC_NUMBER];
 #define A2DP_MAX_PENDING_TIME               40
 #endif
 
-#define A2DP_STREAM_OPEN                    0
-#define A2DP_STREAM_START                   1
-#define A2DP_STREAM_DECODING                2
-#define A2DP_STREAM_STOP                    3
-#define A2DP_STREAM_RESET                   4
-#define A2DP_STREAM_WAIT                    5
-#define A2DP_STREAM_RESUME                  6
+#define A2DP_STREAM_NO_ERR                  0
+#define A2DP_STREAM_UNDERRUN                1
+#define A2DP_STREAM_OVERRUN                 2
+#define A2DP_STREAM_MISSED                  3
+#define A2DP_STREAM_DECODE_ERR              4
+
 /*OS_SEM dac_sem;*/
 static u16 dac_idle_delay_max = 10000;
 static u16 dac_idle_delay_cnt = 10000;
@@ -351,6 +372,8 @@ int lmp_private_get_esco_data_len();
 void *lmp_private_get_esco_packet(int *len, u32 *hash);
 void lmp_private_free_esco_packet(void *packet);
 extern int lmp_private_esco_suspend_resume(int flag);
+extern int bt_audio_sync_nettime_select(u8 basetime);
+extern u32 bt_audio_sync_lat_time(void);
 
 
 void *a2dp_play_sync_open(u8 channel, u32 sample_rate, u32 output_rate, u32 coding_type);
@@ -382,7 +405,7 @@ void audio_src_isr_deal(void)
 #include "timer.h"
 static void audio_decoder_wakeup_timer(void *priv)
 {
-    //putchar('k');
+    /*putchar('k');*/
     audio_decoder_resume_all(&decode_task);
 }
 int audio_decoder_task_add_probe(struct audio_decoder_task *task)
@@ -1079,14 +1102,6 @@ static int mix_output_handler(struct audio_mixer *mixer, s16 *data, u16 len)
     } while (len);
     */
     wlen = audio_dac_write(&dac_hdl, data, len);
-    /*
-    if (wlen == len) {
-        audio_decoder_resume_all(&decode_task);
-    }
-    */
-    if (a2dp_low_latency) {
-        audio_dac_sync_flush_data(&dac_hdl);
-    }
 #endif
 
     return wlen;
@@ -1102,33 +1117,41 @@ static const struct audio_mix_handler mix_handler  = {
 #endif
 };
 
-static void bt_audio_mixer_ch_event_handler(void *priv, int event)
-{
-    struct a2dp_dec_hdl *dec = (struct a2dp_dec_hdl *)priv;
 
+void audio_mix_ch_event_handler(void *priv, int event)
+{
     switch (event) {
     case MIXER_EVENT_CH_OPEN:
-#if AUDIO_CODEC_SUPPORT_SYNC
-        audio_mixer_position_correct(&mixer, dec->droped_points);
-        if (dec->sync) {
-            audio_dac_sync_start(&dac_hdl);
+        if (priv) {
+            u32 *params = (u32 *)priv;
+            struct audio_mixer_ch *ch = (struct audio_mixer_ch *)params[0];
+            u32 base_time = params[2];
+            audio_dac_add_syncts_handle(&dac_hdl, (void *)params[1]);
+            u32 current_time = (bt_audio_sync_lat_time() * 625 * TIME_US_FACTOR);
+            u32 time_diff = ((base_time - current_time) & 0xffffffff) / TIME_US_FACTOR;
+            /*printf("-----base time : %d, current_time : %d------\n", base_time, current_time);*/
+            if (time_diff < 500000) {
+                int slience_frames = (u64)time_diff * audio_mixer_get_sample_rate(&mixer) / 1000000 - audio_dac_buffered_frames(&dac_hdl);
+                if (slience_frames < 0) {
+                    slience_frames = 0;
+                }
+                /*printf("-------slience_frames : %d-------\n", slience_frames);*/
+                sound_pcm_update_frame_num((void *)params[1], -slience_frames);
+                audio_mixer_ch_add_slience_samples(ch, slience_frames * dac_hdl.channel);
+            }
         }
-#endif
         break;
     case MIXER_EVENT_CH_CLOSE:
-    case MIXER_EVENT_CH_RESET:
-#if AUDIO_CODEC_SUPPORT_SYNC
-        if (dec->sync) {
-            audio_dac_sync_stop(&dac_hdl);
+        if (priv) {
+            u32 *params = (u32 *)priv;
+            audio_dac_remove_syncts_handle(&dac_hdl, (void *)params[1]);
         }
-#endif
-        break;
-    default:
         break;
     }
 }
 
 #define RB16(b)    (u16)(((u8 *)b)[0] << 8 | (((u8 *)b))[1])
+#define RB32(b)    (u32)(((u8 *)b)[0] << 24 | (((u8 *)b))[1] << 16 | (((u8 *)b))[2] << 8 | (((u8 *)b))[3])
 
 static int get_rtp_header_len(u8 new_frame, u8 *buf, int len)
 {
@@ -1237,7 +1260,6 @@ static u8 a2dp_suspend = 0;
 static u32 a2dp_resume_time = 0;
 
 
-
 int a2dp_decoder_pause(void)
 {
     if (a2dp_dec) {
@@ -1319,7 +1341,7 @@ static void a2dp_dec_set_output_channel(struct a2dp_dec_hdl *dec)
         }
 #endif
 
-#if TCFG_USER_TWS_ENABLE
+        /* #if TCFG_USER_TWS_ENABLE */
 #if AUDIO_SURROUND_CONFIG
         u8 nch = EFFECT_CH_L;
         if (channel == AUDIO_CH_L) {
@@ -1334,9 +1356,193 @@ static void a2dp_dec_set_output_channel(struct a2dp_dec_hdl *dec)
             audio_surround_switch_nch(dec->surround, nch);
         }
 #endif
-#endif
+        /* #endif */
 
     }
+}
+
+/*
+ *
+ */
+static int a2dp_decoder_set_timestamp(struct a2dp_dec_hdl *dec, u16 seqn)
+{
+#if AUDIO_CODEC_SUPPORT_SYNC
+    u32 timestamp;
+
+    timestamp = a2dp_audio_update_timestamp(dec->ts_handle, seqn, audio_syncts_get_dts(dec->syncts));
+    if (!dec->ts_start) {
+        dec->ts_start = 1;
+        /*dec->mix_ch_event_params[2] = timestamp;*/
+    } else {
+        int sample_rate = a2dp_audio_sample_rate(dec->ts_handle);
+        if (dec->sample_rate != sample_rate) {
+
+        }
+        audio_syncts_update_sample_rate(dec->syncts, a2dp_audio_sample_rate(dec->ts_handle));
+        audio_syncts_next_pts(dec->syncts, timestamp);
+    }
+    dec->timestamp = timestamp;
+    /*printf("timestamp : %d, %d\n", seqn, timestamp / TIME_US_FACTOR / 625);*/
+#endif
+    return 0;
+}
+
+static bool a2dp_audio_is_underrun(struct a2dp_dec_hdl *dec)
+{
+    if (a2dp_low_latency) {
+        if (audio_dac_data_time(&dac_hdl) < 12) {
+            return true;
+        }
+    } else {
+        if (audio_dac_data_time(&dac_hdl) < 20) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void a2dp_decoder_stream_free(struct a2dp_dec_hdl *dec, void *packet)
+{
+    if (packet) {
+        a2dp_media_free_packet(packet);
+    }
+
+    if ((void *)packet == (void *)dec->repair_pkt) {
+        dec->repair_pkt = NULL;
+    }
+
+    if (dec->repair_pkt) {
+        a2dp_media_free_packet(dec->repair_pkt);
+        dec->repair_pkt = NULL;
+    }
+    dec->repair_pkt_len = 0;
+}
+
+static void a2dp_stream_underrun_feedback(void *priv);
+static int a2dp_audio_delay_time(struct a2dp_dec_hdl *dec);
+#define a2dp_seqn_before(a, b)  ((a < b && (u16)(b - a) < 1000) || (a > b && (u16)(a - b) > 1000))
+static int a2dp_stream_overrun_handler(struct a2dp_dec_hdl *dec, u8 **frame, int *len)
+{
+    u8 *packet = NULL;
+    int rlen = 0;
+
+    int msecs = 0;
+    int overrun = 0;
+    while (1) {
+        msecs = a2dp_audio_delay_time(dec);
+        if (msecs < dec->delay_time) {
+            break;
+        }
+        rlen = a2dp_media_try_get_packet(&packet);
+        if (rlen <= 0) {
+            break;
+        }
+        overrun = 1;
+        a2dp_decoder_stream_free(dec, NULL);
+        /*putchar('o');*/
+        dec->repair_pkt = packet;
+        dec->repair_pkt_len = rlen;
+        u16 seqn = RB16(packet + 2);
+        /*printf("drop %d, %d\n", seqn, dec->overrun_seqn);*/
+        if (!a2dp_seqn_before(seqn, dec->overrun_seqn)) {
+            *frame = packet;
+            *len = rlen;
+            dec->repair_frames = 0;
+            return 1;
+        }
+    }
+    dec->repair_frames++;
+    dec->overrun_seqn += (dec->repair_frames % 2);
+    /*putchar('O');*/
+    *frame = dec->repair_pkt;
+    *len = dec->repair_pkt_len;
+    return 0;
+}
+
+static int a2dp_stream_missed_handler(struct a2dp_dec_hdl *dec, u8 **frame, int *len)
+{
+    int msecs = a2dp_audio_delay_time(dec);
+    *frame = dec->repair_pkt;
+    *len = dec->repair_pkt_len;
+    if (msecs >= dec->delay_time || --dec->missed_num == 0) {
+        /*putchar('M');*/
+        return 1;
+    }
+    /*putchar('m');*/
+    return 0;
+}
+
+static int a2dp_stream_underrun_handler(struct a2dp_dec_hdl *dec, u8 **packet)
+{
+
+    if (!a2dp_audio_is_underrun(dec)) {
+        putchar('x');
+        return 0;
+    }
+    putchar('X');
+    if (dec->stream_error != A2DP_STREAM_UNDERRUN) {
+        a2dp_stream_underrun_feedback(dec);
+        dec->stream_error = A2DP_STREAM_UNDERRUN;
+    }
+    *packet = dec->repair_pkt;
+    dec->repair_frames++;
+    return dec->repair_pkt_len;
+}
+
+static int a2dp_stream_error_filter(struct a2dp_dec_hdl *dec, u8 new_packet, u8 *packet, int len)
+{
+    int err = 0;
+
+    if (dec->coding_type == AUDIO_CODING_AAC) {
+        dec->header_len = get_rtp_header_len(dec->new_frame, packet, len);
+        dec->new_frame = 0;
+    } else {
+        dec->header_len = get_rtp_header_len(1, packet, len);
+    }
+
+    if (dec->header_len >= len) {
+        printf("##A2DP header error : %d\n", dec->header_len);
+        a2dp_decoder_stream_free(dec, packet);
+        return -EFAULT;
+    }
+
+    u16 seqn = RB16(packet + 2);
+    if (new_packet) {
+        if (dec->stream_error == A2DP_STREAM_UNDERRUN) {
+            int missed_frames = (u16)(seqn - dec->seqn) - 1;
+            if (missed_frames > dec->repair_frames) {
+                dec->stream_error = A2DP_STREAM_MISSED;
+                dec->missed_num = missed_frames - dec->repair_frames + 1;
+                /*printf("case 0 : %d, %d\n", missed_frames, dec->repair_frames);*/
+                err = -EAGAIN;
+            } else if (missed_frames < dec->repair_frames) {
+                dec->stream_error = A2DP_STREAM_OVERRUN;
+                dec->overrun_seqn = seqn + dec->repair_frames - missed_frames;
+                /*printf("case 1 : %d, %d, seqn : %d, %d\n", missed_frames, dec->repair_frames, seqn, dec->overrun_seqn); */
+                err = -EAGAIN;
+            }
+        } else if (!dec->stream_error && (u16)(seqn - dec->seqn) > 1) {
+            dec->stream_error = A2DP_STREAM_MISSED;
+            if (a2dp_audio_delay_time(dec) < dec->delay_time) {
+                dec->missed_num = (u16)(seqn - dec->seqn);
+                err = -EAGAIN;
+            }
+            int pkt_len;
+            void *head = a2dp_media_fetch_packet(&pkt_len, NULL);
+            /*printf("case 2 : %d, %d, pkt : 0x%x, 0x%x\n", seqn, dec->seqn, (u32)head, (u32)packet);*/
+            if (dec->missed_num > 30) {
+                printf("##A serious mistake : A2DP stream missed too much, %d\n", dec->missed_num);
+                dec->missed_num = 30;
+            }
+        }
+        dec->repair_frames = 0;
+    }
+    if (!err && new_packet) {
+        dec->seqn = seqn;
+    }
+    dec->repair_pkt = packet;
+    dec->repair_pkt_len = len;
+    return err;
 }
 
 static int a2dp_dec_get_frame(struct audio_decoder *decoder, u8 **frame)
@@ -1344,27 +1550,51 @@ static int a2dp_dec_get_frame(struct audio_decoder *decoder, u8 **frame)
     struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
     u8 *packet = NULL;
     int len = 0;
+    u8 new_packet = 0;
 
-    len = a2dp_media_get_packet(&packet);
-    if (len < 0) {
-        putchar('X');
-    }
-
-    if (len > 0) {
-        if (dec->coding_type == AUDIO_CODING_AAC && dec->seqn != RB16(packet + 2)) {
-            dec->header_len = get_rtp_header_len(0, packet, len);
+try_again:
+    switch (dec->stream_error) {
+    case A2DP_STREAM_OVERRUN:
+        new_packet = a2dp_stream_overrun_handler(dec, &packet, &len);
+        break;
+    case A2DP_STREAM_MISSED:
+        new_packet = a2dp_stream_missed_handler(dec, &packet, &len);
+        break;
+    default:
+        len = a2dp_media_try_get_packet(&packet);
+        if (len <= 0) {
+            len = a2dp_stream_underrun_handler(dec, &packet);
         } else {
-            dec->header_len = get_rtp_header_len(1, packet, len);
+            a2dp_decoder_stream_free(dec, NULL);
+            new_packet = 1;
         }
-        dec->seqn = RB16(packet + 2);
-        if (dec->header_len >= len) {
-            a2dp_media_free_packet(packet);
-            return -EFAULT;
-        }
-
-        *frame = packet + dec->header_len;
-        len -= dec->header_len;
+        break;
     }
+
+    if (len <= 0) {
+        return 0;
+    }
+
+    int err = a2dp_stream_error_filter(dec, new_packet, packet, len);
+    if (err) {
+        if (-err == EAGAIN) {
+            dec->new_frame = 1;
+            goto try_again;
+        }
+        return 0;
+    }
+
+    *frame = packet + dec->header_len;
+    len -= dec->header_len;
+    if (dec->stream_error && new_packet) {
+#if AUDIO_CODEC_SUPPORT_SYNC && TCFG_USER_TWS_ENABLE
+        if (dec->ts_handle) {
+            tws_a2dp_share_timestamp(dec->ts_handle);
+        }
+#endif
+        dec->stream_error = 0;
+    }
+    a2dp_decoder_set_timestamp(dec, dec->seqn);
 
     return len;
 }
@@ -1374,7 +1604,7 @@ static void a2dp_dec_put_frame(struct audio_decoder *decoder, u8 *frame)
     struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
 
     if (frame) {
-        a2dp_media_free_packet((void *)(frame - dec->header_len));
+        /*a2dp_media_free_packet((void *)(frame - dec->header_len));*/
     }
 }
 
@@ -1418,267 +1648,17 @@ static const struct audio_dec_input a2dp_input = {
         }
     }
 };
-#if 0
-#include "tone_player.h"
-static const char *num0_9[] = {
-    TONE_NUM_0,
-    TONE_NUM_1,
-    TONE_NUM_2,
-    TONE_NUM_3,
-    TONE_NUM_4,
-    TONE_NUM_5,
-    TONE_NUM_6,
-    TONE_NUM_7,
-    TONE_NUM_8,
-    TONE_NUM_9,
-};
 
-static void a2dp_test_tone_warning(int error, int is_seqn)
-{
-    /* return ; */
-
-    const char *tone_seqn[16];
-    if (is_seqn) {
-        int ten_num = 0;
-        int num = error;
-        while (num < 10) {
-            num /= 10;
-            ten_num++;
-        }
-
-        int list_i = 0;
-        int i;
-        tone_seqn[list_i++] = TONE_RING;
-        for (i = ten_num; i > 0; i--) {
-            tone_seqn[list_i++] = num0_9[((error / (ten_num * 10)) % 10)];
-        }
-        tone_seqn[list_i] = num0_9[(error % 10)];
-        tone_file_list_play(tone_seqn, 1);
-    } else {
-        tone_play_index(error, 1);
-    }
-}
-
-void a2dp_error_tone_warning(int error)
-{
-
-    int argv[8];
-    argv[0] = (int)a2dp_test_tone_warning;
-    argv[1] = 2;
-    argv[2] = (int)IDEX_TONE_NUM_0 + error;
-    argv[3] = (int)0;
-
-    do {
-        int err = os_taskq_post_type("app_core", Q_CALLBACK, 4, argv);
-        if (err == OS_ERR_NONE) {
-            break;
-        }
-
-        os_time_dly(2);
-    } while (1);
-}
-#endif
-
-static int a2dp_decoder_stream_restart(struct audio_decoder *decoder, u8 lite_reset)
-{
-    struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
-
-#if AUDIO_CODEC_SUPPORT_SYNC
-    if (dec->sync) {
-        if (!lite_reset) {
-            __a2dp_clean_frame_by_number(dec, dec->coding_type == AUDIO_CODING_AAC ? 20 : 20);
-            a2dp_resume_time = jiffies + msecs_to_jiffies(80);
-        }
-#if TCFG_BT_MUSIC_EQ_ENABLE
-        if (a2dp_eq) {
-            audio_eq_async_data_clear(a2dp_eq);
-        }
-#endif
-        dec->remain = 0;
-        dec->drop_points = 0;
-#if AUDIO_OUT_EFFECT_ENABLE
-        audio_out_effect_stream_clear();
-#endif
-        audio_mixer_ch_reset(&dec->mix_ch);
-        audio_wireless_sync_stop(dec->sync);
-        audio_decoder_reset(decoder);
-        dec->droped_points = 0;
-#if TCFG_USER_TWS_ENABLE
-        int state = tws_api_get_tws_state();
-        if ((state & TWS_STA_SIBLING_CONNECTED)) {
-            audio_dac_sound_reset(&dac_hdl, lite_reset ? 300 : 500);
-        } else
-#endif
-        {
-            audio_dac_sound_reset(&dac_hdl, 0);
-        }
-        dec->sync_step = 0;
-    }
-#endif
-    return 0;
-}
 #define bt_time_before(t1, t2) \
          (((t1 < t2) && ((t2 - t1) & 0x7ffffff) < 0xffff) || \
           ((t1 > t2) && ((t1 - t2) & 0x7ffffff) > 0xffff))
 #define bt_time_to_msecs(clk)   (((clk) * 625) / 1000)
 #define msecs_to_bt_time(m)     (((m + 1)* 1000) / 625)
 
-#if (TCFG_USER_TWS_ENABLE && AUDIO_CODEC_SUPPORT_SYNC)
-static u8 a2dp_tws_align = 0;
-static int a2dp_tws_align_time = 0;
-static int a2dp_tws_delay = 0;
-#define TWS_FUNC_ID_A2DP_DEC \
-	((int)(('A' + '2' + 'D' + 'P') << (2 * 8)) | \
-	 (int)(('D' + 'E' + 'C') << (1 * 8)) | \
-	 (int)(('S' + 'Y' + 'N' + 'C') << (0 * 8)))
-
-static void tws_a2dp_dec_align_time(void *data, u16 len, bool rx)
+static int a2dp_audio_delay_time(struct a2dp_dec_hdl *dec)
 {
-    int time;
-    int expect_time;
-    int rx_time;
-
-    memcpy(&time, data, sizeof(time));
-    /*rx_time = time;*/
-    local_irq_disable();
-    expect_time = bt_tws_future_slot_time(50); //期望tws同时的时间在当前收到之后50ms
-    if (bt_time_before(time, expect_time)) {
-        a2dp_tws_delay = (((expect_time - time) & 0x7ffffff) + 1) / 2 * 2;
-        time = (time + a2dp_tws_delay) & 0x7ffffff;
-    } else {
-        a2dp_tws_delay = 0;
-    }
-    a2dp_tws_align = 1;
-    a2dp_tws_align_time = time;
-    local_irq_enable();
-    /*printf("tws a2dp align rx : %d, %d\n", rx_time, time);*/
-}
-
-REGISTER_TWS_FUNC_STUB(a2dp_dec_align_time) = {
-    .func_id = TWS_FUNC_ID_A2DP_DEC,
-    .func    = tws_a2dp_dec_align_time,
-};
-#endif
-
-static int a2dp_decoder_stream_start(struct audio_decoder *decoder, int msecs, int rx_remain)
-{
-    struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
-
-#if TCFG_USER_TWS_ENABLE
-    if (!dec->sync_step) {
-        if (!msecs) {
-            return -EAGAIN;
-        }
-        int state = tws_api_get_tws_state();
-        int distance_time = dec->delay_time - msecs;
-        if (distance_time < 0) {
-            if (state & TWS_STA_SIBLING_CONNECTED) {
-                log_w("a2dp tws dec align, distance : %dms, confirm : %d\n", distance_time, a2dp_tws_align);
-            } else {
-                log_d("reach to time : %dms\n", msecs);
-            }
-            dec->sync_step = 2;
-            return 0;
-        }
-
-        local_irq_disable();
-        if (a2dp_tws_align &&
-            (bt_time_before(a2dp_tws_align_time, bt_tws_future_slot_time(0)) ||
-             bt_time_to_msecs(__builtin_abs(a2dp_tws_align_time - (int)bt_tws_future_slot_time(0))) > (dec->delay_time * 2))) {
-            /*printf("bt time before : %d, %d\n", a2dp_tws_align_time, bt_tws_future_slot_time(0));*/
-            a2dp_tws_align = 0;
-        }
-        local_irq_enable();
-
-        if (state & TWS_STA_SIBLING_CONNECTED) {
-            if (tws_api_get_role() == TWS_ROLE_SLAVE || dec->preempt_state == DEC_PREEMTED_BY_PRIORITY) {
-                int time;
-#if A2DP_RX_AND_AUDIO_DELAY
-                time = bt_tws_future_slot_time(distance_time + 10);
-#else
-                time = bt_tws_future_slot_time(distance_time + AUDIO_DAC_DELAY_TIME);
-#endif
-                tws_api_send_data_to_sibling((u8 *)&time, sizeof(time), TWS_FUNC_ID_A2DP_DEC);
-                /*printf("confirm delay time : %dms\n", distance_time);*/
-            }
-            dec->sync_step = 1;
-            dec->wait_time = jiffies + msecs_to_jiffies(dec->delay_time + AUDIO_DAC_DELAY_TIME);
-            audio_decoder_wakeup_modify(2);
-            return -EAGAIN;
-        }
-        if (msecs < dec->delay_time && rx_remain > 768) {
-            return -EAGAIN;
-        }
-        dec->sync_step = 2;
-    } else if (dec->sync_step == 1) {
-        if (!msecs) {
-            dec->sync_step = 0;
-            return -EAGAIN;
-        }
-
-        if (a2dp_tws_align) {
-            log_d("a2dp tws together time : %d, %d\n", a2dp_tws_align_time, bt_tws_future_slot_time(0));
-            if (bt_time_to_msecs(__builtin_abs(a2dp_tws_align_time - (int)bt_tws_future_slot_time(0))) > dec->delay_time) {
-                log_e("tws together time error\n");
-                a2dp_tws_align_time = bt_tws_future_slot_time(0) + msecs_to_bt_time(dec->delay_time - msecs);
-            }
-            audio_sync_set_tws_together(dec->sync, 1, a2dp_tws_align_time);
-            a2dp_tws_align = 0;
-            if (a2dp_tws_delay) {
-                dec->drop_points = 625 * a2dp_tws_delay / 1000 * (dec->sample_rate / 1000);
-                a2dp_tws_delay = 0;
-            }
-            audio_dac_sync_input_num_correct(&dac_hdl, dec->drop_points);
-            dec->sync_step = 2;
-            audio_decoder_wakeup_modify(AUDIO_DECODE_TASK_WAKEUP_TIME);
-            return 0;
-        }
-
-        if (time_after(jiffies, dec->wait_time)) {
-            log_w("a2dp wait tws confirm timeout\n");
-            dec->sync_step = 2;
-            dec->drop_points = (msecs - dec->delay_time) * (dec->sample_rate / 1000);
-            audio_dac_sync_input_num_correct(&dac_hdl, dec->drop_points);
-            audio_decoder_wakeup_modify(AUDIO_DECODE_TASK_WAKEUP_TIME);
-            return 0;
-        }
-        return -EAGAIN;
-    }
-#else
-    if (!dec->sync_step) {
-        if (msecs < dec->delay_time && rx_remain > 768) {
-            return -EAGAIN;
-        }
-        dec->sync_step = 2;
-    }
-#endif
-
-    return 0;
-}
-
-static int a2dp_audio_delay_time(struct audio_decoder *decoder)
-{
-    struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
+    /*struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);*/
     int msecs = 0;
-#if TCFG_BT_MUSIC_EQ_ENABLE
-#if A2DP_EQ_SUPPORT_ASYNC
-    if (a2dp_eq) {
-        msecs += (((audio_eq_data_len(a2dp_eq) >> 1) / dec->ch * 1000000) / dec->sample_rate) / 1000;
-    }
-#endif
-#endif
-    msecs += ((audio_mixer_ch_data_len(&dec->mix_ch) >> 1) / dec->ch * 1000000) / dec->sample_rate / 1000;
-
-    msecs += audio_dac_data_time(&dac_hdl);
-
-    return msecs;
-}
-
-static int a2dp_dec_rx_delay_monitor(struct audio_decoder *decoder, struct rt_stream_info *info)
-{
-    struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
-    int msecs = 0;
-    int err = 0;
 
 #if TCFG_USER_TWS_ENABLE
     msecs = a2dp_media_get_remain_play_time(1);
@@ -1686,132 +1666,39 @@ static int a2dp_dec_rx_delay_monitor(struct audio_decoder *decoder, struct rt_st
     msecs = a2dp_media_get_remain_play_time(0);
 #endif
 
-#if A2DP_RX_AND_AUDIO_DELAY
-    msecs += a2dp_audio_delay_time(decoder);
-#endif
-
-    if (dec->sync_step == 2) {
-        info->distance_time = msecs - a2dp_delay_time;
-        if (info->distance_time <= 10 && a2dp_media_get_remain_buffer_size() < 768) {
-            info->distance_time = 30;
-        }
+    if (dec->syncts) {
+        msecs += sound_buffered_between_syncts_and_device(dec->syncts, 0);
     }
+    msecs += audio_dac_data_time(&dac_hdl);
 
-    /*printf("%dms\n", msecs);*/
-    return 0;
+    return msecs;
 }
 
-/*
- * Try to get A2DP packet.
- * Return generic fault if bluetooth A2DP channel not exist.
- * Return generic invalid if A2DP media stream no have packet data.
- *
- */
-static int a2dp_decoder_try_get_packet(struct audio_decoder *decoder)
+static int a2dp_decoder_stream_delay_update(struct audio_decoder *decoder)
 {
     struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
-    int len;
-    void *addr = NULL;
-
-    if (dec->state == A2DP_STREAM_WAIT) {
-        if (jiffies_to_msecs(jiffies - dec->pending_time) > A2DP_MAX_PENDING_TIME) {
-            log_w("A2DP stream is off, the signal may be bad. Wait time : %dms.\n", jiffies_to_msecs(jiffies - dec->pending_time));
-            if (!a2dp_low_latency) {
-                audio_wireless_sync_suspend(dec->sync);
-                a2dp_decoder_stream_restart(decoder, 0);
-                dec->state = A2DP_STREAM_RESET;
-                return -EAGAIN;
-            }
-        }
-    }
-
-    local_irq_disable();
-    if (!a2dp_media_channel_exist()) {
-        audio_decoder_suspend(decoder, 0);
-        local_irq_enable();
-        return -EINVAL;
-    }
-
-
-    addr = (void *)a2dp_media_fetch_packet(&len, NULL);
-    if (!addr) {
-        if (dec->state == A2DP_STREAM_DECODING) {
-            dec->pending_time = jiffies;
-            dec->state = A2DP_STREAM_WAIT;
-        }
-
-        audio_decoder_suspend(decoder, 0);
-        local_irq_enable();
-        return -EINVAL;
-    }
-    local_irq_enable();
-
-    return 0;
-}
-/*
- * Check A2DP recived audio stream.
- *
- */
-static int a2dp_decoder_check_rx_stream(struct audio_decoder *decoder)
-{
-    struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
+    int msecs = 0;
     int err = 0;
 
-    if (!dec->sync) {
+#if AUDIO_CODEC_SUPPORT_SYNC
+    msecs = a2dp_audio_delay_time(dec);
+    if (dec->stream_error) {
         return 0;
     }
 
-    if (dec->state == A2DP_STREAM_WAIT) {
-        /*log_w("A2DP is at risk of stream disconnect.\n");*/
-        dec->state = A2DP_STREAM_DECODING;
-    }
-
-    int len;
-    void *addr = (void *)a2dp_media_fetch_packet_and_wait(&len, NULL, 40);
-    if (!addr) {
-        if (!a2dp_media_channel_exist()) {
-            log_i("A2DP stream has been shut down.\n");
-            return -EINVAL;
+    if (dec->sync_step == 2) {
+        int distance_time = msecs - a2dp_delay_time;
+        if (a2dp_media_get_remain_buffer_size() < 768 && distance_time < 50) {
+            distance_time = 50;
         }
 
-        if (a2dp_media_is_clearing_frame()) {
-            log_i("A2DP media is clearing frame.\n");
-            return -EINVAL;
+        if (dec->ts_handle) {
+            a2dp_audio_delay_offset_update(dec->ts_handle, distance_time);
         }
     }
-    ASSERT(addr != NULL, " A2DP fetch packet error.\n");
-    u16 seqn = RB16(addr + 2);
-    if (dec->state == A2DP_STREAM_DECODING || dec->state == A2DP_STREAM_RESUME) {
-        if ((u16)(seqn - dec->seqn) > 1) {
-            log_e("A2DP stream sequence error : %d, %d, please check whether bluetooth is normal.\n", a2dp_dec->seqn, seqn);
-            if (dec->sync) {
-                audio_wireless_sync_suspend(dec->sync);
-            }
-            dec->seqn = seqn;
-            a2dp_decoder_stream_restart(decoder, 0);
-            dec->state = A2DP_STREAM_RESET;
-            return -EFAULT;
-        }
-    } else if (dec->state == A2DP_STREAM_RESET ||
-               dec->state == A2DP_STREAM_START ||
-               dec->state == A2DP_STREAM_STOP) {
-        int msecs = a2dp_media_get_remain_play_time(TCFG_USER_TWS_ENABLE ? 1 : 0);
 
-        err = a2dp_decoder_stream_start(decoder, msecs, a2dp_media_get_remain_buffer_size());
-        if (err) {
-            audio_decoder_suspend(decoder, 0);
-            return -EAGAIN;
-        }
-
-        if (dec->state == A2DP_STREAM_STOP) {
-            dec->state = A2DP_STREAM_RESUME;
-        } else {
-            dec->state = A2DP_STREAM_DECODING;
-        }
-    }
-    dec->seqn = seqn;
-
-
+#endif
+    /*printf("%d -> %dms, delay_time : %dms\n", msecs1, msecs, a2dp_delay_time);*/
     return 0;
 }
 
@@ -1828,24 +1715,14 @@ static int a2dp_decoder_audio_sync_handler(struct audio_decoder *decoder)
     struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
     int err;
 
-    if (!dec->sync) {
+    if (!dec->syncts) {
         return 0;
     }
 
-    struct rt_stream_info info = {0};
 
-    err = a2dp_dec_rx_delay_monitor(decoder, &info);
+    err = a2dp_decoder_stream_delay_update(decoder);
     if (err) {
         audio_decoder_suspend(decoder, 0);
-        return -EAGAIN;
-    }
-
-    info.seqn = dec->seqn;
-    err = audio_wireless_sync_probe(dec->sync, &info);
-    if (err) {
-        if (err == SYNC_ERR_STREAM_RESET) {
-            a2dp_decoder_stream_restart(decoder, 0);
-        }
         return -EAGAIN;
     }
 
@@ -1853,17 +1730,13 @@ static int a2dp_decoder_audio_sync_handler(struct audio_decoder *decoder)
     if (tws_network_audio_was_started()) {
         /*a2dp播放中副机加入，声音复位500ms*/
         tws_network_local_audio_start();
-        audio_dac_sound_reset(&dac_hdl, 500);
     }
 #endif
-    if (dec->preempt_state == DEC_PREEMTED_BY_PRIORITY) {
-        dec->preempt_state = DEC_RUN_BY_ITSELF;
-        audio_dac_sound_reset(&dac_hdl, 500);
-    }
     return 0;
 }
 
 static u16 a2dp_max_interval = 0;
+#define A2DP_EST_AUDIO_CAPACITY             350//ms
 
 static void a2dp_stream_underrun_feedback(void *priv)
 {
@@ -1873,6 +1746,11 @@ static void a2dp_stream_underrun_feedback(void *priv)
 
     if (a2dp_delay_time < a2dp_max_interval + 50) {
         a2dp_delay_time = a2dp_max_interval + 50;
+    } else {
+        a2dp_delay_time += 50;
+    }
+    if (a2dp_delay_time > A2DP_EST_AUDIO_CAPACITY) {
+        a2dp_delay_time = A2DP_EST_AUDIO_CAPACITY;
     }
 }
 
@@ -1881,12 +1759,12 @@ void reset_a2dp_sbc_instant_time(u16 time)
 {
     if (a2dp_max_interval < time) {
         a2dp_max_interval = time;
-        if (a2dp_max_interval > 350) {
-            a2dp_max_interval = 350;
-        }
 #if A2DP_FLUENT_STREAM_MODE
         if (a2dp_max_interval > a2dp_delay_time) {
             a2dp_delay_time = a2dp_max_interval + 5;
+            if (a2dp_delay_time > A2DP_EST_AUDIO_CAPACITY) {
+                a2dp_delay_time = A2DP_EST_AUDIO_CAPACITY;
+            }
         }
 #endif
         /*printf("Max : %dms\n", time);*/
@@ -1903,35 +1781,70 @@ static void a2dp_stream_stability_detect(void *priv)
     }
 
     if (a2dp_delay_time > dec->delay_time) {
-        if (a2dp_max_interval < a2dp_delay_time && a2dp_max_interval > dec->delay_time) {
-            a2dp_delay_time = a2dp_max_interval + 3;
-            a2dp_max_interval = dec->delay_time;
+        if (a2dp_max_interval < a2dp_delay_time) {
+            a2dp_delay_time -= 50;
+            if (a2dp_delay_time < dec->delay_time) {
+                a2dp_delay_time = dec->delay_time;
+            }
+
+            if (a2dp_delay_time < a2dp_max_interval) {
+                a2dp_delay_time = a2dp_max_interval + 5;
+            }
         }
+        a2dp_max_interval = dec->delay_time;
     }
 }
 
+static int a2dp_decoder_stream_is_available(struct a2dp_dec_hdl *dec)
+{
+    int err = 0;
+    u8 *packet = NULL;
+    int len = 0;
+    int drop = 0;
+
+#if AUDIO_CODEC_SUPPORT_SYNC
+    if (dec->sync_step) {
+        return 0;
+    }
+
+    packet = (u8 *)a2dp_media_fetch_packet(&len, NULL);
+    if (!packet) {
+        return -EINVAL;
+    }
+
+    dec->seqn = RB16(packet + 2);
+    if (dec->ts_handle) {
+        if (!a2dp_audio_timestamp_is_available(dec->ts_handle, dec->seqn, 0, &drop)) {
+            if (drop) {
+                a2dp_media_free_packet(packet);
+            }
+            return -EINVAL;
+        }
+    }
+    dec->sync_step = 2;
+#endif
+
+    return 0;
+}
 
 static int a2dp_dec_probe_handler(struct audio_decoder *decoder)
 {
     struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
     int err = 0;
 
-    if (a2dp_suspend) {
+    err = a2dp_decoder_stream_is_available(dec);
+    if (err) {
         audio_decoder_suspend(decoder, 0);
-        return -EAGAIN;
-    }
-
-    err = a2dp_decoder_try_get_packet(decoder);
-    if (err) {
-        return err;
-    }
-
-    err = a2dp_decoder_check_rx_stream(decoder);
-    if (err) {
         return err;
     }
 
     err = a2dp_decoder_audio_sync_handler(decoder);
+    if (err) {
+        audio_decoder_suspend(decoder, 0);
+        return err;
+    }
+
+    dec->new_frame = 1;
 
     a2dp_dec_set_output_channel(dec);
 
@@ -1947,49 +1860,8 @@ void a2dp_digital_vol_set(u8 vol)
 }
 #endif
 
-static int a2dp_dec_output_handler(struct audio_decoder *decoder, s16 *data, int len, void *priv)
+static int a2dp_decoder_eq_drc_filter(void *priv, void *data, int len)
 {
-    int wlen = 0;
-    int drop_len = 0;
-    struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
-
-
-    if (!dec->remain) {
-#if AUDIO_CODEC_SUPPORT_SYNC
-        if (dec->sync) {
-            audio_wireless_sync_after_dec(dec->sync, data, len);
-        }
-        if (dec->drop_points) {
-            int points = (len >> 1) / dec->ch;
-            if (points <= dec->drop_points) {
-                dec->drop_points -= points;
-                dec->droped_points += len >> 1;
-                return len;
-            }
-            drop_len = (dec->drop_points << 1) * dec->ch;
-            dec->droped_points += drop_len >> 1;
-            len -= drop_len;
-            data += (dec->drop_points * dec->ch);
-            dec->drop_points = 0;
-        }
-#endif
-#if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
-        audio_digital_vol_run(a2dp_dec->dvol, data, len);
-#endif
-
-#if AUDIO_SURROUND_CONFIG
-        if (dec->surround) {
-            audio_surround_run(dec->surround, data, len);
-        }
-#endif
-
-#if AUDIO_VBASS_CONFIG
-        if (dec->vbass) {
-            audio_vbass_run(dec->vbass, data, len);
-        }
-#endif
-
-    }
 #if TCFG_BT_MUSIC_EQ_ENABLE
 #if A2DP_EQ_SUPPORT_ASYNC
     if (a2dp_eq) {
@@ -2004,42 +1876,99 @@ static int a2dp_dec_output_handler(struct audio_decoder *decoder, s16 *data, int
 #else
         eqlen = audio_eq_run(a2dp_eq, data, len);
 #endif
-        if (eqlen >= len) {
-            dec->remain = 0;
-        } else {
-            dec->remain = 1;
-        }
-        return eqlen + drop_len;
+        return eqlen;
     }
 #endif
 #endif
+    return len;
+}
 
+static int a2dp_output_after_syncts_filter(void *priv, void *data, int len)
+{
+    int wlen = 0;
+    int drop_len = 0;
+    struct a2dp_dec_hdl *dec = (struct a2dp_dec_hdl *)priv;
+
+#if AUDIO_CODEC_SUPPORT_SYNC
+    if (dec->ts_start == 1) {
+        u32 timestamp = dec->timestamp;
+        u32 current_time = (bt_audio_sync_lat_time() + 20000 / 625) * 625 * TIME_US_FACTOR;
+#define time_after_timestamp(t1, t2) \
+        ((t1 > t2 && ((t1 - t2) < (1000000L * TIME_US_FACTOR))) || (t1 < t2 && ((t2 - t1) > (1000000L * TIME_US_FACTOR))))
+        if (time_after_timestamp(current_time, timestamp)) {
+            sound_pcm_update_frame_num(dec->syncts, len / 2 / dec->ch);
+            return len;
+        }
+        dec->mix_ch_event_params[2] = timestamp;
+        dec->ts_start = 2;
+    }
+#endif
+
+#if TCFG_BT_MUSIC_EQ_ENABLE
+    return a2dp_decoder_eq_drc_filter(dec, data, len);
+#endif
+    return audio_mixer_ch_write(&dec->mix_ch, data, len);
+}
+
+static void audio_filter_resume_decoder(void *priv)
+{
+    struct audio_decoder *decoder = (struct audio_decoder *)priv;
+
+    audio_decoder_resume(decoder);
+}
+
+static int a2dp_dec_output_handler(struct audio_decoder *decoder, s16 *data, int len, void *priv)
+{
+    int wlen = 0;
+    struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
 
     if (!dec->remain) {
-#if TCFG_BT_MUSIC_EQ_ENABLE
-        if (a2dp_eq) {
-            audio_eq_run(a2dp_eq, data, len);
+        if (len == 0) {
+            a2dp_decoder_stream_free(dec, NULL);
+            if (!dec->stream_error) {
+                dec->stream_error = A2DP_STREAM_DECODE_ERR;
+            }
+            return 0;
+        }
+#if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
+        audio_digital_vol_run(dec->dvol, data, len);
+#endif
+
+#if AUDIO_SURROUND_CONFIG
+        if (dec->surround) {
+            audio_surround_run(dec->surround, data, len);
         }
 #endif
-#if TCFG_BT_MUSIC_DRC_ENABLE
-        if (a2dp_drc) {
-            audio_drc_run(a2dp_drc, data, len);
+
+#if AUDIO_VBASS_CONFIG
+        if (dec->vbass) {
+            audio_vbass_run(dec->vbass, data, len);
         }
 #endif
-
+        if (dec->stream_error) {
+            memset(data, 0x0, len);
+        }
+#if A2DP_AUDIO_PLC_ENABLE
+        if (dec->plc_ops) {
+            dec->plc_ops->run(dec->plc_mem, data, data, len >> 1, dec->stream_error ? 2 : 0);
+        }
+#endif
     }
-
-    wlen = audio_mixer_ch_write(&dec->mix_ch, data, len);
-
-    int remain_len = len - wlen;
-
-    if (remain_len == 0) {
-        dec->remain = 0;
-    } else {
-        dec->remain = 1;
+#if AUDIO_CODEC_SUPPORT_SYNC
+    if (dec->syncts) {
+        int wlen = audio_syncts_frame_filter(dec->syncts, data, len);
+        if (wlen < len) {
+            audio_syncts_trigger_resume(dec->syncts, (void *)decoder, audio_filter_resume_decoder);
+        }
+        dec->remain = wlen < len ? 1 : 0;
+        return wlen;
     }
-    return wlen + drop_len;
+#endif
+    wlen = a2dp_output_after_syncts_filter(dec, data, len);
+    dec->remain = wlen < len ? 1 : 0;
+    return wlen;
 }
+
 
 static int a2dp_dec_post_handler(struct audio_decoder *decoder)
 {
@@ -2198,22 +2127,88 @@ static void a2dp_decoder_surround_vbass_setup(struct a2dp_dec_hdl *dec, struct a
 #endif
 }
 
-static void a2dp_decoder_sync_filter_setup(struct a2dp_dec_hdl *dec)
+static int a2dp_decoder_syncts_setup(struct a2dp_dec_hdl *dec)
 {
+    int err = 0;
 #if AUDIO_CODEC_SUPPORT_SYNC
-    if (!dec->sync) {
-        dec->sync = a2dp_play_sync_open(dec->ch, dec->sample_rate, A2DP_TO_PCM_DEVICE_FORMAT ? A2DP_TO_PCM_DEVICE_FORMAT : dec->sample_rate, dec->coding_type);
+    struct audio_syncts_params params;
+
+    params.nch = dec->ch;
+    params.pcm_device = PCM_INSIDE_DAC;
+    params.network = AUDIO_NETWORK_BT2_1;
+    params.rin_sample_rate = dec->sample_rate;
+    params.rout_sample_rate = dec->sample_rate;
+    params.priv = dec;
+    params.factor = TIME_US_FACTOR;
+    params.output = a2dp_output_after_syncts_filter;
+
+    bt_audio_sync_nettime_select(0);//0 - a2dp主机，1 - tws, 2 - BLE
+
+    int distance_time = a2dp_delay_time - a2dp_media_get_remain_play_time(1);
+    if (!a2dp_low_latency) {
+        distance_time = a2dp_delay_time;
+    } else if (distance_time < 0) {
+        distance_time = 0;
+    }
+    dec->time_base = bt_audio_sync_lat_time() + msecs_to_bt_time(distance_time);
+    dec->ts_handle = a2dp_audio_timestamp_create(dec->sample_rate, dec->time_base, TIME_US_FACTOR);
+
+    err = audio_syncts_open(&dec->syncts, &params);
+    if (!err) {
+        dec->mix_ch_event_params[0] = (u32)&dec->mix_ch;
+        dec->mix_ch_event_params[1] = (u32)dec->syncts;
+        dec->mix_ch_event_params[2] = dec->time_base * 625 * TIME_US_FACTOR;
+        audio_mixer_ch_set_event_handler(&dec->mix_ch, (void *)dec->mix_ch_event_params, audio_mix_ch_event_handler);
     }
 
-    if (dec->sync) {
-        audio_mixer_ch_set_event_handler(&dec->mix_ch, dec, bt_audio_mixer_ch_event_handler);
-        audio_wireless_sync_info_init(dec->sync, dec->sample_rate, A2DP_TO_PCM_DEVICE_FORMAT ? A2DP_TO_PCM_DEVICE_FORMAT : dec->sample_rate, dec->ch);
+    dec->sync_step = 0;
+#endif
+    return err;
+}
+
+static void a2dp_decoder_syncts_free(struct a2dp_dec_hdl *dec)
+{
+#if AUDIO_CODEC_SUPPORT_SYNC
+    if (dec->ts_handle) {
+        a2dp_audio_timestamp_close(dec->ts_handle);
+        dec->ts_handle = NULL;
+    }
+    if (dec->syncts) {
+        audio_syncts_close(dec->syncts);
+        dec->syncts = NULL;
+    }
+#endif
+}
+
+static int a2dp_decoder_plc_setup(struct a2dp_dec_hdl *dec)
+{
+#if A2DP_AUDIO_PLC_ENABLE
+    int plc_mem_size;
+    dec->plc_ops = get_lfaudioPLC_api();
+    plc_mem_size = dec->plc_ops->need_buf(dec->ch); // 3652bytes，请衡量是否使用该空间换取PLC处理
+    dec->plc_mem = malloc(plc_mem_size);
+    if (!dec->plc_mem) {
+        dec->plc_ops = NULL;
+        return -ENOMEM;
+    }
+    dec->plc_ops->open(dec->plc_mem, dec->ch, a2dp_low_latency ? 0 : 4);
+#endif
+    return 0;
+}
+
+static void a2dp_decoder_plc_free(struct a2dp_dec_hdl *dec)
+{
+#if A2DP_AUDIO_PLC_ENABLE
+    if (dec->plc_mem) {
+        free(dec->plc_mem);
+        dec->plc_mem = NULL;
     }
 #endif
 }
 
 static void a2dp_decoder_match_system_clock(struct a2dp_dec_hdl *dec)
 {
+#if 0
     /*
      * A2DP解码时钟设置：
      * 1、普通设置
@@ -2244,7 +2239,9 @@ static void a2dp_decoder_match_system_clock(struct a2dp_dec_hdl *dec)
 #if (AUDIO_VBASS_CONFIG || AUDIO_SURROUND_CONFIG)
     clk_set_sys_lock(SYS_64M, 0) ;
 #endif
-
+#else
+    audio_codec_clock_set(AUDIO_A2DP_MODE, dec->coding_type, dec->wait.preemption);
+#endif
 }
 
 void audio_overlay_load_code(u32 type);
@@ -2303,6 +2300,7 @@ int a2dp_dec_start()
 
     audio_mixer_ch_open(&dec->mix_ch, &mixer);
     audio_mixer_ch_set_sample_rate(&dec->mix_ch, fmt->sample_rate);
+    audio_mixer_ch_set_resume_handler(&dec->mix_ch, (void *)&dec->decoder, (void (*)(void *))audio_decoder_resume);
 
     app_audio_state_switch(APP_AUDIO_STATE_MUSIC, get_max_sys_vol());
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
@@ -2312,17 +2310,18 @@ int a2dp_dec_start()
     a2dp_decoder_eq_filter_setup(dec, fmt);
     a2dp_decoder_drc_filter_setup(dec, fmt);
     a2dp_decoder_surround_vbass_setup(dec, fmt);
-    a2dp_decoder_sync_filter_setup(dec);
+    a2dp_decoder_syncts_setup(dec);
+    a2dp_decoder_plc_setup(dec);
 
     a2dp_drop_frame_stop();
     dec->remain = 0;
+    dec->stream_error = 0;
     a2dp_decoder_match_system_clock(dec);
 #if A2DP_KSR_AEC_ENABLE
     extern int KSR_aec_open(u16 in_sr, u16 ref_sr);
     KSR_aec_open(16000, A2DP_TO_PCM_DEVICE_FORMAT);
 #endif/*A2DP_KSR_AEC_ENABLE*/
 
-    dec->state = A2DP_STREAM_START;
     err = audio_decoder_start(&dec->decoder);
     if (err) {
         goto __err3;
@@ -2350,15 +2349,9 @@ static int __a2dp_audio_res_close(void)
     }
     audio_decoder_close(&a2dp_dec->decoder);
     audio_mixer_ch_close(&a2dp_dec->mix_ch);
-#if AUDIO_CODEC_SUPPORT_SYNC
-    if (a2dp_dec->sync) {
-        audio_wireless_sync_close(a2dp_dec->sync);
-        a2dp_dec->sync = NULL;
-        a2dp_dec->preempt_state = DEC_PREEMTED_BY_PRIORITY;
-        a2dp_dec->sync_step = 0;
-    }
-    a2dp_dec->droped_points = 0;
-#endif
+    a2dp_decoder_syncts_free(a2dp_dec);
+    a2dp_decoder_plc_free(a2dp_dec);
+    a2dp_decoder_stream_free(a2dp_dec, NULL);
 #if TCFG_BT_MUSIC_EQ_ENABLE
     if (a2dp_eq) {
         audio_eq_close(a2dp_eq);
@@ -2406,7 +2399,11 @@ static int __a2dp_audio_res_close(void)
     audio_digital_vol_close(a2dp_dec->dvol);
     a2dp_dec->dvol = NULL;
 #endif
+#if 0
     clk_set_sys_lock(BT_NORMAL_HZ, 0);
+#else
+    audio_codec_clock_del(AUDIO_A2DP_MODE);
+#endif
 
     app_audio_state_exit(APP_AUDIO_STATE_MUSIC);
     return 0;
@@ -2497,7 +2494,6 @@ int a2dp_dec_open(int media_type)
     audio_decoder_task_add_wait(&decode_task, &dec->wait);
 
     if (a2dp_dec && (a2dp_dec->start == 0)) {
-        a2dp_dec->preempt_state = DEC_PREEMTED_BY_PRIORITY;
         a2dp_drop_frame_start();
     }
 
@@ -2707,25 +2703,6 @@ void a2dp_tws_dec_resume(void)
     }
 }
 
-static int esco_dec_stop_and_restart(struct audio_decoder *decoder)
-{
-    struct esco_dec_hdl *dec = container_of(decoder, struct esco_dec_hdl, decoder);
-
-#if AUDIO_CODEC_SUPPORT_SYNC
-    if (audio_sync) {
-        audio_wireless_sync_stop(audio_sync);
-        audio_mixer_ch_reset(&dec->mix_ch);
-#if AUDIO_OUT_EFFECT_ENABLE
-        audio_out_effect_stream_clear();
-#endif
-        audio_dac_sound_reset(&dac_hdl, 300);
-        dec->sync_step = 0;
-    }
-#endif
-
-    return 0;
-}
-
 
 static const u8 msbc_mute_data[] = {
     0xAD, 0x00, 0x00, 0xC5, 0x00, 0x00, 0x00, 0x00, 0x77, 0x6D, 0xB6, 0xDD, 0xDB, 0x6D, 0xB7, 0x76,
@@ -2792,7 +2769,19 @@ __again:
             printf("rlen=%d ", len);
             return -EIO;
         }
-
+#if AUDIO_CODEC_SUPPORT_SYNC
+        u32 timestamp;
+        if (dec->ts_handle) {
+            timestamp = esco_audio_timestamp_update(dec->ts_handle, hash);
+            if (dec->syncts) {
+                audio_syncts_next_pts(dec->syncts, timestamp);
+            }
+            if (!dec->ts_start) {
+                dec->ts_start = 1;
+                dec->mix_ch_event_params[2] = (timestamp / TIME_US_FACTOR) / 625;
+            }
+        }
+#endif
 #if (defined(TCFG_PHONE_MESSAGE_ENABLE) && (TCFG_PHONE_MESSAGE_ENABLE))
         phone_message_enc_write(dec->frame + 2, len - 2);
 #endif
@@ -2833,6 +2822,7 @@ static int esco_dec_rx_delay_monitor(struct audio_decoder *decoder, struct rt_st
 {
     struct esco_dec_hdl *dec = container_of(decoder, struct esco_dec_hdl, decoder);
 
+#if 0
     if (!dec->sync_step) {
         if (info->data_len <= 0) {
             return -EAGAIN;
@@ -2854,6 +2844,7 @@ static int esco_dec_rx_delay_monitor(struct audio_decoder *decoder, struct rt_st
         info->distance_time = 15;
     }
 
+#endif
     /*printf("%d - %d\n", info->data_len, info->remain_len);*/
     return 0;
 }
@@ -2872,35 +2863,6 @@ static int esco_dec_probe_handler(struct audio_decoder *decoder)
         audio_decoder_suspend(decoder, 0);
         return -EAGAIN;
     }
-
-#if AUDIO_CODEC_SUPPORT_SYNC
-    if (audio_sync) {
-        err = esco_dec_rx_delay_monitor(decoder, &rts_info);
-        if (err) {
-            audio_decoder_suspend(decoder, 0);
-            return -EAGAIN;
-        }
-        err = audio_wireless_sync_probe(audio_sync, &rts_info);
-        if (err) {
-            if (err == SYNC_ERR_STREAM_RESET) {
-                puts("esco_dec_stop_and_restart\n");
-                esco_dec_stop_and_restart(decoder);
-            }
-            return -EAGAIN;
-        }
-#if TCFG_USER_TWS_ENABLE
-        if (tws_network_audio_was_started()) {
-            tws_network_local_audio_start();
-            audio_dac_sound_reset(&dac_hdl, 500);
-        }
-#endif
-
-        if (dec->preempt_state == DEC_PREEMTED_BY_PRIORITY) {
-            dec->preempt_state = DEC_RUN_BY_ITSELF;
-            audio_dac_sound_reset(&dac_hdl, 500);
-        }
-    }
-#endif
 
     return err;
 }
@@ -3003,8 +2965,8 @@ int esco_dl_ns_open(u16 sr)
         ns_para.wideband = 1;
     }
     noise_suppress_open(&ns_para);
-    float nf = -60.f;
-    noise_suppress_config(NS_CMD_NOISE_FLOOR, 0, &nf);
+    float lowcut = -60.f;
+    noise_suppress_config(NS_CMD_LOWCUTTHR, 0, &lowcut);
     printf("esco_dl_ns_open ok\n");
     return 0;
 }
@@ -3034,6 +2996,60 @@ static inline void audio_pcm_mono_to_dual(s16 *dual_pcm, s16 *mono_pcm, int poin
         *dual_pcm++ = *mono;
         *dual_pcm++ = *mono;
     }
+}
+
+static int esco_output_after_syncts_filter(void *priv, s16 *data, int len)
+{
+    struct esco_dec_hdl *dec = (struct esco_dec_hdl *)priv;
+    int wlen = 0;
+
+#if TCFG_AUDIO_OUTPUT_IIS
+    s16 *tdata = (s16 *)t_esco_buf;
+    int n = 0;
+    for (n = 0; n < len / 2; n++) {
+        tdata[n * 2] = data[n];
+        tdata[n * 2 + 1] = data[n];
+    }
+
+    wlen = audio_mixer_ch_write(&dec->mix_ch, tdata, len << 1);
+    wlen >>= 1;
+#else
+    s16 two_ch_data[MONO_TO_DUAL_POINTS * 2];
+    s16 point_num = 0;
+    u8 mono_to_dual = 0;
+    s16 *mono_data = (s16 *)data;
+    u16 remain_points = (len >> 1);
+    /*
+     *如果dac输出是双声道，因为esco解码出来时单声道
+     *所以这里要根据dac通道确定是否做单变双
+     */
+
+#if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_LR)
+    mono_to_dual = 1;
+#endif
+    if (mono_to_dual) {
+        do {
+            point_num = MONO_TO_DUAL_POINTS;
+            if (point_num >= remain_points) {
+                point_num = remain_points;
+            }
+            audio_pcm_mono_to_dual(two_ch_data, mono_data, point_num);
+            int tmp_len = audio_mixer_ch_write(&dec->mix_ch, two_ch_data, point_num << 2);
+            wlen += tmp_len;
+            remain_points -= (tmp_len >> 2);
+            if (tmp_len < (point_num << 2)) {
+                break;
+            }
+            mono_data += point_num;
+        } while (remain_points);
+        wlen >>= 1;
+    } else {
+        wlen = audio_mixer_ch_write(&dec->mix_ch, data, len);
+    }
+#endif
+
+    return wlen;
+
 }
 
 static int esco_dec_output_handler(struct audio_decoder *decoder, s16 *buf, int size, void *priv)
@@ -3068,12 +3084,6 @@ static int esco_dec_output_handler(struct audio_decoder *decoder, s16 *buf, int 
 #if (defined(TCFG_PHONE_MESSAGE_ENABLE) && (TCFG_PHONE_MESSAGE_ENABLE))
         phone_message_call_api_esco_out_data(data, len);
 #endif/*TCFG_PHONE_MESSAGE_ENABLE*/
-
-#if AUDIO_CODEC_SUPPORT_SYNC
-        if (audio_sync) {
-            audio_wireless_sync_after_dec(audio_sync, data, len);
-        }
-#endif/*AUDIO_CODEC_SUPPORT_SYNC*/
         if (priv) {
             audio_plc_run(data, len, *(u8 *)priv);
         }
@@ -3138,52 +3148,21 @@ static int esco_dec_output_handler(struct audio_decoder *decoder, s16 *buf, int 
 #endif
     }
 
-#if TCFG_AUDIO_OUTPUT_IIS
-    s16 *tdata = (s16 *)t_esco_buf;
-    int n = 0;
-    for (n = 0; n < len / 2; n++) {
-        tdata[n * 2] = data[n];
-        tdata[n * 2 + 1] = data[n];
-    }
-
-    wlen = audio_mixer_ch_write(&dec->mix_ch, tdata, len << 1);
-    wlen >>= 1;
-#else
-    s16 two_ch_data[MONO_TO_DUAL_POINTS * 2];
-    s16 point_num = 0;
-    u8 mono_to_dual = 0;
-    s16 *mono_data = (s16 *)data;
-    u16 remain_points = (len >> 1);
-    /*
-     *如果dac输出是双声道，因为esco解码出来时单声道
-     *所以这里要根据dac通道确定是否做单变双
-     */
-
-#if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_LR)
-    mono_to_dual = 1;
-#endif
-    if (mono_to_dual) {
-        do {
-            point_num = MONO_TO_DUAL_POINTS;
-            if (point_num >= remain_points) {
-                point_num = remain_points;
-            }
-            audio_pcm_mono_to_dual(two_ch_data, mono_data, point_num);
-            int tmp_len = audio_mixer_ch_write(&dec->mix_ch, two_ch_data, point_num << 2);
-            wlen += tmp_len;
-            remain_points -= (tmp_len >> 2);
-            if (tmp_len < (point_num << 2)) {
-                break;
-            }
-            mono_data += point_num;
-        } while (remain_points);
-        wlen >>= 1;
-    } else {
-        wlen = audio_mixer_ch_write(&dec->mix_ch, data, len);
+#if AUDIO_CODEC_SUPPORT_SYNC
+    if (dec->syncts) {
+        wlen = audio_syncts_frame_filter(dec->syncts, data, len);
+        if (wlen < len) {
+            audio_syncts_trigger_resume(dec->syncts, (void *)decoder, audio_filter_resume_decoder);
+        }
+        goto ret_handle;
     }
 #endif
+    wlen = esco_output_after_syncts_filter(dec, data, len);
 
+ret_handle:
     int remain_len = len - wlen;
+
+    dec->remain = remain_len;
 
 #if TCFG_ESCO_DL_NS_ENABLE
     if (remain_len == 0) {
@@ -3194,8 +3173,6 @@ static int esco_dec_output_handler(struct audio_decoder *decoder, s16 *buf, int 
 #else
     ret_len = wlen;
 #endif/*TCFG_ESCO_DL_NS_ENABLE*/
-    dec->remain = remain_len;
-
     return ret_len;
 }
 
@@ -3268,6 +3245,52 @@ int esco_dec_dac_gain_set(u8 gain)
     return 0;
 }
 
+static int esco_decoder_syncts_setup(struct esco_dec_hdl *dec)
+{
+    int err = 0;
+#if AUDIO_CODEC_SUPPORT_SYNC
+#define ESCO_DELAY_TIME     50
+    struct audio_syncts_params params;
+    int sample_rate = dec->decoder.fmt.sample_rate;
+
+    params.nch = dec->decoder.fmt.channel;
+    params.pcm_device = PCM_INSIDE_DAC;
+    params.network = AUDIO_NETWORK_BT2_1;
+    params.rin_sample_rate = sample_rate;
+    params.rout_sample_rate = sample_rate;
+    params.priv = dec;
+    params.factor = TIME_US_FACTOR;
+    params.output = (int (*)(void *, void *, int))esco_output_after_syncts_filter;
+
+    bt_audio_sync_nettime_select(0);//0 - 主机，1 - tws, 2 - BLE
+    u8 frame_clkn = dec->esco_len >= 60 ? 12 : 6;
+    dec->ts_handle = esco_audio_timestamp_create(frame_clkn, ESCO_DELAY_TIME, TIME_US_FACTOR);
+
+    audio_syncts_open(&dec->syncts, &params);
+    if (!err) {
+        dec->mix_ch_event_params[0] = (u32)&dec->mix_ch;
+        dec->mix_ch_event_params[1] = (u32)dec->syncts;
+        audio_mixer_ch_set_event_handler(&dec->mix_ch, (void *)dec->mix_ch_event_params, audio_mix_ch_event_handler);
+    }
+    dec->ts_start = 0;
+#endif
+    return err;
+}
+
+static void esco_decoder_syncts_free(struct esco_dec_hdl *dec)
+{
+#if AUDIO_CODEC_SUPPORT_SYNC
+    if (dec->ts_handle) {
+        esco_audio_timestamp_close(dec->ts_handle);
+        dec->ts_handle = NULL;
+    }
+    if (dec->syncts) {
+        audio_syncts_close(dec->syncts);
+        dec->syncts = NULL;
+    }
+#endif
+}
+
 int esco_dec_start()
 {
     int err;
@@ -3315,6 +3338,7 @@ int esco_dec_start()
     audio_mixer_set_output_buf(&mixer, mix_buff, mix_buf_len_fix);
     audio_mixer_ch_open(&dec->mix_ch, &mixer);
     audio_mixer_ch_set_sample_rate(&dec->mix_ch, f.sample_rate);
+    audio_mixer_ch_set_resume_handler(&dec->mix_ch, (void *)&dec->decoder, (void (*)(void *))audio_decoder_resume);
 
     app_audio_state_switch(APP_AUDIO_STATE_CALL, app_var.aec_dac_gain);
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
@@ -3369,14 +3393,7 @@ int esco_dec_start()
 
 
 #if AUDIO_CODEC_SUPPORT_SYNC
-    if (!audio_sync) {
-        audio_sync = esco_play_sync_open(f.channel, f.sample_rate, f.sample_rate);
-    }
-
-    if (audio_sync) {
-        audio_mixer_ch_set_event_handler(&dec->mix_ch, dec, bt_audio_mixer_ch_event_handler);
-        audio_wireless_sync_info_init(audio_sync, f.sample_rate, f.sample_rate, f.channel);
-    }
+    esco_decoder_syncts_setup(dec);
 #endif/*AUDIO_CODEC_SUPPORT_SYNC*/
 
     audio_dac_set_delay_time(&dac_hdl, 30, 50);
@@ -3407,12 +3424,13 @@ int esco_dec_start()
         //goto __err3;
     }
 
-    dec->enc_start = 1; //该函数所在任务优先级低可能未open编码就开始解码，加入enc开始的标志防止解码过快输出
-    printf("esco_dec_start ok\n");
-
 #if ESCO_DRC_EN
     clk_set_sys_lock(96 * (1000000L), 0);
 #endif
+    audio_codec_clock_set(AUDIO_ESCO_MODE, dec->coding_type, dec->wait.preemption);
+    dec->enc_start = 1; //该函数所在任务优先级低可能未open编码就开始解码，加入enc开始的标志防止解码过快输出
+    printf("esco_dec_start ok\n");
+
     return 0;
 
 __err3:
@@ -3443,12 +3461,9 @@ static int __esco_dec_res_close(void)
     audio_dac_set_delay_time(&dac_hdl, 30, AUDIO_DAC_DELAY_TIME);
 #endif
 #if AUDIO_CODEC_SUPPORT_SYNC
-    if (audio_sync) {
-        audio_wireless_sync_close(audio_sync);
-        audio_sync = NULL;
-        esco_dec->sync_step = 0;
-        esco_dec->preempt_state = DEC_PREEMTED_BY_PRIORITY;
-    }
+    esco_decoder_syncts_free(esco_dec);
+    esco_dec->sync_step = 0;
+    esco_dec->preempt_state = DEC_PREEMTED_BY_PRIORITY;
 #endif
 #if TCFG_PHONE_EQ_ENABLE
     if (esco_eq) {
@@ -3487,6 +3502,7 @@ static int __esco_dec_res_close(void)
     audio_noise_gate_close();
 #endif/*TCFG_AUDIO_NOISE_GATE*/
 
+    audio_codec_clock_del(AUDIO_ESCO_MODE);
     return 0;
 }
 static int esco_wait_res_handler(struct audio_res_wait *wait, int event)
@@ -3616,6 +3632,11 @@ int audio_dec_init()
 
     tone_play_init();
 
+#if TCFG_KEY_TONE_EN
+    // 按键音初始化
+    audio_key_tone_init();
+#endif
+
     /*os_sem_create(&dac_sem, 0);*/
     err = audio_decoder_task_create(&decode_task, "audio_dec");
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
@@ -3661,17 +3682,12 @@ int audio_dec_init()
     } else {
         audio_dac_set_trim_value(&dac_hdl, &dac_trim);
     }
-    if (len != sizeof(dac_trim)) {
-        audio_dac_do_trim(&dac_hdl, &dac_trim, 0);
-        syscfg_write(CFG_DAC_TRIM_INFO, (void *)&dac_trim, sizeof(dac_trim));
-    }
 #if TCFG_MC_BIAS_AUTO_ADJUST
     mic_trim_run();
 #endif/*TCFG_MC_BIAS_AUTO_ADJUST*/
     audio_dac_set_fade_handler(&dac_hdl, NULL, audio_fade_in_fade_out);
 #if AUDIO_CODEC_SUPPORT_SYNC
-    audio_dac_set_sync_buff(&dac_hdl, dac_sync_buff, sizeof(dac_sync_buff));
-    audio_dac_set_sync_filt_buff(&dac_hdl, dac_sync_filt, sizeof(dac_sync_filt));
+    audio_sync_resample_set_filt(dac_sync_filt, sizeof(dac_sync_filt));
 #endif
 
     /*硬件SRC模块滤波器buffer设置，可根据最大使用数量设置整体buffer*/
@@ -3791,8 +3807,8 @@ void vbass_udate_parm_test(void *p)
 /*----------------------------------------------------------------------------*/
 u32 audio_output_nor_rate(void)
 {
-#if TCFG_IIS_ENABLE
-    return TCFG_IIS_OUTPUT_SR;
+#if (TCFG_IIS_ENABLE && TCFG_AUDIO_OUTPUT_IIS)
+    return TCFG_IIS_SAMPLE_RATE;
 #endif
 #if AUDIO_OUTPUT_INCLUDE_DAC
 

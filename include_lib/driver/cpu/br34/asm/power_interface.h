@@ -36,6 +36,7 @@ enum {
     P33_POWER_RETURN = 23,
     /*SUB*/
     P33_EXCEPTION_SOFT_RST = 24,
+    P33_ASSERT_SOFT_RST = 25,
 };
 
 enum {

@@ -474,7 +474,7 @@ enum {
     VDC13_VOL_SEL_140V,
 };
 
-#define GET_VD13_HD_SEL()       (P33_CON_GET(P3_ANA_CON6) & 0x7)
+#define GET_VD13_VOL_SEL()       (P33_CON_GET(P3_ANA_CON6) & 0x7)
 
 #define VD13_HD_SEL(sel)        P33_CON_SET(P3_ANA_CON6, 3, 2, sel)
 
@@ -695,6 +695,19 @@ enum {
 #define VLVD_PND_CLR(clr)       P33_CON_SET(P3_VLVD_CON, 6, 1, en)
 
 #define VLVD_PND(pend)          P33_CON_SET(P3_VLVD_CON, 7, 1, en)
+
+/*******************************************************************/
+
+/*
+ *-------------------P3_PCNT_SET0
+ */
+
+#define	SET_EXCEPTION_FLAG()	 P33_CON_SET(P3_PCNT_SET0, 0, 8, 0xab)
+
+#define GET_EXCEPTION_FLAG()	((P33_CON_GET(P3_PCNT_SET0) == 0xab) ? 1 : 0)
+#define GET_ASSERT_FLAG()		((P33_CON_GET(P3_PCNT_SET0) == 0xac) ? 1 : 0)
+
+#define SOFT_RESET_FLAG_CLEAR()	(P33_CON_SET(P3_PCNT_SET0, 0, 8, 0))
 /*******************************************************************/
 
 /*

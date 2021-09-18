@@ -158,10 +158,36 @@ u32 adc_check_vbat_lowpower()
     /* u32 vbat = adc_get_value(AD_CH_VBAT); */
     /* return __builtin_abs(vbat - 255) < 5; */
 }
-
 void adc_audio_ch_select(u32 ch)
 {
-    SFR(JL_ANA->DAA_CON0, 12, 4, ch);
+    u8 tmp_ch = 0b1110011;
+    if ((ch == 2) || (ch == 3)) {
+
+        tmp_ch |= BIT(ch);
+    } else {
+
+        tmp_ch &= ~BIT(ch);
+    }
+    SFR(JL_ANA->ADA_CON3, 24, 7, tmp_ch);
+}
+
+void adc_pll_detect_en(u32 ch)
+{
+    JL_CLOCK->PLL_CON1 |= BIT(18);//pll
+    SFR(JL_CLOCK->PLL_CON1, 16, 2, ch);
+}
+
+void adc_fm_detect_en(u32 ch)
+{
+
+    JL_ANA->WLA_CON25 |= (BIT(19));//fm
+    SFR(JL_ANA->WLA_CON25, 21, 3, ch);
+}
+
+void adc_bt_detect_en(u32 ch)
+{
+
+    JL_ANA->WLA_CON4 |= (BIT(6));//bt
 }
 
 void adc_close()
@@ -246,6 +272,31 @@ u8 __attribute__((weak)) adc_io_reuse_exit(u32 ch)
     return 0;
 }
 
+static void adc_ch_mux_select(u32 mux_ch)
+{
+#if 1
+    //先把所有复用通道都关了
+    P33_CON_SET(P3_ANA_CON4, 0, 1, 0);//pmu
+    SFR(JL_ANA->ADA_CON3, 24, 7, 0b1110011);//audio
+    JL_CLOCK->PLL_CON1 &= ~BIT(18);//pll
+    JL_ANA->WLA_CON25 &= ~(BIT(19));//fm
+    JL_ANA->WLA_CON4 &= ~(BIT(6));//bt
+#endif
+
+    if ((mux_ch & 0xfffff) == AD_OF_PMU) {
+        adc_pmu_detect_en(1);
+        adc_pmu_ch_select(mux_ch >> 20);
+    } else if ((mux_ch & 0xfffff) == AD_OF_AUDIO) {
+        adc_audio_ch_select(mux_ch >> 20);
+    } else if ((mux_ch & 0xfffff) == AD_OF_PLL) {
+        adc_pll_detect_en(mux_ch >> 20);
+    } else if ((mux_ch & 0xfffff) == AD_OF_FM) {
+        adc_fm_detect_en(mux_ch >> 20);
+    } else if ((mux_ch & 0xfffff) == AD_OF_BT) {
+        adc_bt_detect_en(mux_ch >> 20);
+    }
+}
+
 ___interrupt
 static void adc_isr()
 {
@@ -255,12 +306,13 @@ static void adc_isr()
     ch = (JL_ADC->CON & 0xf00) >> 8;
     adc_io_reuse_exit(ch);
 
-    adc_pmu_ch_select(AD_CH_WVDD >> 16);
+    adc_pmu_ch_select(AD_CH_WVDD >> 20);
     local_irq_disable();
     JL_ADC->CON = BIT(6);
     JL_ADC->CON = 0;
     local_irq_enable();
 }
+
 
 u32 adc_sample(u32 ch)
 {
@@ -283,10 +335,8 @@ u32 adc_sample(u32 ch)
 
     SFR(adc_con, 8, 4, ch & 0xf);
 
-    if ((ch & 0xffff) == AD_CH_PMU) {
-        adc_pmu_ch_select(ch >> 16);
-    } else if ((ch & 0xffff) == AD_CH_AUDIO) {
-        adc_audio_ch_select(ch >> 16);
+    if ((ch & 0xffff) == AD_CH_MUX) {
+        adc_ch_mux_select(ch);
     }
 
     JL_ADC->CON = adc_con;

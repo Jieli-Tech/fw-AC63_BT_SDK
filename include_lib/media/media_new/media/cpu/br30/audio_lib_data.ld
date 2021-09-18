@@ -10,9 +10,10 @@
     *(.cvsd_data)
     *(.aac_data)
 	*(.sbc_eng_data)
+*(.sbc_encoder_data)
 	*(.bt_audioplc_data)
     *(.lc3_decoder_data)
-    *(.wtgv2_data)
+   *(.wtgv2_data)
     *(.wtgv2dec_data)
 
     *(.anc_data)
@@ -22,3 +23,5 @@
     *(.anc_debug_data)
 
 	*(.sms_data)
+    *(.lf_audioplc_data)
+    	*(.audio_track_data)

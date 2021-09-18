@@ -53,31 +53,35 @@ struct conn_param_t {
 
 #define ATT_CTRL_BLOCK_SIZE       (188)                    //note: fixed,libs use
 
-
+/*adv type*/
 enum {
-    ADV_IND = 0,
-    ADV_DIRECT_IND,
-    ADV_SCAN_IND,
-    ADV_NONCONN_IND,
+    ADV_IND = 0,         /*Connectable and scannable undirected advertising*/
+    ADV_DIRECT_IND,      /*Connectable high duty cycle directed advertising */
+    ADV_SCAN_IND,        /*Scannable undirected advertising*/
+    ADV_NONCONN_IND,     /*Non connectable undirected advertising*/
+    ADV_DIRECT_IND_LOW,  /*Connectable low duty cycle directed advertising*/
 };
 
+/*adv channel*/
 #define  ADV_CHANNEL_37    BIT(0)
 #define  ADV_CHANNEL_38    BIT(1)
 #define  ADV_CHANNEL_39    BIT(2)
 #define  ADV_CHANNEL_ALL  (ADV_CHANNEL_37 | ADV_CHANNEL_38 | ADV_CHANNEL_39)
 
+/*scan type*/
 enum {
     SCAN_PASSIVE = 0,
     SCAN_ACTIVE,
 };
 
+/*flags*/
 #define FLAGS_LIMITED_DISCOVERABLE_MODE    BIT(0)
 #define FLAGS_GENERAL_DISCOVERABLE_MODE    BIT(1)
 #define FLAGS_EDR_NOT_SUPPORTED            BIT(2)
 #define FLAGS_LE_AND_EDR_SAME_CONTROLLER   BIT(3)
 #define FLAGS_LE_AND_EDR_SAME_HOST         BIT(4)
 
-
+/*eir packet_type*/
 typedef enum {
     HCI_EIR_DATATYPE_FLAGS =                                                 0x01,
     HCI_EIR_DATATYPE_MORE_16BIT_SERVICE_UUIDS =                              0x02,

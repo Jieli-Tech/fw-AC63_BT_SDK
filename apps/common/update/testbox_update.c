@@ -20,20 +20,23 @@
 #define LOG_ERROR_ENABLE
 #include "system/debug.h"
 
+extern u8 check_le_conn_disconnet_flag(void);
+extern void ble_app_disconnect(void);
+extern void ll_hci_destory(void);
+extern void ram_protect_close(void);
+extern void update_close_hw(void *filter_name);
 extern void btctrler_testbox_update_msg_handle_register(void (*handle)(int));
 extern void __bt_updata_reset_bt_bredrexm_addr(void);
 extern int __bt_updata_save_connection_info(void);
 extern const update_op_api_t lmp_ch_update_op;
 extern const update_op_api_t ble_ll_ch_update_op;
+static u8 ble_update_ready_jump_flag = 0;
 
 static void testbox_bt_classic_update_private_param_fill(UPDATA_PARM *p)
 {
 
 }
 
-extern void ll_hci_destory(void);
-extern void ram_protect_close(void);
-extern void update_close_hw(void *filter_name);
 static void testbox_bt_classic_update_before_jump_handle(int type)
 {
     if (UPDATE_MODULE_IS_SUPPORT(UPDATE_BT_LMP_EN)) {
@@ -84,7 +87,6 @@ static void testbox_bt_classic_update_state_cbk(int type, u32 state, void *priv)
     }
 }
 
-static u8 ble_update_ready_jump_flag = 0;
 u8 ble_update_get_ready_jump_flag(void)
 {
     return ble_update_ready_jump_flag;
@@ -96,7 +98,8 @@ static void testbox_ble_update_private_param_fill(UPDATA_PARM *p)
     extern int le_controller_get_mac(void *addr);
     if (BT_MODULES_IS_SUPPORT(BT_MODULE_LE) && UPDATE_MODULE_IS_SUPPORT(UPDATE_BLE_TEST_EN)) {
         le_controller_get_mac(addr);
-        memcpy(p->parm_priv, addr, 6);
+        //memcpy(p->parm_priv, addr, 6);
+        update_param_priv_fill(p, addr, sizeof(addr));
         puts("ble addr:\n");
         put_buf(p->parm_priv, 6);
     }
@@ -111,8 +114,6 @@ static void testbox_ble_update_before_jump_handle(int type)
     cpu_reset();
 }
 
-extern u8 check_le_conn_disconnet_flag(void);
-extern void ble_app_disconnect(void);
 static void testbox_ble_update_state_cbk(int type, u32 state, void *priv)
 {
     update_ret_code_t *ret_code = (update_ret_code_t *)priv;
@@ -134,10 +135,13 @@ static void testbox_ble_update_state_cbk(int type, u32 state, void *priv)
         } else {
             if ((0 == ret_code->stu) && (0 == ret_code->err_code)) {
 #if TCFG_USER_BLE_ENABLE && (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_NULL) \
+        &&(TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_ADV || defined(CONFIG_MESH_CASE_ENABLE))\
 		&& (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_CLIENT)
 
                 ble_update_ready_jump_flag = 1;
-                ble_app_disconnect();
+                /* ble_app_disconnect(); */
+                extern void ble_module_enable(u8 en);
+                ble_module_enable(0);
                 u8 cnt = 0;
                 while (!check_le_conn_disconnet_flag()) {
                     log_info("wait discon\n");

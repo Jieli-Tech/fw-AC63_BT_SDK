@@ -9,10 +9,6 @@
 
 #include <string.h>
 
-/* #if (OTA_TWS_SAME_TIME_ENABLE && RCSP_ADV_EN && USER_APP_EN) */
-/* #include "rcsp_adv_tws_ota.h" */
-/* #endif */
-
 #if OTA_TWS_SAME_TIME_NEW
 #include "update_tws_new.h"
 #else
@@ -24,13 +20,6 @@
 #endif
 
 #if ((RCSP_ADV_EN || RCSP_BTMATE_EN))
-
-#if 0//UPDATE_SEAGNMENT_EN
-#pragma bss_seg(	".update_bss")
-//#pragma data_seg(	".update_data")
-#pragma const_seg(	".update_const")
-#pragma code_seg(	".update_code")
-#endif
 
 #define LMP_CH_UPDATE_DEBUG_EN	1
 #if LMP_CH_UPDATE_DEBUG_EN
@@ -52,6 +41,12 @@ typedef enum __DEVICE_REFRESH_FW_STATUS {
     DEVICE_UPDATE_STA_LOADER_DOWNLOAD_SUCC = 0x80,
 } DEVICE_UPDATE_STA;
 
+enum {
+    BT_UPDATE_OVER = 0,
+    BT_UPDATE_KEY_ERR,
+    BT_UPDATE_CONNECT_ERR,
+};
+
 typedef enum {
     UPDATA_START = 0x00,
     UPDATA_REV_DATA,
@@ -71,6 +66,8 @@ typedef struct _rcsp_update_param_t {
     u32 file_offset;
     u8 seek_type;
 } rcsp_update_param_t;
+
+extern void set_jl_update_flag(u8 flag);
 
 extern const int support_dual_bank_update_en;
 
@@ -121,18 +118,6 @@ u16 rcsp_f_read(void *fp, u8 *buff, u16 len)
     __this->read_len = 0;
     __this->read_buf = buff;
 
-    /* #if((OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN) && !OTA_TWS_SAME_TIME_NEW)) */
-    /* #if TCFG_USER_TWS_ENABLE */
-    /*     if ((tws_ota_control(OTA_TYPE_GET) == OTA_TWS) && */
-    /*         (tws_api_get_tws_state() & TWS_STA_SIBLING_DISCONNECTED)) { */
-    /*         //假如TWS一起升级，TWS断开了,返回失败 */
-    /*         r_printf("tws disconn, stop update"); */
-    /*         rcsp_f_stop(DEVICE_UPDATE_STA_FAIL); */
-    /*         return (u16) - 1; */
-    /*     } */
-    /* #endif//TCFG_USER_TWS_ENABLE */
-    /* #endif */
-
 __RETRY:
     if (!get_rcsp_connect_status()) {   //如果已经断开连接直接返回-1
         return -1;
@@ -180,11 +165,6 @@ u16 rcsp_send_update_len(u32 update_len)
     return 1;
 }
 
-enum {
-    BT_UPDATE_OVER = 0,
-    BT_UPDATE_KEY_ERR,
-    BT_UPDATE_CONNECT_ERR,
-};
 
 static u8 update_result_handle(u8 err)
 {
@@ -356,30 +336,6 @@ const update_op_api_t rcsp_update_op = {
     .notify_update_content_size = rcsp_notify_update_content_size,
 };
 
-/* #if((OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN))) */
-/* const update_op_api_t rcsp_tws_update_op = { */
-/*     .ch_init = rcsp_ch_update_init, */
-/*     .f_open = rcsp_f_open, */
-/*     .f_read = rcsp_f_read, */
-/*     .f_seek = rcsp_f_seek, */
-/*     .f_stop = rcsp_f_stop, */
-/*     .notify_update_content_size = rcsp_notify_update_content_size, */
-/*  */
-/*     //for tws ota */
-/*     .tws_ota_start = tws_ota_open, */
-/*     .tws_ota_data_send = tws_ota_data_send_m_to_s, */
-/*     .tws_ota_err = tws_ota_err_callback, */
-/*     .enter_verfiy_hdl = tws_ota_enter_verify, */
-/*     .exit_verify_hdl = tws_ota_exit_verify, */
-/*     .update_boot_info_hdl = tws_ota_updata_boot_info_over, */
-/* #if OTA_TWS_SAME_TIME_NEW */
-/*     .tws_ota_result_hdl = tws_ota_result, */
-/*     .tws_ota_data_send_pend = tws_ota_data_send_pend, */
-/* #endif */
-/* }; */
-/* #endif */
-
-extern void set_jl_update_flag(u8 flag);
 static void rcsp_update_state_cbk(int type, u32 state, void *priv)
 {
     update_ret_code_t *ret_code = (update_ret_code_t *)priv;
@@ -409,37 +365,13 @@ static void rcsp_update_state_cbk(int type, u32 state, void *priv)
 
 void rcsp_update_loader_download_init(int update_type, void (*result_cbk)(void *priv, u8 type, u8 cmd))
 {
-    /* #if((OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN))) */
-    /* #if TCFG_USER_TWS_ENABLE */
-    /*     tws_api_auto_role_switch_disable(); */
-    /*     if ((tws_api_get_tws_state() & TWS_STA_SIBLING_CONNECTED) && support_dual_bank_update_en) { //双备份才支持tws同步升级 */
-    /*         extern int tws_ota_init(void); */
-    /*         tws_ota_init(); */
-    /*         app_update_loader_downloader_init( */
-    /*             update_type, */
-    /*             result_cbk, */
-    /*             NULL, */
-    /*             &rcsp_tws_update_op); */
-    /*     } else */
-    /* #endif//TCFG_USER_TWS_ENABLE */
-    /* #endif */
-    /* { */
-    /*     app_update_loader_downloader_init( */
-    /*         update_type, */
-    /*         result_cbk, */
-    /*         NULL, */
-    /*         &rcsp_update_op); */
-    /* } */
-    {
-        update_mode_info_t info = {
-            .type = update_type,
-            .state_cbk = rcsp_update_state_cbk,
-            .p_op_api = &rcsp_update_op,
-            .task_en = 1,
-        };
-        app_active_update_task_init(&info);
-    }
-
+    update_mode_info_t info = {
+        .type = update_type,
+        .state_cbk = rcsp_update_state_cbk,
+        .p_op_api = &rcsp_update_op,
+        .task_en = 1,
+    };
+    app_active_update_task_init(&info);
 }
 
 #endif //(OTA_TWS_SAME_TIME_ENABLE && (RCSP_ADV_EN || RCSP_BTMATE_EN))

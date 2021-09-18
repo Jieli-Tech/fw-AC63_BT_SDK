@@ -37,15 +37,7 @@ UPDATA_BREDR_BASE_BEG = 0x1C000;
 
 MEMORY
 {
-#if (USE_SDFILE_NEW)
-#if (RCSP_UPDATE_EN)
-	code0(rx)    	  : ORIGIN =  0x1E000E0, LENGTH = CONFIG_FLASH_SIZE
-#else
-	code0(rx)    	  : ORIGIN =  0x1E000C0,    LENGTH = CONFIG_FLASH_SIZE
-#endif
-#else
-	code0(rx)    	  : ORIGIN =  0x1E00020,    LENGTH = CONFIG_FLASH_SIZE
-#endif
+	code0(rx)    	  : ORIGIN =  0x1E00120,    LENGTH = CONFIG_FLASH_SIZE
 	ram0(rwx)         : ORIGIN =  RAM_BEGIN,    LENGTH = RAM_SIZE
     irq_table(rw)     : ORIGIN =  0xbf00,       LENGTH = 0x100
 }
@@ -72,6 +64,7 @@ SECTIONS
 
         *(.text*)
         *(.rodata*)
+        *(.fat_data_code_ex)
 
         *(.LOG_TAG_CONST*)
 

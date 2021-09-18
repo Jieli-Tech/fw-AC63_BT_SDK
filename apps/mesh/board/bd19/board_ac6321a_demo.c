@@ -32,6 +32,7 @@ const struct low_power_param power_param = {
     .vddiom_lev     = TCFG_LOWPOWER_VDDIOM_LEVEL,          //强VDDIO等级,可选：2.0V  2.2V  2.4V  2.6V  2.8V  3.0V  3.2V  3.6V
     .vddiow_lev     = TCFG_LOWPOWER_VDDIOW_LEVEL,          //弱VDDIO等级,可选：2.1V  2.4V  2.8V  3.2V
     .osc_type       = TCFG_LOWPOWER_OSC_TYPE,
+    .vd13_cap_en    = TCFG_VD13_CAP_EN,
 };
 
 /************************** KEY MSG****************************/

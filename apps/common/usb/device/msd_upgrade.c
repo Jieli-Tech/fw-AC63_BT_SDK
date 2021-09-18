@@ -23,12 +23,19 @@ extern void ram_protect_close(void);
 AT(.volatile_ram_code)
 void go_mask_usb_updata()
 {
+#ifdef CONFIG_CPU_BR18
+    gpio_set_die(IO_PORTD_02, 0);
+    gpio_set_die(IO_PORTB_04, 0);
+    cpu_reset();
+
+#else
     local_irq_disable();
     ram_protect_close();
     hw_mmu_disable();
     nvram_set_boot_state(UPGRADE_USB_SOFT_KEY);
-
     JL_CLOCK->PWR_CON |= (1 << 4);
+#endif
+
     /* chip_reset(); */
     /* cpu_reset(); */
     while (1);

@@ -129,5 +129,6 @@ extern void ldoin_wakeup_isr(void);
 extern void charge_wakeup_isr(void);
 extern int charge_init(const struct dev_node *node, void *arg);
 extern const struct device_operations charge_dev_ops;
+extern void charge_set_ldo5v_detect_stop(u8 stop);
 
 #endif    //_CHARGE_H_

@@ -107,6 +107,16 @@ static const u8 uac_spk_feature_desc[] = {
 #endif
     0x00,       //Feature String
 };
+//SELECTOR_UNIT
+static const u8 uac_spk_selector_uint_desc[] = {
+    0x7,    //  bLength	7
+    USB_DT_CS_INTERFACE,//  bDescriptorType	CS_INTERFACE (0x24)
+    UAC_SELECTOR_UNIT,//    bDescriptorSubtype	SELECTOR_UNIT (0x05)
+    SPK_SELECTOR_UNIT_ID,//bUnitID	33
+    1,//bNrInPins	1
+    SPK_FEATURE_UNIT_ID,   //baSourceID(1)	50
+    0,//iSelector	None (0)
+};
 static const u8 uac_spk_output_terminal_desc[] = {
 ///USB Speaker OT
     0x09,      //Length
@@ -115,7 +125,8 @@ static const u8 uac_spk_output_terminal_desc[] = {
     SPK_OUTPUT_TERMINAL_ID,      //TerminalID
     LOBYTE(UAC_OUTPUT_TERMINAL_SPEAKER), HIBYTE(UAC_OUTPUT_TERMINAL_SPEAKER), //TerminalType:Speaker
     0,       //AssocTerminal:
-    SPK_FEATURE_UNIT_ID,      //SourceID: Feature UNIT
+    //SPK_FEATURE_UNIT_ID,      //SourceID: Feature UNIT
+    SPK_SELECTOR_UNIT_ID,      //SourceID: Selector UNIT
     0x00,      //Terminal String
 };
 
@@ -401,7 +412,8 @@ struct uac_info_t {
     u8 spk_mute: 1;
     u8 mic_mute: 1;
     u8 bAGC: 1;
-    u8 res: 5;
+    u8 ps4_mode: 1;
+    u8 res: 4;
 };
 
 
@@ -515,9 +527,12 @@ static u32 uac_vol_handler(struct usb_device_t *usb_device, struct usb_ctrlreque
                 uac_info->spk_left_vol = volume;
             } else if (LOBYTE(setup->wValue) == 2) {
                 uac_info->spk_right_vol = volume;
-                /* printf("%x %d",volume,vol_convert(volume)); */
             }
-            if (!uac_info->spk_mute) {
+            if (uac_info->ps4_mode) {
+                uac_info->spk_left_vol = vol_convert(100);
+                uac_info->spk_right_vol = vol_convert(100);
+            }
+            if (!uac_info->spk_mute && !uac_info->ps4_mode) {
                 uac_mute_volume(SPK_FEATURE_UNIT_ID,
                                 vol_convert(uac_info->spk_left_vol),
                                 vol_convert(uac_info->spk_right_vol));
@@ -541,6 +556,19 @@ static u32 uac_vol_handler(struct usb_device_t *usb_device, struct usb_ctrlreque
             uac_info->bAGC = 0;
         }
         break;
+
+    case 0: //bSelectorUnitID
+        if (HIBYTE(setup->wIndex) == SPK_SELECTOR_UNIT_ID) {
+            uac_info->ps4_mode = read_ep[0];
+            if (read_ep[0]) {
+                printf("SPK_FEATURE_UNIT_ID");
+                uac_info->spk_left_vol = vol_convert(100);
+                uac_info->spk_right_vol = vol_convert(100);
+                uac_mute_volume(SPK_FEATURE_UNIT_ID, 100, 100);
+            }
+        }
+        break;
+
     default :
         ret = USB_EP0_SET_STALL;
         break;
@@ -909,6 +937,7 @@ static void mic_transfer(struct usb_device_t *usb_device, u32 ep)
         len = mic_frame_len;
         memset(ep_buffer, 0, len);
     }
+
     usb_g_iso_write(usb_id, MIC_ISO_EP_IN, NULL, len);
 
 }
@@ -1044,6 +1073,7 @@ u32 uac_spk_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
     tptr += sizeof(uac_ac_standard_interface_desc);//0x09
 
     memcpy(tptr, (u8 *)uac_spk_ac_interface, sizeof(uac_spk_ac_interface));
+    tptr[5] += 7;  //spk selector unit
 #if SPK_CHANNEL == 1
     tptr[5]--;
 #endif
@@ -1055,6 +1085,9 @@ u32 uac_spk_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 
     memcpy(tptr, (u8 *)uac_spk_feature_desc, sizeof(uac_spk_feature_desc));
     tptr += sizeof(uac_spk_feature_desc);//0x0a
+
+    memcpy(tptr, (u8 *)uac_spk_selector_uint_desc, sizeof(uac_spk_selector_uint_desc));
+    tptr += sizeof(uac_spk_selector_uint_desc);
 
     memcpy(tptr, (u8 *)uac_spk_output_terminal_desc, sizeof(uac_spk_output_terminal_desc));
     tptr += sizeof(uac_spk_output_terminal_desc);//0x09
@@ -1206,6 +1239,7 @@ u32 uac_audio_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
     tptr += sizeof(uac_ac_standard_interface_desc);//0x09
 
     memcpy(tptr, (u8 *)uac_audio_ac_interface, sizeof(uac_audio_ac_interface));
+    tptr[5] += 7; //spk selector unit
 #if SPK_CHANNEL == 1
     tptr[5]--;
 #endif
@@ -1227,6 +1261,9 @@ u32 uac_audio_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 
     memcpy(tptr, (u8 *)uac_mic_output_terminal_desc, sizeof(uac_mic_output_terminal_desc));
     tptr += sizeof(uac_mic_output_terminal_desc);//0x09
+
+    memcpy(tptr, (u8 *)uac_spk_selector_uint_desc, sizeof(uac_spk_selector_uint_desc));
+    tptr += sizeof(uac_spk_selector_uint_desc);
 
     memcpy(tptr, (u8 *)uac_mic_selector_uint_desc, sizeof(uac_mic_selector_uint_desc));
     tptr += sizeof(uac_mic_selector_uint_desc);
@@ -1334,6 +1371,7 @@ u32 uac_register(const usb_dev usb_id)
     uac_info->mic_def_vol = vol_convert(13 / 14.0 * 100);
     uac_info->mic_vol = uac_info->mic_def_vol;
     uac_info->mic_mute = 0;
+    uac_info->ps4_mode = 0;
     return 0;
 }
 void uac_release(const usb_dev usb_id)

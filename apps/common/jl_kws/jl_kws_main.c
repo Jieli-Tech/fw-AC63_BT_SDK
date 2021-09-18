@@ -164,7 +164,6 @@ static void kws_speech_recognition_task(void *param)
 {
     int msg[16];
     int ret = 0;
-    u32 pend_timeout = portMAX_DELAY;
 
     kws_info("%s", __func__);
 
@@ -184,7 +183,7 @@ static void kws_speech_recognition_task(void *param)
     __this->kws_task_state = KWS_TASK_STATE_INIT;
 
     while (1) {
-        ret = __os_taskq_pend(msg, ARRAY_SIZE(msg), pend_timeout);
+        ret = os_taskq_pend(NULL, msg, ARRAY_SIZE(msg));
         if (ret == OS_TASKQ) {
             switch (msg[1]) {
             case KWS_SPEECH_RECOGNITION_RUN:

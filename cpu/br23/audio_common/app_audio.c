@@ -170,6 +170,14 @@ static void app_audio_volume_change(void)
     local_irq_enable();
 }
 
+#if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_BT)
+__attribute__((weak))
+void bt_emitter_set_vol(u8 vol)
+{
+
+}
+#endif
+
 
 static int audio_vol_set(u8 gain_l, u8 gain_r, u8 gain_rl, u8 gain_rr, u8 fade)
 {
@@ -1365,12 +1373,12 @@ void _audio_dac_trim_hook(u8 pos)
     } else if (pos == 2) {
         if (mic_capless_feedback_sw) {
             ret = os_sem_pend(&mc_sem, 250);
+            audio_mic_capless_feedback_control(0, 16000);
             if (ret == OS_TIMEOUT) {
                 log_info("mc_trim1 timeout!\n");
             } else {
                 dtb_step_limit = TCFG_MC_DTB_STEP_LIMIT;
             }
-            audio_mic_capless_feedback_control(0, 16000);
         } else {
             log_info("auto_feedback disable");
         }
@@ -1390,13 +1398,13 @@ void _audio_dac_trim_hook(u8 pos)
                 audio_dac2micbias_en(&dac_hdl, 1);
                 mic_capless_feedback_toggle(1);
                 ret = os_sem_pend(&mc_sem, 250);
+                audio_mic_capless_feedback_control(0, 16000);
+                audio_dac2micbias_en(&dac_hdl, 0);
                 if (ret == OS_TIMEOUT) {
                     log_info("mc_trim2 timeout!\n");
                 } else {
                     dtb_step_limit = TCFG_MC_DTB_STEP_LIMIT;
                 }
-                audio_mic_capless_feedback_control(0, 16000);
-                audio_dac2micbias_en(&dac_hdl, 0);
             } else {
                 log_info("auto_adjust err:%d\n", ret);
                 if (ret == 0) {

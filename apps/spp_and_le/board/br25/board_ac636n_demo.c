@@ -205,7 +205,7 @@ struct adc_platform_data adc_data = {
 /*MIC 是否省隔直电容：
     0: 不省电容  1: 省电容 */
 	.mic_capless    = TCFG_MIC_CAPLESS_ENABLE,
-/*MIC免电容方案需要设置，影响MIC的偏置电压
+/*MIC内部上拉电阻挡位配置，影响MIC的偏置电压
     21:1.18K	20:1.42K 	19:1.55K 	18:1.99K 	17:2.2K 	16:2.4K 	15:2.6K		14:2.91K	13:3.05K 	12:3.5K 	11:3.73K
 	10:3.91K  	9:4.41K 	8:5.0K  	7:5.6K		6:6K		5:6.5K		4:7K		3:7.6K		2:8.0K		1:8.5K				*/
     .mic_bias_res   = 16,

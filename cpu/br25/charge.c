@@ -34,6 +34,7 @@ typedef struct _CHARGE_VAR {
     struct charge_platform_data *data;
     volatile u8 charge_online_flag;
     volatile u8 init_ok;
+    volatile u8 detect_stop;
     volatile u8 timer_period;
     volatile int ldo5v_timer;
     volatile int charge_timer;
@@ -307,6 +308,10 @@ static void ldo5v_detect(void *priv)
     static u16 ldo5v_in_err_cnt = 0;
     static u16 ldo5v_off_cnt = 0;
 
+    if (__this->detect_stop) {
+        return;
+    }
+
     if (LVCMP_DET_GET()) {	//ldoin > vbat
         /* putchar('X'); */
         ldo5v_off_cnt = 0;
@@ -336,7 +341,7 @@ static void ldo5v_detect(void *priv)
         /* putchar('Q'); */
         ldo5v_in_normal_cnt = 0;
         ldo5v_in_err_cnt = 0;
-        if (ldo5v_off_cnt < (__this->data->ldo5v_off_filter + 10)) {
+        if (ldo5v_off_cnt < (__this->data->ldo5v_off_filter + 20)) {
             ldo5v_off_cnt++;
         } else {
             /* printf("ldo5V_OFF\n"); */
@@ -413,6 +418,11 @@ static void test_func(void *priv)
     }
 }
 #endif
+
+void charge_set_ldo5v_detect_stop(u8 stop)
+{
+    __this->detect_stop = stop;
+}
 
 u8 get_charge_mA_config(void)
 {

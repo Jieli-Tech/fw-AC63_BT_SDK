@@ -6,6 +6,7 @@
 #include "btstack/avctp_user.h"
 #include "aec_user.h"
 #include "audio_digital_vol.h"
+#include "audio_codec_clock.h"
 
 #if TCFG_APP_FM_EMITTER_EN
 #include "fm_emitter/fm_emitter_manage.h"
@@ -25,8 +26,11 @@
 #define TONE_LIST_MAX_NUM 4
 
 #if TCFG_USER_TWS_ENABLE
+#include "media/bt_audio_timestamp.h"
+#include "audio_syncts.h"
 #include "bt_tws.h"
-#include "effectrs_sync.h"
+
+#define msecs_to_bt_time(m)     (((m + 1)* 1000) / 625)
 #define TWS_TONE_ALIGN_TIME         0
 #define TWS_TONE_ALIGN_MIX          1
 
@@ -37,7 +41,6 @@
 
 #define TWS_TONE_CONFIRM_TIME       250 /*TWS提示音音频同步确认时间(也是音频解码主从确认超时时间)*/
 
-void *local_file_dec_sync_open(u8 channel, u16 sample_rate, u16 output_rate);
 #endif
 
 #if TCFG_WAV_TONE_MIX_ENABLE
@@ -61,12 +64,17 @@ struct tone_file_handle {
     struct audio_decoder decoder;
     struct audio_mixer_ch mix_ch;
     u8 ch_num;
-    u16 src_out_sr;
+    u16 target_sample_rate;
 #if TCFG_USER_TWS_ENABLE
     u32 wait_time;
     u8 tws_align_step;
+    u8 ts_start;
     void *audio_sync;
+    void *syncts;
+    void *ts_handle;
+    u32 time_base;
 #endif
+    u32 mix_ch_event_params[3];
     struct audio_src_handle *hw_src;
     u32 clk_before_dec;
     u8 dec_mix;
@@ -119,6 +127,10 @@ struct tone_dec_handle *tone_dec;
 int sine_dec_close(void);
 int tone_file_dec_start();
 u16 get_source_sample_rate();
+extern void audio_mix_ch_event_handler(void *priv, int event);
+extern int bt_audio_sync_nettime_select(u8 basetime);
+extern u32 bt_audio_sync_lat_time(void);
+static void file_decoder_syncts_free(struct tone_file_handle *dec);
 
 void tone_event_to_user(u8 event, const char *name);
 void tone_event_clear()
@@ -231,15 +243,9 @@ static void tone_mixer_ch_event_handler(void *priv, int event)
 
     switch (event) {
     case MIXER_EVENT_CH_OPEN:
-        if (dec->audio_sync) {
-            audio_dac_sync_start(&dac_hdl);
-        }
         break;
     case MIXER_EVENT_CH_CLOSE:
     case MIXER_EVENT_CH_RESET:
-        if (dec->audio_sync) {
-            audio_dac_sync_stop(&dac_hdl);
-        }
         break;
     default:
         break;
@@ -414,10 +420,7 @@ static int tone_audio_res_close(u8 rpt)
     }
 
 #if TCFG_USER_TWS_ENABLE
-    if (file_dec->audio_sync) {
-        audio_wireless_sync_close(file_dec->audio_sync);
-        file_dec->audio_sync = NULL;
-    }
+    file_decoder_syncts_free(file_dec);
 #endif
 
     if (!rpt) {
@@ -592,111 +595,51 @@ static u32 tone_file_format_match(char *fmt)
     return AUDIO_CODING_UNKNOW;
 }
 
-#if TCFG_USER_TWS_ENABLE
-static u8 tws_tone_dec_confirm_timeout(struct audio_decoder *decoder)
-{
-    struct tone_file_handle *dec = container_of(decoder, struct tone_file_handle, decoder);
-
-    if (time_after(jiffies, dec->wait_time)) {
-        return 1;
-    }
-    return 0;
-}
-
-
-u8 tws_tone_together_without_bt(void);
-void tws_tone_together_clean(void);
-u32 tws_tone_local_together_time(void);
-extern u8 bt_audio_is_running(void);
-#endif
 
 static int tone_dec_probe_handler(struct audio_decoder *decoder)
 {
     struct tone_file_handle *dec = container_of(decoder, struct tone_file_handle, decoder);
+    int err = 0;
 
 #if TCFG_USER_TWS_ENABLE
-    if (dec->tws_align_step == TONE_DEC_CONFIRM) {
-        return 0;
-    }
-
-    if (tws_tone_together_without_bt()) {
-        if (time_before(jiffies_msec(), tws_tone_local_together_time())) {
+    if (dec->tws_align_step == 0 && dec->ts_handle) {
+        if (!tws_file_timestamp_available(dec->ts_handle)) {
             audio_decoder_suspend(decoder, 0);
-            return -EAGAIN;
+            return -EINVAL;
         }
-        tws_tone_together_clean();
-        dec->tws_align_step = TONE_DEC_CONFIRM;
-        return 0;
+        dec->tws_align_step = 1;
     }
-
-    local_irq_disable();
-    if (tws_tone.confirm &&
-        tws_tone.type == TWS_TONE_ALIGN_TIME &&
-        bt_time_before(tws_tone.time, bt_tws_future_slot_time(0))) {
-        y_printf("tone tws confirm error : %d, %d\n", tws_tone.time, bt_tws_future_slot_time(0));
-        tws_tone.confirm = 0;
-    }
-    local_irq_enable();
-
-    if (dec->tws_align_step == TONE_DEC_WAIT_MIX) {
-        if (tws_tone.confirm && tws_tone.type == TWS_TONE_ALIGN_MIX) {
-            audio_mixer_ch_set_starting_position(&dec->mix_ch, tws_tone.position, 1000);
-            tws_tone.confirm = 0;
-            dec->tws_align_step = TONE_DEC_CONFIRM;
-            return 0;
-        }
-
-        if (tws_tone_dec_confirm_timeout(decoder)) {
-            tws_tone.confirm = 0;
-            dec->tws_align_step = TONE_DEC_CONFIRM;
-            return 0;
-        }
-        audio_decoder_suspend(decoder, 0);
-        return -EAGAIN;
-    }
-
-    if (dec->tws_align_step == TONE_DEC_WAIT_ALIGN_TIME) {
-        if ((tws_tone.confirm && tws_tone.type == TWS_TONE_ALIGN_TIME) ||
-            tws_tone_dec_confirm_timeout(decoder)) {
-            struct rt_stream_info info = {0};
-            audio_sync_set_tws_together(dec->audio_sync, 1, tws_tone.confirm ? tws_tone.time : 0);
-            tws_tone.confirm = 0;
-            dec->tws_align_step = TONE_DEC_CONFIRM;
-            /*y_printf("tws tone dec confirm success, %d, %d\n", tone_dec->tws_together_time, bt_tws_future_slot_time(0));*/
-            audio_wireless_sync_probe(dec->audio_sync, &info);
-            return 0;
-        }
-
-        audio_decoder_suspend(decoder, 0);
-        return -EAGAIN;
-    }
-
-    int state = tws_api_get_tws_state();
-    if (state & TWS_STA_SIBLING_CONNECTED) {
-        dec->tws_align_step = dec->audio_sync ? TONE_DEC_WAIT_ALIGN_TIME : TONE_DEC_WAIT_MIX;
-        if (tws_api_get_role() == TWS_ROLE_SLAVE) {
-            tws_tone.confirm = 0;
-            if (dec->audio_sync) {
-                tws_tone.time = bt_tws_future_slot_time(TWS_TONE_CONFIRM_TIME + 50);
-                tws_tone.type = TWS_TONE_ALIGN_TIME;
-            } else {
-                tws_tone.type = TWS_TONE_ALIGN_MIX;
-                int sample_rate = audio_mixer_get_sample_rate(&mixer);
-                int mix_buff_len = audio_mixer_get_output_buf_len(&mixer) >> 1;
-                int position = ((sample_rate * dec->ch_num * 300 / 1000) / mix_buff_len) * mix_buff_len;
-                tws_tone.position = audio_mixer_get_input_position(&mixer) + position;
-            }
-            tws_api_send_data_to_sibling((void *)&tws_tone, sizeof(tws_tone), TWS_FUNC_ID_TONE_ALIGN);
-        }
-        dec->wait_time = jiffies + msecs_to_jiffies(TWS_TONE_CONFIRM_TIME + 100);
-        audio_decoder_suspend(decoder, 0);
-        return -EAGAIN;
-    }
-
-    dec->tws_align_step = TONE_DEC_CONFIRM;
 #endif
 
     return 0;
+}
+
+static int tone_final_output_handler(struct tone_file_handle *dec, s16 *data, int len)
+{
+    return audio_mixer_ch_write(&dec->mix_ch, data, len);
+}
+
+static int tone_output_after_syncts_filter(void *priv, void *data, int len)
+{
+    struct tone_file_handle *dec = (struct tone_file_handle *)priv;
+    int wlen = 0;
+
+#if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
+    if (dec->remain == 0) {
+        audio_digital_vol_run(dec->dvol, data, len);
+    }
+#endif/*SYS_VOL_TYPE == VOL_TYPE_DIGITAL*/
+
+    if (dec->hw_src) {
+        wlen = audio_src_resample_write(dec->hw_src, data, len);
+        goto ret;
+    }
+    wlen = tone_final_output_handler(dec, data, len);
+
+ret:
+    dec->remain = wlen < len ? 1 : 0;
+
+    return wlen;
 }
 
 static int tone_dec_output_handler(struct audio_decoder *decoder, s16 *data, int len, void *priv)
@@ -706,38 +649,23 @@ static int tone_dec_output_handler(struct audio_decoder *decoder, s16 *data, int
     struct tone_file_handle *dec = container_of(decoder, struct tone_file_handle, decoder);
 
 #if TCFG_USER_TWS_ENABLE
-    if (!dec->remain && dec->audio_sync) {
-        audio_wireless_sync_after_dec(dec->audio_sync, data, len);
+    if (dec->syncts) {
+        if (dec->ts_handle) {
+            u32 timestamp = file_audio_timestamp_update(dec->ts_handle, audio_syncts_get_dts(dec->syncts));
+            audio_syncts_next_pts(dec->syncts, timestamp);
+            if (!dec->ts_start) {
+                dec->mix_ch_event_params[2] = timestamp;
+                dec->ts_start = 1;
+            }
+        }
+        wlen = audio_syncts_frame_filter(dec->syncts, data, len);
+        if (wlen < len) {
+            audio_syncts_trigger_resume(dec->syncts, decoder, (void (*)(void *))audio_decoder_resume);
+        }
+        return wlen;
     }
 #endif
-
-#if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
-    if (dec->remain == 0) {
-        audio_digital_vol_run(file_dec->dvol, data, len);
-    }
-#endif/*SYS_VOL_TYPE == VOL_TYPE_DIGITAL*/
-
-    do {
-        if (dec->hw_src) {
-            wlen = audio_src_resample_write(dec->hw_src, data, remain_len);
-        } else {
-            wlen = audio_mixer_ch_write(&dec->mix_ch, data, remain_len);
-        }
-
-        if (wlen == 0) {
-            break;
-        }
-        remain_len -= wlen;
-        data += (wlen >> 1);
-    } while (remain_len);
-
-    if (remain_len == 0) {
-        dec->remain = 0;
-    } else {
-        dec->remain = 1;
-    }
-
-    return len - remain_len;
+    return tone_output_after_syncts_filter(dec, data, len);
 }
 
 static int tone_dec_post_handler(struct audio_decoder *decoder)
@@ -787,38 +715,57 @@ static void tone_dec_set_output_channel(struct tone_file_handle *dec)
 #endif
 }
 
-static int tone_dec_src_output_handler(struct audio_decoder *decoder, s16 *data, int len)
+
+static int file_decoder_syncts_setup(struct tone_file_handle *dec)
 {
-    int wlen = 0;
-    int rlen = len;
-#if TCFG_APP_FM_EMITTER_EN
-    fm_emitter_cbuf_write((u8 *)data, len);
-#endif
+    int err = 0;
+#if TCFG_USER_TWS_ENABLE
+    struct audio_syncts_params params;
+    params.nch = dec->ch_num;
+    params.pcm_device = PCM_INSIDE_DAC;
+    params.network = AUDIO_NETWORK_BT2_1;
+    params.rin_sample_rate = dec->decoder.fmt.sample_rate;
+    params.rout_sample_rate = dec->target_sample_rate;
+    params.priv = dec;
+    params.factor = TIME_US_FACTOR;
+    params.output = tone_output_after_syncts_filter;
 
-    return rlen;
-}
+    bt_audio_sync_nettime_select(dec->dec_mix ? 3 : 1);//3 - 优先选择远端主机为网络时钟
 
-static int tone_file_dec_src_output_handler(struct audio_decoder *decoder, s16 *data, int len)
-{
-    int wlen = 0;
-    int rlen = len;
-
-    if (!tone_dec || !file_dec || !file_dec->start) {
-        /* putchar('O'); */
-        return 0;
+    dec->ts_handle = file_audio_timestamp_create(0,
+                     dec->decoder.fmt.sample_rate,
+                     bt_audio_sync_lat_time(),
+                     TWS_TONE_CONFIRM_TIME,
+                     TIME_US_FACTOR);
+    audio_syncts_open(&dec->syncts, &params);
+    if (!err) {
+        dec->mix_ch_event_params[0] = (u32)&dec->mix_ch;
+        dec->mix_ch_event_params[1] = (u32)dec->syncts;
+        audio_mixer_ch_set_event_handler(&dec->mix_ch, (void *)dec->mix_ch_event_params, audio_mix_ch_event_handler);
     }
 
+    if (dec->hw_src) {
+        audio_hw_src_close(dec->hw_src);
+        free(dec->hw_src);
+        dec->hw_src = NULL;
+    }
+#endif
+    return err;
+}
 
-    do {
-        wlen = audio_mixer_ch_write(&file_dec->mix_ch, data, rlen);
-        if (!wlen) {
-            break;
-        }
-        data += wlen / 2;
-        rlen -= wlen;
-    } while (rlen);
+static void file_decoder_syncts_free(struct tone_file_handle *dec)
+{
+#if TCFG_USER_TWS_ENABLE
+    if (dec->ts_handle) {
+        file_audio_timestamp_close(dec->ts_handle);
+        dec->ts_handle = NULL;
+    }
 
-    return len - rlen;
+    if (dec->syncts) {
+        audio_syncts_close(dec->syncts);
+        dec->syncts = NULL;
+    }
+#endif
 }
 
 
@@ -843,6 +790,7 @@ int tone_file_dec_start()
         return -EINVAL;
     }
 
+#if 0
     if (tone_input.coding_type == AUDIO_CODING_AAC) {
         file_dec->clk_before_dec = clk_get("sys");
         if (get_call_status() == BT_CALL_HANGUP) {
@@ -852,7 +800,7 @@ int tone_file_dec_start()
             puts("aac tone play:64M\n");
             clk_set_sys_lock(64 * 1000000L, 1);
         }
-    } else if ((tone_input.coding_type == AUDIO_CODING_WAV) || (tone_input.coding_type == AUDIO_CODING_MP3)) {
+    } else if (1) {//(tone_input.coding_type == AUDIO_CODING_WAV) || (tone_input.coding_type == AUDIO_CODING_MP3)) {
         /*当前时钟小于wav/mp3提示音播放需要得时钟，则自动提高主频*/
         file_dec->clk_before_dec = clk_get("sys");
         u32 wav_tone_play_clk = 96 * 1000000L;
@@ -862,6 +810,9 @@ int tone_file_dec_start()
         printf("wav/mp3 tone play clk:%d->%d\n", file_dec->clk_before_dec, wav_tone_play_clk);
         clk_set_sys_lock(wav_tone_play_clk, 1);
     }
+#else
+    audio_codec_clock_set(AUDIO_TONE_MODE, tone_input.coding_type, tone_dec->wait.preemption);
+#endif
 
     err = audio_decoder_open(&file_dec->decoder, &tone_input, &decode_task);
     if (err) {
@@ -880,37 +831,24 @@ int tone_file_dec_start()
 
     tone_dec_set_output_channel(file_dec);
 
-#if TCFG_APP_FM_EMITTER_EN
-    file_dec->hw_src = zalloc(sizeof(struct audio_src_handle));
-    if (file_dec->hw_src) {
-        audio_hw_src_open(file_dec->hw_src, file_dec->ch_num, SRC_TYPE_RESAMPLE);
-        audio_hw_src_set_rate(file_dec->hw_src, fmt->sample_rate, 41667/*fm_emitter_get_sample_rate()*/);
-        audio_src_set_output_handler(file_dec->hw_src, &file_dec->decoder, tone_dec_src_output_handler);
-    } else {
-        printf("hw_src malloc err ==============\n");
-    }
-#else
     audio_mixer_ch_open(&file_dec->mix_ch, &mixer);
+    audio_mixer_ch_set_resume_handler(&file_dec->mix_ch, (void *)&file_dec->decoder, (void (*)(void *))audio_decoder_resume);
 
 #if TONE_FILE_DEC_MIX
-    file_dec->src_out_sr = 0;
-    if (file_dec->dec_mix) {
-        file_dec->src_out_sr = audio_mixer_get_sample_rate(&mixer);
-    }
-    if (!file_dec->src_out_sr) {
-        file_dec->src_out_sr = fmt->sample_rate;
-    }
-    audio_mixer_ch_set_sample_rate(&file_dec->mix_ch, file_dec->src_out_sr);
+    int mixer_sample_rate = audio_mixer_get_sample_rate(&mixer);
+    file_dec->target_sample_rate = (file_dec->dec_mix && mixer_sample_rate) ? mixer_sample_rate : fmt->sample_rate;
+
+    audio_mixer_ch_set_sample_rate(&file_dec->mix_ch, file_dec->target_sample_rate);
     printf("fmt->sample_rate %d\n", fmt->sample_rate);
     /* printf("mixer sr:[%d]\n\n",audio_mixer_get_sample_rate(&mixer)); */
-    /* printf("\n sr:[%d];src sr:[%d] \n\n",fmt->sample_rate,file_dec->src_out_sr); */
-    if (fmt->sample_rate != file_dec->src_out_sr) {
-        printf("src->sr:%d, or:%d ", fmt->sample_rate, file_dec->src_out_sr);
+    /* printf("\n sr:[%d];src sr:[%d] \n\n",fmt->sample_rate,file_dec->target_sample_rate); */
+    if (fmt->sample_rate != file_dec->target_sample_rate) {
+        printf("src->sr:%d, or:%d ", fmt->sample_rate, file_dec->target_sample_rate);
         file_dec->hw_src = zalloc(sizeof(struct audio_src_handle));
         if (file_dec->hw_src) {
             audio_hw_src_open(file_dec->hw_src, file_dec->ch_num, SRC_TYPE_RESAMPLE);
-            audio_hw_src_set_rate(file_dec->hw_src, fmt->sample_rate, file_dec->src_out_sr);
-            audio_src_set_output_handler(file_dec->hw_src, &file_dec->decoder, tone_file_dec_src_output_handler);
+            audio_hw_src_set_rate(file_dec->hw_src, fmt->sample_rate, file_dec->target_sample_rate);
+            audio_src_set_output_handler(file_dec->hw_src, file_dec, tone_final_output_handler);
         }
     }
 
@@ -919,6 +857,7 @@ int tone_file_dec_start()
     }
 #else
     audio_mixer_ch_set_sample_rate(&file_dec->mix_ch, fmt->sample_rate);
+    file_dec->target_sample_rate = fmt->sample_rate;
 #endif
 
 #ifdef TCFG_WTONT_ONCE_VOL
@@ -928,27 +867,21 @@ int tone_file_dec_start()
     app_audio_state_switch(APP_AUDIO_STATE_WTONE, get_tone_vol());
     app_audio_set_volume(APP_AUDIO_STATE_WTONE, get_tone_vol(), 1);
 #endif
-#endif
-#if TCFG_USER_TWS_ENABLE
-    file_dec->tws_align_step = 0;
-    if (!file_dec->audio_sync && (!file_dec->dec_mix || !bt_audio_is_running())) {
-        file_dec->audio_sync = local_file_dec_sync_open(file_dec->ch_num, fmt->sample_rate, audio_mixer_get_sample_rate(&mixer));
-    }
-    if (file_dec->audio_sync) {
-        audio_mixer_ch_set_event_handler(&file_dec->mix_ch, file_dec, tone_mixer_ch_event_handler);
-    }
-#endif
 
 __dec_start:
+#if TCFG_USER_TWS_ENABLE
+    if (file_dec->tws) {
+        file_decoder_syncts_setup(file_dec);
+    }
+    file_dec->tws_align_step = 0;
+#endif
+
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
     if ((tone_input.coding_type == AUDIO_CODING_WAV) && (tone_dec->preemption == 0)) {
         audio_digital_vol_bg_fade(1);
     }
     file_dec->dvol = audio_digital_vol_open(SYS_DEFAULT_TONE_VOL, SYS_MAX_VOL, 20);
 #endif/*VOL_TYPE_DIGITAL*/
-#if TCFG_USER_TWS_ENABLE
-    file_dec->tws_align_step = file_dec->tws ? TONE_DEC_NOT_START : TONE_DEC_CONFIRM;
-#endif
     err = audio_decoder_start(&file_dec->decoder);
     if (err) {
         goto __err2;
@@ -1004,10 +937,14 @@ int tone_file_list_stop(u8 no_end)
 
     tone_audio_res_close(0);
 
+#if 0
     if ((tone_input.coding_type == AUDIO_CODING_AAC) || (tone_input.coding_type == AUDIO_CODING_WAV)) {
         printf("tone_play end,clk restore:%d", file_dec->clk_before_dec);
         clk_set_sys_lock(file_dec->clk_before_dec, 2);
     }
+#else
+    audio_codec_clock_del(AUDIO_TONE_MODE);
+#endif
 
     if (file_dec->list[file_dec->idx]) {
         name = (const char *)file_dec->list[file_dec->idx];
@@ -1378,6 +1315,7 @@ int sine_dec_start()
     sine_dec->dvol = audio_digital_vol_open(SYS_DEFAULT_SIN_VOL, SYS_MAX_VOL, 20);
 #endif/*VOL_TYPE_DIGITAL*/
 
+#if 0
     /*
      *播放一个不打断的提示音，默认提高提高时钟
      *等提示音播放结束，再恢复原先的时钟
@@ -1389,6 +1327,9 @@ int sine_dec_start()
         sine_dec->clk_before = clk_get("sys");
         clk_set_sys_lock(need_clk, 1);
     }
+#else
+    audio_codec_clock_set(AUDIO_TONE_MODE, AUDIO_CODING_PCM, tone_dec->wait.preemption);
+#endif
 
     audio_decoder_set_handler(&sine_dec->decoder, &sine_dec_handler);
     audio_decoder_set_event_handler(&sine_dec->decoder, sine_dec_event_handler, 0);
@@ -1476,6 +1417,7 @@ int sine_dec_close(void)
         app_audio_state_exit(APP_AUDIO_STATE_WTONE);
     }
 
+#if 0
     if (tone_dec->wait.preemption == 0) {
         printf("sin_tone_clk_reset:%d", sine_dec->clk_before);
         if (sine_dec->clk_before) {
@@ -1483,6 +1425,9 @@ int sine_dec_close(void)
             sine_dec->clk_before = 0;
         }
     }
+#else
+    audio_codec_clock_del(AUDIO_TONE_MODE);
+#endif
     sine_dec_release();
 
     tone_dec_end_handler(AUDIO_DEC_EVENT_END, NULL);

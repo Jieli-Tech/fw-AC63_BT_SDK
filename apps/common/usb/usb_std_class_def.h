@@ -39,10 +39,10 @@
 #define HID_EP_OUT                  2
 #endif
 #ifndef MAXP_SIZE_HIDOUT
-#define MAXP_SIZE_HIDOUT            8
+#define MAXP_SIZE_HIDOUT            16
 #endif
 #ifndef MAXP_SIZE_HIDIN
-#define MAXP_SIZE_HIDIN             8
+#define MAXP_SIZE_HIDIN             16
 #endif
 
 /////////////Audio Class
@@ -69,7 +69,11 @@
 #define SPK_AUDIO_TYPE              (0x02 - SPK_PCM_Type)           // TYPE1_PCM16
 #endif
 #ifndef SPK_ISO_EP_OUT
+#ifdef CONFIG_CPU_BR18
+#define SPK_ISO_EP_OUT              2
+#else
 #define SPK_ISO_EP_OUT              3
+#endif
 #endif
 #ifndef SPEAKER_STR_INDEX
 #define SPEAKER_STR_INDEX           5
@@ -82,6 +86,9 @@
 #endif
 #ifndef SPK_OUTPUT_TERMINAL_ID
 #define SPK_OUTPUT_TERMINAL_ID      3
+#endif
+#ifndef SPK_SELECTOR_UNIT_ID
+#define SPK_SELECTOR_UNIT_ID        8
 #endif
 
 /////////////Microphone Class

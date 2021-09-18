@@ -1,7 +1,7 @@
 /*********************************************************************************************
     *   Filename        : sm.h
 
-    *   Description     : 
+    *   Description     :
 
     *   Author          : Minxian
 
@@ -29,8 +29,6 @@ void ble_sm_setup_init(io_capability_t io_type, u8 auth_req, uint8_t min_key_siz
 
 void ble_cbk_handler_register(btstack_packet_handler_t packet_cbk, sm_stack_packet_handler_t sm_cbk);
 
-void ble_sm_setup_init(io_capability_t io_type, u8 auth_req, uint8_t min_key_size, u8 security_en);
-
 void sm_just_works_confirm(hci_con_handle_t con_handle);
 
 void sm_init(void);
@@ -44,5 +42,14 @@ void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size);
 void sm_set_request_security(int enable);
 
 void sm_event_callback_set(void(*cbk_sm_ph)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+
+//配从机默认发请求加密命令
+void sm_set_request_security(int enable);
+
+//配主机默认发加密请求命令
+void sm_set_master_request_pair(int enable);
+
+//指定链接发加密请求命令
+bool sm_api_request_pairing(hci_con_handle_t con_handle);
 
 #endif

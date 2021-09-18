@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC631N_DEMO_H
 #define CONFIG_BOARD_AC631N_DEMO_H
 
+#include "board_ac631n_demo_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC631N_DEMO
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //
@@ -186,6 +187,7 @@
 
 
 
+#if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    1
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
@@ -193,7 +195,7 @@
 #define USER_SUPPORT_PROFILE_HID    0
 #define USER_SUPPORT_PROFILE_PNP    0
 #define USER_SUPPORT_PROFILE_PBAP   0
-
+#endif
 
 
 

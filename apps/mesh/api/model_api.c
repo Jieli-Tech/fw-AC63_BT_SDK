@@ -150,8 +150,18 @@ void bt_ble_exit(void)
 
 void ble_module_enable(u8 en)
 {
-    bt_ble_adv_enable(en);
+    log_info("mode_en:%d\n", en);
+    if (en) {
+        bt_ble_adv_enable(1);
+    } else {
+        ble_app_disconnect();
+        bt_ble_adv_enable(0);
+    }
 }
+/* void ble_module_enable(u8 en) */
+/* { */
+/*     bt_ble_adv_enable(en); */
+/* } */
 
 void ble_profile_init(void)
 {

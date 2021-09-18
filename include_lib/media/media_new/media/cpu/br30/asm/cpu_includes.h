@@ -10,6 +10,7 @@
 #include "asm/audio_linein.h"
 #include "asm/audio_src.h"
 #include "asm/audio_src_sync.h"
+#include "audio_sync_resample.h"
 #include "dac.h"
 #include "anc.h"
 #include "asm/hw_eq.h"

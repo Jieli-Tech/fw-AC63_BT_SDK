@@ -20,7 +20,8 @@ enum {
     POWER_EVENT_POWER_CHARGE,
 };
 
-int app_power_event_handler(struct device_event *dev);
+// int app_power_event_handler(struct device_event *dev);
+int app_power_event_handler(struct device_event *dev, void (*set_soft_poweroff_call)(void));
 void check_power_on_voltage(void);
 u16 get_vbat_level(void);
 u8 get_vbat_percent(void);

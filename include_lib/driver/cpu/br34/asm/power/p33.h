@@ -418,20 +418,32 @@ enum {
  *-------------------P3_ANA_CON6
  */
 
-#define VDC13_VOL_SEL(sel)      P33_CON_SET(P3_ANA_CON6, 0, 3, sel)
-//Macro for VDC13_VOL_SEL
+void VDC13_VOL_SEL(u8 sel);
+
+//Macro for VDC13_VOL_SEL，version >= B则小0.5v
 enum {
-    VDC13_VOL_SEL_105V = 0,
-    VDC13_VOL_SEL_110V,
-    VDC13_VOL_SEL_115V,
-    VDC13_VOL_SEL_120V,
-    VDC13_VOL_SEL_125V,
-    VDC13_VOL_SEL_130V,
-    VDC13_VOL_SEL_135V,
-    VDC13_VOL_SEL_140V,
+    VDC13_VOL_SEL_105V_VERA = 0,
+    VDC13_VOL_SEL_110V_VERA,
+    VDC13_VOL_SEL_115V_VERA,
+    VDC13_VOL_SEL_120V_VERA,
+    VDC13_VOL_SEL_125V_VERA,
+    VDC13_VOL_SEL_130V_VERA,
+    VDC13_VOL_SEL_135V_VERA,
+    VDC13_VOL_SEL_140V_VERA,
 };
 
-#define GET_VD13_HD_SEL()       (P33_CON_GET(P3_ANA_CON6) & 0x7)
+enum {
+    VDC13_VOL_SEL_100V_VERB = 0,
+    VDC13_VOL_SEL_105V_VERB,
+    VDC13_VOL_SEL_110V_VERB,
+    VDC13_VOL_SEL_115V_VERB,
+    VDC13_VOL_SEL_120V_VERB,
+    VDC13_VOL_SEL_125V_VERB,
+    VDC13_VOL_SEL_130V_VERB,
+    VDC13_VOL_SEL_135V_VERB,
+};
+
+#define GET_VD13_VOL_SEL()       (P33_CON_GET(P3_ANA_CON6) & 0x7)
 
 #define VD13_HD_SEL(sel)        P33_CON_SET(P3_ANA_CON6, 3, 2, sel)
 
@@ -684,6 +696,18 @@ enum {
 #define VLVD_PND_CLR(clr)       P33_CON_SET(P3_VLVD_CON, 6, 1, en)
 
 #define VLVD_PND(pend)          P33_CON_SET(P3_VLVD_CON, 7, 1, en)
+/*******************************************************************/
+
+/*
+ *-------------------P3_PCNT_SET0
+ */
+
+#define	SET_EXCEPTION_FLAG()	 P33_CON_SET(P3_PCNT_SET0, 0, 8, 0xab)
+
+#define GET_EXCEPTION_FLAG()	((P33_CON_GET(P3_PCNT_SET0) == 0xab) ? 1 : 0)
+#define GET_ASSERT_FLAG()		((P33_CON_GET(P3_PCNT_SET0) == 0xac) ? 1 : 0)
+
+#define SOFT_RESET_FLAG_CLEAR()	(P33_CON_SET(P3_PCNT_SET0, 0, 8, 0))
 /*******************************************************************/
 
 /*

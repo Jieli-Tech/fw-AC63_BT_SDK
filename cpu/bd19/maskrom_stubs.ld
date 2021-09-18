@@ -4,7 +4,7 @@
   os_init = ABSOLUTE(0x106da4);
   os_start = ABSOLUTE(0x106da8);
   os_get_curr_tcb_var = ABSOLUTE(0x106dac);
-  os_task_create = ABSOLUTE(0x106db0);
+  os_task_create_rom = ABSOLUTE(0x106db0);
   os_current_task_rom = ABSOLUTE(0x106db4);
   os_time_dly = ABSOLUTE(0x106db8);
   os_time_get = ABSOLUTE(0x106dbc);

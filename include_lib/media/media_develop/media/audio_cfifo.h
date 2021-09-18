@@ -211,4 +211,6 @@ struct audio_cfifo_channel *audio_cfifo_min_samples_channel(struct audio_cfifo *
 int audio_cfifo_get_sw_ptr(struct audio_cfifo *fifo);
 
 int audio_cfifo_get_hw_ptr(struct audio_cfifo *fifo);
+
+int audio_cfifo_read_data(struct audio_cfifo *fifo, s16 *out_buf, int len);
 #endif

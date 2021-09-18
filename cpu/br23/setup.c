@@ -226,6 +226,8 @@ void setup_arch()
     printf("         setup_arch %s %s \n", __DATE__, __TIME__);
     printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
+    printf("\n~~~~~~~~~~~~~ chip id %x ~~~~~~~~~~~~~\n", JL_SYSTEM->CHIP_ID & 0x0f);
+
 
     clock_dump();
     /* log_info("resour est: %d", get_boot_flag()); */

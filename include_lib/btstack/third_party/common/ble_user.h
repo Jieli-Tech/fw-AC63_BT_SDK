@@ -11,6 +11,7 @@ typedef enum {
     BLE_ST_SEND_DISCONN,        //发送断开命令，等待链路断开
     BLE_ST_DISCONN,             //链路断开状态
     BLE_ST_CONNECT_FAIL,        //连接失败
+    BLE_ST_CONNECTION_UPDATE_OK,//更新连接参数完成
 
     BLE_ST_ADV = 0x20,          //设备处于广播状态
     BLE_ST_NOTIFY_IDICATE,      //设备已连上,允许发数(已被主机使能通知)

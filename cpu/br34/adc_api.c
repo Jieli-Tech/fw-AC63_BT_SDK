@@ -134,6 +134,19 @@ u32 adc_get_value(u32 ch)
 }
 #define     VBG_CENTER  801
 #define     VBG_RES     3
+
+u32 adc_value_to_voltage(u32 adc_vbg, u32 adc_ch_val)
+{
+    u32 adc_res = adc_ch_val;
+    u32 adc_trim = get_vbg_trim();
+    u32 tmp, tmp1;
+
+    tmp1 = adc_trim & 0x0f;
+    tmp = (adc_trim & BIT(4)) ? VBG_CENTER - tmp1 * VBG_RES : VBG_CENTER + tmp1 * VBG_RES;
+    adc_res = adc_res * tmp / adc_vbg;
+    return adc_res;
+}
+
 u32 adc_get_voltage(u32 ch)
 {
 #ifdef CONFIG_FPGA_ENABLE
@@ -144,18 +157,10 @@ u32 adc_get_voltage(u32 ch)
     u32 adc_res = adc_get_value(ch);
 
 
-    u32 adc_trim = get_vbg_trim();
-    u32 tmp, tmp1;
-
-    tmp1 = adc_trim & 0x0f;
-    tmp = (adc_trim & BIT(4)) ? VBG_CENTER - tmp1 * VBG_RES : VBG_CENTER + tmp1 * VBG_RES;
-    adc_res = adc_res * tmp / adc_vbg;
-
-
     /* printf("\n\n vbg %d\n",  adc_get_value(AD_CH_LDOREF));    */
     /* printf("%x VBAT:%d %d mv\n\n", adc_trim,                  */
     /*         adc_get_value(AD_CH_VBAT), adc_res * 4);          */
-    return adc_res;
+    return adc_value_to_voltage(adc_vbg, adc_res);
 }
 u32 adc_check_vbat_lowpower()
 {

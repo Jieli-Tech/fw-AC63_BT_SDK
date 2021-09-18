@@ -635,6 +635,16 @@ int _norflash_ioctl(u32 cmd, u32 arg, u32 unit, void *_part)
         reg = _norflash_eraser(FLASH_CHIP_ERASER, 0);
         break;
     case IOCTL_FLUSH:
+#if FLASH_CACHE_ENABLE
+        if (flash_cache_is_dirty) {
+            flash_cache_is_dirty = 0;
+            reg = _norflash_eraser(FLASH_SECTOR_ERASER, flash_cache_addr);
+            if (reg) {
+                goto __exit;
+            }
+            reg = _norflash_write_pages(flash_cache_addr, flash_cache_buf, 4096);
+        }
+#endif
         break;
     case IOCTL_CMD_RESUME:
         break;

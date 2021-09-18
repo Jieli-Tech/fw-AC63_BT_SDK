@@ -122,5 +122,6 @@ extern u16 get_charge_full_value(void);
 extern void charge_module_stop(void);
 extern void charge_module_restart(void);
 extern const struct device_operations charge_dev_ops;
+extern void charge_set_ldo5v_detect_stop(u8 stop);
 
 #endif    //_CHARGE_H_

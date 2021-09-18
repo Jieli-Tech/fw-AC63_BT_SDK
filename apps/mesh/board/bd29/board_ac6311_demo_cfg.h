@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC6311_DEMO_H
 #define CONFIG_BOARD_AC6311_DEMO_H
 
+#include "board_ac6311_demo_global_build_cfg.h"
+
 #ifdef CONFIG_BOARD_AC6311_DEMO
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //

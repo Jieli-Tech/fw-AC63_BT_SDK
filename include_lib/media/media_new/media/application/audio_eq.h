@@ -96,7 +96,7 @@ struct audio_eq_async {
 
 struct audio_eq {
     void *eq_ch;                               //硬件eq句柄
-    u32 sr : 16;                                    //采样率
+    u32 sr;                                    //采样率
     u32 remain_flag : 1;                       //数据未输出完
     u32 updata : 1;                            //系数是否需要更新
     u32 online_en : 1;                         //是否支持在线调试  1:支持 0：不支持

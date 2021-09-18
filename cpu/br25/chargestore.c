@@ -4,9 +4,34 @@
 #include "asm/hwi.h"
 #include "asm/gpio.h"
 #include "asm/clock.h"
+#include "asm/charge.h"
 #include "asm/chargestore.h"
 #include "update.h"
 #include "app_config.h"
+
+enum {
+    UPGRADE_NULL = 0,
+    UPGRADE_USB_HARD_KEY,
+    UPGRADE_USB_SOFTKEY,
+    UPGRADE_UART_SOFT_KEY,
+    UPGRADE_UART_ONE_WIRE_HARD_KEY,
+};
+extern void nvram_set_boot_state(u32 state);
+extern void local_irq_disable();
+extern void hw_mmu_disable(void);
+extern void update_close_hw(void);
+
+void uart_update_set_nvram()
+{
+    local_irq_disable();
+    update_close_hw();
+    hw_mmu_disable();
+
+    nvram_set_boot_state(UPGRADE_UART_SOFT_KEY);
+    cpu_reset();
+}
+
+#if (TCFG_CHARGESTORE_ENABLE || TCFG_TEST_BOX_ENABLE || TCFG_ANC_BOX_ENABLE)
 
 struct chargestore_handle {
     const struct chargestore_platform_data *data;
@@ -22,33 +47,11 @@ struct chargestore_handle {
 static struct chargestore_handle hdl;
 u8 uart_dma_buf[DMA_BUF_LEN] __attribute__((aligned(4)));
 volatile u8 send_busy;
+extern void charge_reset_pb5_pd_status(void);
 
 //串口时钟和串口超时时钟是分开的
 #define UART_SRC_CLK    clk_get("uart")
 #define UART_OT_CLK     clk_get("lsb")
-
-enum {
-    UPGRADE_NULL = 0,
-    UPGRADE_USB_HARD_KEY,
-    UPGRADE_USB_SOFTKEY,
-    UPGRADE_UART_SOFT_KEY,
-    UPGRADE_UART_ONE_WIRE_HARD_KEY,
-};
-extern void charge_reset_pb5_pd_status(void);
-extern void nvram_set_boot_state(u32 state);
-extern void local_irq_disable();
-void hw_mmu_disable(void);
-void update_close_hw(void *filter_name);
-
-void uart_update_set_nvram()
-{
-    local_irq_disable();
-    update_close_hw("null");
-    hw_mmu_disable();
-
-    nvram_set_boot_state(UPGRADE_UART_SOFT_KEY);
-    cpu_reset();
-}
 
 void chargestore_set_update_ram(void)
 {
@@ -143,6 +146,7 @@ void chargestore_open(u8 mode)
     send_busy = 0;
     __this->UART->CON0 = BIT(13) | BIT(12) | BIT(10);
     if (mode == MODE_RECVDATA) {
+        charge_set_ldo5v_detect_stop(0);
         gpio_uart_rx_input(__this->data->io_port, __this->ut_chl, __this->input_chl);
         //避免插入普通充电舱,舱体不升压 only for br23/br25
         if (__this->data->io_port == IO_PORTB_05) {
@@ -154,6 +158,7 @@ void chargestore_open(u8 mode)
         __this->UART->RXCNT = DMA_ISR_LEN;
         __this->UART->CON0 |= BIT(6) | BIT(5) | BIT(3);
     } else {
+        charge_set_ldo5v_detect_stop(1);
         gpio_output_channle(__this->data->io_port, __this->output_chl);
         gpio_set_hd(__this->data->io_port, 1);
         __this->UART->CON0 |= BIT(2);
@@ -171,6 +176,7 @@ void chargestore_close(void)
     gpio_direction_input(__this->data->io_port);
     send_busy = 0;
     memset((void *)uart_dma_buf, 0, sizeof(uart_dma_buf));
+    charge_set_ldo5v_detect_stop(0);
     if (__this->data->io_port == IO_PORTB_05) {
         charge_reset_pb5_pd_status();
     }
@@ -263,4 +269,5 @@ static void clock_critical_exit(void)
 }
 CLOCK_CRITICAL_HANDLE_REG(chargestore, clock_critical_enter, clock_critical_exit)
 
+#endif
 

@@ -5,7 +5,7 @@
 
 #include "app_config.h"
 
-#ifdef TCFG_USB_SLAVE_USER_HID
+#if TCFG_USB_SLAVE_USER_HID
 #undef TCFG_USB_SLAVE_HID_ENABLE
 #define TCFG_USB_SLAVE_HID_ENABLE           0
 #endif

@@ -36,6 +36,8 @@ enum {
     P33_POWER_RETURN = 23,
     /*SUB*/
     P33_EXCEPTION_SOFT_RST = 24,
+    P33_ASSERT_SOFT_RST = 25,
+    MSYS_P11_RST_RTC_WAKEUP = 26,
 };
 
 #define SLEEP_EN                            BIT(2)
@@ -97,8 +99,10 @@ struct low_power_param {
 
     u32 osc_delay_us;
 
+    u8 vd13_cap_en;
     u8 rtc_clk;
     u8 light_sleep_attribute;
+
 };
 
 #define BLUETOOTH_RESUME    BIT(1)

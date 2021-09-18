@@ -48,6 +48,19 @@ spectrum_fft_hdl *audio_spectrum_fft_open(spectrum_fft_open_parm *parm);
 /*----------------------------------------------------------------------------*/
 int audio_spectrum_fft_close(spectrum_fft_hdl *hdl);
 
+
+
+/*----------------------------------------------------------------------------*/
+/**@brief    audio_spectrum_fft_run 同步处理,每次run都会把输入buf消耗完，才会往下走
+   @param    _hdl:句柄
+   @param    data:输入数据
+   @param    len:输入数据长度
+   @return  len
+   @note    频谱计算处理，只获取输入的数据，不改变输入的数据
+*/
+/*----------------------------------------------------------------------------*/
+int audio_spectrum_fft_run(spectrum_fft_hdl *hdl, s16 *data, int len);
+
 /*----------------------------------------------------------------------------*/
 /**@brief    audio_spectrum_fft_switch 运行过程做开关处理
    @param    hdl:句柄

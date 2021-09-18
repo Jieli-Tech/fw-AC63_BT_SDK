@@ -61,86 +61,94 @@ extern struct sys_cpu_timer sys_cpu_timer_end[];
  *  System Timer
  */
 
-//*----------------------------------------------------------------------------*/
-/**@brief   sys_timer定时扫描增加接口
-   @param
-			priv:私有参数
-			func:定时扫描回调函数
-			msec:定时时间， 单位：毫秒
-   @return  定时器分配的id号
-   @note    1、系统会进入低功耗，节拍不会丢失
-   			2、sys_timer由systimer线程提供时基，属于同步接口，
-			也就是说在哪个线程add的sys_timer，定时时基到了
-			systimer线程会发事件通知对应的add线程响应（回调函数被执行）
-			3、与sys_timer_del成对使用
-*/
-/*----------------------------------------------------------------------------*/
+/**
+ * @brief 添加ms级系统非timeout类型定时任务。
+ *
+ * @param [in] priv 定时任务处理函数的输入参数
+ * @param [in] func 定时任务处理函数
+ * @param [in] msec 定时时间
+ *
+ * @return 定时器分配的ID
+ *
+ * @note
+ * 1、系统会进入低功耗，节拍不会丢失，定时结束会唤醒系统；
+ * 2、sys_timer由systimer线程提供时基，属于同步接口，
+ *    也就是说在哪个线程add的sys_timer，当定时时基到了,
+ *    systimer线程会发事件通知对应的add线程响应（回调函数被执行）；
+ * 3、与sys_timer_del成对使用。
+ */
 u16 sys_timer_add(void *priv, void (*func)(void *priv), u32 msec);
-//*----------------------------------------------------------------------------*/
-/**@brief   sys_timer定时扫描删除接口
-   @param
-			id:sys_timer_add分配的id号
-   @return
-   @note    1、与sys_timer_add成对使用
-*/
-/*----------------------------------------------------------------------------*/
+
+/**
+ * @brief 删除ms级非timeout类型定时任务。
+ *
+ * @param [in] id 要删除的任务ID
+ *
+ * @note
+ * 1、与sys_timer_add成对使用。
+ */
 void sys_timer_del(u16);
-//*----------------------------------------------------------------------------*/
-/**@brief   sys_timer超时增加接口
-   @param
-			priv:私有参数
-			func:定时扫描回调函数
-			msec:定时时间， 单位：毫秒
-   @return  定时器分配的id号
-   @note    1、系统会进入低功耗，节拍不会丢失
-   			2、sys_timerout由systimer线程提供时基，属于同步接口，
-			也就是说在哪个线程add的sys_timerout，定时时基到了
-			systimer线程会发事件通知对应的add线程响应（回调函数被执行）
-			3、timeout回调只会被执行一次
-			4、与sys_timerout_del成对使用
-*/
-/*----------------------------------------------------------------------------*/
+
+/**
+ * @brief 添加ms级系统timeout类型定时任务。
+ *
+ * @param [in] priv 定时任务处理函数的输入参数
+ * @param [in] func 定时任务处理函数
+ * @param [in] msec 定时时间
+ *
+ * @return 定时器分配的id号
+ *
+ * @note
+ * 1、系统会进入低功耗，节拍不会丢失，定时结束会唤醒系统；
+ * 2、sys_timeout由systimer线程提供时基，属于同步接口，
+ *    也就是说在哪个线程add的sys_timeout，定时时基到了
+ *    systimer线程会发事件通知对应的add线程响应（回调函数被执行）；
+ * 3、timeout回调只会被执行一次；
+ * 4、与sys_timerout_del成对使用。
+ */
 u16 sys_timeout_add(void *priv, void (*func)(void *priv), u32 msec);
-//*----------------------------------------------------------------------------*/
-/**@brief   sys_timer超时删除接口
-   @param
-			id:sys_timerout_add分配的id号
-   @return
-   @note    1、与sys_timerout_add成对使用
-*/
-/*----------------------------------------------------------------------------*/
+
+/**
+ * @brief 删除ms级timeout类型定时任务。
+ *
+ * @param [in] id 要删除的任务ID
+ *
+ * @note
+ * 1、与sys_timerout_add成对使用。
+ */
 void sys_timeout_del(u16);
-//*----------------------------------------------------------------------------*/
-/**@brief   sys_timer定时器重置
-   @param
-			id:sys_timer分配的id号
-   @return
-   @note    1、重置之后重新计时
-*/
-/*----------------------------------------------------------------------------*/
+
+/**
+ * @brief 重置ms级定时任务定时时间。
+ *
+ * @param [in] id 要修改的任务ID
+ *
+ * @note
+ * 1、重置之后重新计时。
+ */
 void sys_timer_re_run(u16 id);
-//*----------------------------------------------------------------------------*/
-/**@brief   sys_timer定时器设置私有参数
-   @param
-			id:sys_timer分配的id号
-			priv:私有参数
-   @return
-   @note
-*/
-/*----------------------------------------------------------------------------*/
+
+/**
+ * @brief 修改ms级定时任务处理函数的输入参数。
+ *
+ * @param [in] id 要修改的任务ID
+ * @param [in] priv 处理函数的输入参数
+ */
 void sys_timer_set_user_data(u16 id, void *priv);
 
-//*----------------------------------------------------------------------------*/
-/**@brief   sys_timer定时器获取私有参数
-   @param
-			id:sys_timer分配的id号
-   @return  返回add时的私有参数
-   @note    注意：如果有通过sys_timer_set_user_data重新设置私有参数,则返回的是设置后的私有参数
-*/
-/*----------------------------------------------------------------------------*/
+/**
+ * @brief 获取ms级定时任务处理函数的输入参数的值。
+ *
+ * @param [in] id 要获取处理函数的输入参数值的任务ID
+ *
+ * @return 返回add时的私有参数
+ *
+ * @note
+ * 1、如果有通过sys_timer_set_user_data重新设置私有参数,
+ *    则返回的是设置后的私有参数。
+ */
 void *sys_timer_get_user_data(u16 id);
 
-// void sys_timer_schedule();
 /*-----------------------------------------------------------*/
 
 /*
@@ -168,87 +176,88 @@ u32 sys_timer_get_ms(void);
 
 void usr_timer_schedule();
 
-//*----------------------------------------------------------------------------*/
-/**@brief   usr_timer定时扫描增加接口
-   @param
-			priv:私有参数
-			func:定时扫描回调函数
-			msec:定时时间， 单位：毫秒
-			priority:优先级,范围：0/1
-   @return  定时器分配的id号
-   @note    1、usr_timer的参数priority（优先级）为1，使用该类定时器，系统无法进入低功耗
-    		2、usr_timer的参数priority（优先级）为0，使用该类定时器，系统低功耗会忽略该节拍，节拍不会丢失，但是周期会变
-			3、usr_timer属于异步接口， add的时候注册的扫描函数将在硬件定时器中时基到时候被调用。
-			4、对应释放接口usr_timer_del
+/**
+ * @brief usr_timer定时扫描增加接口
+ *
+ * @param [in] priv 私有参数
+ * @param [in] func 定时扫描回调函数
+ * @param [in] msec 定时时间， 单位：毫秒
+ * @param [in] priority 优先级，范围：0/1
+ *
+ * @return 定时器分配的id号
+ *
+ * @note
+ * 1、usr_timer的参数priority（优先级）为1，使用该类定时器，系统无法进入低功耗；
+ * 2、usr_timer的参数priority（优先级）为0，使用该类定时器，系统低功耗会忽略该节拍，节拍不会丢失，但是定时周期会变；
+ * 3、usr_timer属于异步接口， add的时候注册的扫描函数将在硬件定时器中时基到时候被调用;
+ * 4、对应释放接口usr_timer_del。
 */
-/*----------------------------------------------------------------------------*/
 u16 usr_timer_add(void *priv, void (*func)(void *priv), u32 msec, u8 priority);
-//*----------------------------------------------------------------------------*/
-/**@brief   usr_timer超时增加接口
-   @param
-			priv:私有参数
-			func:超时回调函数
-			msec:定时时间， 单位：毫秒
-			priority:优先级,范围：0/1
-   @return  定时器分配的id号
-   @note    1、usr_timerout的参数priority（优先级）为1，使用该类定时器，系统无法进入低功耗
-    		2、usr_timerout的参数priority（优先级）为0，使用该类定时器，系统低功耗会忽略该节拍，节拍不会丢失，但是周期会变
-			3、usr_timerout属于异步接口， add的时候注册的扫描函数将在硬件定时器中时基到时候被调用。
-			4、对应释放接口usr_timerout_del
-			4、timeout回调只会被执行一次
+
+/**
+ * @brief usr_timer超时增加接口
+ *
+ * @param [in] priv 私有参数
+ * @param [in] func 超时回调函数
+ * @param [in] msec 定时时间， 单位：毫秒
+ * @param [in] priority 优先级,范围：0/1
+ *
+ * @return 定时器分配的id号
+ *
+ * @note
+ * 1、usr_timerout的参数priority（优先级）为1，使用该类定时器，系统无法进入低功耗；
+ * 2、usr_timerout的参数priority（优先级）为0，使用该类定时器，系统低功耗会忽略该节拍，节拍不会丢失，但是定时周期会变；
+ * 3、usr_timerout属于异步接口， add的时候注册的扫描函数将在硬件定时器中时基到时候被调用；
+ * 4、对应释放接口usr_timerout_del；
+ * 5、timeout回调只会被执行一次。
 */
-/*----------------------------------------------------------------------------*/
 u16 usr_timeout_add(void *priv, void (*func)(void *priv), u32 msec, u8 priority);
 
-//*----------------------------------------------------------------------------*/
-/**@brief   usr_timer修改定时扫描时间接口
-   @param
-			id:usr_timer_add时分配的id号
-			msec:定时时间， 单位：毫秒
-   @return
-   @note
+/**
+ * @brief usr_timer修改定时扫描时间接口
+ *
+ * @param [in] id usr_timer_add时分配的id号
+ * @param [in] msec 定时时间，单位：毫秒
 */
-/*----------------------------------------------------------------------------*/
 int usr_timer_modify(u16 id, u32 msec);
-//*----------------------------------------------------------------------------*/
-/**@brief   usr_timerout修改超时时间接口
-   @param
-			id:usr_timerout_add时分配的id号
-			msec:定时时间， 单位：毫秒
-   @return
-   @note
+
+/**
+ * @brief usr_timerout修改超时时间接口
+ *
+ * @param [in] id usr_timerout_add时分配的id号
+ * @param [in] msec 定时时间，单位：毫秒
 */
-/*----------------------------------------------------------------------------*/
 int usr_timeout_modify(u16 id, u32 msec);
-//*----------------------------------------------------------------------------*/
-/**@brief   usr_timer删除接口
-   @param
-			id:usr_timer_add时分配的id号
-   @return
-   @note    注意与usr_timer_add成对使用
+
+/**
+ * @brief usr_timer删除接口
+ *
+ * @param [in] id usr_timer_add时分配的id号
+ *
+ * @note
+ * 1、注意与usr_timer_add成对使用。
 */
-/*----------------------------------------------------------------------------*/
 void usr_timer_del(u16 id);
-//*----------------------------------------------------------------------------*/
-/**@brief   usr_timeout删除接口
-   @param
-			id:usr_timerout_add时分配的id号
-   @return
-   @note    注意与usr_timerout_add成对使用
+
+/**
+ * @brief usr_timeout删除接口
+ *
+ * @param [in] id usr_timerout_add时分配的id号
+ *
+ * @note
+ * 1、注意与usr_timerout_add成对使用。
 */
-/*----------------------------------------------------------------------------*/
 void usr_timeout_del(u16 id);
 
-//*----------------------------------------------------------------------------*/
-/**@brief   usr_time输出调试信息
-   @param
-
-   @return
-   @note    1.调试时可用
-   			2.将输出所有被add定时器的id及其时间(msec)
+/**
+ * @brief usr_time输出调试信息
+ *
+ * @note
+ * 1.调试时可用；
+ * 2.将输出所有被add定时器的id及其时间(msec)。
 */
-/*----------------------------------------------------------------------------*/
 void usr_timer_dump(void);
+
 /*-----------------------------------------------------------*/
 
 /*

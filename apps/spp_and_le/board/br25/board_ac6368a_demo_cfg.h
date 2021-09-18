@@ -1,10 +1,11 @@
 #ifndef CONFIG_BOARD_AC6368A_DEMO_CFG_H
 #define CONFIG_BOARD_AC6368A_DEMO_CFG_H
 
-#ifdef CONFIG_BOARD_AC6368A_KEYFOB
+#include "board_ac6368a_demo_global_build_cfg.h"
+
+#ifdef CONFIG_BOARD_AC6368A_DEMO
 
 #define CONFIG_SDFILE_ENABLE
-#define CONFIG_FLASH_SIZE       (1024 * 1024)
 
 //*********************************************************************************//
 //                                 配置开始                                        //

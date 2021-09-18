@@ -111,6 +111,7 @@ const struct clock_type  clock_enum[] = {
 #endif
     { ENC_MSBC_CLK	, (12), "ENC_MSBC_CLK	 "  },
     { ENC_CVSD_CLK	, (8), "ENC_CVSD_CLK	 "  },
+    { ENC_AMR_CLK	, (48), "ENC_AMR_CLK	 "  },
 
     { SYNC_CLK	, (4), "SYNC_CLK	     "  },
     { AUTOMUTE_CLK	, (16), "AUTOMUTE_CLK" },

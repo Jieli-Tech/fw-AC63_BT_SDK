@@ -208,13 +208,21 @@ int audio_adc_open_demo(void)
 void audio_adc_close_demo()
 {
     if (ladc_var) {
-        audio_adc_close(&ladc_var->linein_ch, &ladc_var->mic_ch);
+        audio_adc_mic_close(&ladc_var->mic_ch);
+        //audio_adc_linein_close(&ladc_var->linein_ch);
         audio_adc_del_output_handler(&adc_hdl, &ladc_var->output);
+        local_irq_disable();
+
+        //audio_encoder_close(&mic_enc->encoder);
+        //audio_encoder_task_close();
+
         free(ladc_var);
         ladc_var = NULL;
+        local_irq_enable();
+        extern void audio_output_stop(void);
+        audio_output_stop();
     }
 }
-
 #if 1
 static u8 audio_adc_demo_idle_query(void)
 {

@@ -245,13 +245,22 @@ int key_driver_init(void)
 #endif
 
 #if TCFG_ADKEY_ENABLE
+#ifdef CONFIG_ICRECORDER_CASE_ENABLE
+    extern multi_adkey_init(const struct adkey_platform_data * multi_adkey_data);
+    extern const struct adkey_platform_data multi_adkey_data[];
+    extern struct key_driver_para multi_adkey_scan_para;
+    err = multi_adkey_init(multi_adkey_data);
+    if (err == 0) {
+        sys_s_hi_timer_add((void *)&multi_adkey_scan_para, key_driver_scan, multi_adkey_scan_para.scan_time); //注册按键扫描定时器
+    }
+#else
     extern const struct adkey_platform_data adkey_data;
     extern struct key_driver_para adkey_scan_para;
     err = adkey_init(&adkey_data);
     if (err == 0) {
-
         sys_s_hi_timer_add((void *)&adkey_scan_para, key_driver_scan, adkey_scan_para.scan_time); //注册按键扫描定时器
     }
+#endif
 #endif
 
 #if TCFG_IRKEY_ENABLE

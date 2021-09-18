@@ -15,6 +15,7 @@
 #include "media/audio_stream.h"
 
 #include "asm/cpu_includes.h"
+#include "application/eq_func_define.h"
 /*
 #include "asm/dac.h"
 #include "asm/audio_adc.h"

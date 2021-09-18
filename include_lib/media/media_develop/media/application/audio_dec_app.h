@@ -289,6 +289,18 @@ void audio_dec_app_close(struct audio_dec_app_hdl *dec);
 
 /*
 *********************************************************************
+*                  Audio Decoder App Start
+* Description: 开始解码
+* Arguments  : *dec		解码句柄
+* Return	 : 0		成功
+* Note(s)    : None.
+*********************************************************************
+*/
+int audio_dec_app_start(struct audio_dec_app_hdl *dec);
+
+
+/*
+*********************************************************************
 *                  Audio Decoder App Set File Info
 * Description: 设置dec_app文件信息
 * Arguments  : *dec		dec_app句柄

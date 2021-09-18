@@ -116,6 +116,7 @@ SECTIONS
 
 		*(.LOG_TAG_CONST*)
         *(.rodata*)
+        *(.fat_data_code_ex)
 
 		. = ALIGN(4); // must at tail, make rom_code size align 4
         PROVIDE(text_rodata_end = .);
@@ -150,6 +151,33 @@ SECTIONS
 		ai_server_device_begin = .;
 		KEEP(*(.ai_server_device))
 		ai_server_device_end = .;
+
+		. = ALIGN(4);
+		adapter_idev_begin = .;
+		KEEP(*(.adapter_idev))
+		adapter_idev_end = .;
+
+		. = ALIGN(4);
+		adapter_odev_begin = .;
+		KEEP(*(.adapter_odev))
+		adapter_odev_end = .;
+
+		. = ALIGN(4);
+		adapter_enc_begin = .;
+		KEEP(*(.adapter_enc))
+		adapter_enc_end = .;
+
+
+		. = ALIGN(4);
+		adapter_decoder_begin = .;
+		KEEP(*(.adapter_decoder))
+		adapter_decoder_end = .;
+
+		. = ALIGN(4);
+		adapter_encoder_begin = .;
+		KEEP(*(.adapter_encoder))
+		adapter_encoder_end = .;
+
 
 
 		/********maskrom arithmetic ****/
@@ -188,6 +216,12 @@ SECTIONS
 		*( .wtg_dec_code )
 		*( .wtg_dec_const)
 		*( .wtg_dec_sparse_code)
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*( .lc3_codec_c_sparse_code)
+		*(.lc3_codec_d_code)
+		/* *(.lc3_codec_c_const) */
+		/* *(.lc3_codec_c_code) */
+#endif
 
 		. = ALIGN(32);
 	  } > code0
@@ -245,6 +279,12 @@ SECTIONS
 		. = ALIGN(4);
 		#include "system/system_lib_data.ld"
 		. = ALIGN(4);
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_const)
+		*(.lc3_codec_ari_c_data)
+		*(.lc3_codec_c_data)
+#endif
+
 	} > ram0
 
 	.bss ALIGN(32):
@@ -280,6 +320,10 @@ SECTIONS
 		*(.non_volatile_ram)
 
         . = ALIGN(32);
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_bss)
+		*(.lc3_codec_c_bss)
+#endif
 
     } > ram0
 
@@ -295,6 +339,12 @@ SECTIONS
 		*(.os_str)
 
         *(.fat_data_code)
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_code)
+		*(.lc3_codec_e_code)
+		*(.lc3_codec_c_const)
+		*(.lc3_codec_c_code)
+#endif
 
 #ifndef CONFIG_MOVABLE_ENABLE
     	audio_sync_code_begin = .;
@@ -337,6 +387,9 @@ SECTIONS
 			*(.aec_const)
 			*(.res_code)
 			*(.res_const)
+            *(.dns_common_data)
+            *(.dns_param_data_single)
+            *(.dns_param_data_dual)
 			*(.ns_code)
 			*(.ns_const)
 			*(.fft_code)

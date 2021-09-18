@@ -14,9 +14,11 @@
 #define     CFG_RCSP_ADV_LED_SETTING         26
 #define     CFG_RCSP_ADV_KEY_SETTING         27
 #define     CFG_AAP_MODE_INFO                28
-#define     CFG_BLE_ADDRESS_BEGIN            29
+#define     CFG_BLE_BONDING_REMOTE_INFO      29
+
+#define     CFG_BLE_ADDRESS_BEGIN            30 //记录ble 可变地址表
 #define     CFG_BT_IDX_NUM                   4
-#define     CFG_EDR_ADDRESS_BEGIN            (CFG_BLE_ADDRESS_BEGIN + CFG_BT_IDX_NUM)
+#define     CFG_EDR_ADDRESS_BEGIN            (CFG_BLE_ADDRESS_BEGIN + CFG_BT_IDX_NUM) //记录配对的对方地址
 #define     CFG_CUR_BT_IDX                   (CFG_EDR_ADDRESS_BEGIN + CFG_BT_IDX_NUM)
 #define     CFG_HID_MODE_BEGIN               (CFG_CUR_BT_IDX + 1)
 

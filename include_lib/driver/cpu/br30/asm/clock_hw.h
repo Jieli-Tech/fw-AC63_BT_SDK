@@ -236,6 +236,8 @@ enum {
     TS_SEL_IN_PAT,
 };
 
+#define GET_OSC_CLOCK_IN()		((JL_CLOCK->CLK_CON0 & 0x3<<4)>>4)
+
 #define OSC_CLOCK_IN(x)         SFR(JL_CLOCK->CLK_CON0,  4,  2,  x)
 //for MACRO - OSC_CLOCK_IN
 enum {

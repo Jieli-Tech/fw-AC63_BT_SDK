@@ -90,6 +90,11 @@ struct aec_s_attr {
 
     /*Extended-Parameters*/
     u16 ref_sr;
+
+    /*DNS Parameters*/
+    float DNS_GainFloor;
+    float DNS_OverDrive;
+    float DNS_Loudness;
 };
 
 /*

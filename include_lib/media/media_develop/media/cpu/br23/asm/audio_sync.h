@@ -132,6 +132,7 @@ struct audio_sample_sync {
     struct audio_src_base_handle *src;                          /*SRC模块指针*/
     void *irq_priv;                                             /*中断响应私有数据*/
     void (*irq_callback)(void *priv);                           /*中断响应回调*/
+    void *syncts;                                               /*时间戳同步句柄*/
 };
 
 /*************************************************************************

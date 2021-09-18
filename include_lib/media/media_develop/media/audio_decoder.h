@@ -47,6 +47,7 @@ enum {
     AUDIO_IOCTRL_CMD_SET_BREAKPOINT_A = 0x08,	// 设置复读A点
     AUDIO_IOCTRL_CMD_SET_BREAKPOINT_B,			// 设置复读B点
     AUDIO_IOCTRL_CMD_SET_BREAKPOINT_MODE,		// 设置AB点复读模式
+    AUDIO_IOCTRL_CMD_SET_AB_CALLBACK,           //设置AB点复读回调
 
     AUDIO_IOCTRL_CMD_REPEAT_PLAY = 0x90,		// 设置循环播放
     AUDIO_IOCTRL_CMD_SET_DEST_PLAYPOS = 0x93,	// 设置指定位置播放
@@ -78,6 +79,8 @@ struct audio_get_play_ms_time_param {
  */
 struct audio_ab_repeat_mode_param {
     u32 value;
+    int (*callback)(void *priv, int mode);
+    void *callback_priv;
 };
 
 /*
@@ -900,7 +903,7 @@ int audio_decoder_get_frame_len(void *_dec);
 *********************************************************************
 */
 void audio_decoder_set_channel(void *_dec, u8 ch_num);
-
+int audio_decoder_get_channel(void *_dec);
 
 #endif
 

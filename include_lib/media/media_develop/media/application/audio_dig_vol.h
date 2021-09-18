@@ -257,4 +257,30 @@ DODGE:
 
 ******************************************************************************/
 
+
+/*******************************************************
+* Function name	: audio_digital_vol_dual_data_run
+* Description	: 双声道数字音量计算
+* Parameter		:
+*   @*out       	输出数据地址
+*   @*in       		输入数据地址
+*   @points       	数据点数
+*   @vol_l			左声道音量（0-16384）
+*   @vol_r			右声道音量（0-16384）
+* Return        : 无
+********************************************************/
+void audio_digital_vol_dual_data_run(s16 *out, s16 *in, u32 points, u16 vol_l, u16 vol_r);
+
+/*******************************************************
+* Function name	: audio_digital_vol_single_data_run
+* Description	: 单声道数字音量计算
+* Parameter		:
+*   @*out       	输出数据地址
+*   @*in       		输入数据地址
+*   @points       	数据点数
+*   @vol			音量（0-16384）
+* Return        : 无
+********************************************************/
+void audio_digital_vol_single_data_run(s16 *out, s16 *in, u32 points, u16 vol);
+
 #endif  // #ifndef _AUDIO_DIG_VOL_H_

@@ -27,9 +27,19 @@
 		/* *(.wav_bss) */
 		*(.wma_bss)
 		*(.wma_dec_bss)
+	
+	        *(.speex_bss)
+		*(.speex_dec_bss)
+
+	    *(.opus_bss)
+	    
+
+
 		/* *(.aac_bss) */
 		*(.amr_bss)
 		*(.midi_bss)
+		*(.speex_bss)
+		*(.speex_dec_bss)
 		/* *(.ape_bss) */
 		*(.audio_decoder_bss)
 		/* *(.dts_bss) */
@@ -98,6 +108,7 @@
 		*(.speex_encoder_bss)
 		*(.sbc_encoder_bss)
 		*(.opus_encoder_bss)
+		*(.amr_encoder_bss)
 		*(.prevent_task_fill_bss)
 		*(.audio_cfifo_bss)
 		*(.audio_track_bss)
@@ -118,6 +129,7 @@
 		*(.sbc_hwaccel_bss)
 		*(.resample_fastcal_bss)
 		*(.lc3_decoder_bss)
+		*(.lfwordana_bss)
         media_bss_end = .;
 
 

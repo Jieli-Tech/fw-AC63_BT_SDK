@@ -59,6 +59,7 @@ enum {
 
     ENC_MSBC_CLK,      //////30
     ENC_CVSD_CLK,
+    ENC_AMR_CLK,
     SYNC_CLK	,
     AUTOMUTE_CLK	,
     FINDF_CLK	,

@@ -4,6 +4,7 @@
 #include "app_config.h"
 #include "app_action.h"
 #include "app_main.h"
+#include "user_cfg.h"
 
 #include "audio_config.h"
 /*软件数字音量*/
@@ -900,6 +901,21 @@ void dac_power_on_delay()
     os_time_dly(50);
 }
 #endif
+
+extern struct adc_platform_data adc_data;
+int read_mic_type_config(void)
+{
+    MIC_TYPE_CONFIG mic_type;
+    int ret = syscfg_read(CFG_MIC_TYPE_ID, &mic_type, sizeof(MIC_TYPE_CONFIG));
+    if (ret > 0) {
+        log_info_hexdump(&mic_type, sizeof(MIC_TYPE_CONFIG));
+        adc_data.mic_capless = mic_type.type;
+        adc_data.mic_bias_res = mic_type.pull_up;
+        adc_data.mic_ldo_vsel = mic_type.ldo_lev;
+        return 0;
+    }
+    return -1;
+}
 
 void audio_gain_dump()
 {
