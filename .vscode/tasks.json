@@ -1,0 +1,388 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "all",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat all"
+            },
+            "command": "make all -j`nproc`",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+        ,{
+            "label": "clean",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean"
+            },
+            "command": "make clean -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac632n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac632n_hid"
+            },
+            "command": "make ac632n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac631n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac631n_hid"
+            },
+            "command": "make ac631n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac638n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac638n_hid"
+            },
+            "command": "make ac638n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac635n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac635n_hid"
+            },
+            "command": "make ac635n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac637n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac637n_hid"
+            },
+            "command": "make ac637n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac636n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac636n_hid"
+            },
+            "command": "make ac636n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac632n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac632n_mesh"
+            },
+            "command": "make ac632n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac631n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac631n_mesh"
+            },
+            "command": "make ac631n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac638n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac638n_mesh"
+            },
+            "command": "make ac638n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac635n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac635n_mesh"
+            },
+            "command": "make ac635n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac637n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac637n_mesh"
+            },
+            "command": "make ac637n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac636n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac636n_mesh"
+            },
+            "command": "make ac636n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac632n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac632n_spp_and_le"
+            },
+            "command": "make ac632n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac631n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac631n_spp_and_le"
+            },
+            "command": "make ac631n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac638n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac638n_spp_and_le"
+            },
+            "command": "make ac638n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac635n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac635n_spp_and_le"
+            },
+            "command": "make ac635n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac637n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac637n_spp_and_le"
+            },
+            "command": "make ac637n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac636n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac636n_spp_and_le"
+            },
+            "command": "make ac636n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac632n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac632n_hid"
+            },
+            "command": "make clean_ac632n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac631n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac631n_hid"
+            },
+            "command": "make clean_ac631n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac638n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac638n_hid"
+            },
+            "command": "make clean_ac638n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac635n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac635n_hid"
+            },
+            "command": "make clean_ac635n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac637n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac637n_hid"
+            },
+            "command": "make clean_ac637n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac636n_hid",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac636n_hid"
+            },
+            "command": "make clean_ac636n_hid -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac632n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac632n_mesh"
+            },
+            "command": "make clean_ac632n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac631n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac631n_mesh"
+            },
+            "command": "make clean_ac631n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac638n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac638n_mesh"
+            },
+            "command": "make clean_ac638n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac635n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac635n_mesh"
+            },
+            "command": "make clean_ac635n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac637n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac637n_mesh"
+            },
+            "command": "make clean_ac637n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac636n_mesh",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac636n_mesh"
+            },
+            "command": "make clean_ac636n_mesh -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac632n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac632n_spp_and_le"
+            },
+            "command": "make clean_ac632n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac631n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac631n_spp_and_le"
+            },
+            "command": "make clean_ac631n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac638n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac638n_spp_and_le"
+            },
+            "command": "make clean_ac638n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac635n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac635n_spp_and_le"
+            },
+            "command": "make clean_ac635n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac637n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac637n_spp_and_le"
+            },
+            "command": "make clean_ac637n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac636n_spp_and_le",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac636n_spp_and_le"
+            },
+            "command": "make clean_ac636n_spp_and_le -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+    ]
+}
