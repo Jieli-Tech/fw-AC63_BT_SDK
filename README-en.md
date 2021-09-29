@@ -41,9 +41,9 @@ Build
 -------------
 Select a project to build. The following folders contains buildable projects:
 
-* APP_Bluetooth : [SPP_LE](./apps/spp_and_le), usage: data transfer,centeral devices,boardcast devices,beacon,multi-link
+* APP_Bluetooth : [SPP_LE](./apps/spp_and_le), usage: data transfer, centeral devices, boardcast devices, beacon, multi-link, Dongle(usb / bt)
 
-* APP_Bluetooth : [HID](./apps/hid), usage: remote control，keyboard，mouse
+* APP_Bluetooth : [HID](./apps/hid), usage: remote control, keyboard, mouse, game box, Voice remote control
 
 * APP_Bluetooth : [Mesh](./apps/mesh), usage: Mesh nodes
 
@@ -51,17 +51,13 @@ Comming Soon：
 
 * APP_Bluetooth ：`IoT (ipv6 / 6lowpan)`
 
-* APP_Bluetooth ：`Dongle(usb / bt)`
-
-* APP_Bluetooth ：`Voice remote control`
-
 * 2.4G_APP : `Vendor Wireless`
 
 SDK support Codeblock & Make to build to project,make sure you already setup the enviroment
 
 * Codeblock build : enter the project directory and find the `.cbp`,double click and build.
 
-* Makefile build : `apps/app_cfg` select the target you want to build,double click the `make_prompt` and excute `make`
+* Makefile build : double click the `tools/make_prompt.bat` and excute `make target`(see `makfile`)
 
   `before build the project make sure the USB updater is connect and enter the update mode correctly`
 

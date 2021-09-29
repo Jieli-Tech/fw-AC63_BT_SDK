@@ -12,6 +12,7 @@
 #define ACTION_CENTRAL_MAIN     0x0009
 #define ACTION_BEACON_MAIN      0x000a
 #define ACTION_TUYA             0x000b
+#define ACTION_REMOTE_24G_MAIN  0x000c
 
 
 #endif

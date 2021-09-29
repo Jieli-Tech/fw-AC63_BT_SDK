@@ -309,6 +309,9 @@ c_SRC_FILES := \
 	../../../../apps/spp_and_le/examples/multi_conn/ble_multi_peripheral.c \
 	../../../../apps/spp_and_le/examples/nonconn_24g/app_nonconn_24g.c \
 	../../../../apps/spp_and_le/examples/nonconn_24g/ble_24g_deal.c \
+	../../../../apps/spp_and_le/examples/remote_24g_client/app_remote_24g_client.c \
+	../../../../apps/spp_and_le/examples/remote_24g_client/ble_remote_24g_client.c \
+	../../../../apps/spp_and_le/examples/remote_24g_client/remote_usb_hid_device.c \
 	../../../../apps/spp_and_le/examples/trans_data/app_spp_and_le.c \
 	../../../../apps/spp_and_le/examples/trans_data/ble_trans.c \
 	../../../../apps/spp_and_le/examples/tuya/app_tuya.c \

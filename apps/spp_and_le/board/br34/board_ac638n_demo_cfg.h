@@ -33,18 +33,17 @@
 //*********************************************************************************//
 //                                 USB 配置                                        //
 //*********************************************************************************//
-#define TCFG_PC_ENABLE						DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE//PC模块使能
+#define TCFG_PC_ENABLE                      DISABLE_THIS_MOUDLE//PC模块使能
+#define USB_MEM_NO_USE_OVERLAY_EN           1
 #define TCFG_USB_SLAVE_USER_HID             1
-#define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE//U盘模块使能
+#define TCFG_UDISK_ENABLE                   DISABLE_THIS_MOUDLE//U盘模块使能
 #define TCFG_OTG_USB_DEV_EN                 BIT(0)//USB0 = BIT(0)  USB1 = BIT(1)
 
 #include "usb_std_class_def.h"
 
 ///USB 配置重定义
 #undef USB_DEVICE_CLASS_CONFIG
-#define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS)
-
-
+#define USB_DEVICE_CLASS_CONFIG             (HID_CLASS)
 
 //*********************************************************************************//
 //                                 IIC配置                                        //

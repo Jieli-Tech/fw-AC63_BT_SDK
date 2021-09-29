@@ -21,7 +21,6 @@
 
 
 
-
 #if RCSP_KEY_OPT
 #include "key_event_deal.h"
 #endif
@@ -834,7 +833,9 @@ static void JL_rcsp_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
         if (get_jl_update_flag()) {
 #if CONFIG_HID_CASE_ENABLE
             void rcsp_update_jump_for_hid_device();
-            rcsp_update_jump_for_hid_device();
+            sys_timeout_add(NULL, rcsp_update_jump_for_hid_device, 200);
+            /* os_time_dly(10);        //延时让回复命令发完 */
+            /* rcsp_update_jump_for_hid_device();      //这里处理hid设备主动断开手机,系统不会回连的问题 */
 #else
             if (RCSP_BLE == JL_get_cur_bt_channel_sel()) {
                 rcsp_printf("BLE_ CON START DISCON\n");

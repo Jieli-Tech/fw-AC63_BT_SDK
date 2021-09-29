@@ -219,6 +219,7 @@ c_SRC_FILES := \
 	../../../../apps/hid/examples/keypage/app_keypage.c \
 	../../../../apps/hid/examples/mouse_dual/app_mouse_dual.c \
 	../../../../apps/hid/examples/mouse_single/app_mouse.c \
+	../../../../apps/hid/examples/remote_24g_server/app_remote_24g_server.c \
 	../../../../apps/hid/examples/standard_keyboard/app_standard_keyboard.c \
 	../../../../apps/hid/examples/standard_keyboard/usb_hid_devices.c \
 	../../../../apps/hid/examples/voice_remote_control/app_remote_control.c \

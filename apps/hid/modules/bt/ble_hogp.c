@@ -287,9 +287,12 @@ static void __ble_state_to_user(u8 state, u8 reason)
 static void __hogp_send_connetion_update_deal(u16 conn_handle)
 {
     if (hogp_connection_update_enable) {
+#if CONFIG_APP_REMOTE_24G_S
+#else
         if (0 == ble_gatt_server_connetion_update_request(conn_handle, Peripheral_Preferred_Connection_Parameters, CONN_PARAM_TABLE_CNT)) {
             hogp_connection_update_enable = 0;
         }
+#endif
     }
 }
 
@@ -440,7 +443,6 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
             log_info("mdy_timer= %d\n", (u32)(little_endian_read_16(ext_param, 14 + 0) * 1.25));
             sys_s_hi_timer_modify(ble_hid_timer_handle, (u32)(little_endian_read_16(ext_param, 14 + 0) * 1.25));
         }
-
         break;
 
     case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
@@ -518,7 +520,7 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
 
     case GATT_COMM_EVENT_SERVER_STATE:
         log_info("server_state: %02x,%02x\n", little_endian_read_16(packet, 1), packet[0]);
-        __ble_state_to_user(packet[0], 0);
+        __ble_state_to_user(packet[0], hogp_con_handle);
         break;
 
     case GATT_COMM_EVENT_CONNECTION_UPDATE_REQUEST_RESULT:

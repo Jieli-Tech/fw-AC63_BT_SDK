@@ -28,7 +28,7 @@
 #define CONFIG_APP_AT_COM                 0 //AT com HEX格式命令
 #define CONFIG_APP_AT_CHAR_COM            0 //AT com 字符串格式命令
 #define CONFIG_APP_IDLE                   0 //空闲任务
-
+#define CONFIG_APP_REMOTE_24G_C           0 //基于BLE的2.4g遥控主机,板级只需要开BLE
 // #define LL_SYNC_EN                        CONFIG_APP_LL_SYNC //
 // #define TUYA_DEMO_EN                      CONFIG_APP_TUYA
 
@@ -107,6 +107,15 @@
 #define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数(app not support)
 #define CONFIG_BT_GATT_SERVER_NUM          1 //配置从机server个数
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //配置连接个数
+
+#elif CONFIG_APP_REMOTE_24G_C
+#define EDR_EMITTER_EN                     0 //蓝牙(edr主机)
+
+#define CONFIG_BT_GATT_COMMON_ENABLE       1
+#define CONFIG_BT_SM_SUPPORT_ENABLE        1 //
+#define CONFIG_BT_GATT_CLIENT_NUM          1 //
+#define CONFIG_BT_GATT_SERVER_NUM          0 //(app not support)
+#define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //
 
 #else
 #define CONFIG_BT_GATT_COMMON_ENABLE       0

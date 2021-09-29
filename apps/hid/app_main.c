@@ -47,7 +47,7 @@ const struct task_info task_info_table[] = {
     {"gamebox",             3,     1024,   128  },
 #endif
 #if (RCSP_BTMATE_EN)
-    {"rcsp_task",		2,		640,	128	},
+    {"rcsp_task",		2,		640,	0},
 #endif
 #if TCFG_AUDIO_ENABLE
     {"audio_dec",           3,     768,   128  },
@@ -137,6 +137,10 @@ void app_main()
 #elif(CONFIG_APP_IDLE)
     it.name = "idle";
     it.action = ACTION_IDLE_MAIN;
+#elif(CONFIG_APP_REMOTE_24G_S)
+    it.name = "remote_24g";
+    it.action = ACTION_REMOTE_24G_MAIN;
+
 #else
     while (1) {
         printf("no app!!!");

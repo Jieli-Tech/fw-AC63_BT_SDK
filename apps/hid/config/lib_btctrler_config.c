@@ -131,6 +131,12 @@ const int config_delete_link_key          = 1;
  */
 #if TCFG_USER_BLE_ENABLE
 
+#if CONFIG_APP_REMOTE_24G_S
+#define SET_SELECT_PHY_CFG   LE_2M_PHY|LE_CODED_PHY
+#else
+#define SET_SELECT_PHY_CFG   0
+#endif
+
 #if CONFIG_BT_SM_SUPPORT_ENABLE
 #define SET_ENCRYPTION_CFG   LE_ENCRYPTION
 #else
@@ -153,7 +159,7 @@ const int config_btctler_le_afh_en = 0;
 const int config_btctler_le_master_multilink = 0;
 #endif
 
-const uint64_t config_btctler_le_features = SET_ENCRYPTION_CFG;
+const uint64_t config_btctler_le_features = SET_ENCRYPTION_CFG | SET_SELECT_PHY_CFG;
 const int config_btctler_le_roles    = SET_SLAVE_ROLS_CFG | SET_MASTER_ROLS_CFG;
 const int config_btctler_le_hw_nums = CONFIG_BT_GATT_CONNECTION_NUM;
 const int config_btctler_le_rx_nums = (CONFIG_BT_GATT_CONNECTION_NUM * 3) + 2;

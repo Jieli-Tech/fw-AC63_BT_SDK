@@ -38,7 +38,7 @@ const struct task_info task_info_table[] = {
     {"update",				1,	   320,   0		},
     {"dw_update",		 	2,	   256,   128  },
 #if (RCSP_BTMATE_EN)
-    {"rcsp_task",		    2,		640,	128	},
+    {"rcsp_task",		    2,		640,	0	},
 #endif
     {0, 0},
 };

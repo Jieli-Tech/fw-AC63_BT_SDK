@@ -39,7 +39,7 @@ const struct task_info task_info_table[] = {
     {"update",				1,	   320,   0		},
     {"dw_update",		 	2,	   256,   128  },
 #if (RCSP_BTMATE_EN)
-    {"rcsp_task",		    2,		640,	128	},
+    {"rcsp_task",		    2,		640,	0},
 #endif
 #if(USER_UART_UPDATE_ENABLE)
     {"uart_update",	        1,	   256,   128	},
@@ -152,6 +152,10 @@ void app_main()
 #elif CONFIG_APP_IDLE
     it.name = "idle";
     it.action = ACTION_IDLE_MAIN;
+
+#elif CONFIG_APP_REMOTE_24G_C
+    it.name = "remote_24g";
+    it.action = ACTION_REMOTE_24G_MAIN;
 
 #else
     while (1) {
