@@ -86,7 +86,7 @@ Hardware
 Community
 --------------
 
-* [Dingtalk Group](./doc/stuff/dingtalk.jpg)
+* [Dingtalk Group] ID: `31691148`
 
 * [Q&A](./doc/stuff/AC630X软件问题整理.pdf)
 

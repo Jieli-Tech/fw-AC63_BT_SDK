@@ -87,7 +87,7 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 社区
 --------------
 
-* 技术交流群[钉钉](./doc/stuff/dingtalk.jpg)
+* 技术交流群，钉钉群 ID: `31691148`
 
 * 常见问题集合[链接](./doc/stuff/AC630X软件问题整理.pdf)
 
