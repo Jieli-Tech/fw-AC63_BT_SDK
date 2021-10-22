@@ -1694,16 +1694,18 @@ int  audio_demo_enc_close()
 
 * SDK相关配置
 
-   * 在app_config.h打开相关的宏定义：RCSP_BTMATE_EN、RCSP_UPDATE_EN
-   * 在对应板级的global_build_cfg.h文件打开相关宏定义：CONFIG_APP_OTA_ENABLE
-
+   在对应板级配置文件xxx_global_build_cfg.h中打开CONFIG_APP_OTA_ENABLE配置
 ```C
-//需要app(BLE)升级要开一下宏定义
-#define RCSP_BTMATE_EN                    1
-#define RCSP_UPDATE_EN                    1
-#define UPDATE_MD5_ENABLE                 0
+#define CONFIG_APP_OTA_ENABLE                   0 //是否支持RCSP升级(JL-OTA)
 ```
-* 打开APP升级，需要修改ini的话需要在cpu\bd29\tools\bluetooth\app_ota下修改，如果未打开APP升级，则修改cpu\bd29\tools\bluetooth\standard下的ini配置。对应生成的升级文件ufw也在对应的目录下
+   
+   注意：板级头文件必须使能BLE模块功能，才能使用升级功能。
+```C
+#define TCFG_USER_BLE_ENABLE                    1 //BLE功能使能  
+```
+
+   生成的升级文件为update.ufw，将其放在手机APP对应的文件目录中，连接蓝牙，选择文件后点击开始升级即可。
+
 
 * 手机端工具
 
