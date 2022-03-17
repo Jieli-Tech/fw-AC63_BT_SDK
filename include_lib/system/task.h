@@ -8,6 +8,7 @@
 struct task_info {
     const char *name;
     u8 prio;
+    u8 core;
     u16 stack_size;
     u16 qsize;
 };

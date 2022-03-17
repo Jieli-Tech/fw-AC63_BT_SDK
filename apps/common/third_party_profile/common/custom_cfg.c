@@ -1117,23 +1117,97 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
 #endif
     custom_cfg_item_write(CFG_ITEM_PIN_CODE, pin_code, pin_code_len);
 
-    //CFG_ITEM_BLE_ADDR
-    le_controller_get_mac(addr);
-    custom_cfg_item_write(CFG_ITEM_BLE_ADDR, addr, sizeof(addr));
 
     //CFG_ITEM_BLE_NAME
     host_name = bt_get_local_name();
     host_name_len = strlen(bt_get_local_name());
     custom_cfg_item_write(CFG_ITEM_BLE_NAME, host_name, host_name_len);
 
+    //CFG_ITEM_BLE_ADDR
+    le_controller_get_mac(addr);
     //CFG_ITEM_SCAN_RSP
     u16 len;
     u8 *item_data = ble_get_scan_rsp_ptr(&len);
-    custom_cfg_item_write(CFG_ITEM_SCAN_RSP, item_data, len);
+    cfg_printf("get item_data\n");
+    cfg_printf_buf(item_data, len);
+    struct excfg_rsp_payload rsp_payload;
 
-    //CFG_ITEM_ADV_IND
-    item_data = ble_get_adv_data_ptr(&len);
-    custom_cfg_item_write(CFG_ITEM_ADV_IND, item_data, len);
+    //New Scan_rsp
+    /*
+     *  |      len(1 Byte)     |     type(1 Byte)     |     data(name_len)    |
+     *        bt_name_len      |         0x9          |        name_str       |
+     *  jl_payloader_len(14)   |         0xff         |      jl_payloader     |
+    */
+#if RCSP_ADV_EN || RCSP_BTMATE_EN
+    if (get_rcsp_support_new_reconn_flag()) {
+#else
+    if (0) {
+#endif
+        u8 *rsp_data = malloc(31);
+        u8 i, rsp_len = 0;
+        if (rsp_data) {
+            cfg_printf("[make new rsp data]\n");
+            rsp_payload.vid = 0x05D6;
+            memcpy(rsp_payload.logo, "JLOTA", sizeof("JLOTA"));
+            for (i = 0; i < sizeof(rsp_payload.logo) / 2; i++) {
+                rsp_payload.logo[i] ^= rsp_payload.logo[sizeof(rsp_payload.logo) - i - 1];
+                rsp_payload.logo[sizeof(rsp_payload.logo) - i - 1] ^= rsp_payload.logo[i];
+                rsp_payload.logo[i] ^= rsp_payload.logo[sizeof(rsp_payload.logo) - i - 1];
+            }
+            rsp_payload.version = 0;
+            memcpy(rsp_payload.addr, addr, 6);
+
+            while (i < len) {                           //如果rsp_data里有名字要把名字也拷贝出来
+                if (*(item_data + 1) == 0x09) {         //find HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME:0x09
+                    memcpy(rsp_data, item_data, *item_data + 1);
+                    rsp_len = *item_data + 1;
+                    break;
+                }
+                i += (1 + *item_data);
+                item_data += (1 + *item_data);
+            }
+
+            if (rsp_len + sizeof(struct excfg_rsp_payload) + 2 > 31) {
+                cfg_printf("rsp data overflow!!!\n");
+            } else {
+                *(rsp_data + rsp_len) = sizeof(struct excfg_rsp_payload) + 1;        //fill jlpayload
+                *(rsp_data + rsp_len + 1) = 0xff;                                    // HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA
+                memcpy(rsp_data + rsp_len + 2, &rsp_payload, sizeof(struct excfg_rsp_payload));
+                rsp_len += (2 + sizeof(struct excfg_rsp_payload));
+                addr[0] += 1;                                                        //修改地址，让手机重新发现服务, 这里地址的修改规则可以用户自行设置
+                cfg_printf("new rsp_data:\n");
+                cfg_printf_buf(rsp_data, rsp_len);
+                custom_cfg_item_write(CFG_ITEM_SCAN_RSP, rsp_data, rsp_len);
+            }
+
+            //广播包里有0xff字段也要找出来去掉，小程序判断到adv和rsp有重复字段是会出错
+            u8 new_adv_len = 0;
+            i = 0;
+            item_data = ble_get_adv_data_ptr(&len);
+            while (i < len) {                           //找出不等于0xff的信息,拷贝到new_adv_data
+                if (*(item_data + 1) != 0xff) {
+                    //memcpy(rsp_data, item_data, *item_data + 1);
+                    memcpy(rsp_data + new_adv_len, item_data, *item_data + 1);
+                    new_adv_len += *item_data + 1;
+                }
+                i += (1 + *item_data);
+                item_data += (1 + *item_data);
+            }
+            cfg_printf("new adv_data:\n");
+            cfg_printf_buf(rsp_data, new_adv_len);
+            custom_cfg_item_write(CFG_ITEM_ADV_IND, rsp_data, new_adv_len);
+
+            free(rsp_data);
+        }
+
+    } else {
+        //CFG_ITEM_ADV_IND
+        item_data = ble_get_adv_data_ptr(&len);
+        custom_cfg_item_write(CFG_ITEM_ADV_IND, item_data, len);
+        custom_cfg_item_write(CFG_ITEM_SCAN_RSP, item_data, len);
+    }
+    custom_cfg_item_write(CFG_ITEM_BLE_ADDR, addr, sizeof(addr));
+
 
     //CFG_ITEM_GATT_PROFILE
     item_data = ble_get_gatt_profile_data(&len);

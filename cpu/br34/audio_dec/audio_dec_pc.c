@@ -12,6 +12,8 @@
 #include "audio_dec.h"
 #include "app_main.h"
 #include "clock_cfg.h"
+#include "audio_dec_eff.h"
+#include "audio_codec_clock.h"
 
 #if TCFG_UI_ENABLE
 #include "ui/ui_api.h"
@@ -54,20 +56,6 @@ struct usb_audio_handle {
 #define RATE_INC_STEP       2
 #define RATE_DEC_STEP       2
 
-/* #define PC_EQ_SUPPORT_ASYNC		1 */
-
-/* #ifndef CONFIG_EQ_SUPPORT_ASYNC */
-/* #undef PC_EQ_SUPPORT_ASYNC */
-/* #define PC_EQ_SUPPORT_ASYNC		0 */
-/* #endif */
-
-
-/* #if PC_EQ_SUPPORT_ASYNC && TCFG_PC_MODE_EQ_ENABLE */
-/* #define PC_EQ_SUPPORT_32BIT		1 */
-/* #else */
-/* #define PC_EQ_SUPPORT_32BIT		0 */
-/* #endif */
-
 
 struct uac_dec_hdl {
     struct audio_decoder decoder;
@@ -88,22 +76,12 @@ struct uac_dec_hdl {
     u16 usb_audio_min_speed;
     struct audio_src_handle *src_sync;
     u8 remain;
-    u8 eq_remain;
-#if TCFG_PC_MODE_EQ_ENABLE
-    struct audio_eq *p_eq;
+#if TCFG_EQ_ENABLE&&TCFG_PC_MODE_EQ_ENABLE
+    struct dec_eq_drc *eq_drc;
 #endif
-#if TCFG_PC_MODE_DRC_ENABLE
-    struct audio_drc *p_drc;
-#endif
+
 
     struct user_audio_parm *user_hdl;
-
-#if  PC_EQ_SUPPORT_32BIT
-    s16 *eq_out_buf;
-    int eq_out_buf_len;
-    int eq_out_points;
-    int eq_out_total;
-#endif
 
 
     u32 cnt: 8;
@@ -129,8 +107,8 @@ extern void uac_get_cur_vol(const u8 id, u16 *l_vol, u16 *r_vol);
 extern u8 uac_get_mute(void);
 extern void bt_tws_sync_volume();
 
-/* void pc_eq_drc_open(struct uac_dec_hdl *dec, struct audio_fmt *fmt); */
-/* void pc_eq_drc_close(struct uac_dec_hdl *dec); */
+void pc_eq_drc_open(struct uac_dec_hdl *dec, struct audio_fmt *fmt);
+void pc_eq_drc_close(struct uac_dec_hdl *dec);
 
 int uac_vol_switch(int vol)
 {
@@ -202,10 +180,6 @@ static int uac_dec_output_handler(struct audio_decoder *decoder, s16 *data, int 
 
 
     if (!dec->remain) {
-#if ((defined(DEC_OUT_OTHER_DATA) && (DEC_OUT_OTHER_DATA)))
-        other_audio_dec_output(decoder, data, len, dec->output_ch, dec->sample_rate);
-#endif
-
 #if (defined(USER_AUDIO_PROCESS_ENABLE) && (USER_AUDIO_PROCESS_ENABLE != 0))
         if (dec->user_hdl) {
             u8 ch_num = dec->output_ch;
@@ -214,10 +188,9 @@ static int uac_dec_output_handler(struct audio_decoder *decoder, s16 *data, int 
 #endif
 
     }
-#if PC_EQ_SUPPORT_ASYNC
-#if TCFG_PC_MODE_EQ_ENABLE
-    if (dec->p_eq) {
-        int eqlen = audio_eq_run(dec->p_eq, data, len);
+#if TCFG_EQ_ENABLE&&TCFG_PC_MODE_EQ_ENABLE
+    if (dec->eq_drc && dec->eq_drc->async) {
+        int eqlen = eq_drc_run(dec->eq_drc, data, len);
         len -= eqlen;
         if (len == 0) {
             dec->remain = 0;
@@ -226,22 +199,12 @@ static int uac_dec_output_handler(struct audio_decoder *decoder, s16 *data, int 
         }
         return eqlen;
     }
-#endif
-#endif
-
 
     if (!dec->remain) {
-#if TCFG_PC_MODE_EQ_ENABLE
-        if (dec->p_eq) {
-            audio_eq_run(dec->p_eq, data, len);
-        }
-#endif
-#if TCFG_PC_MODE_DRC_ENABLE
-        if (dec->p_drc) {
-            audio_drc_run(dec->p_drc, data, len);
-        }
-#endif
+        eq_drc_run(dec->eq_drc, data, len);
     }
+#endif//TCFG_PC_MODE_EQ_ENABLE
+
 
 
     do {
@@ -398,6 +361,14 @@ static const struct audio_dec_input uac_input = {
 
 static int usb_audio_stream_sync(struct uac_dec_hdl *dec, int data_size)
 {
+#if PC_SYNC_BY_DAC_HRP
+    if (sample_rate_set != dec->audio_new_rate) {
+        //printf("%d,%d",sample_rate_set,dec->audio_new_rate);
+        dec->audio_new_rate = sample_rate_set;
+        audio_hw_src_set_rate(dec->src_sync, dec->sample_rate, dec->audio_new_rate);
+    }
+    return 0;
+#endif
     if (!dec->src_sync) {
         return 0;
     }
@@ -561,8 +532,8 @@ static int uac_audio_close(void)
         uac_dec->user_hdl = NULL;
     }
 #endif
-
-    clock_set_cur();
+    audio_codec_clock_del(AUDIO_PC_MODE);
+    /* clock_set_cur(); */
     return 0;
 }
 
@@ -656,8 +627,8 @@ static int uac_audio_start(void)
     dec->src_out_sr = audio_output_rate(f.sample_rate);
 
 __dec_start:
-    /* pc_eq_drc_open(dec, &f); */
     uac_audio_sync_init(dec);
+    /* pc_eq_drc_open(dec, &f); */
 
     app_audio_state_switch(APP_AUDIO_STATE_MUSIC, get_max_sys_vol());
 
@@ -704,8 +675,8 @@ __dec_start:
 
 #endif // PC_SYNC_BY_DAC_HRP
 
-
-    clock_set_cur();
+    audio_codec_clock_set(AUDIO_PC_MODE, AUDIO_CODING_PCM, dec->wait.preemption);
+    /* clock_set_cur(); */
     dec->start = 1;
     return 0;
 
@@ -774,11 +745,10 @@ static void uac_speaker_stream_rx_handler(int event, void *data, int len)
                 usb_icnt = 0;
                 sample_rate_set = out_points ;
                 int buf_size = uac_speaker_stream_size();
-
-                if (buf_size >= (uac_speaker_stream_length() * 3 / 4)) {
-                    sample_rate_set += 1;
-                } else if (buf_size <= (uac_speaker_stream_length() / 4)) {
-                    sample_rate_set -= 1;
+                if (buf_size >= (uac_speaker_stream_length() * 2 / 3)) {
+                    sample_rate_set -= 5;
+                } else if (buf_size <= (uac_speaker_stream_length() / 3)) {
+                    sample_rate_set += 5;
                 }
 
                 /* printf(">> in:%d out:%d sr:%d b:%d\n", in_points, out_points, sample_rate_set, buf_size); */
@@ -972,6 +942,14 @@ void usb_audio_demo_exit(void)
     usb_audio_mic_close(NULL);
 }
 
+int audio_pc_src_resample_write(void *priv, s16 *data, u32 len)
+{
+    if (uac_dec && uac_dec->start) { //避免src已经关闭，异步eq 还在输出写src，导致异常
+        return 	audio_src_resample_write(priv, data, len);
+    }
+    return 0;
+}
+
 #if (defined(USER_DIGITAL_VOLUME_ADJUST_ENABLE) && (USER_DIGITAL_VOLUME_ADJUST_ENABLE != 0))
 /*
  *pc歌数字音量调节
@@ -1014,86 +992,9 @@ void pc_user_digital_volume_tab_set(u16 *user_vol_tab, u8 user_vol_max)
 #endif
 
 
-#if PC_EQ_SUPPORT_32BIT
-void pc_eq_32bit_out(struct uac_dec_hdl *dec)
-{
-    int wlen = 0;
-
-    if (dec->src_sync) {
-        wlen = audio_src_resample_write(dec->src_sync, &dec->eq_out_buf[dec->eq_out_points], (dec->eq_out_total - dec->eq_out_points) * 2);
-    } else {
-        wlen = audio_mixer_ch_write(&dec->mix_ch, &dec->eq_out_buf[dec->eq_out_points], (dec->eq_out_total - dec->eq_out_points) * 2);
-    }
-    dec->eq_out_points += wlen / 2;
-}
-#endif /*PC_EQ_SUPPORT_32BIT*/
 
 
-static int pc_eq_output(void *priv, s16 *data, u32 len)
-{
-    int wlen = 0;
-    int rlen = len;
-    struct uac_dec_hdl *dec = priv;
-#if PC_EQ_SUPPORT_ASYNC
 
-    if (!dec->eq_remain) {
-#if PC_EQ_SUPPORT_32BIT
-        if (dec->eq_out_buf && (dec->eq_out_points < dec->eq_out_total)) {
-            pc_eq_32bit_out(dec);
-            if (dec->eq_out_points < dec->eq_out_total) {
-                return 0;
-            }
-        }
-#endif /*PC_EQ_SUPPORT_32BIT*/
-
-#if TCFG_PC_MODE_DRC_ENABLE
-        if (dec->p_drc) {
-            audio_drc_run(dec->p_drc, data, len);
-        }
-#endif
-    }
-
-#if PC_EQ_SUPPORT_32BIT
-    if ((!dec->eq_out_buf) || (dec->eq_out_buf_len < len / 2)) {
-        if (dec->eq_out_buf) {
-            free(dec->eq_out_buf);
-        }
-        dec->eq_out_buf_len = len / 2;
-        dec->eq_out_buf = malloc(dec->eq_out_buf_len);
-        ASSERT(dec->eq_out_buf);
-    }
-    s32 *idat = data;
-    s16 *odat = dec->eq_out_buf;
-    for (int i = 0; i < len / 4; i++) {
-        s32 outdat = *idat++;
-        if (outdat > 32767) {
-            outdat = 32767;
-        } else if (outdat < -32768) {
-            outdat = -32768;
-        }
-        *odat++ = outdat;
-    }
-    dec->eq_out_points = 0;
-    dec->eq_out_total = len / 4;
-
-    pc_eq_32bit_out(dec);
-    return len;
-#endif /*PC_EQ_SUPPORT_32BIT*/
-
-    if (dec->src_sync) {
-        wlen = audio_src_resample_write(dec->src_sync, data, len);
-    } else {
-        wlen = audio_mixer_ch_write(&dec->mix_ch, data, len);
-    }
-    if (wlen == len) {
-        dec->eq_remain = 0;
-    } else {
-        dec->eq_remain = 1;
-    }
-    return wlen;
-#endif
-    return len;
-}
 
 
 
@@ -1102,57 +1003,22 @@ void pc_eq_drc_open(struct uac_dec_hdl *dec, struct audio_fmt *fmt)
     if (!dec) {
         return;
     }
-#if TCFG_PC_MODE_EQ_ENABLE
-    dec->p_eq = zalloc(sizeof(struct audio_eq) + sizeof(struct hw_eq_ch));
-    if (dec->p_eq) {
-        dec->p_eq->eq_ch = (struct hw_eq_ch *)((int)dec->p_eq + sizeof(struct audio_eq));
-        struct audio_eq_param pc_eq_param = {0};
-        pc_eq_param.channels = dec->channel;
-        pc_eq_param.online_en = 1;
-        pc_eq_param.mode_en = 1;
-        pc_eq_param.remain_en = 1;
-        pc_eq_param.max_nsection = EQ_SECTION_MAX;
-        pc_eq_param.cb = eq_get_filter_info;
-#if PC_EQ_SUPPORT_ASYNC
-        pc_eq_param.no_wait = 1;//异步
-#endif
-        pc_eq_param.eq_name = 0;
-        audio_eq_open(dec->p_eq, &pc_eq_param);
-        audio_eq_set_samplerate(dec->p_eq, fmt->sample_rate);
-        audio_eq_set_output_handle(dec->p_eq, pc_eq_output, dec);
-#if PC_EQ_SUPPORT_32BIT
-        audio_eq_set_info(dec->p_eq, pc_eq_param.channels, 1);
-#endif
+#if TCFG_EQ_ENABLE&&TCFG_PC_MODE_EQ_ENABLE
+    u8 drc_en = 0;
+#if TCFG_DRC_ENABLE&&TCFG_PC_MODE_DRC_ENABLE
+    drc_en = 1;
+#endif//TCFG_PC_MODE_DRC_ENABLE
 
-        audio_eq_start(dec->p_eq);
+    if (dec->src_sync) {
+        dec->eq_drc = dec_eq_drc_setup(dec->src_sync, (eq_output_cb)audio_pc_src_resample_write, fmt->sample_rate, dec->output_ch, 1, drc_en);
+    } else if (dec->dec_no_out_sound) {
+#if (defined(TCFG_PCM_ENC2TWS_ENABLE) && (TCFG_PCM_ENC2TWS_ENABLE))
+        dec->eq_drc = dec_eq_drc_setup(dec->dec_no_out_sound, (eq_output_cb)pcm2tws_enc_output, fmt->sample_rate, dec->output_ch, 1, drc_en);
+#endif
+    } else {
+        dec->eq_drc = dec_eq_drc_setup(&dec->mix_ch, (eq_output_cb)audio_mixer_ch_write, fmt->sample_rate, dec->output_ch, 1, drc_en);
     }
-
-#endif
-
-
-#if TCFG_PC_MODE_DRC_ENABLE
-
-
-    dec->p_drc = malloc(sizeof(struct audio_drc));
-    if (dec->p_drc) {
-        struct audio_drc_param drc_param = {0};
-        drc_param.channels = dec->channel;
-        drc_param.online_en = 1;
-        drc_param.remain_en = 1;
-        drc_param.cb = drc_get_filter_info;
-        drc_param.stero_div = 0;
-
-        drc_param.drc_name = 0;
-        audio_drc_open(dec->p_drc, &drc_param);
-        audio_drc_set_samplerate(dec->p_drc, fmt->sample_rate);
-#if PC_EQ_SUPPORT_32BIT
-        audio_drc_set_32bit_mode(dec->p_drc, 1);
-#endif
-
-        audio_drc_set_output_handle(dec->p_drc, NULL, NULL);
-        audio_drc_start(dec->p_drc);
-    }
-#endif
+#endif//TCFG_PC_MODE_EQ_ENABLE
 
 }
 
@@ -1162,29 +1028,12 @@ void pc_eq_drc_close(struct uac_dec_hdl *dec)
     if (!dec) {
         return;
     }
-#if TCFG_PC_MODE_EQ_ENABLE
-    if (dec->p_eq) {
-        audio_eq_close(dec->p_eq);
-        free(dec->p_eq);
-        dec->p_eq = NULL;
+#if TCFG_EQ_ENABLE&&TCFG_PC_MODE_EQ_ENABLE
+    if (dec->eq_drc) {
+        dec_eq_drc_free(dec->eq_drc);
+        dec->eq_drc = NULL;
     }
-#endif
-
-#if TCFG_PC_MODE_DRC_ENABLE
-    if (dec->p_drc) {
-        audio_drc_close(dec->p_drc);
-        free(dec->p_drc);
-        dec->p_drc = NULL;
-    }
-#endif
-
-#if PC_EQ_SUPPORT_32BIT
-    if (dec->eq_out_buf) {
-        free(dec->eq_out_buf);
-        dec->eq_out_buf = NULL;
-    }
-#endif
-
+#endif//TCFG_PC_MODE_EQ_ENABLE
 
 }
 #endif /* TCFG_APP_PC_EN */

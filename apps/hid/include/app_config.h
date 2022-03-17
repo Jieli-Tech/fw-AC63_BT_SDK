@@ -9,7 +9,7 @@
 #ifdef CONFIG_RELEASE_ENABLE
 #define LIB_DEBUG    0
 #else
-#define LIB_DEBUG    0
+#define LIB_DEBUG    1
 #endif
 #define CONFIG_DEBUG_LIB(x)         (x & LIB_DEBUG)
 
@@ -25,10 +25,9 @@
 #define CONFIG_APP_GAMEBOX                  0//吃鸡王座
 #define CONFIG_APP_REMOTE_CONTROL           0//语音遥控
 #define CONFIG_APP_IDLE                     0//IDLE
-#define CONFIG_APP_REMOTE_24G_S             0//基于BLE的2.4g遥控从机,板级配置只需要打开BLE
 
 //edr sniff模式选择; sniff参数需要调整,移植可具体参考app_keyboard.c
-#if CONFIG_APP_MOUSE_SINGLE || CONFIG_APP_MOUSE_DUAL || CONFIG_APP_STANDARD_KEYBOARD || CONFIG_APP_REMOTE_CONTROL || CONFIG_APP_REMOTE_24G_S //|| CONFIG_APP_KEYBOARD
+#if CONFIG_APP_MOUSE_SINGLE || CONFIG_APP_MOUSE_DUAL || CONFIG_APP_STANDARD_KEYBOARD || CONFIG_APP_REMOTE_CONTROL //|| CONFIG_APP_KEYBOARD
 #define SNIFF_MODE_RESET_ANCHOR             1//键盘鼠标sniff模式,固定小周期发包,多按键响应快
 #else
 #define SNIFF_MODE_RESET_ANCHOR             0//待机固定500ms sniff周期,待机功耗较低,按键唤醒有延时
@@ -62,8 +61,12 @@
 #define APP_PRIVATE_PROFILE_CFG
 
 #if (CONFIG_BT_MODE == BT_NORMAL)
-//enable dut mode,need disable sleep
+//enable dut mode,need disable sleep(TCFG_LOWPOWER_LOWPOWER_SEL = 0)
 #define TCFG_NORMAL_SET_DUT_MODE                  0
+#if TCFG_NORMAL_SET_DUT_MODE
+#undef  TCFG_LOWPOWER_LOWPOWER_SEL
+#define TCFG_LOWPOWER_LOWPOWER_SEL                0
+#endif
 
 #else
 

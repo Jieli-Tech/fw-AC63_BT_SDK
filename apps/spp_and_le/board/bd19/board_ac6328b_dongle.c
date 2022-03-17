@@ -214,7 +214,7 @@ NORFLASH_DEV_PLATFORM_DATA_END()
 /************************** otg data****************************/
 #if TCFG_OTG_MODE
 struct otg_dev_data otg_data = {
-    .usb_dev_en = TCFG_OTG_USB_DEV_EN,
+    .usb_dev_en = 0,//TCFG_OTG_USB_DEV_EN,
 	.slave_online_cnt = TCFG_OTG_SLAVE_ONLINE_CNT,
 	.slave_offline_cnt = TCFG_OTG_SLAVE_OFFLINE_CNT,
 	.host_online_cnt = TCFG_OTG_HOST_ONLINE_CNT,

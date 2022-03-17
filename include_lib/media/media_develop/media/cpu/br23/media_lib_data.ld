@@ -5,7 +5,13 @@
         . = ALIGN(4);
 		EQ_COEFF_BASE = . ;
 		. = EQ_COEFF_BASE + 4 * EQ_SECTION_NUM * 14;
-
+	
+        . = ALIGN(4);
+        *(.jlsp_data)
+        . = ALIGN(4);
+        *(.dns_common_data)
+        *(.dns_param_data_single)
+        *(.dns_param_data_dual)
         . = ALIGN(4);
         *(.aec_data)
         . = ALIGN(4);
@@ -142,7 +148,12 @@
 		*(.dec2tws_mem)
 	         . = ALIGN(4);
 		*(.lc3_decoder_data)
-                 . = ALIGN(4);
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_const)
+		*(.lc3_codec_ari_c_data)
+		*(.lc3_codec_c_data)
+#endif
+             . = ALIGN(4);
 		*(.midi_mem)
 		*(.midi_ctrl_mem)
 

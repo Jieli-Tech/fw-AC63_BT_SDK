@@ -7,15 +7,21 @@
 #include "app_config.h"
 #include "in_ear_detect/in_ear_manage.h"
 
+/*******************ANC User Config***********************/
 /*ANC普通配置*/
 #define ANC_COEFF_SAVE_ENABLE	1	/*ANC滤波器表保存使能*/
 #define ANC_INFO_SAVE_ENABLE	0	/*ANC信息记忆:保存上一次关机时所处的降噪模式等等*/
 #define ANC_TONE_PREEMPTION		0	/*ANC提示音打断播放(1)还是叠加播放(0)*/
-#define ANC_TRANSPARENCY_ONLY	0	/*仅支持通透模式*/
+#define ANC_TRANSPARENCY_ONLY	0	/*仅支持普通通透模式,不支持高级通透，也不需要ANC配置文件*/
 #define ANC_BOX_READ_COEFF		1	/*支持通过工具读取ANC训练系数*/
 #define ANC_FADE_EN				1	/*ANC淡入淡出使能*/
 #define ANC_MODE_SYSVDD_EN 		0	/*ANC模式提高SYSVDD，避免某些IC电压太低导致ADC模块工作不正常*/
 #define ANC_MIC_DMA_EXPORT		0	/*BYPASS ANC DMA 导出MIC的数据使能*/
+#define ANC_TONE_END_MODE_SW	1	/*ANC提示音结束进行模式切换*/
+
+#define ANC_MODE_ENABLE			ANC_OFF_BIT | ANC_ON_BIT | ANC_TRANS_BIT	/*ANC模式使能控制位,可或上需要开启的模式*/
+
+/*******************ANC User Config End*******************/
 
 /*
    通透配置
@@ -25,6 +31,7 @@
 #define ANC_TRANS_ADVANCE_MODE  0//ANC_MUTE_EN 	//通透高级模式，可调试滤波器
 #define ANC_TRANS_AIM_POW 		0//650		//通透训练自动调整增益，写0表示不调整，数值越大，增益越大
 
+/*AC699系列配置, 697/897更改无效*/
 #define ANC_TRAIN_MODE			ANC_FF_EN
 #define ANC_MIC_TYPE			(A_MIC0|A_MIC1)	/*ANC 硬件MIC类型：模拟MIC0|模拟MIC1*/
 #define ANC_MIC_CH_SWAP_EN      0   /*交换MIC0/MIC1的数据 使能之后 MIC0 = 误差MIC; MIC1 = 参考MIC*/
@@ -39,6 +46,11 @@
 #define	ANC_WZ_TRAIN_TIME	    15000		/*噪声训练WZ训练时间*/
 #define	ANC_TRAIN_STEP    		10			/*ANC训练系数*/
 /***************************************************************************************************/
+
+/*ANC模式使能位*/
+#define ANC_OFF_BIT				BIT(1)	/*降噪关闭使能*/
+#define ANC_ON_BIT				BIT(2)	/*降噪模式使能*/
+#define ANC_TRANS_BIT			BIT(3)	/*通透模式使能*/
 
 /*ANC模式调试信息*/
 static const char *anc_mode_str[] = {
@@ -200,6 +212,12 @@ anc_train_para_t *anc_api_get_train_param(void);
 
 /*获取步进*/
 u8 anc_api_get_train_step(void);
+
+/*通话动态MIC增益开始函数*/
+void anc_dynamic_micgain_start(u8 audio_mic_gain);
+
+/*通话动态MIC增益结束函数*/
+void anc_dynamic_micgain_stop(void);
 
 #define ANC_CFG_READ	0x01
 #define ANC_CFG_WRITE	0x02

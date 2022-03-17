@@ -22,7 +22,15 @@
 
 // #define APP_PRIVATE_PROFILE_CFG
 
-#if (CONFIG_BT_MODE != BT_NORMAL)
+#if (CONFIG_BT_MODE == BT_NORMAL)
+//enable dut mode,need disable sleep(TCFG_LOWPOWER_LOWPOWER_SEL = 0)
+#define TCFG_NORMAL_SET_DUT_MODE                  0
+#if TCFG_NORMAL_SET_DUT_MODE
+#undef  TCFG_LOWPOWER_LOWPOWER_SEL
+#define TCFG_LOWPOWER_LOWPOWER_SEL                0
+#endif
+
+#else
 #undef  TCFG_BD_NUM
 #define TCFG_BD_NUM						          1
 

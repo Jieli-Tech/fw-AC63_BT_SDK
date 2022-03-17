@@ -60,6 +60,8 @@ BT_CFG = {
     lrc_cfg = {id = 607},
     ble_cfg = {id = 608},
     dms = {id = 609},
+    aec_dns = {id = 612 },
+    dms_dns = {id = 613 },
 };
 
 BIN_ONLY_CFG = {

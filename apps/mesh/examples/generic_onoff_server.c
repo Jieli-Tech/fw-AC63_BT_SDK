@@ -20,6 +20,12 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+#if TCFG_AUDIO_ENABLE
+#include "tone_player.h"
+#include "media/includes.h"
+#include "key_event_deal.h"
+#endif/*TCFG_AUDIO_ENABLE*/
+
 #if (CONFIG_MESH_MODEL == SIG_MESH_GENERIC_ONOFF_SERVER)
 
 extern u16_t primary_addr;
@@ -383,6 +389,45 @@ void input_key_handler(u8 key_status, u8 key_number)
 
     log_info("key_number=0x%x", key_number);
 
+    /*Audio Test Demo*/
+#if (TCFG_AUDIO_ENABLE && MESH_AUDIO_TEST)
+    if (key_status == KEY_EVENT_CLICK && key_number == TCFG_ADKEY_VALUE0) {
+        printf(">>>key0:open mic\n");
+        //AC695N/AC696N mic test
+        /* extern int audio_adc_open_demo(void); */
+        /* audio_adc_open_demo(); */
+        //AD697N/AC897N/AC698N mic test
+        /* extern void audio_adc_mic_demo(u8 mic_idx, u8 gain, u8 mic_2_dac); */
+        /* audio_adc_mic_demo(1, 1, 1); */
+
+        /*encode test*/
+        /*
+        编码测试类型：
+        AUDIO_CODING_OPUS
+        AUDIO_CODING_SPEEX
+        AUDIO_CODING_WAV
+        AUDIO_CODING_LC3
+        AUDIO_CODING_SBC
+        AUDIO_CODING_MSBC
+        */
+        /* extern int audio_demo_enc_open(int (*demo_output)(void *priv, void *buf, int len), u32 code_type, u8 ai_type);  */
+        /* audio_demo_enc_open(NULL, AUDIO_CODING_OPUS, 0); */
+    }
+    if (key_status == KEY_EVENT_CLICK && key_number == TCFG_ADKEY_VALUE1) {
+        printf(">>>key1:tone_play_test\n");
+        //AC695N/AC696N tone play test
+        /* tone_play_by_path(TONE_NORMAL, 1); */
+        /* tone_play_by_path(TONE_BT_CONN, 1); */
+        //AD697N/AC897N/AC698N tone play test
+        /* tone_play(TONE_NUM_8, 1); */
+        /* tone_play(TONE_SIN_NORMAL, 1); */
+
+        //lc3 decode test
+        /* extern void demo_frame_test(void); */
+        /* demo_frame_test(); */
+    }
+#else
+
     if ((key_number == 2) && (key_status == KEY_EVENT_LONG)) {
         log_info("\n  <bt_mesh_reset> \n");
         bt_mesh_reset();
@@ -408,6 +453,7 @@ void input_key_handler(u8 key_status, u8 key_number)
     default :
         return;
     }
+#endif/*TCFG_AUDIO_ENABLE*/
 }
 
 extern void mesh_set_gap_name(const u8 *name);

@@ -14,7 +14,7 @@
 #include "audio_codec_clock.h"
 
 #define AUDIO_CODING_ALL        (0xffffffff)
-#define MAX_CODING_TYPE_NUM     4 //可根据模式的解码格式需求扩展
+#define MAX_CODING_TYPE_NUM     5 //可根据模式的解码格式需求扩展
 #define AUDIO_CODEC_BASE_CLK    SYS_24M
 
 static LIST_HEAD(codec_clock_head);
@@ -39,7 +39,11 @@ const struct audio_codec_clock audio_clock[AUDIO_MAX_MODE][MAX_CODING_TYPE_NUM] 
 #if (TCFG_BT_MUSIC_EQ_ENABLE && ((EQ_SECTION_MAX >= 10) && AUDIO_OUT_EFFECT_ENABLE)) || (AUDIO_VBASS_CONFIG || AUDIO_SURROUND_CONFIG)
             SYS_64M,
 #elif (TCFG_BT_MUSIC_EQ_ENABLE && ((EQ_SECTION_MAX >= 10) || AUDIO_OUT_EFFECT_ENABLE))
+#if A2DP_AUDIO_PLC_ENABLE
+            SYS_64M,
+#else
             SYS_48M,
+#endif
 #else
 #if (TCFG_AUDIO_ANC_ENABLE)
             SYS_24M,
@@ -69,6 +73,14 @@ const struct audio_codec_clock audio_clock[AUDIO_MAX_MODE][MAX_CODING_TYPE_NUM] 
         {AUDIO_CODING_AAC, SYS_64M},
         {AUDIO_CODING_WAV | AUDIO_CODING_MP3, 96 * 1000000L},
         {AUDIO_CODING_ALL, 0},
+    },
+    {
+        //MIC2PCM MODE
+        {AUDIO_CODING_PCM, SYS_48M},
+    },
+    {
+        //KWS MODE
+        {AUDIO_CODING_ALL, SYS_48M},
     },
     //TODO
 };

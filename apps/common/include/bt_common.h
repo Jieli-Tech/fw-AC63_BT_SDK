@@ -14,6 +14,18 @@
 #include "bt_profile_cfg.h"
 #endif
 
+#define SYNC_TIMEOUT_MS(x)              {(x / 10) & 0xff, (x / 10) >> 8}
+
+#define ALIGN_2BYTE(size)                   (((size)+1)&0xfffffffe)
+#define BYTE_LEN(x...)                      sizeof((u8 []) {x})
+#define MS_TO_SLOT(x)                       (x * 8 / 5)
+#define UINT24_TO_BYTE(x) \
+{ \
+    x,      \
+    x >> 8, \
+    x >> 16 \
+}
+
 enum {
     ST_BIT_INQUIRY = 0,
     ST_BIT_PAGE_SCAN,
@@ -37,6 +49,115 @@ enum {
     COMMON_EVENT_SHUTDOWN_DISABLE,
     COMMON_EVENT_MODE_DETECT,
 };
+
+// LE Controller Commands
+struct __ext_adv_report_event {
+    u8  Subevent_Code;
+    u8  Num_Reports;
+    u16 Event_Type;
+    u8  Address_Type;
+    u8  Address[6];
+    u8  Primary_PHY;
+    u8  Secondary_PHY;
+    u8  Advertising_SID;
+    u8  Tx_Power;
+    u8  RSSI;
+    u16 Periodic_Advertising_Interval;
+    u8  Direct_Address_Type;
+    u8  Direct_Address[6];
+    u8  Data_Length;
+    u8  Data[0];
+} _GNU_PACKED_;
+
+struct __periodic_adv_report_event {
+    u8  Subevent_Code;
+    u16 Sync_Handle;
+    u8  Tx_Power;
+    u8  RSSI;
+    u8  Unused;
+    u8  Data_Status;
+    u8  Data_Length;
+    u8  Data[0];
+} _GNU_PACKED_ ;
+
+struct __periodic_creat_sync {
+    u8 Filter_Policy;
+    u8 Advertising_SID;
+    u8 Advertising_Address_Type;
+    u8 Advertiser_Address[6];
+    u8 Skip[2];
+    u8 Sync_Timeout[2];
+    u8 Unused;
+} _GNU_PACKED_;
+
+struct __ext_scan_param {
+    u8 Own_Address_Type;
+    u8 Scanning_Filter_Policy;
+    u8 Scanning_PHYs;
+    u8  Scan_Type;
+    u16 Scan_Interval;
+    u16 Scan_Window;
+} _GNU_PACKED_;
+
+struct __ext_scan_enable {
+    u8  Enable;
+    u8  Filter_Duplicates;
+    u16 Duration;
+    u16 Period;
+} _GNU_PACKED_;
+
+struct ext_advertising_param {
+    u8 Advertising_Handle;
+    u16 Advertising_Event_Properties;
+    u8 Primary_Advertising_Interval_Min[3];
+    u8 Primary_Advertising_Interval_Max[3];
+    u8 Primary_Advertising_Channel_Map;
+    u8 Own_Address_Type;
+    u8 Peer_Address_Type;
+    u8 Peer_Address[6];
+    u8 Advertising_Filter_Policy;
+    u8 Advertising_Tx_Power;
+    u8 Primary_Advertising_PHY;
+    u8 Secondary_Advertising_Max_Skip;
+    u8 Secondary_Advertising_PHY;
+    u8 Advertising_SID;
+    u8 Scan_Request_Notification_Enable;
+} _GNU_PACKED_;
+
+struct ext_advertising_data  {
+    u8 Advertising_Handle;
+    u8 Operation;
+    u8 Fragment_Preference;
+    u8 Advertising_Data_Length;
+    u8 Advertising_Data[31];
+} _GNU_PACKED_;
+
+struct ext_advertising_enable {
+    u8  Enable;
+    u8  Number_of_Sets;
+    u8  Advertising_Handle;
+    u16 Duration;
+    u8  Max_Extended_Advertising_Events;
+} _GNU_PACKED_;
+
+struct periodic_advertising_param {
+    u8 Advertising_Handle;
+    u16 Periodic_Advertising_Interval_Min;
+    u16 Periodic_Advertising_Interval_Max;
+    u16 Periodic_Advertising_Properties;
+} _GNU_PACKED_;
+
+struct periodic_advertising_data  {
+    u8 Advertising_Handle;
+    u8 Operation;
+    u8 Advertising_Data_Length;
+    u8 Advertising_Data[31];
+} _GNU_PACKED_;
+
+struct periodic_advertising_enable {
+    u8  Enable;
+    u8  Advertising_Handle;
+} _GNU_PACKED_;
 
 extern const int config_le_hci_connection_num;//支持同时连接个数
 extern const int config_le_sm_support_enable; //是否支持加密配对

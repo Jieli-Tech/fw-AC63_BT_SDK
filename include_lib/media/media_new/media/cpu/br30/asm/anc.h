@@ -67,11 +67,6 @@ typedef enum {
     TRANS_ERR_FORCE_EXIT	//强制退出训练
 } ANC_trans_errmsg_t;
 
-typedef enum {
-    ANC_VERSION_BR30 	= 0x01,	//BR30
-    ANC_VERSION_BR30C	= 0x02,	//BR30C
-} ANC_version_t;
-
 #define A_MIC0					BIT(0)		//模拟MIC0	PA1 PA2
 #define A_MIC1        			BIT(1)		//模拟MIC1	PB7 PB8
 #define D_MIC0       			BIT(2)		//数字MIC0

@@ -97,7 +97,6 @@
   DcuCmdKst = ABSOLUTE(0x106f18);
   IcuCmdSend = ABSOLUTE(0x106f1c);
   DcuCmdSend = ABSOLUTE(0x106f20);
-  sfc_suspend = ABSOLUTE(0x106f24);
   sfc_resume = ABSOLUTE(0x106f28);
   sfc_drop_cache = ABSOLUTE(0x106f2c);
   chip_crc16 = ABSOLUTE(0x106f30);

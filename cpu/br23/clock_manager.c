@@ -37,7 +37,7 @@ void clock_remove_set(u32 type)
 *****/
 
 ////  如果clock_fix 为0 就按照配置设置时钟，如果有值就固定频率
-#if (SOUNDCARD_ENABLE)
+#if (SOUNDCARD_ENABLE) ||(TCFG_EQ_ONLINE_ENABLE || TCFG_MIC_EFFECT_ONLINE_ENABLE)
 #define CLOCK_FIX   240
 #else
 #define CLOCK_FIX   0//192
@@ -162,6 +162,11 @@ const struct clock_type  clock_enum[] = {
 
 #ifdef CONFIG_ADAPTER_ENABLE
     {ADAPTER_PROCESS_CLK, (64),	"ADAPTER_PROCESS_CLK"   },
+#endif
+#ifdef CONFIG_ICRECORDER_CASE_ENABLE
+    {ICRECORDER_NOISE_DUC_CLK, (192), "ICRECORDER_NOISE_DUC_CLK"   },
+    {ICRECORDER_REC_CLK, (96), "ICRECORDER_REC_CLK"   },
+    {ICRECORDER_MUSIC, (96), "ICRECORDER_MUSIC"   },
 #endif
 };
 

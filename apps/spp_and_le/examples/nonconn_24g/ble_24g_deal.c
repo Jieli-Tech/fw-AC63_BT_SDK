@@ -63,7 +63,7 @@ extern void printf_buf(u8 *buf, u32 len);
 #define TX_DATA_COUNT             3  //发送次数,决定os_time_dly 多久
 #define TX_DATA_INTERVAL          20 //发送间隔>=20ms
 
-#define ADV_INTERVAL_VAL          ADV_SCAN_MS(TX_DATA_INTERVAL)//
+#define ADV_INTERVAL_VAL          ADV_SCAN_MS(TX_DATA_INTERVAL)//unit: 0.625ms
 #define RSP_TX_HEAD               0xff
 
 static u8 adv_data_len = 0;
@@ -81,9 +81,9 @@ static u8 scan_ctrl_en = 0;            //scan控制
 //搜索类型
 #define SET_SCAN_TYPE       SCAN_ACTIVE
 //搜索 周期大小
-#define SET_SCAN_INTERVAL   ADV_SCAN_MS(200)//
+#define SET_SCAN_INTERVAL   ADV_SCAN_MS(200)//unit: 0.625ms
 //搜索 窗口大小
-#define SET_SCAN_WINDOW     ADV_SCAN_MS(200)//
+#define SET_SCAN_WINDOW     ADV_SCAN_MS(200)//unit: 0.625ms
 
 //------------------------------------------------------
 //广播参数设置
@@ -250,8 +250,8 @@ static void rx_setup_init(void)
 static void ble_rx_enable(u8 enable)
 {
 #if CONFIG_RX_MODE_ENABLE
-    if (adv_ctrl_en != enable) {
-        adv_ctrl_en = enable;
+    if (scan_ctrl_en != enable) {
+        scan_ctrl_en = enable;
         log_info("rx_en:%d\n", enable);
         if (enable) {
             rx_setup_init();

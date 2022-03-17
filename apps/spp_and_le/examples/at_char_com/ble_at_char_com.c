@@ -731,7 +731,7 @@ void ble_sm_setup_init(io_capability_t io_type, u8 auth_req, uint8_t min_key_siz
     }
 }
 
-#define TCFG_BLE_SECURITY_REQUEST        0
+#define AT_CHAR_TCFG_BLE_SECURITY_REQUEST        0/*是否发请求加密命令*/
 void ble_client_profile_init(void);
 void ble_profile_init(void)
 {
@@ -747,9 +747,9 @@ void ble_profile_init(void)
         sm_pair_mode = 1;
 
 #if PASSKEY_ENTER_ENABLE
-        ble_sm_setup_init(IO_CAPABILITY_DISPLAY_ONLY, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, TCFG_BLE_SECURITY_REQUEST);
+        ble_sm_setup_init(IO_CAPABILITY_DISPLAY_ONLY, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, AT_CHAR_TCFG_BLE_SECURITY_REQUEST);
 #else
-        ble_sm_setup_init(IO_CAPABILITY_NO_INPUT_NO_OUTPUT, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, TCFG_BLE_SECURITY_REQUEST);
+        ble_sm_setup_init(IO_CAPABILITY_NO_INPUT_NO_OUTPUT, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, AT_CHAR_TCFG_BLE_SECURITY_REQUEST);
 #endif
     }
 
@@ -775,7 +775,7 @@ static int set_adv_enable(void *priv, u32 en)
 {
     ble_state_e next_state, cur_state;
 
-    if (!adv_ctrl_en) {
+    if (!adv_ctrl_en && en) {
         return APP_BLE_OPERATION_ERROR;
     }
 

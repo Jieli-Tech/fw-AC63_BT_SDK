@@ -66,6 +66,11 @@ typedef enum {
     //sm
     BLE_CMD_SM_REQ_RESUME,
 
+    //add here
+    BLE_CMD_CREATE_CONN_EXT,
+    BLE_CMD_DISCONNECT_EXT,
+    BLE_CMD_ATT_CLEAR_SEND_DATA,
+
     //< ble5
     BLE_CMD_EXT_ADV_PARAM = 0x40,
     BLE_CMD_EXT_ADV_DATA,
@@ -79,6 +84,8 @@ typedef enum {
     BLE_CMD_PERIODIC_ADV_DATA,
     BLE_CMD_PERIODIC_ADV_ENABLE,
     BLE_CMD_PERIODIC_ADV_CREAT_SYNC,
+    BLE_CMD_PERIODIC_ADV_TERMINATE_SYNC,
+    BLE_CMD_PERIODIC_ADV_CREATE_SYNC_CANCEL,
 
     //client
     BLE_CMD_SEARCH_PROFILE = 0x80,
@@ -119,10 +126,26 @@ typedef enum {
 struct create_conn_param_t {
     u16 conn_interval;        //连接周期(unit:1.25ms)
     u16 conn_latency;         //忽略通信次数(unit: interval)
-    u16 supervision_timeout;  //(unit:10ms)
+    u16 supervision_timeout;  //(通信超时 unit:10ms)
     u8 peer_address_type;     //对方地址类型：0--public address,1--random address
     u8 peer_address[6];       //对方地址address
 } _GNU_PACKED_;
+
+struct create_conn_param_ext_t {
+    u16 le_scan_interval; /*scan 周期(unit: 0.625ms)*/
+    u16 le_scan_window;   /*scan 窗口(unit: 0.625ms)*/
+    u8 initiator_filter_policy;/*过滤,set 0*/
+    u8 peer_address_type; /*对方地址类型:0--public address,1--random address*/
+    u8 peer_address[6];   /*对方地址*/
+    u8 own_address_type;  /*本地地址类型:0--public address,1--random address*/
+    u16 conn_interval_min;/*连接周期最小值(unit:1.25ms)*/
+    u16 conn_interval_max;/*连接周期最大值(unit:1.25ms)*/
+    u16 conn_latency;     /*忽略通信次数(unit: interval)*/
+    u16 supervision_timeout;/*通信超时 unit:10ms*/
+    u16 minimum_ce_length;  /*set 1*/
+    u16 maximum_ce_length;  /*set 1*/
+} _GNU_PACKED_;
+
 
 typedef struct {
     u8   event_type;    //对方广播包类型: 0--ADV_IND,1--ADV_DIRECT_IND,2--ADV_SCAN_IND,3--ADV_NONCONN_IND,4--SCAN_RSP
@@ -476,6 +499,23 @@ void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 
 /*************************************************************************************************/
 /*!
+ *  \brief      请求断开 ble 连接,by reason
+ *
+ *  \function   ble_cmd_ret_e ble_op_disconnect(u16 con_handle).
+ *
+ *  \param      [in] con_handle      range: >0.
+ *  \param      [in] reason          range: see spec.
+ *
+ *  \return     see ble_cmd_ret_e.
+ */
+/*************************************************************************************************/
+/* ble_cmd_ret_e ble_op_disconnect_ext(u16 con_handle,reason) */
+#define ble_op_disconnect_ext(con_handle,reason)     \
+	ble_user_cmd_prepare(BLE_CMD_DISCONNECT_EXT, 2, (int)con_handle, reason)
+
+
+/*************************************************************************************************/
+/*!
  *  \brief      配置ATT发送模块RAM大小.
  *
  *  \function   ble_cmd_ret_e ble_op_att_send_init(u16 con_handle,u8 *att_ram_addr,int att_ram_size,int att_payload_size).
@@ -630,6 +670,20 @@ void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 /* ble_cmd_ret_e ble_op_multi_att_send_data(u16 con_handle,u16 att_handle,u8 *data,u16 len, att_op_type_e att_op_type) */
 #define ble_op_multi_att_send_data(con_handle,att_handle,data,len,att_op_type)     \
 	ble_user_cmd_prepare(BLE_CMD_MULTI_ATT_SEND_DATA, 5, con_handle,att_handle, data, len, att_op_type)
+
+
+/*************************************************************************************************/
+/*!
+ *  \brief      ATT操作,清缓存发送的数据缓存
+ *
+ *  \function   ble_op_att_clear_data(void).
+ *
+ *  \return     see ble_cmd_ret_e.
+ */
+/*************************************************************************************************/
+/* ble_cmd_ret_e ble_op_att_clear_send_data(void) */
+#define ble_op_att_clear_send_data(void)     \
+    ble_user_cmd_prepare(BLE_CMD_ATT_CLEAR_SEND_DATA, 1, 1)
 
 /*************************************************************************************************/
 /*!
@@ -965,6 +1019,21 @@ void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 /* ble_cmd_ret_e ble_op_create_connection(struct create_conn_param_t * create_conn_param) */
 #define ble_op_create_connection(create_conn_param)     \
 	ble_user_cmd_prepare(BLE_CMD_CREATE_CONN, 1, create_conn_param)
+
+/*************************************************************************************************/
+/*!
+ *  \brief      BLE创建连接监听,扩展传入参数
+ *
+ *  \function   ble_cmd_ret_e ble_op_create_connection_ext(cosnt struct create_conn_param_ext_t * create_conn_param_ext).
+ *
+ *  \param      [in] create_conn_param_ext 连接参数.
+ *
+ *  \return     see ble_cmd_ret_e.
+ */
+/*************************************************************************************************/
+/* ble_cmd_ret_e ble_op_create_connection_ext(const struct create_conn_param_ext_t * create_conn_param_ext) */
+#define ble_op_create_connection_ext(create_conn_param_ext)     \
+	ble_user_cmd_prepare(BLE_CMD_CREATE_CONN_EXT, 1, create_conn_param_ext)
 
 /*************************************************************************************************/
 /*!

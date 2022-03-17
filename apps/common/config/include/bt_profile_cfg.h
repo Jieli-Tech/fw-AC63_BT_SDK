@@ -43,6 +43,16 @@
 #define DEF_BLE_DEMO_LL_SYNC              13 //
 #define DEF_BLE_DEMO_WIRELESS_MIC_SERVER  14 //
 #define DEF_BLE_DEMO_WIRELESS_MIC_CLIENT  15 //
+#define DEF_BLE_DEMO_TUYA                 16 //
+#define DEF_BLE_WL_MIC_1T1_TX             17
+#define DEF_BLE_WL_MIC_1T1_RX             18
+#define DEF_BLE_WL_MIC_1TN_TX             19
+#define DEF_BLE_WL_MIC_1TN_RX             20
+#define DEF_LE_AUDIO_CENTRAL              21
+#define DEF_LE_AUDIO_PERIPHERAL           22
+#define DEF_LE_AUDIO_BROADCASTER          23
+
+#define    LE_AUDIO_EN                    0  //DEF_LE_AUDIO_CENTRAL
 
 //配置选择的demo
 #if TCFG_USER_BLE_ENABLE
@@ -56,10 +66,11 @@
 #elif LL_SYNC_EN
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_LL_SYNC
 
+#elif TUYA_DEMO_EN
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_TUYA
+
 #elif RCSP_ADV_EN
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_ADV_RCSP
-
-
 
 #elif BLE_CLIENT_EN
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_CLIENT
@@ -73,22 +84,37 @@
 #elif AI_APP_PROTOCOL
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_NULL
 
-#elif (BLE_WIRELESS_MIC_CLIENT_EN)
+#elif (BLE_WIRELESS_CLIENT_EN)
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_WIRELESS_MIC_CLIENT
 
-#elif (BLE_WIRELESS_MIC_SERVER_EN)
+#elif (BLE_WIRELESS_SERVER_EN)
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_WIRELESS_MIC_SERVER
 
+#elif (BLE_WIRELESS_1T1_TX_EN)
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_WL_MIC_1T1_TX
+
+#elif (BLE_WIRELESS_1T1_RX_EN)
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_WL_MIC_1T1_RX
+
+#elif (BLE_WIRELESS_1TN_TX_EN)
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_WL_MIC_1TN_TX
+
+#elif (BLE_WIRELESS_1TN_RX_EN)
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE_WL_MIC_1TN_RX
+
+#elif (LE_AUDIO_EN)
+#define TCFG_BLE_DEMO_SELECT          LE_AUDIO_EN
+
 #else
-#define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_ADV
+#define TCFG_BLE_DEMO_SELECT          DEF_BLE5_DEMO
 #endif
 
 #else
 #define TCFG_BLE_DEMO_SELECT          DEF_BLE_DEMO_NULL//ble is closed
 #endif
 
-//配对加密使能
-#define TCFG_BLE_SECURITY_EN          config_le_sm_support_enable
+//delete 2021-09-24;删除公共配置，放到各个profile自己配置
+// #define TCFG_BLE_SECURITY_EN          0 /*是否发请求加密命令*/
 
 
 

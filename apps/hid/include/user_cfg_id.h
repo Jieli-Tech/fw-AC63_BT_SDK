@@ -4,9 +4,12 @@
 //=================================================================================//
 //                            与APP CASE相关配置项[1 ~ 60]                         //
 //=================================================================================//
+#define     CFG_BLE_BONDING_REMOTE_INFO      1  //1~4
+
 // #define		CFG_RCSP_ADV_HIGH_LOW_VOL		 19
 // #define     CFG_RCSP_ADV_EQ_MODE_SETTING     20
 // #define     CFG_RCSP_ADV_EQ_DATA_SETTING     21
+
 #define     ADV_SEQ_RAND                     22
 #define     CFG_RCSP_ADV_TIME_STAMP          23
 #define     CFG_RCSP_ADV_WORK_SETTING        24
@@ -14,7 +17,6 @@
 #define     CFG_RCSP_ADV_LED_SETTING         26
 #define     CFG_RCSP_ADV_KEY_SETTING         27
 #define     CFG_AAP_MODE_INFO                28
-#define     CFG_BLE_BONDING_REMOTE_INFO      29
 
 #define     CFG_BLE_ADDRESS_BEGIN            30 //记录ble 可变地址表
 #define     CFG_BT_IDX_NUM                   4

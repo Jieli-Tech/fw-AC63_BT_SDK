@@ -372,9 +372,15 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
     audio_encoder_set_output_buffs(&esco_enc->encoder, esco_enc->output_frame,
                                    sizeof(esco_enc->output_frame), 1);
 
+    if (!esco_enc->encoder.enc_priv) {
+        log_e("encoder err, maybe coding(0x%x) disable \n", fmt.coding_type);
+        err = -EINVAL;
+        goto __err;
+    }
+
     audio_encoder_start(&esco_enc->encoder);
 
-#if TCFG_AUDIO_ANC_ENABLE
+#if TCFG_AUDIO_ANC_ENABLE && (!TCFG_AUDIO_DYNAMIC_ADC_GAIN)
     app_var.aec_mic_gain = anc_mic_gain_get();
 #endif/*TCFG_AUDIO_ANC_ENABLE*/
 
@@ -453,6 +459,9 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
 #else
 
     audio_mic_pwr_ctl(MIC_PWR_ON);
+#if TCFG_AUDIO_ANC_ENABLE && TCFG_AUDIO_DYNAMIC_ADC_GAIN
+    anc_dynamic_micgain_start(app_var.aec_mic_gain);
+#endif/*TCFG_AUDIO_ANC_ENABLE && TCFG_AUDIO_DYNAMIC_ADC_GAIN*/
 #if (ESCO_ADC_CH == 2)
     audio_adc_mic_open(&esco_enc->mic_ch, AUDIO_ADC_MIC_CH, &adc_hdl);
     audio_adc_mic_set_gain(&esco_enc->mic_ch, app_var.aec_mic_gain);
@@ -480,6 +489,15 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
 #endif
 
     return 0;
+__err:
+    audio_encoder_close(&esco_enc->encoder);
+
+    local_irq_disable();
+    free(esco_enc);
+    esco_enc = NULL;
+    local_irq_enable();
+
+    return err;
 }
 
 int esco_enc_mic_gain_set(u8 gain)
@@ -523,6 +541,9 @@ void esco_enc_close()
     audio_plnk_close();
     free(audio_plnk_mic);
 #else
+#if TCFG_AUDIO_ANC_ENABLE && TCFG_AUDIO_DYNAMIC_ADC_GAIN
+    anc_dynamic_micgain_stop();
+#endif/*TCFG_AUDIO_ANC_ENABLE && TCFG_AUDIO_DYNAMIC_ADC_GAIN*/
     audio_adc_mic_close(&esco_enc->mic_ch);
 #if TCFG_AUDIO_ANC_ENABLE
     //y_printf("anc_status:%d\n",anc_status_get());
@@ -711,6 +732,12 @@ int pcm2tws_enc_open(u32 codec_type, u32 info)
     audio_encoder_set_fmt(&pcm2tws_enc->encoder, &fmt);
     audio_encoder_set_output_buffs(&pcm2tws_enc->encoder, pcm2tws_enc->output_frame,
                                    sizeof(pcm2tws_enc->output_frame), 1);
+    if (!pcm2tws_enc->encoder.enc_priv) {
+        log_e("encoder err, maybe coding(0x%x) disable \n", fmt.coding_type);
+        err = -EINVAL;
+        goto __err;
+    }
+
 
     local_tws_start(pcm2tws_enc->encoder.fmt.coding_type, pcm2tws_enc->encoder.fmt.sample_rate | (pcm2tws_enc->encoder.fmt.channel << 16));
 
@@ -721,6 +748,15 @@ int pcm2tws_enc_open(u32 codec_type, u32 info)
     printf("sample_rate: %d\n", fmt.sample_rate);
 
     return 0;
+__err:
+    audio_encoder_close(&pcm2tws_enc->encoder);
+
+    local_irq_disable();
+    free(pcm2tws_enc);
+    pcm2tws_enc = NULL;
+    local_irq_enable();
+
+    return err;
 }
 
 void pcm2tws_enc_close()
@@ -771,11 +807,22 @@ struct adc_demo_demo {
     u8 adc_2_dac;
     struct audio_adc_output_hdl adc_output;
     struct adc_mic_ch mic_ch;
+    struct adc_linein_ch linein_ch;
     s16 adc_buf[ADC_DEMO_BUFS_SIZE];    //align 4Bytes
 };
 struct adc_demo_demo *adc_demo;
 
 static void adc_mic_demo_output(void *priv, s16 *data, int len)
+{
+    //putchar('o');
+    if (adc_demo && adc_demo->adc_2_dac) {
+        int wlen = audio_dac_write(&dac_hdl, data, len);
+    }
+    //printf("adc:%x,len:%d",data,len);
+    //printf("wlen:%d",wlen);
+}
+
+static void adc_linein_demo_output(void *priv, s16 *data, int len)
 {
     //putchar('o');
     if (adc_demo && adc_demo->adc_2_dac) {
@@ -827,6 +874,43 @@ void audio_adc_mic_demo_close()
     if (adc_demo) {
         audio_adc_del_output_handler(&adc_hdl, &adc_demo->adc_output);
         audio_adc_mic_close(&adc_demo->mic_ch);
+        free(adc_demo);
+        adc_demo = NULL;
+    }
+}
+
+void audio_adc_linein_demo(u8 linein_idx, u8 gain, u8 linein_2_dac)
+{
+    u16 linein_sr = 16000;
+    u8 linein_gain = 10;
+    y_printf("audio_adc_linein_demo...");
+    adc_demo = zalloc(sizeof(*adc_demo));
+    if (adc_demo) {
+        audio_adc_linein_open(&adc_demo->linein_ch, AUDIO_ADC_MIC_CH, &adc_hdl);
+        audio_adc_linein_set_sample_rate(&adc_demo->linein_ch, linein_sr);
+        audio_adc_linein_set_gain(&adc_demo->linein_ch, linein_gain);
+        audio_adc_linein_set_buffs(&adc_demo->linein_ch, adc_demo->adc_buf, ADC_DEMO_IRQ_POINTS * 2, ADC_DEMO_BUF_NUM);
+        adc_demo->adc_output.handler = adc_linein_demo_output;
+        audio_adc_add_output_handler(&adc_hdl, &adc_demo->adc_output);
+        audio_adc_linein_start(&adc_demo->linein_ch);
+        adc_demo->adc_2_dac = linein_2_dac;
+        if (linein_2_dac) {
+            printf("max_sys_vol:%d\n", get_max_sys_vol());
+            app_audio_state_switch(APP_AUDIO_STATE_MUSIC, get_max_sys_vol());
+            printf("cur_vol:%d\n", app_audio_get_volume(APP_AUDIO_STATE_MUSIC));
+            audio_dac_set_volume(&dac_hdl, app_audio_get_volume(APP_AUDIO_STATE_MUSIC));
+            audio_dac_set_sample_rate(&dac_hdl, linein_sr);
+            audio_dac_start(&dac_hdl);
+        }
+    }
+    y_printf("audio_adc_linein_demo start succ\n");
+}
+
+void audio_adc_linein_demo_close()
+{
+    if (adc_demo) {
+        audio_adc_del_output_handler(&adc_hdl, &adc_demo->adc_output);
+        audio_adc_linein_close(&adc_demo->linein_ch);
         free(adc_demo);
         adc_demo = NULL;
     }

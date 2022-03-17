@@ -1,8 +1,9 @@
 #include "jl_kws_common.h"
-#include "asm/audio_adc.h"
-#include "audio_enc.h"
 
 #if TCFG_KWS_VOICE_RECOGNITION_ENABLE
+#include "audio_enc.h"
+#include "asm/audio_adc.h"
+#include "audio_codec_clock.h"
 //===================================================//
 //                    ADC buf配置                    //
 //===================================================//
@@ -60,14 +61,17 @@ static void kws_adc_mic_output(void *priv, s16 *data, int len)
 {
     int wlen = 0;
 
+    local_irq_disable();/*防止关闭kws时，kws任务和aec任务互相打断导致释放信号量错误死机的问题*/
     if (__kws_audio == NULL) {
+        local_irq_enable();
         return;
     }
     if (__kws_audio->kws_audio_state != KWS_AUDIO_STATE_RUN) {
+        local_irq_enable();
         return;
     }
 
-    kws_putchar('w');
+    /* kws_putchar('w'); */
     wlen = cbuf_write(&(__kws_audio->kws_cbuf), data, len);
     if (wlen < len) {
         kws_info("kws cbuf full");
@@ -76,6 +80,7 @@ static void kws_adc_mic_output(void *priv, s16 *data, int len)
     }
 
     os_sem_post(&(__kws_audio->rx_sem));
+    local_irq_enable();
 }
 
 
@@ -138,6 +143,7 @@ int jl_kws_audio_init(void)
 
     cbuf_init(&(__kws_audio->kws_cbuf), __kws_audio->cbuf, KWS_CBUF_SIZE);
 
+    audio_codec_clock_set(AUDIO_KWS_MODE, AUDIO_CODING_MSBC, 0);
     return ret;
 }
 
@@ -172,6 +178,16 @@ u8 kws_get_state(void)
     return kws_aec_get_state();
 }
 
+u8 kws_is_running(void)
+{
+    return (__kws_audio != NULL);
+}
+
+__attribute__((weak))
+int audio_aec_update(u8 EnableBit)
+{
+    return 0;
+}
 
 void kws_aec_data_output(void *priv, s16 *data, int len)
 {
@@ -267,7 +283,17 @@ void jl_kws_audio_close(void)
             audio_adc_mic_close(&__kws_audio->kws_adc->mic_ch);
             audio_adc_del_output_handler(&adc_hdl, &(__kws_audio->kws_adc->adc_output));
             free(__kws_audio->kws_adc);
-            //__kws_audio->kws_adc = NULL;
+            __kws_audio->kws_adc = NULL;
+        }
+        audio_codec_clock_del(AUDIO_KWS_MODE);
+        extern u8 audio_aec_status(void);
+        if (audio_aec_status()) {
+            audio_aec_update(0);
+        }
+        audio_codec_clock_del(AUDIO_KWS_MODE);
+        extern u8 audio_aec_status(void);
+        if (audio_aec_status()) {
+            audio_aec_update(0);
         }
         free(__kws_audio);
         __kws_audio = NULL;

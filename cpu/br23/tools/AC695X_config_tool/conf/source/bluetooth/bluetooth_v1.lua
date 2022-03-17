@@ -175,10 +175,35 @@ local bt_rf_power_group_view = cfg:stGroup("",
 cfg:bindStGroup(bt_rf_power_group_view, bt_rf_power_output_bin);
 
 --[[===================================================================================
-================================= 配置子项6: AEC配置 ==================================
+================================= 配置子项6-1: AEC配置 ==================================
 ====================================================================================--]]
 -- aec gloal
 local aec_global = {};
+
+local aec_cfg_type = {};
+aec_cfg_type.aec_cfg_type_talbe = {
+        [0] = " 单mic模式",
+        [1] = " 单mic模式(DNS)",
+};
+aec_cfg_type.AEC_CFG_TYPE_SEL_TABLE = cfg:enumMap("aec_cfg_type_table", aec_cfg_type.aec_cfg_type_talbe);
+
+aec_cfg_type.cfg = cfg:enum("通话参数类型选择: ", aec_cfg_type.AEC_CFG_TYPE_SEL_TABLE, 0);
+aec_cfg_type.cfg:setOSize(1);
+
+-- A. 输出htext
+-- B. 输出ctext：无
+-- C. 输出bin：无
+-- D. 显示
+aec_cfg_type.hbox_view = cfg:hBox {
+		cfg:stLabel(aec_cfg_type.cfg.name),
+		cfg:enumView(aec_cfg_type.cfg),
+        cfg:stSpacer();
+};
+
+-- E. 默认值, 见汇总
+
+-- F. bindGroup：无
+
 -- item_htext
 aec_global.aec_start_comment_str = module_comment_context("AEC参数");
 
@@ -195,40 +220,40 @@ aec_global.reference_book_view = cfg:stButton("JL通话调试手册.pdf",
     end);
 
 -- 1) mic_again
-local mic_analog_gain = {};
-mic_analog_gain.cfg = cfg:i32("MIC_AGAIN：", 3);
+aec_global.mic_analog_gain = {};
+aec_global.mic_analog_gain.cfg = cfg:i32("MIC_AGAIN：", 3);
 
-depend_item_en_show(bluetooth_en, mic_analog_gain.cfg);
-mic_analog_gain.cfg:setOSize(1);
+depend_item_en_show(bluetooth_en, aec_global.mic_analog_gain.cfg);
+aec_global.mic_analog_gain.cfg:setOSize(1);
 -- item_htext
-mic_analog_gain.comment_str = "设置范围：0 ~ 14, 默认值：3";
-mic_analog_gain.htext = item_output_htext(mic_analog_gain.cfg, "TCFG_AEC_MIC_ANALOG_GAIN", 3, nil, mic_analog_gain.comment_str, 1);
+aec_global.mic_analog_gain.comment_str = "设置范围：0 ~ 14, 默认值：3";
+aec_global.mic_analog_gain.htext = item_output_htext(aec_global.mic_analog_gain.cfg, "TCFG_AEC_MIC_ANALOG_GAIN", 3, nil, aec_global.mic_analog_gain.comment_str, 1);
 -- item_view
-mic_analog_gain.hbox_view = cfg:hBox {
-    cfg:stLabel(mic_analog_gain.cfg.name .. TAB_TABLE[1]),
-    cfg:ispinView(mic_analog_gain.cfg, 0, 14, 1),
+aec_global.mic_analog_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.mic_analog_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:ispinView(aec_global.mic_analog_gain.cfg, 0, 14, 1),
     cfg:stLabel("(MIC增益，设置范围: 0 ~ 14，默认值：3)"),
     cfg:stSpacer(),
 };
 
 -- 2) dac_again
-local dac_analog_gain = {};
-dac_analog_gain.cfg = cfg:i32("DAC_AGAIN：", 22);
-global_cfgs["DAC_AGAIN"] = dac_analog_gain.cfg;
-depend_item_en_show(bluetooth_en, dac_analog_gain.cfg);
-dac_analog_gain.cfg:setOSize(1);
+aec_global.dac_analog_gain = {};
+aec_global.dac_analog_gain.cfg = cfg:i32("DAC_AGAIN：", 22);
+global_cfgs["DAC_AGAIN"] = aec_global.dac_analog_gain.cfg;
+depend_item_en_show(bluetooth_en, aec_global.dac_analog_gain.cfg);
+aec_global.dac_analog_gain.cfg:setOSize(1);
 -- item_htext
-dac_analog_gain.comment_str = "设置范围：0 ~ 31, 默认值：22";
-dac_analog_gain.htext = item_output_htext(dac_analog_gain.cfg, "TCFG_AEC_DAC_ANALOG_GAIN", 3, nil, dac_analog_gain.comment_str, 1);
+aec_global.dac_analog_gain.comment_str = "设置范围：0 ~ 31, 默认值：22";
+aec_global.dac_analog_gain.htext = item_output_htext(aec_global.dac_analog_gain.cfg, "TCFG_AEC_DAC_ANALOG_GAIN", 3, nil, aec_global.dac_analog_gain.comment_str, 1);
 -- item_view
-dac_analog_gain.hbox_view = cfg:hBox {
-    cfg:stLabel(dac_analog_gain.cfg.name .. TAB_TABLE[1]),
-    cfg:ispinView(dac_analog_gain.cfg, 0, 31, 1),
+aec_global.dac_analog_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.dac_analog_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:ispinView(aec_global.dac_analog_gain.cfg, 0, 31, 1),
     cfg:stLabel("(DAC 增益，设置范围: 0 ~ 31，默认值：22)");
     cfg:stSpacer(),
 };
 
--- 3) aec_mode
+-- 3) aec_global.aec_mode
 local aec_mode_sel_table = {
         [0] = " disable",
         [1] = " reduce",
@@ -236,315 +261,315 @@ local aec_mode_sel_table = {
 };
 
 local AEC_MODE_SEL_TABLE = cfg:enumMap("aec_mode_sel_table", aec_mode_sel_table);
-local aec_mode = {};
-aec_mode.cfg = cfg:enum("AEC_MODE: ", AEC_MODE_SEL_TABLE, 2);
-depend_item_en_show(bluetooth_en, aec_mode.cfg);
-aec_mode.cfg:setOSize(1);
+aec_global.aec_mode = {};
+aec_global.aec_mode.cfg = cfg:enum("AEC_MODE: ", AEC_MODE_SEL_TABLE, 2);
+depend_item_en_show(bluetooth_en, aec_global.aec_mode.cfg);
+aec_global.aec_mode.cfg:setOSize(1);
 -- item_htext
-aec_mode.comment_str = item_comment_context("AEC_MODE", aec_mode_sel_table) .. "默认值：2";
-aec_mode.htext = item_output_htext(aec_mode.cfg, "TCFG_AEC_MODE", 6, nil, aec_mode.comment_str, 1);
+aec_global.aec_mode.comment_str = item_comment_context("AEC_MODE", aec_mode_sel_table) .. "默认值：2";
+aec_global.aec_mode.htext = item_output_htext(aec_global.aec_mode.cfg, "TCFG_AEC_MODE", 6, nil, aec_global.aec_mode.comment_str, 1);
 -- item_view
-aec_mode.hbox_view = cfg:hBox {
-    cfg:stLabel(aec_mode.cfg.name .. TAB_TABLE[1]),
-    cfg:enumView(aec_mode.cfg),
+aec_global.aec_mode.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.aec_mode.cfg.name .. TAB_TABLE[1]),
+    cfg:enumView(aec_global.aec_mode.cfg),
     cfg:stLabel("(AEC 模式，默认值：advance)"),
     cfg:stSpacer(),
 };
 
--- 4) ul_eq_en
+-- 4) aec_global.ul_eq_en
 local ul_eq_en_sel_table = {
         [0] = " disable",
         [1] = " enable",
 };
 local UL_EQ_EN_SEL_TABLE = cfg:enumMap("ul_eq_en_sel_table", ul_eq_en_sel_table);
 
-local ul_eq_en = {};
-ul_eq_en.cfg = cfg:enum("UL_EQ_EN: ", UL_EQ_EN_SEL_TABLE, 1);
-depend_item_en_show(bluetooth_en, ul_eq_en.cfg);
-ul_eq_en.cfg:setOSize(1);
+aec_global.ul_eq_en = {};
+aec_global.ul_eq_en.cfg = cfg:enum("UL_EQ_EN: ", UL_EQ_EN_SEL_TABLE, 1);
+depend_item_en_show(bluetooth_en, aec_global.ul_eq_en.cfg);
+aec_global.ul_eq_en.cfg:setOSize(1);
 -- item_htext
-ul_eq_en.comment_str = item_comment_context("UL_EQ_EN", ul_eq_en_sel_table) .. "默认值：1";
-ul_eq_en.htext = item_output_htext(ul_eq_en.cfg, "TCFG_AEC_UL_EQ_EN", 5, nil, ul_eq_en.comment_str, 2);
+aec_global.ul_eq_en.comment_str = item_comment_context("UL_EQ_EN", ul_eq_en_sel_table) .. "默认值：1";
+aec_global.ul_eq_en.htext = item_output_htext(aec_global.ul_eq_en.cfg, "TCFG_AEC_UL_EQ_EN", 5, nil, aec_global.ul_eq_en.comment_str, 2);
 -- item_view
-ul_eq_en.hbox_view = cfg:hBox {
-    cfg:stLabel(ul_eq_en.cfg.name .. TAB_TABLE[1]),
-    cfg:enumView(ul_eq_en.cfg),
+aec_global.ul_eq_en.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.ul_eq_en.cfg.name .. TAB_TABLE[1]),
+    cfg:enumView(aec_global.ul_eq_en.cfg),
     cfg:stLabel("(上行 EQ 使能，默认值：enable)"),
     cfg:stSpacer(),
 };
 
 
--- 5) fade_gain
-local fade_gain = {ndt_fade_in = {}, ndt_fade_out = {}, dt_fade_in = {}, dt_fade_out = {}};
+-- 5) aec_global.fade_gain
+aec_global.fade_gain = {ndt_fade_in = {}, ndt_fade_out = {}, dt_fade_in = {}, dt_fade_out = {}};
 -- 5-1) ndt_fade_in
-fade_gain.ndt_fade_in.cfg = cfg:dbf("NDT_FADE_IN：", 1.3);
-depend_item_en_show(bluetooth_en, fade_gain.ndt_fade_in.cfg);
-fade_gain.ndt_fade_in.cfg:setOSize(4);
+aec_global.fade_gain.ndt_fade_in.cfg = cfg:dbf("NDT_FADE_IN：", 1.3);
+depend_item_en_show(bluetooth_en, aec_global.fade_gain.ndt_fade_in.cfg);
+aec_global.fade_gain.ndt_fade_in.cfg:setOSize(4);
 -- item_htext
-fade_gain.ndt_fade_in.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：1.3";
-fade_gain.ndt_fade_in.htext = item_output_htext(fade_gain.ndt_fade_in.cfg, "TCFG_NDT_FADE_IN", 4, nil, fade_gain.ndt_fade_in.comment_str, 1);
+aec_global.fade_gain.ndt_fade_in.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：1.3";
+aec_global.fade_gain.ndt_fade_in.htext = item_output_htext(aec_global.fade_gain.ndt_fade_in.cfg, "TCFG_NDT_FADE_IN", 4, nil, aec_global.fade_gain.ndt_fade_in.comment_str, 1);
 -- item_view
-fade_gain.ndt_fade_in.hbox_view = cfg:hBox {
-    cfg:stLabel(fade_gain.ndt_fade_in.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(fade_gain.ndt_fade_in.cfg, 0.1, 5.0, 0.1, 1),
+aec_global.fade_gain.ndt_fade_in.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.fade_gain.ndt_fade_in.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.fade_gain.ndt_fade_in.cfg, 0.1, 5.0, 0.1, 1),
     cfg:stLabel("dB (单端讲话淡入步进，设置范围: 0.1 ~ 5 dB，默认值：1.3 dB)"),
     cfg:stSpacer(),
 };
 
 -- 5-2) ndt_fade_out
-fade_gain.ndt_fade_out.cfg = cfg:dbf("NDT_FADE_OUT：", 0.7);
-depend_item_en_show(bluetooth_en, fade_gain.ndt_fade_out.cfg);
-fade_gain.ndt_fade_out.cfg:setOSize(4);
+aec_global.fade_gain.ndt_fade_out.cfg = cfg:dbf("NDT_FADE_OUT：", 0.7);
+depend_item_en_show(bluetooth_en, aec_global.fade_gain.ndt_fade_out.cfg);
+aec_global.fade_gain.ndt_fade_out.cfg:setOSize(4);
 -- item_htext
-fade_gain.ndt_fade_out.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：0.7";
-fade_gain.ndt_fade_out.htext = item_output_htext(fade_gain.ndt_fade_out.cfg, "TCFG_NDT_FADE_OUT", 4, nil, fade_gain.ndt_fade_out.comment_str, 1);
+aec_global.fade_gain.ndt_fade_out.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：0.7";
+aec_global.fade_gain.ndt_fade_out.htext = item_output_htext(aec_global.fade_gain.ndt_fade_out.cfg, "TCFG_NDT_FADE_OUT", 4, nil, aec_global.fade_gain.ndt_fade_out.comment_str, 1);
 -- item_view
-fade_gain.ndt_fade_out.hbox_view = cfg:hBox {
-    cfg:stLabel(fade_gain.ndt_fade_out.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(fade_gain.ndt_fade_out.cfg, 0.1, 5.0, 0.1, 1),
+aec_global.fade_gain.ndt_fade_out.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.fade_gain.ndt_fade_out.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.fade_gain.ndt_fade_out.cfg, 0.1, 5.0, 0.1, 1),
     cfg:stLabel("dB (单端讲话淡出步进，设置范围: 0.1 ~ 5 dB，默认值：0.7 dB)"),
     cfg:stSpacer(),
 };
 
 -- 5-3) dt_fade_in
-fade_gain.dt_fade_in.cfg = cfg:dbf("DT_FADE_IN：", 1.3);
-depend_item_en_show(bluetooth_en, fade_gain.dt_fade_in.cfg);
-fade_gain.dt_fade_in.cfg:setOSize(4);
+aec_global.fade_gain.dt_fade_in.cfg = cfg:dbf("DT_FADE_IN：", 1.3);
+depend_item_en_show(bluetooth_en, aec_global.fade_gain.dt_fade_in.cfg);
+aec_global.fade_gain.dt_fade_in.cfg:setOSize(4);
 -- item_htext
-fade_gain.dt_fade_in.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：1.3";
-fade_gain.dt_fade_in.htext = item_output_htext(fade_gain.dt_fade_in.cfg, "TCFG_DT_FADE_IN", 4, nil, fade_gain.dt_fade_in.comment_str, 1);
+aec_global.fade_gain.dt_fade_in.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：1.3";
+aec_global.fade_gain.dt_fade_in.htext = item_output_htext(aec_global.fade_gain.dt_fade_in.cfg, "TCFG_DT_FADE_IN", 4, nil, aec_global.fade_gain.dt_fade_in.comment_str, 1);
 -- item_view
-fade_gain.dt_fade_in.hbox_view = cfg:hBox {
-    cfg:stLabel(fade_gain.dt_fade_in.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(fade_gain.dt_fade_in.cfg, 0.1, 5.0, 0.1, 1),
+aec_global.fade_gain.dt_fade_in.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.fade_gain.dt_fade_in.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.fade_gain.dt_fade_in.cfg, 0.1, 5.0, 0.1, 1),
     cfg:stLabel("dB (双端讲话淡入步进，设置范围: 0.1 ~ 5 dB，默认值：1.3 dB)"),
     cfg:stSpacer(),
 };
 
 -- 5-4) dt_fade_out
-fade_gain.dt_fade_out.cfg = cfg:dbf("DT_FADE_OUT：", 0.7);
-depend_item_en_show(bluetooth_en, fade_gain.dt_fade_out.cfg);
-fade_gain.dt_fade_out.cfg:setOSize(4);
+aec_global.fade_gain.dt_fade_out.cfg = cfg:dbf("DT_FADE_OUT：", 0.7);
+depend_item_en_show(bluetooth_en, aec_global.fade_gain.dt_fade_out.cfg);
+aec_global.fade_gain.dt_fade_out.cfg:setOSize(4);
 -- item_htext
-fade_gain.dt_fade_out.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：0.7";
-fade_gain.dt_fade_out.htext = item_output_htext(fade_gain.dt_fade_out.cfg, "TCFG_DT_FADE_OUT", 4, nil, fade_gain.dt_fade_out.comment_str, 1);
+aec_global.fade_gain.dt_fade_out.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：0.7";
+aec_global.fade_gain.dt_fade_out.htext = item_output_htext(aec_global.fade_gain.dt_fade_out.cfg, "TCFG_DT_FADE_OUT", 4, nil, aec_global.fade_gain.dt_fade_out.comment_str, 1);
 -- item_view
-fade_gain.dt_fade_out.hbox_view = cfg:hBox {
-    cfg:stLabel(fade_gain.dt_fade_out.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(fade_gain.dt_fade_out.cfg, 0.1, 5.0, 0.1, 1),
+aec_global.fade_gain.dt_fade_out.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.fade_gain.dt_fade_out.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.fade_gain.dt_fade_out.cfg, 0.1, 5.0, 0.1, 1),
     cfg:stLabel("dB (双端讲话淡出步进，设置范围: 0.1 ~ 5 dB，默认值：0.7 dB)"),
     cfg:stSpacer(),
 };
 
--- 6) ndt_max_gain
-local ndt_max_gain = {};
-ndt_max_gain.cfg = cfg:dbf("NDT_MAX_GAIN：", 12.0);
-depend_item_en_show(bluetooth_en, ndt_max_gain.cfg);
-ndt_max_gain.cfg:setOSize(4);
+-- 6) aec_global.ndt_max_gain
+aec_global.ndt_max_gain = {};
+aec_global.ndt_max_gain.cfg = cfg:dbf("NDT_MAX_GAIN：", 12.0);
+depend_item_en_show(bluetooth_en, aec_global.ndt_max_gain.cfg);
+aec_global.ndt_max_gain.cfg:setOSize(4);
 -- item_htext
-ndt_max_gain.comment_str = "设置范围：-90.0 ~ 40.0 dB, 默认值：12.0 dB";
-ndt_max_gain.htext = item_output_htext(ndt_max_gain.cfg, "TCFG_AEC_NDT_MAX_GAIN", 4, nil, ndt_max_gain.comment_str, 1);
+aec_global.ndt_max_gain.comment_str = "设置范围：-90.0 ~ 40.0 dB, 默认值：12.0 dB";
+aec_global.ndt_max_gain.htext = item_output_htext(aec_global.ndt_max_gain.cfg, "TCFG_AEC_NDT_MAX_GAIN", 4, nil, aec_global.ndt_max_gain.comment_str, 1);
 -- item_view
-ndt_max_gain.hbox_view = cfg:hBox {
-    cfg:stLabel(ndt_max_gain.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(ndt_max_gain.cfg, -90.0, 40.0, 0.1, 1),
+aec_global.ndt_max_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.ndt_max_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.ndt_max_gain.cfg, -90.0, 40.0, 0.1, 1),
     cfg:stLabel("(单端讲话放大上限， 设置范围: -90.0 ~ 40.0 dB，默认值：12.0 dB)"),
     cfg:stSpacer(),
 };
 
--- 7) ndt_min_gain
-local ndt_min_gain = {};
-ndt_min_gain.cfg = cfg:dbf("NDT_MIN_GAIN：", 0.0);
-depend_item_en_show(bluetooth_en, ndt_min_gain.cfg);
-ndt_min_gain.cfg:setOSize(4);
+-- 7) aec_global.ndt_min_gain
+aec_global.ndt_min_gain = {};
+aec_global.ndt_min_gain.cfg = cfg:dbf("NDT_MIN_GAIN：", 0.0);
+depend_item_en_show(bluetooth_en, aec_global.ndt_min_gain.cfg);
+aec_global.ndt_min_gain.cfg:setOSize(4);
 -- item_htext
-ndt_min_gain.comment_str = "设置范围：-90 ~ 40 dB, 默认值：0 dB";
-ndt_min_gain.htext = item_output_htext(ndt_min_gain.cfg, "TCFG_AEC_NDT_MIN_GAIN", 4, nil, ndt_min_gain.comment_str, 1);
+aec_global.ndt_min_gain.comment_str = "设置范围：-90 ~ 40 dB, 默认值：0 dB";
+aec_global.ndt_min_gain.htext = item_output_htext(aec_global.ndt_min_gain.cfg, "TCFG_AEC_NDT_MIN_GAIN", 4, nil, aec_global.ndt_min_gain.comment_str, 1);
 -- item_view
-ndt_min_gain.hbox_view = cfg:hBox {
-    cfg:stLabel(ndt_min_gain.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(ndt_min_gain.cfg, -90.0, 40.0, 0.1, 1),
+aec_global.ndt_min_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.ndt_min_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.ndt_min_gain.cfg, -90.0, 40.0, 0.1, 1),
     cfg:stLabel("(单端讲话放大下限， 设置范围: -90.0 ~ 40.0 dB，默认值：0 dB)"),
     cfg:stSpacer(),
 };
 
--- 8) ndt_speech_thr
-local ndt_speech_thr = {};
-ndt_speech_thr.cfg = cfg:dbf("NDT_SPEECH_THR：", -50.0);
-depend_item_en_show(bluetooth_en, ndt_speech_thr.cfg);
-ndt_speech_thr.cfg:setOSize(4);
+-- 8) aec_global.ndt_speech_thr
+aec_global.ndt_speech_thr = {};
+aec_global.ndt_speech_thr.cfg = cfg:dbf("NDT_SPEECH_THR：", -50.0);
+depend_item_en_show(bluetooth_en, aec_global.ndt_speech_thr.cfg);
+aec_global.ndt_speech_thr.cfg:setOSize(4);
 -- item_htext
-ndt_speech_thr.comment_str = "设置范围：-70.0 ~ -40.0 dB, 默认值：-50.0 dB";
-ndt_speech_thr.htext = item_output_htext(ndt_speech_thr.cfg, "TCFG_AEC_NDT_SPEECH_THR", 4, nil, ndt_speech_thr.comment_str, 1);
+aec_global.ndt_speech_thr.comment_str = "设置范围：-70.0 ~ -40.0 dB, 默认值：-50.0 dB";
+aec_global.ndt_speech_thr.htext = item_output_htext(aec_global.ndt_speech_thr.cfg, "TCFG_AEC_NDT_SPEECH_THR", 4, nil, aec_global.ndt_speech_thr.comment_str, 1);
 -- item_view
-ndt_speech_thr.hbox_view = cfg:hBox {
-    cfg:stLabel(ndt_speech_thr.cfg.name),
-    cfg:dspinView(ndt_speech_thr.cfg, -70.0, -40.0, 0.1, 1),
+aec_global.ndt_speech_thr.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.ndt_speech_thr.cfg.name),
+    cfg:dspinView(aec_global.ndt_speech_thr.cfg, -70.0, -40.0, 0.1, 1),
     cfg:stLabel("(单端讲话放大阈值， 设置范围: -70.0 ~ -40.0 dB，默认值：-50.0 dB)"),
     cfg:stSpacer(),
 };
 
 
--- 9) dt_max_gain 
-local dt_max_gain = {};
-dt_max_gain.cfg = cfg:dbf("DT_MAX_GAIN：", 12.0);
-depend_item_en_show(bluetooth_en, dt_max_gain.cfg);
-dt_max_gain.cfg:setOSize(4);
+-- 9) aec_global.dt_max_gain 
+aec_global.dt_max_gain = {};
+aec_global.dt_max_gain.cfg = cfg:dbf("DT_MAX_GAIN：", 12.0);
+depend_item_en_show(bluetooth_en, aec_global.dt_max_gain.cfg);
+aec_global.dt_max_gain.cfg:setOSize(4);
 -- item_htext
-dt_max_gain.comment_str = "设置范围：-90 ~ 40.0 dB, 默认值：12.0 dB";
-dt_max_gain.htext = item_output_htext(dt_max_gain.cfg, "TCFG_AEC_DT_MAX_GAIN", 4, nil, dt_max_gain.comment_str, 1);
+aec_global.dt_max_gain.comment_str = "设置范围：-90 ~ 40.0 dB, 默认值：12.0 dB";
+aec_global.dt_max_gain.htext = item_output_htext(aec_global.dt_max_gain.cfg, "TCFG_AEC_DT_MAX_GAIN", 4, nil, aec_global.dt_max_gain.comment_str, 1);
 -- item_view
-dt_max_gain.hbox_view = cfg:hBox {
-    cfg:stLabel(dt_max_gain.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(dt_max_gain.cfg, -90.0, 40.0, 0.1, 1),
+aec_global.dt_max_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.dt_max_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.dt_max_gain.cfg, -90.0, 40.0, 0.1, 1),
     cfg:stLabel("(双端讲话放大上限， 设置范围: -90 ~ 40.0 dB，默认值：12.0 dB)"),
     cfg:stSpacer(),
 };
 
--- 10) dt_min_gain
-local dt_min_gain = {};
-dt_min_gain.cfg = cfg:dbf("DT_MIN_GAIN：", 0.0);
-depend_item_en_show(bluetooth_en, dt_min_gain.cfg);
-dt_min_gain.cfg:setOSize(4);
+-- 10) aec_global.dt_min_gain
+aec_global.dt_min_gain = {};
+aec_global.dt_min_gain.cfg = cfg:dbf("DT_MIN_GAIN：", 0.0);
+depend_item_en_show(bluetooth_en, aec_global.dt_min_gain.cfg);
+aec_global.dt_min_gain.cfg:setOSize(4);
 -- item_htext
-dt_min_gain.comment_str = "设置范围：-90.0 ~ 40.0 dB, 默认值：0 dB";
-dt_min_gain.htext = item_output_htext(dt_min_gain.cfg, "TCFG_AEC_DT_MIN_GAIN", 4, nil, dt_min_gain.comment_str, 1);
+aec_global.dt_min_gain.comment_str = "设置范围：-90.0 ~ 40.0 dB, 默认值：0 dB";
+aec_global.dt_min_gain.htext = item_output_htext(aec_global.dt_min_gain.cfg, "TCFG_AEC_DT_MIN_GAIN", 4, nil, aec_global.dt_min_gain.comment_str, 1);
 -- item_view
-dt_min_gain.hbox_view = cfg:hBox {
-    cfg:stLabel(dt_min_gain.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(dt_min_gain.cfg, -90.0, 40.0, 0.1, 1),
+aec_global.dt_min_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.dt_min_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.dt_min_gain.cfg, -90.0, 40.0, 0.1, 1),
     cfg:stLabel("(双端讲话放大下限， 设置范围: -90.0 ~ 40.0 dB，默认值：0 dB)"),
     cfg:stSpacer(),
 };
 
 
--- 11) dt_speech_thr
-local dt_speech_thr = {};
-dt_speech_thr.cfg = cfg:dbf("DT_SPEECH_THR：", -40.0);
-depend_item_en_show(bluetooth_en, dt_speech_thr.cfg);
-dt_speech_thr.cfg:setOSize(4);
+-- 11) aec_global.dt_speech_thr
+aec_global.dt_speech_thr = {};
+aec_global.dt_speech_thr.cfg = cfg:dbf("DT_SPEECH_THR：", -40.0);
+depend_item_en_show(bluetooth_en, aec_global.dt_speech_thr.cfg);
+aec_global.dt_speech_thr.cfg:setOSize(4);
 -- item_htext
-dt_speech_thr.comment_str = "设置范围：-70.0 ~ -40.0 dB, 默认值：-40.0 dB";
-dt_speech_thr.htext = item_output_htext(dt_speech_thr.cfg, "TCFG_AEC_DT_SPEECH_THR", 4, nil, dt_speech_thr.comment_str, 1);
+aec_global.dt_speech_thr.comment_str = "设置范围：-70.0 ~ -40.0 dB, 默认值：-40.0 dB";
+aec_global.dt_speech_thr.htext = item_output_htext(aec_global.dt_speech_thr.cfg, "TCFG_AEC_DT_SPEECH_THR", 4, nil, aec_global.dt_speech_thr.comment_str, 1);
 -- item_view
-dt_speech_thr.hbox_view = cfg:hBox {
-    cfg:stLabel(dt_speech_thr.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(dt_speech_thr.cfg, -70.0, -40.0, 0.1, 1),
+aec_global.dt_speech_thr.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.dt_speech_thr.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.dt_speech_thr.cfg, -70.0, -40.0, 0.1, 1),
     cfg:stLabel("(双端讲话放大阈值， 设置范围: -70.0 ~ -40.0 dB，默认值：-40.0 dB)"),
     cfg:stSpacer(),
 };
 
--- 12) echo_present_thr
-local echo_present_thr = {};
-echo_present_thr.cfg = cfg:dbf("ECHO_PRESENT_THR：", -70.0);
-depend_item_en_show(bluetooth_en, echo_present_thr.cfg);
-echo_present_thr.cfg:setOSize(4);
+-- 12) aec_global.echo_present_thr
+aec_global.echo_present_thr = {};
+aec_global.echo_present_thr.cfg = cfg:dbf("ECHO_PRESENT_THR：", -70.0);
+depend_item_en_show(bluetooth_en, aec_global.echo_present_thr.cfg);
+aec_global.echo_present_thr.cfg:setOSize(4);
 -- item_htext
-echo_present_thr.comment_str = "设置范围：-70.0 ~ -40.0 dB, 默认值：-70.0 dB";
-echo_present_thr.htext = item_output_htext(echo_present_thr.cfg, "TCFG_AEC_ECHO_PRESENT_THR", 4, nil, echo_present_thr.comment_str, 1);
+aec_global.echo_present_thr.comment_str = "设置范围：-70.0 ~ -40.0 dB, 默认值：-70.0 dB";
+aec_global.echo_present_thr.htext = item_output_htext(aec_global.echo_present_thr.cfg, "TCFG_AEC_ECHO_PRESENT_THR", 4, nil, aec_global.echo_present_thr.comment_str, 1);
 -- item_view
-echo_present_thr.hbox_view = cfg:hBox {
-    cfg:stLabel(echo_present_thr.cfg.name),
-    cfg:dspinView(echo_present_thr.cfg, -70.0, -40.0, 0.1, 1),
+aec_global.echo_present_thr.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.echo_present_thr.cfg.name),
+    cfg:dspinView(aec_global.echo_present_thr.cfg, -70.0, -40.0, 0.1, 1),
     cfg:stLabel("(单端双端讲话阈值， 设置范围: -70.0 ~ -40.0 dB，默认值：-70.0 dB)"),
     cfg:stSpacer(),
 };
 
--- 13) aec_dt_aggress
-local aec_dt_aggress = {};
-aec_dt_aggress.cfg = cfg:dbf("AEC_DT_AGGRES：", 1.0);
-depend_item_en_show(bluetooth_en, aec_dt_aggress.cfg);
-aec_dt_aggress.cfg:setOSize(4);
+-- 13) aec_global.aec_dt_aggress
+aec_global.aec_dt_aggress = {};
+aec_global.aec_dt_aggress.cfg = cfg:dbf("AEC_DT_AGGRES：", 1.0);
+depend_item_en_show(bluetooth_en, aec_global.aec_dt_aggress.cfg);
+aec_global.aec_dt_aggress.cfg:setOSize(4);
 -- item_htext
-aec_dt_aggress.comment_str = "设置范围：1.0 ~ 5.0, float类型(4Bytes), 默认值：1.0";
-aec_dt_aggress.htext = item_output_htext(aec_dt_aggress.cfg, "TCFG_AEC_AEC_DT_AGGRESS", 4, nil, aec_dt_aggress.comment_str, 1);
+aec_global.aec_dt_aggress.comment_str = "设置范围：1.0 ~ 5.0, float类型(4Bytes), 默认值：1.0";
+aec_global.aec_dt_aggress.htext = item_output_htext(aec_global.aec_dt_aggress.cfg, "TCFG_AEC_AEC_DT_AGGRESS", 4, nil, aec_global.aec_dt_aggress.comment_str, 1);
 -- item_view
-aec_dt_aggress.hbox_view = cfg:hBox {
-    cfg:stLabel(aec_dt_aggress.cfg.name),
-    cfg:dspinView(aec_dt_aggress.cfg, 1.0, 5.0, 0.1, 1),
+aec_global.aec_dt_aggress.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.aec_dt_aggress.cfg.name),
+    cfg:dspinView(aec_global.aec_dt_aggress.cfg, 1.0, 5.0, 0.1, 1),
     cfg:stLabel("(原音回音追踪等级， 设置范围: 1.0 ~ 5.0，默认值：1.0)"),
     cfg:stSpacer(),
 };
 
--- 14) aec_refengthr
-local aec_refengthr = {};
-aec_refengthr.cfg = cfg:dbf("AEC_REFENGTHR：", -70.0);
-depend_item_en_show(bluetooth_en, aec_refengthr.cfg);
-aec_refengthr.cfg:setOSize(4);
+-- 14) aec_global.aec_refengthr
+aec_global.aec_refengthr = {};
+aec_global.aec_refengthr.cfg = cfg:dbf("AEC_REFENGTHR：", -70.0);
+depend_item_en_show(bluetooth_en, aec_global.aec_refengthr.cfg);
+aec_global.aec_refengthr.cfg:setOSize(4);
 -- item_htext
-aec_refengthr.comment_str = "设置范围：-90.0 ~ -60.0 dB, float类型(4Bytes), 默认值：-70.0";
-aec_refengthr.htext = item_output_htext(aec_refengthr.cfg, "TCFG_AEC_REFENGTHR", 4, nil, aec_refengthr.comment_str, 1);
+aec_global.aec_refengthr.comment_str = "设置范围：-90.0 ~ -60.0 dB, float类型(4Bytes), 默认值：-70.0";
+aec_global.aec_refengthr.htext = item_output_htext(aec_global.aec_refengthr.cfg, "TCFG_AEC_REFENGTHR", 4, nil, aec_global.aec_refengthr.comment_str, 1);
 -- item_view
-aec_refengthr.hbox_view = cfg:hBox {
-    cfg:stLabel(aec_refengthr.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(aec_refengthr.cfg, -90.0, -60.0, 0.1, 1),
+aec_global.aec_refengthr.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.aec_refengthr.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.aec_refengthr.cfg, -90.0, -60.0, 0.1, 1),
     cfg:stLabel("(进入回音消除参考值， 设置范围: -90.0 ~ -60.0 dB，默认值：-70.0 dB)"),
     cfg:stSpacer(),
 };
 
--- 15) es_aggress_factor
-local es_aggress_factor = {};
-es_aggress_factor.cfg = cfg:dbf("ES_AGGRESS_FACTOR：", -3.0);
-depend_item_en_show(bluetooth_en, es_aggress_factor.cfg);
-es_aggress_factor.cfg:setOSize(4);
+-- 15) aec_global.es_aggress_factor
+aec_global.es_aggress_factor = {};
+aec_global.es_aggress_factor.cfg = cfg:dbf("ES_AGGRESS_FACTOR：", -3.0);
+depend_item_en_show(bluetooth_en, aec_global.es_aggress_factor.cfg);
+aec_global.es_aggress_factor.cfg:setOSize(4);
 -- item_htext
-es_aggress_factor.comment_str = "设置范围：-1.0 ~ -5.0, float类型(4Bytes), 默认值：-3.0";
-es_aggress_factor.htext = item_output_htext(es_aggress_factor.cfg, "TCFG_ES_AGGRESS_FACTOR", 4, nil, es_aggress_factor.comment_str, 1);
+aec_global.es_aggress_factor.comment_str = "设置范围：-1.0 ~ -5.0, float类型(4Bytes), 默认值：-3.0";
+aec_global.es_aggress_factor.htext = item_output_htext(aec_global.es_aggress_factor.cfg, "TCFG_ES_AGGRESS_FACTOR", 4, nil, aec_global.es_aggress_factor.comment_str, 1);
 -- item_view
-es_aggress_factor.hbox_view = cfg:hBox {
-    cfg:stLabel(es_aggress_factor.cfg.name),
-    cfg:dspinView(es_aggress_factor.cfg, -5.0, -1.0, 0.1, 1),
+aec_global.es_aggress_factor.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.es_aggress_factor.cfg.name),
+    cfg:dspinView(aec_global.es_aggress_factor.cfg, -5.0, -1.0, 0.1, 1),
     cfg:stLabel("(回音前级动态压制,越小越强， 设置范围: -5.0 ~ -1.0，默认值：-3.0)"),
     cfg:stSpacer(),
 };
 
--- 16) es_min_suppress
+-- 16) aec_global.es_min_suppress
 --      //回音后级动态压制,越大越强,default: 4.f(0 ~ 10)
-local es_min_suppress = {};
-es_min_suppress.cfg = cfg:dbf("ES_MIN_SUPPRESS：", 4.0);
-depend_item_en_show(bluetooth_en, es_min_suppress.cfg);
-es_min_suppress.cfg:setOSize(4);
+aec_global.es_min_suppress = {};
+aec_global.es_min_suppress.cfg = cfg:dbf("ES_MIN_SUPPRESS：", 4.0);
+depend_item_en_show(bluetooth_en, aec_global.es_min_suppress.cfg);
+aec_global.es_min_suppress.cfg:setOSize(4);
 -- item_htext
-es_min_suppress.comment_str = "设置范围：0 ~ 10.0, float类型(4Bytes), 默认值：4.0";
-es_min_suppress.htext = item_output_htext(es_min_suppress.cfg, "TCFG_ES_MIN_SUPPRESS", 4, nil, es_min_suppress.comment_str, 1);
+aec_global.es_min_suppress.comment_str = "设置范围：0 ~ 10.0, float类型(4Bytes), 默认值：4.0";
+aec_global.es_min_suppress.htext = item_output_htext(aec_global.es_min_suppress.cfg, "TCFG_ES_MIN_SUPPRESS", 4, nil, aec_global.es_min_suppress.comment_str, 1);
 -- item_view
-es_min_suppress.hbox_view = cfg:hBox {
-    cfg:stLabel(es_min_suppress.cfg.name),
-    cfg:dspinView(es_min_suppress.cfg, 0.0, 10.0, 0.1, 1),
+aec_global.es_min_suppress.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.es_min_suppress.cfg.name),
+    cfg:dspinView(aec_global.es_min_suppress.cfg, 0.0, 10.0, 0.1, 1),
     cfg:stLabel("(回音后级静态压制,越大越强， 设置范围: 0 ~ 10.0，默认值：4.0)"),
     cfg:stSpacer(),
 };
 
--- 17) ans_aggress
+-- 17) aec_global.ans_aggress
 --  //噪声前级动态压制,越大越强default: 1.25f(1 ~ 2)
-local ans_aggress = {};
-ans_aggress.cfg = cfg:dbf("ANS_AGGRESS：", 1.25);
-depend_item_en_show(bluetooth_en, ans_aggress.cfg);
-ans_aggress.cfg:setOSize(4);
+aec_global.ans_aggress = {};
+aec_global.ans_aggress.cfg = cfg:dbf("ANS_AGGRESS：", 1.25);
+depend_item_en_show(bluetooth_en, aec_global.ans_aggress.cfg);
+aec_global.ans_aggress.cfg:setOSize(4);
 -- item_htext
-ans_aggress.comment_str = "设置范围：1 ~ 2, float类型(4Bytes), 默认值：1.25";
-ans_aggress.htext = item_output_htext(ans_aggress.cfg, "TCFG_AEC_ANS_AGGRESS", 4, nil, ans_aggress.comment_str, 1);
+aec_global.ans_aggress.comment_str = "设置范围：1 ~ 2, float类型(4Bytes), 默认值：1.25";
+aec_global.ans_aggress.htext = item_output_htext(aec_global.ans_aggress.cfg, "TCFG_AEC_ANS_AGGRESS", 4, nil, aec_global.ans_aggress.comment_str, 1);
 -- item_view
-ans_aggress.hbox_view = cfg:hBox {
-    cfg:stLabel(ans_aggress.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(ans_aggress.cfg, 1.0, 2.0, 0.01, 2),
+aec_global.ans_aggress.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.ans_aggress.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.ans_aggress.cfg, 1.0, 2.0, 0.01, 2),
     cfg:stLabel("(噪声前级动态压制,越大越强， 设置范围: 1 ~ 2.0，默认值：1.25)"),
     cfg:stSpacer(),
 };
 
--- 18) ans_suppress
--- float ans_suppress; //噪声后级动态压制,越小越强default: 0.04f(0 ~ 1)
-local ans_suppress = {};
-ans_suppress.cfg = cfg:dbf("ANS_SUPPRESS：", 0.09);
-depend_item_en_show(bluetooth_en, ans_suppress.cfg);
-ans_suppress.cfg:setOSize(4);
+-- 18) aec_global.ans_suppress
+-- float aec_global.ans_suppress; //噪声后级动态压制,越小越强default: 0.04f(0 ~ 1)
+aec_global.ans_suppress = {};
+aec_global.ans_suppress.cfg = cfg:dbf("ANS_SUPPRESS：", 0.09);
+depend_item_en_show(bluetooth_en, aec_global.ans_suppress.cfg);
+aec_global.ans_suppress.cfg:setOSize(4);
 -- item_htext
-ans_suppress.comment_str = "设置范围：0 ~ 1, float类型(4Bytes), 默认值：0.09";
-ans_suppress.htext = item_output_htext(ans_suppress.cfg, "TCFG_AEC_ANS_SUPPRESS", 4, nil, ans_suppress.comment_str, 1);
+aec_global.ans_suppress.comment_str = "设置范围：0 ~ 1, float类型(4Bytes), 默认值：0.09";
+aec_global.ans_suppress.htext = item_output_htext(aec_global.ans_suppress.cfg, "TCFG_AEC_ANS_SUPPRESS", 4, nil, aec_global.ans_suppress.comment_str, 1);
 -- item_view
-ans_suppress.hbox_view = cfg:hBox {
-    cfg:stLabel(ans_suppress.cfg.name .. TAB_TABLE[1]),
-    cfg:dspinView(ans_suppress.cfg, 0.0, 1.0, 0.01, 2),
+aec_global.ans_suppress.hbox_view = cfg:hBox {
+    cfg:stLabel(aec_global.ans_suppress.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(aec_global.ans_suppress.cfg, 0.0, 1.0, 0.01, 2),
     cfg:stLabel("(噪声后级静态压制,越小越强， 设置范围: 0 ~ 1.0，默认值：0.09)"),
     cfg:stSpacer(),
 };
@@ -554,94 +579,123 @@ ans_suppress.hbox_view = cfg:hBox {
 --========================= AEC输出汇总  ============================
 local aec_item_table = {
     -- aec cfg
-        mic_analog_gain.cfg, -- 1 Bytes
-        dac_analog_gain.cfg, -- 1 Bytes
-        aec_mode.cfg,        -- 1 Bytes
-        ul_eq_en.cfg,        -- 1 Bytes
+        aec_global.mic_analog_gain.cfg, -- 1 Bytes
+        aec_global.dac_analog_gain.cfg, -- 1 Bytes
+        aec_global.aec_mode.cfg,        -- 1 Bytes
+        aec_global.ul_eq_en.cfg,        -- 1 Bytes
     -- AGC 
-        fade_gain.ndt_fade_in.cfg,        -- 4 Bytes
-        fade_gain.ndt_fade_out.cfg,        -- 4 Bytes
-        fade_gain.dt_fade_in.cfg,        -- 4 Bytes
-        fade_gain.dt_fade_out.cfg,        -- 4 Bytes
-        ndt_max_gain.cfg,     -- 4 Bytes
-        ndt_min_gain.cfg,     -- 4 Bytes
-        ndt_speech_thr.cfg,   -- 4 Bytes
-        dt_max_gain.cfg,      -- 4 Bytes
-        dt_min_gain.cfg,      -- 4 Bytes
-        dt_speech_thr.cfg,      -- 4 Bytes
-        echo_present_thr.cfg,   -- 4 Bytes
+        aec_global.fade_gain.ndt_fade_in.cfg,        -- 4 Bytes
+        aec_global.fade_gain.ndt_fade_out.cfg,        -- 4 Bytes
+        aec_global.fade_gain.dt_fade_in.cfg,        -- 4 Bytes
+        aec_global.fade_gain.dt_fade_out.cfg,        -- 4 Bytes
+        aec_global.ndt_max_gain.cfg,     -- 4 Bytes
+        aec_global.ndt_min_gain.cfg,     -- 4 Bytes
+        aec_global.ndt_speech_thr.cfg,   -- 4 Bytes
+        aec_global.dt_max_gain.cfg,      -- 4 Bytes
+        aec_global.dt_min_gain.cfg,      -- 4 Bytes
+        aec_global.dt_speech_thr.cfg,      -- 4 Bytes
+        aec_global.echo_present_thr.cfg,   -- 4 Bytes
     -- AEC
-        aec_dt_aggress.cfg,   -- 4 Bytes
-        aec_refengthr.cfg,    -- 4 Bytes
+        aec_global.aec_dt_aggress.cfg,   -- 4 Bytes
+        aec_global.aec_refengthr.cfg,    -- 4 Bytes
     -- ES
-        es_aggress_factor.cfg,  -- 4 Bytes
-        es_min_suppress.cfg,    -- 4 Bytes
+        aec_global.es_aggress_factor.cfg,  -- 4 Bytes
+        aec_global.es_min_suppress.cfg,    -- 4 Bytes
     -- ANS
-        ans_aggress.cfg,    -- 4 Bytes
-        ans_suppress.cfg,   -- 4 Bytes
+        aec_global.ans_aggress.cfg,    -- 4 Bytes
+        aec_global.ans_suppress.cfg,   -- 4 Bytes
 };
+
+local aec_output_type_group_view = {};
+
+aec_output_type_group_view.agc_type_group_view = cfg:stGroup("AGC",
+    cfg:vBox {
+        aec_global.fade_gain.ndt_fade_in.hbox_view,
+        aec_global.fade_gain.ndt_fade_out.hbox_view,
+        aec_global.fade_gain.dt_fade_in.hbox_view,
+        aec_global.fade_gain.dt_fade_out.hbox_view,
+        aec_global.ndt_max_gain.hbox_view,
+        aec_global.ndt_min_gain.hbox_view,
+        aec_global.ndt_speech_thr.hbox_view,
+        aec_global.dt_max_gain.hbox_view,
+        aec_global.dt_min_gain.hbox_view,
+        aec_global.dt_speech_thr.hbox_view,
+        aec_global.echo_present_thr.hbox_view,
+    }
+);
+
+aec_output_type_group_view.aec_type_group_view = cfg:stGroup("AEC",
+    cfg:vBox {
+        aec_global.aec_dt_aggress.hbox_view,
+        aec_global.aec_refengthr.hbox_view,
+    }
+);
+
+aec_output_type_group_view.es_type_group_view = cfg:stGroup("ES",
+    cfg:vBox {
+        aec_global.es_aggress_factor.hbox_view,
+        aec_global.es_min_suppress.hbox_view,
+    }
+);
+
+aec_output_type_group_view.ans_type_group_view = cfg:stGroup("ANS",
+    cfg:vBox {
+        aec_global.ans_aggress.hbox_view,
+        aec_global.ans_suppress.hbox_view,
+    }
+);
 
 local aec_output_view_table = {
         aec_global.reference_book_view,
     -- aec cfg
-        mic_analog_gain.hbox_view,
-        dac_analog_gain.hbox_view,
-        aec_mode.hbox_view,
-        ul_eq_en.hbox_view,
+        aec_global.mic_analog_gain.hbox_view,
+        aec_global.dac_analog_gain.hbox_view,
+        aec_global.aec_mode.hbox_view,
+        aec_global.ul_eq_en.hbox_view,
     -- AGC 
-        fade_gain.ndt_fade_in.hbox_view,
-        fade_gain.ndt_fade_out.hbox_view,
-        fade_gain.dt_fade_in.hbox_view,
-        fade_gain.dt_fade_out.hbox_view,
-        ndt_max_gain.hbox_view,
-        ndt_min_gain.hbox_view,
-        ndt_speech_thr.hbox_view,
-        dt_max_gain.hbox_view,
-        dt_min_gain.hbox_view,
-        dt_speech_thr.hbox_view,
-        echo_present_thr.hbox_view,
+        aec_output_type_group_view.agc_type_group_view,
     -- AEC
-        aec_dt_aggress.hbox_view,
-        aec_refengthr.hbox_view,
+        aec_output_type_group_view.aec_type_group_view,
     -- ES
-        es_aggress_factor.hbox_view,
-        es_min_suppress.hbox_view,
+        aec_output_type_group_view.es_type_group_view,
     -- ANS
-        ans_aggress.hbox_view,
-        ans_suppress.hbox_view,
+        aec_output_type_group_view.ans_type_group_view,
 };
 
 -- A. 输出htext
 local aec_output_htext_table = {
         aec_global.aec_start_comment_str,
 -- aec cfg
-        mic_analog_gain.htext,
-        dac_analog_gain.htext,
-        aec_mode.htext,
-        ul_eq_en.htext,
+        aec_global.mic_analog_gain.htext,
+        aec_global.dac_analog_gain.htext,
+        aec_global.aec_mode.htext,
+        aec_global.ul_eq_en.htext,
     -- AGC 
-        fade_gain.ndt_fade_in.htext,
-        fade_gain.ndt_fade_out.htext,
-        fade_gain.dt_fade_in.htext,
-        fade_gain.dt_fade_out.htext,
-        ndt_max_gain.htext,
-        ndt_min_gain.htext,
-        ndt_speech_thr.htext,
-        dt_max_gain.htext,
-        dt_min_gain.htext,
-        dt_speech_thr.htext,
-        echo_present_thr.htext,
+        aec_global.fade_gain.ndt_fade_in.htext,
+        aec_global.fade_gain.ndt_fade_out.htext,
+        aec_global.fade_gain.dt_fade_in.htext,
+        aec_global.fade_gain.dt_fade_out.htext,
+        aec_global.ndt_max_gain.htext,
+        aec_global.ndt_min_gain.htext,
+        aec_global.ndt_speech_thr.htext,
+        aec_global.dt_max_gain.htext,
+        aec_global.dt_min_gain.htext,
+        aec_global.dt_speech_thr.htext,
+        aec_global.echo_present_thr.htext,
     -- AEC
-        aec_dt_aggress.htext,
-        aec_refengthr.htext,
+        aec_global.aec_dt_aggress.htext,
+        aec_global.aec_refengthr.htext,
     -- ES
-        es_aggress_factor.htext,
-        es_min_suppress.htext,
+        aec_global.es_aggress_factor.htext,
+        aec_global.es_min_suppress.htext,
     -- ANS
-        ans_aggress.htext,
-        ans_suppress.htext,
+        aec_global.ans_aggress.htext,
+        aec_global.ans_suppress.htext,
 };
 
+
+aec_global.aec_output_view_table_group_view = cfg:vBox(aec_output_view_table);
+--aec_cfg_depend_show(mic_analog_gain.cfg, aec_cfg_type.cfg, 0, aec_global.aec_output_view_table_group_view);
 -- B. 输出ctext：无
 
 -- C. 输出bin：无
@@ -652,14 +706,547 @@ local aec_output_bin = cfg:group("AEC_OUTPUT_BIN",
 );
 
 -- D. 显示
+--[[
 local aec_group_view = cfg:stGroup("AEC 参数配置",
     cfg:vBox(aec_output_view_table)
 );
+--]]
 
 -- E. 默认值, 见汇总
 
 -- F. bindGroup
+--cfg:bindStGroup(aec_group_view, aec_output_bin);
+
+--[[===================================================================================
+================================= 配置子项6-2: AEC_DNS配置 ==================================
+====================================================================================--]]
+
+-- item_htext
+--aec_global.aec_start_comment_str = module_comment_context("AEC参数");
+
+aec_global.dns_reference_book_view = cfg:stButton("JL通话调试手册.pdf",
+    function()
+        local ret = cfg:utilsShellOpenFile(aec_reference_book_path);
+        if (ret == false) then
+            if cfg.lang == "zh" then
+		        cfg:msgBox("info", aec_reference_book_path .. "文件不存在");
+            else
+		        cfg:msgBox("info", aec_reference_book_path .. " file not exist.");
+            end
+        end
+    end);
+
+-- 1) mic_again
+dns_mic_analog_gain = {};
+dns_mic_analog_gain.cfg = cfg:i32("MIC_AGAIN： ", 3);
+
+depend_item_en_show(bluetooth_en, dns_mic_analog_gain.cfg);
+dns_mic_analog_gain.cfg:setOSize(1);
+-- item_htext
+--dns_mic_analog_gain.comment_str = "设置范围：0 ~ 14, 默认值：3";
+--dns_mic_analog_gain.htext = item_output_htext(dns_mic_analog_gain.cfg, "TCFG_AEC_MIC_ANALOG_GAIN", 3, nil, dns_mic_analog_gain.comment_str, 1);
+-- item_view
+dns_mic_analog_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_mic_analog_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:ispinView(dns_mic_analog_gain.cfg, 0, 14, 1),
+    cfg:stLabel("(MIC增益，设置范围: 0 ~ 14，默认值：3)"),
+    cfg:stSpacer(),
+};
+
+-- 2) dac_again
+local dns_dac_analog_gain = {};
+dns_dac_analog_gain.cfg = cfg:i32("DAC_AGAIN： ", 22);
+global_cfgs["DAC_AGAIN"] = dns_dac_analog_gain.cfg;
+depend_item_en_show(bluetooth_en, dns_dac_analog_gain.cfg);
+dns_dac_analog_gain.cfg:setOSize(1);
+-- item_htext
+dns_dac_analog_gain.comment_str = "设置范围：0 ~ 31, 默认值：22";
+dns_dac_analog_gain.htext = item_output_htext(dns_dac_analog_gain.cfg, "TCFG_AEC_DAC_ANALOG_GAIN", 3, nil, dns_dac_analog_gain.comment_str, 1);
+-- item_view
+dns_dac_analog_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_dac_analog_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:ispinView(dns_dac_analog_gain.cfg, 0, 31, 1),
+    cfg:stLabel("(DAC 增益，设置范围: 0 ~ 31，默认值：22)");
+    cfg:stSpacer(),
+};
+
+-- 3) aec_mode
+local dns_aec_mode_sel_table = {
+        [0] = " disable",
+        [1] = " reduce",
+        [2] = " advance",
+};
+
+local DNS_AEC_MODE_SEL_TABLE = cfg:enumMap("aec_mode_sel_table", dns_aec_mode_sel_table);
+local dns_aec_mode = {};
+dns_aec_mode.cfg = cfg:enum("AEC_MODE:  ", DNS_AEC_MODE_SEL_TABLE, 2);
+depend_item_en_show(bluetooth_en, dns_aec_mode.cfg);
+dns_aec_mode.cfg:setOSize(1);
+-- item_htext
+dns_aec_mode.comment_str = item_comment_context("AEC_MODE", dns_aec_mode_sel_table) .. "默认值：2";
+dns_aec_mode.htext = item_output_htext(dns_aec_mode.cfg, "TCFG_AEC_MODE", 6, nil, dns_aec_mode.comment_str, 1);
+-- item_view
+dns_aec_mode.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_aec_mode.cfg.name .. TAB_TABLE[1]),
+    cfg:enumView(dns_aec_mode.cfg),
+    cfg:stLabel("(AEC 模式，默认值：advance)"),
+    cfg:stSpacer(),
+};
+
+-- 4) dns_ul_eq_en
+local dns_ul_eq_en_sel_table = {
+        [0] = " disable",
+        [1] = " enable",
+};
+local DNS_UL_EQ_EN_SEL_TABLE = cfg:enumMap("ul_eq_en_sel_table", dns_ul_eq_en_sel_table);
+
+local dns_ul_eq_en = {};
+dns_ul_eq_en.cfg = cfg:enum("UL_EQ_EN:  ", DNS_UL_EQ_EN_SEL_TABLE, 1);
+depend_item_en_show(bluetooth_en, dns_ul_eq_en.cfg);
+dns_ul_eq_en.cfg:setOSize(1);
+-- item_htext
+dns_ul_eq_en.comment_str = item_comment_context("UL_EQ_EN", dns_ul_eq_en_sel_table) .. "默认值：1";
+dns_ul_eq_en.htext = item_output_htext(dns_ul_eq_en.cfg, "TCFG_AEC_UL_EQ_EN", 5, nil, dns_ul_eq_en.comment_str, 2);
+-- item_view
+dns_ul_eq_en.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_ul_eq_en.cfg.name .. TAB_TABLE[1]),
+    cfg:enumView(dns_ul_eq_en.cfg),
+    cfg:stLabel("(上行 EQ 使能，默认值：enable)"),
+    cfg:stSpacer(),
+};
+
+
+-- 5) dns_fade_gain
+local dns_fade_gain = {dns_ndt_fade_in = {}, dns_ndt_fade_out = {}, dns_dt_fade_in = {}, dns_dt_fade_out = {}};
+-- 5-1) dns_ndt_fade_in
+dns_fade_gain.dns_ndt_fade_in.cfg = cfg:dbf("NDT_FADE_IN： ", 1.3);
+depend_item_en_show(bluetooth_en, dns_fade_gain.dns_ndt_fade_in.cfg);
+dns_fade_gain.dns_ndt_fade_in.cfg:setOSize(4);
+-- item_htext
+dns_fade_gain.dns_ndt_fade_in.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：1.3";
+dns_fade_gain.dns_ndt_fade_in.htext = item_output_htext(dns_fade_gain.dns_ndt_fade_in.cfg, "TCFG_NDT_FADE_IN", 4, nil, dns_fade_gain.dns_ndt_fade_in.comment_str, 1);
+-- item_view
+dns_fade_gain.dns_ndt_fade_in.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_fade_gain.dns_ndt_fade_in.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_fade_gain.dns_ndt_fade_in.cfg, 0.1, 5.0, 0.1, 1),
+    cfg:stLabel("dB (单端讲话淡入步进，设置范围: 0.1 ~ 5 dB，默认值：1.3 dB)"),
+    cfg:stSpacer(),
+};
+
+-- 5-2) dns_ndt_fade_out
+dns_fade_gain.dns_ndt_fade_out.cfg = cfg:dbf("NDT_FADE_OUT： ", 0.7);
+depend_item_en_show(bluetooth_en, dns_fade_gain.dns_ndt_fade_out.cfg);
+dns_fade_gain.dns_ndt_fade_out.cfg:setOSize(4);
+-- item_htext
+dns_fade_gain.dns_ndt_fade_out.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：0.7";
+dns_fade_gain.dns_ndt_fade_out.htext = item_output_htext(dns_fade_gain.dns_ndt_fade_out.cfg, "TCFG_NDT_FADE_OUT", 4, nil, dns_fade_gain.dns_ndt_fade_out.comment_str, 1);
+-- item_view
+dns_fade_gain.dns_ndt_fade_out.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_fade_gain.dns_ndt_fade_out.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_fade_gain.dns_ndt_fade_out.cfg, 0.1, 5.0, 0.1, 1),
+    cfg:stLabel("dB (单端讲话淡出步进，设置范围: 0.1 ~ 5 dB，默认值：0.7 dB)"),
+    cfg:stSpacer(),
+};
+
+-- 5-3) dns_dt_fade_in
+dns_fade_gain.dns_dt_fade_in.cfg = cfg:dbf("DT_FADE_IN： ", 1.3);
+depend_item_en_show(bluetooth_en, dns_fade_gain.dns_dt_fade_in.cfg);
+dns_fade_gain.dns_dt_fade_in.cfg:setOSize(4);
+-- item_htext
+dns_fade_gain.dns_dt_fade_in.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：1.3";
+dns_fade_gain.dns_dt_fade_in.htext = item_output_htext(dns_fade_gain.dns_dt_fade_in.cfg, "TCFG_DT_FADE_IN", 4, nil, dns_fade_gain.dns_dt_fade_in.comment_str, 1);
+-- item_view
+dns_fade_gain.dns_dt_fade_in.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_fade_gain.dns_dt_fade_in.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_fade_gain.dns_dt_fade_in.cfg, 0.1, 5.0, 0.1, 1),
+    cfg:stLabel("dB (双端讲话淡入步进，设置范围: 0.1 ~ 5 dB，默认值：1.3 dB)"),
+    cfg:stSpacer(),
+};
+
+-- 5-4) dns_dt_fade_out
+dns_fade_gain.dns_dt_fade_out.cfg = cfg:dbf("DT_FADE_OUT： ", 0.7);
+depend_item_en_show(bluetooth_en, dns_fade_gain.dns_dt_fade_out.cfg);
+dns_fade_gain.dns_dt_fade_out.cfg:setOSize(4);
+-- item_htext
+dns_fade_gain.dns_dt_fade_out.comment_str = "设置范围：0.1 ~ 5 dB, float类型(4Bytes), 默认值：0.7";
+dns_fade_gain.dns_dt_fade_out.htext = item_output_htext(dns_fade_gain.dns_dt_fade_out.cfg, "TCFG_DT_FADE_OUT", 4, nil, dns_fade_gain.dns_dt_fade_out.comment_str, 1);
+-- item_view
+dns_fade_gain.dns_dt_fade_out.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_fade_gain.dns_dt_fade_out.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_fade_gain.dns_dt_fade_out.cfg, 0.1, 5.0, 0.1, 1),
+    cfg:stLabel("dB (双端讲话淡出步进，设置范围: 0.1 ~ 5 dB，默认值：0.7 dB)"),
+    cfg:stSpacer(),
+};
+
+-- 6) ndt_max_gain
+local dns_ndt_max_gain = {};
+dns_ndt_max_gain.cfg = cfg:dbf("NDT_MAX_GAIN： ", 12.0);
+depend_item_en_show(bluetooth_en, dns_ndt_max_gain.cfg);
+dns_ndt_max_gain.cfg:setOSize(4);
+-- item_htext
+dns_ndt_max_gain.comment_str = "设置范围：-90.0 ~ 40.0 dB, 默认值：12.0 dB";
+dns_ndt_max_gain.htext = item_output_htext(dns_ndt_max_gain.cfg, "TCFG_AEC_NDT_MAX_GAIN", 4, nil, dns_ndt_max_gain.comment_str, 1);
+-- item_view
+dns_ndt_max_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_ndt_max_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_ndt_max_gain.cfg, -90.0, 40.0, 0.1, 1),
+    cfg:stLabel("(单端讲话放大上限， 设置范围: -90.0 ~ 40.0 dB，默认值：12.0 dB)"),
+    cfg:stSpacer(),
+};
+
+-- 7) ndt_min_gain
+local dns_ndt_min_gain = {};
+dns_ndt_min_gain.cfg = cfg:dbf("NDT_MIN_GAIN： ", 0.0);
+depend_item_en_show(bluetooth_en, dns_ndt_min_gain.cfg);
+dns_ndt_min_gain.cfg:setOSize(4);
+-- item_htext
+dns_ndt_min_gain.comment_str = "设置范围：-90 ~ 40 dB, 默认值：0 dB";
+dns_ndt_min_gain.htext = item_output_htext(dns_ndt_min_gain.cfg, "TCFG_AEC_NDT_MIN_GAIN", 4, nil, dns_ndt_min_gain.comment_str, 1);
+-- item_view
+dns_ndt_min_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_ndt_min_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_ndt_min_gain.cfg, -90.0, 40.0, 0.1, 1),
+    cfg:stLabel("(单端讲话放大下限， 设置范围: -90.0 ~ 40.0 dB，默认值：0 dB)"),
+    cfg:stSpacer(),
+};
+
+-- 8) ndt_speech_thr
+local dns_ndt_speech_thr = {};
+dns_ndt_speech_thr.cfg = cfg:dbf("NDT_SPEECH_THR： ", -50.0);
+depend_item_en_show(bluetooth_en, dns_ndt_speech_thr.cfg);
+dns_ndt_speech_thr.cfg:setOSize(4);
+-- item_htext
+dns_ndt_speech_thr.comment_str = "设置范围：-70.0 ~ -40.0 dB, 默认值：-50.0 dB";
+dns_ndt_speech_thr.htext = item_output_htext(dns_ndt_speech_thr.cfg, "TCFG_AEC_NDT_SPEECH_THR", 4, nil, dns_ndt_speech_thr.comment_str, 1);
+-- item_view
+dns_ndt_speech_thr.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_ndt_speech_thr.cfg.name),
+    cfg:dspinView(dns_ndt_speech_thr.cfg, -70.0, -40.0, 0.1, 1),
+    cfg:stLabel("(单端讲话放大阈值， 设置范围: -70.0 ~ -40.0 dB，默认值：-50.0 dB)"),
+    cfg:stSpacer(),
+};
+
+
+-- 9) dt_max_gain 
+local dns_dt_max_gain = {};
+dns_dt_max_gain.cfg = cfg:dbf("DT_MAX_GAIN： ", 12.0);
+depend_item_en_show(bluetooth_en, dns_dt_max_gain.cfg);
+dns_dt_max_gain.cfg:setOSize(4);
+-- item_htext
+dns_dt_max_gain.comment_str = "设置范围：-90 ~ 40.0 dB, 默认值：12.0 dB";
+dns_dt_max_gain.htext = item_output_htext(dns_dt_max_gain.cfg, "TCFG_AEC_DT_MAX_GAIN", 4, nil, dns_dt_max_gain.comment_str, 1);
+-- item_view
+dns_dt_max_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_dt_max_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_dt_max_gain.cfg, -90.0, 40.0, 0.1, 1),
+    cfg:stLabel("(双端讲话放大上限， 设置范围: -90 ~ 40.0 dB，默认值：12.0 dB)"),
+    cfg:stSpacer(),
+};
+
+-- 10) dt_min_gain
+local dns_dt_min_gain = {};
+dns_dt_min_gain.cfg = cfg:dbf("DT_MIN_GAIN： ", 0.0);
+depend_item_en_show(bluetooth_en, dns_dt_min_gain.cfg);
+dns_dt_min_gain.cfg:setOSize(4);
+-- item_htext
+dns_dt_min_gain.comment_str = "设置范围：-90.0 ~ 40.0 dB, 默认值：0 dB";
+dns_dt_min_gain.htext = item_output_htext(dns_dt_min_gain.cfg, "TCFG_AEC_DT_MIN_GAIN", 4, nil, dns_dt_min_gain.comment_str, 1);
+-- item_view
+dns_dt_min_gain.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_dt_min_gain.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_dt_min_gain.cfg, -90.0, 40.0, 0.1, 1),
+    cfg:stLabel("(双端讲话放大下限， 设置范围: -90.0 ~ 40.0 dB，默认值：0 dB)"),
+    cfg:stSpacer(),
+};
+
+
+-- 11) dns_dt_speech_thr
+local dns_dt_speech_thr = {};
+dns_dt_speech_thr.cfg = cfg:dbf("DT_SPEECH_THR:", -40.0);
+depend_item_en_show(bluetooth_en, dns_dt_speech_thr.cfg);
+dns_dt_speech_thr.cfg:setOSize(4);
+-- item_htext
+dns_dt_speech_thr.comment_str = "设置范围：-70.0 ~ -40.0 dB, 默认值：-40.0 dB";
+dns_dt_speech_thr.htext = item_output_htext(dns_dt_speech_thr.cfg, "TCFG_AEC_DT_SPEECH_THR", 4, nil, dns_dt_speech_thr.comment_str, 1);
+-- item_view
+dns_dt_speech_thr.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_dt_speech_thr.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_dt_speech_thr.cfg, -70.0, -40.0, 0.1, 1),
+    cfg:stLabel("(双端讲话放大阈值， 设置范围: -70.0 ~ -40.0 dB，默认值：-40.0 dB)"),
+    cfg:stSpacer(),
+};
+
+-- 12) dns_echo_present_thr
+local dns_echo_present_thr = {};
+dns_echo_present_thr.cfg = cfg:dbf("ECHO_PRESENT_THR:  ", -70.0);
+depend_item_en_show(bluetooth_en, dns_echo_present_thr.cfg);
+dns_echo_present_thr.cfg:setOSize(4);
+-- item_htext
+dns_echo_present_thr.comment_str = "设置范围：-70.0 ~ -40.0 dB, 默认值：-70.0 dB";
+dns_echo_present_thr.htext = item_output_htext(dns_echo_present_thr.cfg, "TCFG_AEC_ECHO_PRESENT_THR", 4, nil, dns_echo_present_thr.comment_str, 1);
+-- item_view
+dns_echo_present_thr.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_echo_present_thr.cfg.name),
+    cfg:dspinView(dns_echo_present_thr.cfg, -70.0, -40.0, 0.1, 1),
+    cfg:stLabel("(单端双端讲话阈值， 设置范围: -70.0 ~ -40.0 dB，默认值：-70.0 dB)"),
+    cfg:stSpacer(),
+};
+
+-- 13) dns_aec_dt_aggress
+local dns_aec_dt_aggress = {};
+dns_aec_dt_aggress.cfg = cfg:dbf("AEC_DT_AGGRES： ", 1.0);
+depend_item_en_show(bluetooth_en, dns_aec_dt_aggress.cfg);
+dns_aec_dt_aggress.cfg:setOSize(4);
+-- item_htext
+dns_aec_dt_aggress.comment_str = "设置范围：1.0 ~ 5.0, float类型(4Bytes), 默认值：1.0";
+dns_aec_dt_aggress.htext = item_output_htext(dns_aec_dt_aggress.cfg, "TCFG_AEC_AEC_DT_AGGRESS", 4, nil, dns_aec_dt_aggress.comment_str, 1);
+-- item_view
+dns_aec_dt_aggress.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_aec_dt_aggress.cfg.name),
+    cfg:dspinView(dns_aec_dt_aggress.cfg, 1.0, 5.0, 0.1, 1),
+    cfg:stLabel("(原音回音追踪等级， 设置范围: 1.0 ~ 5.0，默认值：1.0)"),
+    cfg:stSpacer(),
+};
+
+-- 14) dns_aec_refengthr
+local dns_aec_refengthr = {};
+dns_aec_refengthr.cfg = cfg:dbf("AEC_REFENGTHR： ", -70.0);
+depend_item_en_show(bluetooth_en, dns_aec_refengthr.cfg);
+dns_aec_refengthr.cfg:setOSize(4);
+-- item_htext
+dns_aec_refengthr.comment_str = "设置范围：-90.0 ~ -60.0 dB, float类型(4Bytes), 默认值：-70.0";
+dns_aec_refengthr.htext = item_output_htext(dns_aec_refengthr.cfg, "TCFG_AEC_REFENGTHR", 4, nil, dns_aec_refengthr.comment_str, 1);
+-- item_view
+dns_aec_refengthr.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_aec_refengthr.cfg.name),
+    cfg:dspinView(dns_aec_refengthr.cfg, -90.0, -60.0, 0.1, 1),
+    cfg:stLabel("(进入回音消除参考值， 设置范围: -90.0 ~ -60.0 dB，默认值：-70.0 dB)"),
+    cfg:stSpacer(),
+};
+
+-- 15) dns_es_aggress_factor
+local dns_es_aggress_factor = {};
+dns_es_aggress_factor.cfg = cfg:dbf("ES_AGGRESS_FACTOR： ", -3.0);
+depend_item_en_show(bluetooth_en, dns_es_aggress_factor.cfg);
+dns_es_aggress_factor.cfg:setOSize(4);
+-- item_htext
+dns_es_aggress_factor.comment_str = "设置范围：-1.0 ~ -5.0, float类型(4Bytes), 默认值：-3.0";
+dns_es_aggress_factor.htext = item_output_htext(dns_es_aggress_factor.cfg, "TCFG_ES_AGGRESS_FACTOR", 4, nil, dns_es_aggress_factor.comment_str, 1);
+-- item_view
+dns_es_aggress_factor.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_es_aggress_factor.cfg.name),
+    cfg:dspinView(dns_es_aggress_factor.cfg, -5.0, -1.0, 0.1, 1),
+    cfg:stLabel("(回音前级动态压制,越小越强， 设置范围: -5.0 ~ -1.0，默认值：-3.0)"),
+    cfg:stSpacer(),
+};
+
+-- 16) dns_es_min_suppress
+--      //回音后级动态压制,越大越强,default: 4.f(0 ~ 10)
+local dns_es_min_suppress = {};
+dns_es_min_suppress.cfg = cfg:dbf("ES_MIN_SUPPRESS： ", 4.0);
+depend_item_en_show(bluetooth_en, dns_es_min_suppress.cfg);
+dns_es_min_suppress.cfg:setOSize(4);
+-- item_htext
+dns_es_min_suppress.comment_str = "设置范围：0 ~ 10.0, float类型(4Bytes), 默认值：4.0";
+dns_es_min_suppress.htext = item_output_htext(dns_es_min_suppress.cfg, "TCFG_ES_MIN_SUPPRESS", 4, nil, dns_es_min_suppress.comment_str, 1);
+-- item_view
+dns_es_min_suppress.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_es_min_suppress.cfg.name),
+    cfg:dspinView(dns_es_min_suppress.cfg, 0.0, 10.0, 0.1, 1),
+    cfg:stLabel("(回音后级静态压制,越大越强， 设置范围: 0 ~ 10.0，默认值：4.0)"),
+    cfg:stSpacer(),
+};
+
+-- 17) dns_ans_aggress
+--  //噪声前级动态压制,越大越强default: 1.25f(1 ~ 2)
+local dns_ans_aggress = {};
+dns_ans_aggress.cfg = cfg:dbf("DNS_OverDrive：", 1.0);
+depend_item_en_show(bluetooth_en, dns_ans_aggress.cfg);
+dns_ans_aggress.cfg:setOSize(4);
+-- item_htext
+dns_ans_aggress.comment_str = "设置范围：1 ~ 2, float类型(4Bytes), 默认值：1.0";
+dns_ans_aggress.htext = item_output_htext(dns_ans_aggress.cfg, "TCFG_AEC_ANS_AGGRESS", 4, nil, dns_ans_aggress.comment_str, 1);
+-- item_view
+dns_ans_aggress.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_ans_aggress.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_ans_aggress.cfg, 0.0, 6.0, 0.1, 1),
+    cfg:stLabel("(降噪强度,越大降噪越强， 设置范围: 0 ~ 6.0，默认值：1.0)"),
+    cfg:stSpacer(),
+};
+
+-- 18) dns_ans_suppress
+-- float ans_suppress; //噪声后级动态压制,越小越强default: 0.04f(0 ~ 1)
+local dns_ans_suppress = {};
+dns_ans_suppress.cfg = cfg:dbf("DNS_GainFloor：", 0.1);
+depend_item_en_show(bluetooth_en, dns_ans_suppress.cfg);
+dns_ans_suppress.cfg:setOSize(4);
+-- item_htext
+dns_ans_suppress.comment_str = "设置范围：0 ~ 1, float类型(4Bytes), 默认值：0.1";
+dns_ans_suppress.htext = item_output_htext(dns_ans_suppress.cfg, "TCFG_AEC_ANS_SUPPRESS", 4, nil, dns_ans_suppress.comment_str, 1);
+-- item_view
+dns_ans_suppress.hbox_view = cfg:hBox {
+    cfg:stLabel(dns_ans_suppress.cfg.name .. TAB_TABLE[1]),
+    cfg:dspinView(dns_ans_suppress.cfg, 0.0, 1.0, 0.01, 2),
+    cfg:stLabel("(增益最小值控制,越小降噪越强， 设置范围: 0 ~ 1.0，默认值：0.1)"),
+    cfg:stSpacer(),
+};
+
+
+
+--========================= AEC输出汇总  ============================
+local aec_dns_item_table = {
+    -- aec cfg
+        dns_mic_analog_gain.cfg, -- 1 Bytes
+        dns_dac_analog_gain.cfg, -- 1 Bytes
+        dns_aec_mode.cfg,        -- 1 Bytes
+        dns_ul_eq_en.cfg,        -- 1 Bytes
+    -- AGC 
+        dns_fade_gain.dns_ndt_fade_in.cfg,        -- 4 Bytes
+        dns_fade_gain.dns_ndt_fade_out.cfg,        -- 4 Bytes
+        dns_fade_gain.dns_dt_fade_in.cfg,        -- 4 Bytes
+        dns_fade_gain.dns_dt_fade_out.cfg,        -- 4 Bytes
+        dns_ndt_max_gain.cfg,     -- 4 Bytes
+        dns_ndt_min_gain.cfg,     -- 4 Bytes
+        dns_ndt_speech_thr.cfg,   -- 4 Bytes
+        dns_dt_max_gain.cfg,      -- 4 Bytes
+        dns_dt_min_gain.cfg,      -- 4 Bytes
+        dns_dt_speech_thr.cfg,      -- 4 Bytes
+        dns_echo_present_thr.cfg,   -- 4 Bytes
+    -- AEC
+        dns_aec_dt_aggress.cfg,   -- 4 Bytes
+        dns_aec_refengthr.cfg,    -- 4 Bytes
+    -- ES
+        dns_es_aggress_factor.cfg,  -- 4 Bytes
+        dns_es_min_suppress.cfg,    -- 4 Bytes
+    -- ANS
+        dns_ans_aggress.cfg,    -- 4 Bytes
+        dns_ans_suppress.cfg,   -- 4 Bytes
+};
+local aec_dns_output_type_group_view = {};
+
+aec_dns_output_type_group_view.agc_type_group_view = cfg:stGroup("AGC",
+    cfg:vBox {
+        dns_fade_gain.dns_ndt_fade_in.hbox_view,
+        dns_fade_gain.dns_ndt_fade_out.hbox_view,
+        dns_fade_gain.dns_dt_fade_in.hbox_view,
+        dns_fade_gain.dns_dt_fade_out.hbox_view,
+        dns_ndt_max_gain.hbox_view,
+        dns_ndt_min_gain.hbox_view,
+        dns_ndt_speech_thr.hbox_view,
+        dns_dt_max_gain.hbox_view,
+        dns_dt_min_gain.hbox_view,
+        dns_dt_speech_thr.hbox_view,
+        dns_echo_present_thr.hbox_view,
+    }
+);
+
+aec_dns_output_type_group_view.aec_type_group_view = cfg:stGroup("AEC",
+    cfg:vBox {
+        dns_aec_dt_aggress.hbox_view,
+        dns_aec_refengthr.hbox_view,
+    }
+);
+
+aec_dns_output_type_group_view.es_type_group_view = cfg:stGroup("ES",
+    cfg:vBox {
+        dns_es_aggress_factor.hbox_view,
+        dns_es_min_suppress.hbox_view,
+    }
+);
+
+aec_dns_output_type_group_view.ans_type_group_view = cfg:stGroup("DNS",
+    cfg:vBox {
+        dns_ans_aggress.hbox_view,
+        dns_ans_suppress.hbox_view,
+    }
+);
+
+local aec_dns_output_view_table = {
+        aec_global.dns_reference_book_view,
+    -- aec cfg
+        dns_mic_analog_gain.hbox_view,
+        dns_dac_analog_gain.hbox_view,
+        dns_aec_mode.hbox_view,
+        dns_ul_eq_en.hbox_view,
+    -- AGC 
+        aec_dns_output_type_group_view.agc_type_group_view,
+    -- AEC
+        aec_dns_output_type_group_view.aec_type_group_view,
+    -- ES
+        aec_dns_output_type_group_view.es_type_group_view,
+    -- ANS
+        aec_dns_output_type_group_view.ans_type_group_view,
+};
+
+-- A. 输出htext
+local aec_dns_output_htext_table = {
+        aec_global.aec_start_comment_str,
+-- aec cfg
+        dns_mic_analog_gain.htext,
+        dns_dac_analog_gain.htext,
+        dns_aec_mode.htext,
+        dns_ul_eq_en.htext,
+    -- AGC 
+        dns_fade_gain.dns_ndt_fade_in.htext,
+        dns_fade_gain.dns_ndt_fade_out.htext,
+        dns_fade_gain.dns_dt_fade_in.htext,
+        dns_fade_gain.dns_dt_fade_out.htext,
+        dns_ndt_max_gain.htext,
+        dns_ndt_min_gain.htext,
+        dns_ndt_speech_thr.htext,
+        dns_dt_max_gain.htext,
+        dns_dt_min_gain.htext,
+        dns_dt_speech_thr.htext,
+        dns_echo_present_thr.htext,
+    -- AEC
+        dns_aec_dt_aggress.htext,
+        dns_aec_refengthr.htext,
+    -- ES
+        dns_es_aggress_factor.htext,
+        dns_es_min_suppress.htext,
+    -- ANS
+        dns_ans_aggress.htext,
+        dns_ans_suppress.htext,
+};
+
+aec_global.aec_dns_output_view_table_group_view = cfg:vBox(aec_dns_output_view_table);
+--aec_cfg_depend_show(mic_analog_gain.cfg, aec_cfg_type.cfg, 0, aec_global.aec_output_view_table_group_view);
+--
+aec_cfg_type.cfg:setValChangeHook(function()
+        if (aec_cfg_type.cfg.val == 0) then
+            aec_global.aec_output_view_table_group_view:setHide(false);
+            aec_global.aec_dns_output_view_table_group_view:setHide(true);
+
+        else
+            aec_global.aec_output_view_table_group_view:setHide(true);
+            aec_global.aec_dns_output_view_table_group_view:setHide(false);
+        end
+end);
+
+-- B. 输出ctext：无
+
+-- C. 输出bin：无
+local aec_dns_output_bin = cfg:group("AEC_DNS_OUTPUT_BIN",
+	BIN_ONLY_CFG["BT_CFG"].aec_dns.id,
+    1,
+    aec_dns_item_table
+);
+
+-- AEC & AEC_DNS 显示
+local aec_group_view = cfg:stGroup(" 通话参数配置",
+    cfg:vBox {
+        aec_cfg_type.hbox_view,
+        aec_global.aec_output_view_table_group_view,
+        aec_global.aec_dns_output_view_table_group_view
+    }
+);
+
+-- E. 默认值, 见汇总
+--
+
+-- F. bindGroup
 cfg:bindStGroup(aec_group_view, aec_output_bin);
+
 
 --[[===================================================================================
 =============================== 配置子项7: MIC类型配置 ================================
@@ -711,100 +1298,107 @@ local MIC_LDO_VOL_SEL_TABLE = cfg:enumMap("电容选择", mic_ldo_vol_sel_table)
 local mic_type_sel_comment_str = module_comment_context("MIC类型配置");
 
 -- 1) 省电容选择
-local mic_capless_sel = cfg:enum("MIC 电容方案选择：", MIC_CAPLESS_SEL_TABLE, 1);
-depend_item_en_show(bluetooth_en, mic_capless_sel);
-mic_capless_sel:setOSize(1);
+local mic_capless_sel = {};
+mic_capless_sel.val = cfg:enum("MIC 电容方案选择：", MIC_CAPLESS_SEL_TABLE, 1);
+depend_item_en_show(bluetooth_en, mic_capless_sel.val);
+mic_capless_sel.val:setOSize(1);
 -- item_htext
-local mic_capless_sel_comment_str = item_comment_context("MIC电容方案选择", mic_capless_sel_table);
-local mic_capless_sel_htext = item_output_htext(mic_capless_sel, "TCFG_MIC_CAPLESS", 5, nil, mic_capless_sel_comment_str, 1);
+mic_capless_sel.comment_str = item_comment_context("MIC电容方案选择", mic_capless_sel_table);
+mic_capless_sel.htext = item_output_htext(mic_capless_sel.val, "TCFG_MIC_CAPLESS", 5, nil, mic_capless_sel.comment_str, 1);
 -- item_view
-local mic_capless_sel_hbox_view = cfg:hBox {
-	cfg:stLabel(mic_capless_sel.name),
-    cfg:enumView(mic_capless_sel),
+mic_capless_sel.hbox_view = cfg:hBox {
+	cfg:stLabel(mic_capless_sel.val.name),
+    cfg:enumView(mic_capless_sel.val),
 	cfg:stLabel(" (硅 MIC 要选不省电容模式)"),
     cfg:stSpacer();
 };
 
 -- 2) 省电容偏置电压
-local mic_bias_vol_sel = cfg:enum("MIC 省电容方案偏置电压选择：", MIC_BIAS_VOL_SEL_TABLE, 16);
-mic_bias_vol_sel:setOSize(1);
+local mic_bias_vol_sel = {};
+mic_bias_vol_sel.val = cfg:enum("MIC 省电容方案偏置电压选择：", MIC_BIAS_VOL_SEL_TABLE, 16);
+mic_bias_vol_sel.val:setOSize(1);
 -- item_htext
-local mic_bias_vol_sel_comment_str = item_comment_context("MIC省电容方案偏置电压选择", mic_bias_vol_sel_table);
-local mic_bias_vol_sel_htext = item_output_htext(mic_bias_vol_sel, "TCFG_MIC_BIAS_RES", 5, nil, mic_bias_vol_sel_comment_str, 1);
-mic_bias_vol_sel:addDeps{bluetooth_en, mic_capless_sel};
-mic_bias_vol_sel:setDepChangeHook(function ()
-    mic_bias_vol_sel:setShow(((bluetooth_en.val == 1) and (mic_capless_sel.val == 1)) ~= false);
+mic_bias_vol_sel.comment_str = item_comment_context("MIC省电容方案偏置电压选择", mic_bias_vol_sel_table);
+mic_bias_vol_sel.htext = item_output_htext(mic_bias_vol_sel.val, "TCFG_MIC_BIAS_RES", 5, nil, mic_bias_vol_sel.comment_str, 1);
+mic_bias_vol_sel.val:addDeps{bluetooth_en, mic_capless_sel.val};
+mic_bias_vol_sel.val:setDepChangeHook(function ()
+    mic_bias_vol_sel.val:setShow(((bluetooth_en.val == 1) and (mic_capless_sel.val.val == 1)) ~= false);
 end);
 -- item_view
-local mic_bias_vol_sel_hbox_view = cfg:hBox {
-	cfg:stLabel(mic_bias_vol_sel.name),
-    cfg:enumView(mic_bias_vol_sel),
+mic_bias_vol_sel.hbox_view = cfg:hBox {
+	cfg:stLabel(mic_bias_vol_sel.val.name),
+    cfg:enumView(mic_bias_vol_sel.val),
     cfg:stSpacer();
 };
 
 -- 3) MIC ldo电压选择
-local mic_ldo_vol_sel = cfg:enum("MIC LDO 电压选择：", MIC_LDO_VOL_SEL_TABLE, 2);
-depend_item_en_show(bluetooth_en, mic_ldo_vol_sel);
-mic_ldo_vol_sel:setOSize(1);
+local mic_ldo_vol_sel = {}
+mic_ldo_vol_sel.val = cfg:enum("MIC LDO 电压选择：", MIC_LDO_VOL_SEL_TABLE, 2);
+depend_item_en_show(bluetooth_en, mic_ldo_vol_sel.val);
+mic_ldo_vol_sel.val:setOSize(1);
 -- item_htext
-local mic_ldo_vol_sel_comment_str = item_comment_context("MIC LDO电压选择", mic_ldo_vol_sel_table);
-local mic_ldo_vol_sel_htext = item_output_htext(mic_ldo_vol_sel, "TCFG_MIC_LDO_VSEL", 5, nil, mic_ldo_vol_sel_comment_str, 2);
+mic_ldo_vol_sel.comment_str = item_comment_context("MIC LDO电压选择", mic_ldo_vol_sel_table);
+mic_ldo_vol_sel.htext = item_output_htext(mic_ldo_vol_sel.val, "TCFG_MIC_LDO_VSEL", 5, nil, mic_ldo_vol_sel.comment_str, 2);
 -- item_view
-local mic_ldo_vol_sel_hbox_view = cfg:hBox {
-	cfg:stLabel(mic_ldo_vol_sel.name),
-    cfg:enumView(mic_ldo_vol_sel),
+mic_ldo_vol_sel.hbox_view = cfg:hBox {
+	cfg:stLabel(mic_ldo_vol_sel.val.name),
+    cfg:enumView(mic_ldo_vol_sel.val),
     cfg:stSpacer();
 };
 
 --========================= MIC 类型输出汇总  ============================
-local mic_type_item_table = {
-    mic_capless_sel,
-    mic_bias_vol_sel,
-    mic_ldo_vol_sel,
+local mic_type = {};
+
+mic_type.item_table = {
+    mic_capless_sel.val,
+    mic_bias_vol_sel.val,
+    mic_ldo_vol_sel.val,
 };
 
-local mic_type_output_view_table = {
+mic_type.output_view_table = {
 };
 
 -- A. 输出htext
-local mic_type_htext_output_table = {
+mic_type.htext_output_table = {
     mic_type_sel_comment_str,
-    mic_capless_sel_htext,
-    mic_bias_vol_sel_htext,
-    mic_ldo_vol_sel_htext,
+    mic_capless_sel.htext,
+    mic_bias_vol_sel.htext,
+    mic_ldo_vol_sel.htext,
 };
 
 -- B. 输出ctext：无
 
 -- C. 输出bin
-local mic_type_output_bin = cfg:group("MIC_TYPE_BIN",
+mic_type.output_bin = cfg:group("MIC_TYPE_BIN",
 	BIN_ONLY_CFG["HW_CFG"].mic_type.id,
 	1,
-    mic_type_item_table
+    mic_type.item_table
 );
 
 -- D. 显示
-local mic_type_group_view = cfg:stGroup("MIC 类型配置",
+mic_type.group_view = cfg:stGroup("MIC 类型配置",
     cfg:vBox {
-        mic_capless_sel_hbox_view,
-        mic_bias_vol_sel_hbox_view,
-        mic_ldo_vol_sel_hbox_view,
+        mic_capless_sel.hbox_view,
+        mic_bias_vol_sel.hbox_view,
+        mic_ldo_vol_sel.hbox_view,
     }
 );
 
 -- E. 默认值, 见汇总
 
 -- F. bindGroup
-cfg:bindStGroup(mic_type_group_view, mic_type_output_bin);
+cfg:bindStGroup(mic_type.group_view, mic_type.output_bin);
 
 --[[===================================================================================
 =============================== 配置子项8: 对耳配对码 =================================
 ====================================================================================--]]
-local tws_pair_code = cfg:i32("对耳配对码(2字节)", 0xFFFF);
-depend_item_en_show(bluetooth_en, tws_pair_code);
-tws_pair_code:setOSize(2);
+local tws_pair_code = {};
+
+tws_pair_code.val = cfg:i32("对耳配对码(2字节)", 0xFFFF);
+depend_item_en_show(bluetooth_en, tws_pair_code.val);
+tws_pair_code.val:setOSize(2);
 -- 约束
-tws_pair_code:addConstraint(
+tws_pair_code.val:addConstraint(
     function ()
         local warn_str;
         if cfg.lang == "zh" then
@@ -813,30 +1407,30 @@ tws_pair_code:addConstraint(
             warn_str = "Please input 2 Bytes Pair Code";
         end
 
-        return (tws_pair_code.val >= 0 and tws_pair_code.val <= 0xFFFF)  or warn_str;
+        return (tws_pair_code.val.val >= 0 and tws_pair_code.val.val <= 0xFFFF)  or warn_str;
     end
 );
 
 -- A. 输出htext
-local tws_pair_code_comment_str = "对耳配对码(2 Bytes)";
-local tws_pair_code_htext = item_output_htext_hex(tws_pair_code, "TCFG_TWS_PAIR_CODE", 5, nil, tws_pair_code_comment_str, 2);
+tws_pair_code.comment_str = "对耳配对码(2 Bytes)";
+tws_pair_code.htext = item_output_htext_hex(tws_pair_code.val, "TCFG_TWS_PAIR_CODE", 5, nil, tws_pair_code.comment_str, 2);
 
 -- B. 输出ctext：无
 
 -- C. 输出bin：无
-local tws_pair_code_output_bin = cfg:group("TWS_PAIR_CODE_CFG",
+tws_pair_code.output_bin = cfg:group("TWS_PAIR_CODE_CFG",
 	BIN_ONLY_CFG["BT_CFG"].tws_pair_code.id,
 	1,
 	{
-	    tws_pair_code,
+	    tws_pair_code.val,
 	}
 );
 
 -- D. 显示
-local tws_pair_code_group_view = cfg:stGroup("",
+tws_pair_code.group_view = cfg:stGroup("",
     cfg:hBox {
         cfg:stLabel("对耳配对码配置：0x"),
-        cfg:hexInputView(tws_pair_code),
+        cfg:hexInputView(tws_pair_code.val),
         cfg:stLabel("(2字节)"),
         cfg:stSpacer(),
     }
@@ -845,7 +1439,7 @@ local tws_pair_code_group_view = cfg:stGroup("",
 -- E. 默认值, 见汇总
 
 -- F. bindGroup：无
-cfg:bindStGroup(tws_pair_code_group_view, tws_pair_code_output_bin);
+cfg:bindStGroup(tws_pair_code.group_view, tws_pair_code.output_bin);
 
 
 --[[===================================================================================
@@ -858,20 +1452,22 @@ local need_key_on_table = {
 
 local NEED_KEY_ON_TABLE = cfg:enumMap("是否需要按键开机列表", need_key_on_table);
 
-local power_on_need_key_on = cfg:enum("是否需要按键开机配置（只输出宏）：", NEED_KEY_ON_TABLE, 1);
-depend_item_en_show(bluetooth_en, power_on_need_key_on);
+local power_on_need_key_on = {};
+
+power_on_need_key_on.val = cfg:enum("是否需要按键开机配置（只输出宏）：", NEED_KEY_ON_TABLE, 1);
+depend_item_en_show(bluetooth_en, power_on_need_key_on.val);
 -- A. 输出htext
-local power_on_need_key_on_comment_str = item_comment_context("是否需要按键开机配置", need_key_on_table);
-local power_on_need_key_on_htext = item_output_htext(power_on_need_key_on, "TCFG_POWER_ON_KEY_ENABLE", 3, nil, power_on_need_key_on_comment_str, 2);
+power_on_need_key_on.comment_str = item_comment_context("是否需要按键开机配置", need_key_on_table);
+power_on_need_key_on.htext = item_output_htext(power_on_need_key_on.val, "TCFG_POWER_ON_KEY_ENABLE", 3, nil, power_on_need_key_on.comment_str, 2);
 
 -- B. 输出ctext：无
 -- C. 输出bin：无
 
 -- D. 显示
-local power_on_need_key_on_group_view = cfg:stGroup("",
+power_on_need_key_on.group_view = cfg:stGroup("",
     cfg:hBox {
-        cfg:stLabel(power_on_need_key_on.name),
-        cfg:enumView(power_on_need_key_on),
+        cfg:stLabel(power_on_need_key_on.val.name),
+        cfg:enumView(power_on_need_key_on.val),
         cfg:stSpacer(),
     }
 );
@@ -1095,98 +1691,104 @@ local LRC_CHANGE_MODE_TABLE = cfg:enumMap("LRC切换使能", lrc_change_mode_tab
 -- item_htext
 local lrc_start_comment_str = module_comment_context("LRC参数配置");
 
--- 1) lrc_ws_inc
-local lrc_ws_inc = cfg:i32("lrc_ws_inc", 480);
-depend_item_en_show(bluetooth_en, lrc_ws_inc);
-lrc_ws_inc:setOSize(2);
+local lrc_ws_inc = {};
+
+-- 1) lrc_ws_inc.val
+lrc_ws_inc.val = cfg:i32("lrc_ws_inc", 480);
+depend_item_en_show(bluetooth_en, lrc_ws_inc.val);
+lrc_ws_inc.val:setOSize(2);
 -- item_htext
-local lrc_ws_inc_comment_str = "设置范围：480 ~ 600, 默认值：480";
-local lrc_ws_inc_htext = item_output_htext(lrc_ws_inc, "TCFG_LRC_WS_INC", 4, nil, lrc_ws_inc_comment_str, 1);
+lrc_ws_inc.comment_str = "设置范围：480 ~ 600, 默认值：480";
+lrc_ws_inc.htext = item_output_htext(lrc_ws_inc.val, "TCFG_LRC_WS_INC", 4, nil, lrc_ws_inc.comment_str, 1);
 -- item_view
-local lrc_ws_inc_hbox_view = cfg:hBox {
-    cfg:stLabel(lrc_ws_inc.name .. "：" .. TAB_TABLE[1]),
-    cfg:ispinView(lrc_ws_inc, 480, 600, 1),
+lrc_ws_inc.hbox_view = cfg:hBox {
+    cfg:stLabel(lrc_ws_inc.val.name .. "：" .. TAB_TABLE[1]),
+    cfg:ispinView(lrc_ws_inc.val, 480, 600, 1),
     cfg:stLabel("（lrc窗口步进值，单位：us，设置范围: 480 ~ 600, 默认值480）");
     cfg:stSpacer(),
 };
 
--- 2) lrc_ws_init
-local lrc_ws_init = cfg:i32("lrc_ws_init", 400);
-depend_item_en_show(bluetooth_en, lrc_ws_init);
-lrc_ws_init:setOSize(2);
+-- 2) lrc_ws_init.val
+local lrc_ws_init = {};
+lrc_ws_init.val = cfg:i32("lrc_ws_init", 400);
+depend_item_en_show(bluetooth_en, lrc_ws_init.val);
+lrc_ws_init.val:setOSize(2);
 -- item_htext
-local lrc_ws_init_comment_str = "设置范围：400 ~ 600, 默认值：480";
-local lrc_ws_init_htext = item_output_htext(lrc_ws_init, "TCFG_LRC_WS_INIT", 4, nil, lrc_ws_init_comment_str, 1);
+lrc_ws_init.comment_str = "设置范围：400 ~ 600, 默认值：480";
+lrc_ws_init.htext = item_output_htext(lrc_ws_init.val, "TCFG_LRC_WS_INIT", 4, nil, lrc_ws_init.comment_str, 1);
 -- item_view
-local lrc_ws_init_hbox_view = cfg:hBox {
-    cfg:stLabel(lrc_ws_init.name .. "：" .. TAB_TABLE[1]),
-    cfg:ispinView(lrc_ws_init, 400, 600, 1),
+lrc_ws_init.hbox_view = cfg:hBox {
+    cfg:stLabel(lrc_ws_init.val.name .. "：" .. TAB_TABLE[1]),
+    cfg:ispinView(lrc_ws_init.val, 400, 600, 1),
     cfg:stLabel("（lrc窗口初始值，单位：us，设置范围: 400 ~ 600, 默认值400）");
     cfg:stSpacer(),
 };
 
--- 3) btosc_ws_inc
-local btosc_ws_inc = cfg:i32("btosc_ws_inc", 480);
-depend_item_en_show(bluetooth_en, btosc_ws_inc);
-btosc_ws_inc:setOSize(2);
+-- 3) btosc_ws_inc.val
+local btosc_ws_inc = {};
+btosc_ws_inc.val = cfg:i32("btosc_ws_inc", 480);
+depend_item_en_show(bluetooth_en, btosc_ws_inc.val);
+btosc_ws_inc.val:setOSize(2);
 -- item_htext
-local btosc_ws_inc_comment_str = "设置范围：480 ~ 600, 默认值：480";
-local btosc_ws_inc_htext = item_output_htext(btosc_ws_inc, "TCFG_BTOSC_WS_INC", 4, nil, btosc_ws_inc_comment_str, 1);
+btosc_ws_inc.comment_str = "设置范围：480 ~ 600, 默认值：480";
+btosc_ws_inc.htext = item_output_htext(btosc_ws_inc.val, "TCFG_BTOSC_WS_INC", 4, nil, btosc_ws_inc.comment_str, 1);
 -- item_view
-local btosc_ws_inc_hbox_view = cfg:hBox {
-    cfg:stLabel(btosc_ws_inc.name .. "：" .. TAB_TABLE[1]),
-    cfg:ispinView(btosc_ws_inc, 480, 600, 1),
+btosc_ws_inc.hbox_view = cfg:hBox {
+    cfg:stLabel(btosc_ws_inc.val.name .. "：" .. TAB_TABLE[1]),
+    cfg:ispinView(btosc_ws_inc.val, 480, 600, 1),
     cfg:stLabel("（btosc窗口步进值，单位：us，设置范围: 480 ~ 600, 默认值480）");
     cfg:stSpacer(),
 };
 
--- 4) btosc_ws_init
-local btosc_ws_init = cfg:i32("btosc_ws_init", 140);
-depend_item_en_show(bluetooth_en, btosc_ws_init);
-btosc_ws_init:setOSize(2);
+-- 4) btosc_ws_init.val
+local btosc_ws_init = {};
+btosc_ws_init.val = cfg:i32("btosc_ws_init", 140);
+depend_item_en_show(bluetooth_en, btosc_ws_init.val);
+btosc_ws_init.val:setOSize(2);
 -- item_htext
-local btosc_ws_init_comment_str = "设置范围：140 ~ 480, 默认值：140";
-local btosc_ws_init_htext = item_output_htext(btosc_ws_init, "TCFG_BTOSC_WS_INIT", 4, nil, btosc_ws_init_comment_str, 1);
+btosc_ws_init.comment_str = "设置范围：140 ~ 480, 默认值：140";
+btosc_ws_init.htext = item_output_htext(btosc_ws_init.val, "TCFG_BTOSC_WS_INIT", 4, nil, btosc_ws_init.comment_str, 1);
 -- item_view
-local btosc_ws_init_hbox_view = cfg:hBox {
-    cfg:stLabel(btosc_ws_init.name .. "：" .. TAB_TABLE[1]),
-    cfg:ispinView(btosc_ws_init, 140, 480, 1),
+btosc_ws_init.hbox_view = cfg:hBox {
+    cfg:stLabel(btosc_ws_init.val.name .. "：" .. TAB_TABLE[1]),
+    cfg:ispinView(btosc_ws_init.val, 140, 480, 1),
     cfg:stLabel("（btosc窗口初始值，单位：us，设置范围: 140 ~ 480, 默认值140）");
     cfg:stSpacer(),
 };
 
 -- 5) lrc切换使能
-local lrc_change_mode = cfg:enum("lrc_change_mode", LRC_CHANGE_MODE_TABLE, 1);
-depend_item_en_show(bluetooth_en, lrc_change_mode);
-lrc_change_mode:setOSize(1);
+local lrc_change_mode = {};
+lrc_change_mode.val = cfg:enum("lrc_change_mode", LRC_CHANGE_MODE_TABLE, 1);
+depend_item_en_show(bluetooth_en, lrc_change_mode.val);
+lrc_change_mode.val:setOSize(1);
 -- item_htext
-local lrc_change_mode_comment_str = item_comment_context("LRC切换使能", lrc_change_mode_table);
-local lrc_change_mode_htext = item_output_htext(lrc_change_mode, "TCFG_LRC_CHANGE_MODE", 4, nil, lrc_change_mode_comment_str, 1);
+lrc_change_mode.comment_str = item_comment_context("LRC切换使能", lrc_change_mode_table);
+lrc_change_mode.htext = item_output_htext(lrc_change_mode.val, "TCFG_LRC_CHANGE_MODE", 4, nil, lrc_change_mode.comment_str, 1);
 -- item_view
-local lrc_change_mode_hbox_view = cfg:hBox {
-	cfg:stLabel(lrc_change_mode.name .. "："),
-    cfg:enumView(lrc_change_mode),
+lrc_change_mode.hbox_view = cfg:hBox {
+	cfg:stLabel(lrc_change_mode.val.name .. "："),
+    cfg:enumView(lrc_change_mode.val),
 	cfg:stLabel(" （lrc切换使能，建议开启）"),
     cfg:stSpacer();
 };
 
 --========================= lrc cfg 参数输出汇总  ============================
 local lrc_cfg_item_table = {
-    lrc_ws_inc,
-    lrc_ws_init,
-    btosc_ws_inc,
-    btosc_ws_init,
-    lrc_change_mode,
+    lrc_ws_inc.val,
+    lrc_ws_init.val,
+    btosc_ws_inc.val,
+    btosc_ws_init.val,
+    lrc_change_mode.val,
 };
 
 -- A. 输出htext
 local lrc_htext_output_table = {
     lrc_start_comment_str,
-    lrc_ws_inc_htext,
-    lrc_ws_init_htext,
-    btosc_ws_inc_htext,
-    btosc_ws_init_htext,
-    lrc_change_mode_htext,
+    lrc_ws_inc.htext,
+    lrc_ws_init.htext,
+    btosc_ws_inc.htext,
+    btosc_ws_init.htext,
+    lrc_change_mode.htext,
 };
 
 -- B. 输出ctext：无
@@ -1201,11 +1803,11 @@ local lrc_cfg_output_bin = cfg:group("LRC_CFG_BIN",
 -- D. 显示
 local lrc_cfg_group_view = cfg:stGroup("lrc 参数配置",
     cfg:vBox {
-        lrc_ws_inc_hbox_view,
-        lrc_ws_init_hbox_view,
-        btosc_ws_inc_hbox_view,
-        btosc_ws_init_hbox_view,
-        lrc_change_mode_hbox_view,
+        lrc_ws_inc.hbox_view,
+        lrc_ws_init.hbox_view,
+        btosc_ws_inc.hbox_view,
+        btosc_ws_init.hbox_view,
+        lrc_change_mode.hbox_view,
     }
 );
 
@@ -1366,11 +1968,12 @@ insert_item_to_list(bt_output_htext_tabs, bt_mac_htext);
 insert_item_to_list(bt_output_htext_tabs, bt_rf_power_htext);
 -- AEC
 insert_list_to_list(bt_output_htext_tabs, aec_output_htext_table);
+--insert_list_to_list(bt_output_htext_tabs, aec_dns_output_htext_table);
 -- MIC
-insert_list_to_list(bt_output_htext_tabs, mic_type_htext_output_table);
-insert_item_to_list(bt_output_htext_tabs, tws_pair_code_htext);
+insert_list_to_list(bt_output_htext_tabs, mic_type.htext_output_table);
+insert_item_to_list(bt_output_htext_tabs, tws_pair_code.htext);
 -- key_on
-insert_item_to_list(bt_output_htext_tabs, power_on_need_key_on_htext);
+insert_item_to_list(bt_output_htext_tabs, power_on_need_key_on.htext);
 -- Feature
 insert_list_to_list(bt_output_htext_tabs, bt_feature_output_htext_table);
 --]]
@@ -1380,8 +1983,9 @@ insert_item_to_list(bt_output_bin_tabs, bluenames_output_bin);
 insert_item_to_list(bt_output_bin_tabs, bt_mac_output_bin);
 insert_item_to_list(bt_output_bin_tabs, bt_rf_power_output_bin);
 insert_item_to_list(bt_output_bin_tabs, aec_output_bin);
-insert_item_to_list(bt_output_bin_tabs, mic_type_output_bin);
-insert_item_to_list(bt_output_bin_tabs, tws_pair_code_output_bin);
+insert_item_to_list(bt_output_bin_tabs, aec_dns_output_bin);
+insert_item_to_list(bt_output_bin_tabs, mic_type.output_bin);
+insert_item_to_list(bt_output_bin_tabs, tws_pair_code.output_bin);
 insert_item_to_list(bt_output_bin_tabs, sys_auto_shut_down_time_output_bin);
 insert_item_to_list(bt_output_bin_tabs, lrc_cfg_output_bin);
 if enable_moudles["ble_config"] == true then
@@ -1396,7 +2000,7 @@ end
 
 if open_by_program == "create" then
 	--insert_item_to_list(bt_cfg_default_table, bluetooth_en);
-    insert_item_to_list(bt_cfg_default_table, power_on_need_key_on);
+    insert_item_to_list(bt_cfg_default_table, power_on_need_key_on.val);
     insert_list_to_list(bt_cfg_default_table, bt_feature_item_table);
 end
 
@@ -1404,10 +2008,11 @@ insert_item_to_list(bt_cfg_default_table, bluetooth_mac);
 insert_item_to_list(bt_cfg_default_table, bluetooth_rf_power);
 -- aec
 insert_list_to_list(bt_cfg_default_table, aec_item_table);
+insert_list_to_list(bt_cfg_default_table, aec_dns_item_table);
 -- mic
-insert_list_to_list(bt_cfg_default_table, mic_type_item_table);
+insert_list_to_list(bt_cfg_default_table, mic_type.item_table);
 
-insert_item_to_list(bt_cfg_default_table, tws_pair_code);
+insert_item_to_list(bt_cfg_default_table, tws_pair_code.val);
 -- lrc_cfg
 insert_list_to_list(bt_cfg_default_table, lrc_cfg_item_table);
 
@@ -1436,13 +2041,13 @@ insert_item_to_list(bt_output_group_view_table, bt_base_group_view);
 if enable_moudles["ble_config"] == true then
     insert_item_to_list(bt_output_group_view_table, ble_cfg_group_view);
 end
-insert_item_to_list(bt_output_group_view_table, tws_pair_code_group_view);
+insert_item_to_list(bt_output_group_view_table, tws_pair_code.group_view);
 insert_item_to_list(bt_output_group_view_table, aec_group_view);
-insert_item_to_list(bt_output_group_view_table, mic_type_group_view);
+insert_item_to_list(bt_output_group_view_table, mic_type.group_view);
 insert_item_to_list(bt_output_group_view_table, lrc_cfg_group_view);
 
 if open_by_program == "create" then
-    --insert_item_to_list(bt_output_group_view_table, power_on_need_key_on_group_view);
+    --insert_item_to_list(bt_output_group_view_table, power_on_need_key_on.group_view);
     --insert_item_to_list(bt_output_group_view_table, bt_feature_group_view);
 end
 

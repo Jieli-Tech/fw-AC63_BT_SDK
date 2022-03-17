@@ -264,7 +264,11 @@ DAC硬件上的连接方式,可选的配置：
 //是否支持开机充电
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE
 //是否支持拔出充电自动开机功能
-#define TCFG_CHARGE_OFF_POWERON_NE			ENABLE
+#define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
+//是否支持lighting握手协议
+#define TCFG_HANDSHAKE_ENABLE               DISABLE
+#define TCFG_HANDSHAKE_IO_DATA1             IO_PORTB_02//握手IO靠近lighting座子中间的
+#define TCFG_HANDSHAKE_IO_DATA2             IO_PORTB_07//握手IO在lighting座子边上的
 /*
 充电截止电压可选配置：
     CHARGE_FULL_V_3962  CHARGE_FULL_V_4002  CHARGE_FULL_V_4044  CHARGE_FULL_V_4086
@@ -287,6 +291,8 @@ DAC硬件上的连接方式,可选的配置：
     CHARGE_mA_160		CHARGE_mA_180		CHARGE_mA_200		CHARGE_mA_220
  */
 #define TCFG_CHARGE_MA						CHARGE_mA_40
+/*涓流电流可配置*/
+#define TCFG_CHARGE_TRICKLE_MA				CHARGE_mA_20
 
 //*********************************************************************************//
 //                                  LED 配置                                       //

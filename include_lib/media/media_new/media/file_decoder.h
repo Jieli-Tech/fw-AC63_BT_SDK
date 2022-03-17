@@ -20,6 +20,7 @@ struct file_decoder {
     u8 status;		        // 解码状态
     u8 dec_no_out_sound;	// 解码不直接输出声音（用于TWS转发）
     u8 tmp_pause;	        // 被其他解码打断，临时暂停
+    u32 wait_pause;
     u8 remain;
     u16 resume_tmr_id;
     u16 sample_rate;
@@ -31,6 +32,8 @@ struct file_decoder {
     struct audio_decoder decoder;	// 解码句柄
     int (*output_handler)(struct file_decoder *dec, s16 *data, int len);
     void *tws_sync;
+    s16 fade_step;
+    s16 fade_value;
 };
 
 int file_decoder_open(struct file_decoder *dec,

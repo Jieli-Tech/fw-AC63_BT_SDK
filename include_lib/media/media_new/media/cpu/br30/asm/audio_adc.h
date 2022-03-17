@@ -118,6 +118,16 @@ struct adc_mic_ch {
     void (*handler)(struct adc_mic_ch *, s16 *, u16);
 };
 
+struct adc_linein_ch {
+    struct audio_adc_hdl *adc;
+    u8 gain;
+    u8 gain1;
+    u8 buf_num;
+    u16 buf_size;
+    s16 *bufs;
+    u16 sample_rate;
+    void (*handler)(struct adc_linein_ch *, s16 *, u16);
+};
 /*
 *********************************************************************
 *                  Audio ADC Initialize
@@ -272,5 +282,73 @@ int audio_mic_ldo_en(u8 en, struct adc_platform_data *pd);
 */
 void audio_set_mic_mute(bool mute);
 void audio_set_mic1_mute(bool mute);
+
+
+/*
+*********************************************************************
+*                  Audio ADC linein Open
+* Description: 打开linein采样通道
+* Arguments  : linein	linein操作句柄
+*			   ch	linein通道索引
+*			   adc  adc模块操作句柄
+* Return	 : 0 成功	其他 失败
+* Note(s)    : None.
+*********************************************************************
+*/
+int audio_adc_linein_open(struct adc_linein_ch *linein, int ch, struct audio_adc_hdl *adc);
+int audio_adc_linein1_open(struct adc_linein_ch *linein, int ch, struct audio_adc_hdl *adc);
+
+/*
+*********************************************************************
+*                  Audio ADC linein Sample Rate
+* Description: 设置linein采样率
+* Arguments  : linein			linein操作句柄
+*			   sample_rate	采样率
+* Return	 : 0 成功	其他 失败
+* Note(s)    : None.
+*********************************************************************
+*/
+int audio_adc_linein_set_sample_rate(struct adc_linein_ch *linein, int sample_rate);
+
+/*
+*********************************************************************
+*                  Audio ADC linein Gain
+* Description: 设置linein增益
+* Arguments  : linein	linein操作句柄
+*			   gain	linein增益
+* Return	 : 0 成功	其他 失败
+* Note(s)    : linein增益范围：0(-8dB)~19(30dB),step:2dB,level(4)=0dB
+*********************************************************************
+*/
+int audio_adc_linein_set_gain(struct adc_linein_ch *linein, int gain);
+int audio_adc_linein1_set_gain(struct adc_linein_ch *linein, int gain);
+
+/*
+*********************************************************************
+*                  Audio ADC linein Buffer
+* Description: 设置采样buf和采样长度
+* Arguments  : linein		linein操作句柄
+*			   bufs		采样buf地址
+*			   buf_size	采样buf长度，即一次采样中断数据长度
+*			   buf_num 	采样buf的数量
+* Return	 : 0 成功	其他 失败
+* Note(s)    : (1)需要的总buf大小 = buf_size * ch_num * buf_num
+* 		       (2)buf_num = 2表示，第一次数据放在buf0，第二次数据放在
+*			   buf1,第三次数据放在buf0，依此类推。如果buf_num = 0则表
+*              示，每次数据都是放在buf0
+*********************************************************************
+*/
+int audio_adc_linein_set_buffs(struct adc_linein_ch *linein, s16 *bufs, u16 buf_size, u8 buf_num);
+
+/*
+*********************************************************************
+*                  Audio ADC linein Start
+* Description: 启动audio_adc采样
+* Arguments  : linein	linein操作句柄
+* Return	 : 0 成功	其他 失败
+* Note(s)    : None.
+*********************************************************************
+*/
+int audio_adc_linein_start(struct adc_linein_ch *linein);
 
 #endif/*AUDIO_ADC_H*/

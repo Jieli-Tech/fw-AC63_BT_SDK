@@ -11,22 +11,7 @@
 #include "music/music_decrypt.h"
 #include "music/music_id3.h"
 
-#define MUSIC_EQ_SUPPORT_ASYNC		1
-
-#ifndef CONFIG_EQ_SUPPORT_ASYNC
-#undef MUSIC_EQ_SUPPORT_ASYNC
-#define MUSIC_EQ_SUPPORT_ASYNC	0
-#endif
-
-#if MUSIC_EQ_SUPPORT_ASYNC && TCFG_MUSIC_MODE_EQ_ENABLE
-#if TCFG_DRC_ENABLE
-#define MUSIC_EQ_SUPPORT_32BIT		1
-#else
-#define MUSIC_EQ_SUPPORT_32BIT		0
-#endif
-#else
-#define MUSIC_EQ_SUPPORT_32BIT		0
-#endif
+#include "audio_dec_eff.h"
 
 
 #define FILE_DEC_REPEAT_EN			0 // 无缝循环播放
@@ -47,21 +32,20 @@ struct file_dec_hdl {
     u16 frame_remain_len;
     u8 trans_dec_end;
     u8 wait_tws_confirm;
-    u8 tws_channel;
     u16 seqn;
     u16 tx_seqn;
     u32 wait_tws_timeout;
+    void *ts_handle;
+    void *syncts;
+    u32 pcm_num;
+    u32 mix_ch_event_params[3];
 #endif
     struct audio_mixer_ch mix_ch;	// 叠加句柄
 
-    struct audio_drc *drc;
-    struct audio_eq *eq;
-#if MUSIC_EQ_SUPPORT_32BIT
-    s16 *eq_out_buf;
-    int eq_out_buf_len;
-    int eq_out_points;
-    int eq_out_total;
-#endif
+#if TCFG_EQ_ENABLE&&TCFG_MUSIC_MODE_EQ_ENABLE
+    struct dec_eq_drc *eq_drc;
+#endif//TCFG_MUSIC_MODE_EQ_ENABLE
+
     u8 remain;
 
     struct audio_dec_breakpoint *dec_bp; // 断点
@@ -94,7 +78,6 @@ struct file_dec_hdl {
 
     void (*stream_handler)(void *priv, int event, struct file_dec_hdl *);	// 数据流设置回调
     void *stream_priv;						// 数据流设置回调私有句柄
-    void *sync;
 };
 
 enum {
@@ -131,7 +114,7 @@ void *get_file_dec_hdl();
 
 int tws_local_media_dec_open(u8 channel, u8 *arg);
 
-void tws_local_media_dec_close(u8 channel);
+void tws_local_media_dec_close();
 
 int tws_local_media_dec_state();
 

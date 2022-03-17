@@ -67,6 +67,9 @@
 #define DA_SYNC_INPUT_BITS              20
 #define DA_SYNC_MAX_NUM                 (1 << DA_SYNC_INPUT_BITS)
 
+#define DIFF_OSC_CLK                    0   //差分晶振配置
+#define DIGITAL_SINGLE_CLK              1   //数字单端配置
+
 struct dac_platform_data {
     u32 output : 4;             //DAC输出模式
     u32 ldo_volt : 2;           //DACVDD_LDO电压档选择,0 : 1.2V, 1 : 1.25V, 2 : 1.3V, 3 : 1.35V
@@ -76,6 +79,8 @@ struct dac_platform_data {
     u32 vcmo_en : 1;            //VCMO直推使能
     u32 dsm_clk : 1;
     u32 zero_cross_detect : 1;  //过零点检测使能
+    u32 light_close : 1;        //使能轻量级关闭，最低功耗保持dac开启
+    u32 dac_analog_clock_source : 1;          //dac 模拟时钟来源配置，选0为差分晶振，选1为数字单端配置
 };
 
 
@@ -143,6 +148,11 @@ struct audio_dac_fade {
     int timer;
 };
 
+struct audio_dac_sync_node {
+    void *hdl;
+    struct list_head entry;
+};
+
 struct audio_dac_hdl {
     struct analog_module analog;
     const struct dac_platform_data *pd;
@@ -182,8 +192,15 @@ struct audio_dac_hdl {
     u8 anc_dac_gain_r;
     u8 anc_dac_open;
     struct audio_dac_sync sync;
+    struct list_head sync_list;
     void *feedback_priv;
     void (*underrun_feedback)(void *priv);
+/*******************************************/
+/**sniff退出时，dac模拟提前初始化，避免模拟初始化延时,影响起始同步********/
+	u8 power_on;
+    OS_MUTEX mutex_power_on;
+/*******************************************/
+
 };
 
 

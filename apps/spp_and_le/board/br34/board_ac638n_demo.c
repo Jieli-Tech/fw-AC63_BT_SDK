@@ -72,11 +72,15 @@ CHARGE_PLATFORM_DATA_BEGIN(charge_data)
     .charge_full_V          = TCFG_CHARGE_FULL_V,              //充电截止电压
     .charge_full_mA			= TCFG_CHARGE_FULL_MA,             //充电截止电流
     .charge_mA				= TCFG_CHARGE_MA,                  //充电电流
+	.charge_trickle_mA		= TCFG_CHARGE_TRICKLE_MA,          //涓流电流
 /*ldo5v拔出过滤值，过滤时间 = (filter*2 + 20)ms,ldoin<0.6V且时间大于过滤时间才认为拔出
  对于充满直接从5V掉到0V的充电仓，该值必须设置成0，对于充满由5V先掉到0V之后再升压到xV的
  充电仓，需要根据实际情况设置该值大小*/
 	.ldo5v_off_filter		= 100,
-    .ldo5v_pulldown_lvl     = CHARGE_PULLDOWN_200K,            //下拉电阻档位选择
+	.ldo5v_on_filter        = 50,
+	.ldo5v_keep_filter      = 220,
+	.ldo5v_pulldown_lvl     = CHARGE_PULLDOWN_200K,
+	.ldo5v_pulldown_keep    = 1,
 #if !TCFG_CHARGESTORE_ENABLE
 //1、对于自动升压充电舱,若充电舱需要更大的负载才能检测到插入时，请将该变量置1,并且根据需求配置下拉电阻档位
 //2、对于按键升压,并且是通过上拉电阻去提供维持电压的舱,请将该变量设置1,并且根据舱的上拉配置下拉需要的电阻挡位
@@ -225,6 +229,43 @@ REGISTER_DEVICES(device_table) = {
 #endif
 };
 
+/************************** PWM_LED ****************************/
+#if TCFG_PWMLED_ENABLE
+LED_PLATFORM_DATA_BEGIN(pwm_led_data)
+	.io_mode = TCFG_PWMLED_IOMODE,              //推灯模式设置:支持单个IO推两个灯和两个IO推两个灯
+	.io_cfg.one_io.pin = TCFG_PWMLED_PIN,       //单个IO推两个灯的IO口配置
+LED_PLATFORM_DATA_END()
+#endif
+
+
+/*其他封装板级，移该函数*/
+u8 get_power_on_status(void)
+{
+#if TCFG_IOKEY_ENABLE
+    struct iokey_port *power_io_list = NULL;
+    power_io_list = iokey_data.port;
+
+    if (iokey_data.enable) {
+        if (gpio_read(power_io_list->key_type.one_io.port) == power_io_list->connect_way){
+            return 1;
+        }
+    }
+#endif
+
+#if TCFG_ADKEY_ENABLE
+    if (adkey_data.enable) {
+        return 1;
+    }
+#endif
+
+#if TCFG_LP_TOUCH_KEY_ENABLE
+    return lp_touch_key_power_on_status();
+#endif
+
+    return 0;
+}
+
+
 static void board_devices_init(void)
 {
 #if TCFG_PWMLED_ENABLE
@@ -246,6 +287,12 @@ void board_init()
     devices_init();
 
 	board_devices_init();
+
+#if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
+    if(get_charge_online_flag()){
+        handshake_app_start(0, NULL);
+    }
+#endif
 
 	if(get_charge_online_flag()){
         power_set_mode(PWR_LDO15);
@@ -320,7 +367,7 @@ static void port_protect(u16 *port_group, u32 port_num)
 }
 
 /*进软关机之前默认将IO口都设置成高阻状态，需要保留原来状态的请修改该函数*/
-static void close_gpio(void)
+static void close_gpio(u8 is_softoff)
 {
     u16 port_group[] = {
         [PORTA_GROUP] = 0xffff,
@@ -338,6 +385,13 @@ static void close_gpio(void)
     /* port_protect(port_group, TCFG_IOKEY_PREV_ONE_PORT); */
     /* port_protect(port_group, TCFG_IOKEY_NEXT_ONE_PORT); */
 #endif /* TCFG_IOKEY_ENABLE */
+
+#if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
+    if (is_softoff == 0) {
+        port_protect(port_group, TCFG_HANDSHAKE_IO_DATA1);
+        port_protect(port_group, TCFG_HANDSHAKE_IO_DATA2);
+    }
+#endif
 
     //< close gpio
     gpio_dir(GPIOA, 0, 9, port_group[PORTA_GROUP], GPIO_OR);
@@ -444,7 +498,7 @@ void board_set_soft_poweroff(void)
     gpio_set_die(IO_PORT_DM, 0);
     gpio_set_dieh(IO_PORT_DM, 0);
     gpio_set_direction(IO_PORT_DM, 1);
-close_gpio();
+close_gpio(1);
     /* dac_power_off(); */
 
 }
@@ -466,7 +520,7 @@ void sleep_enter_callback(u8  step)
         //dac_power_off();
     } else {
 
-		close_gpio();
+		close_gpio(0);
 
 		/* gpio_set_pull_up(IO_PORTA_03, 0); */
         /* gpio_set_pull_down(IO_PORTA_03, 0); */
@@ -546,6 +600,9 @@ void board_power_init(void)
 
     power_init(&power_param);
 
+    gpio_longpress_pin0_reset_config(IO_PORTB_01, 0, 0);
+    gpio_shortpress_reset_config(0);//1--enable 0--disable
+
     /*sdpg_config(1);*/
 
     power_set_callback(TCFG_LOWPOWER_LOWPOWER_SEL, sleep_enter_callback, sleep_exit_callback, board_set_soft_poweroff);
@@ -558,6 +615,18 @@ void board_power_init(void)
 
 #if (!TCFG_IOKEY_ENABLE && !TCFG_ADKEY_ENABLE)
 //    charge_check_and_set_pinr(1);
+#endif
+#if USER_UART_UPDATE_ENABLE
+	{
+#include "uart_update.h"
+		uart_update_cfg update_cfg = {
+			.rx = UART_UPDATE_RX_PORT,
+			.tx = UART_UPDATE_TX_PORT,
+			.output_channel = CH1_UT1_TX,
+			.input_channel = INPUT_CH0,
+		};
+		uart_update_init(&update_cfg);
+	}
 #endif
 }
 #endif

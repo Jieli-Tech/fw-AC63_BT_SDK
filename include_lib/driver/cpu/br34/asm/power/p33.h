@@ -556,10 +556,12 @@ enum {
 /*
  *-------------------P3_ANA_CON11
  */
-#define SYSVDD_VOL_SEL(sel)     P33_CON_SET(P3_ANA_CON11, 0, 4, sel)
+void SYSVDD_VOL_SEL(u8 sel);
+
 //Macro for SYSVDD_VOL_SEL
 enum {
-    SYSVDD_VOL_SEL_084V = 0,
+    SYSVDD_VOL_SEL_081V = 0,
+    SYSVDD_VOL_SEL_084V,
     SYSVDD_VOL_SEL_087V,
     SYSVDD_VOL_SEL_090V,
     SYSVDD_VOL_SEL_093V,
@@ -574,8 +576,11 @@ enum {
     SYSVDD_VOL_SEL_120V,
     SYSVDD_VOL_SEL_123V,
     SYSVDD_VOL_SEL_126V,
-    SYSVDD_VOL_SEL_129V,
 };
+
+#define SYSVDD_VOL_MIN SYSVDD_VOL_SEL_081V
+
+#define SYSVDD_VOL_MAX SYSVDD_VOL_SEL_126V
 
 #define GET_SYSVDD_VOL_SEL()     (P33_CON_GET(P3_ANA_CON11) & 0xf)
 
@@ -589,7 +594,8 @@ enum {
 #define RVDD_VOL_SEL(sel)       P33_CON_SET(P3_ANA_CON12, 0, 4, sel)
 //Macro for SYSVDD_VOL_SEL
 enum {
-    RVDD_VOL_SEL_084V = 0,
+    RVDD_VOL_SEL_081V = 0,
+    RVDD_VOL_SEL_084V,
     RVDD_VOL_SEL_087V,
     RVDD_VOL_SEL_090V,
     RVDD_VOL_SEL_093V,
@@ -604,7 +610,6 @@ enum {
     RVDD_VOL_SEL_120V,
     RVDD_VOL_SEL_123V,
     RVDD_VOL_SEL_126V,
-    RVDD_VOL_SEL_129V,
 };
 
 #define GET_RVDD_VOL_SEL()     (P33_CON_GET(P3_ANA_CON12) & 0xf)

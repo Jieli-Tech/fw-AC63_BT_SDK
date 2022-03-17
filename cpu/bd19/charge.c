@@ -22,6 +22,7 @@
 typedef struct _CHARGE_VAR {
     struct charge_platform_data *data;
     volatile u8 charge_online_flag;
+    volatile u8 charge_event_flag;
     volatile u8 init_ok;
     volatile u8 detect_stop;    //检测暂停或者继续
     volatile int ldo5v_timer;   //检测LDOIN状态变化的usr timer
@@ -97,6 +98,11 @@ u8 get_charge_online_flag(void)
     return __this->charge_online_flag;
 }
 
+void set_charge_event_flag(u8 flag)
+{
+    __this->charge_event_flag = flag;
+}
+
 u8 get_ldo5v_online_hw(void)
 {
     return LDO5V_DET_GET();
@@ -156,7 +162,7 @@ static void charge_cc_check(void *priv)
 {
     if ((adc_get_voltage(AD_CH_VBAT) * 4 / 10) > CHARGE_CCVOL_V) {
         set_charge_mA(__this->data->charge_mA);
-        sys_timer_del(__this->cc_timer);
+        usr_timer_del(__this->cc_timer);
         __this->cc_timer = 0;
     }
 }
@@ -175,7 +181,7 @@ void charge_start(void)
     } else {
         set_charge_mA(CHARGE_mA_20);
         if (!__this->cc_timer) {
-            __this->cc_timer = sys_timer_add(NULL, charge_cc_check, 60000);
+            __this->cc_timer = usr_timer_add(NULL, charge_cc_check, 1000, 1);
         }
     }
 
@@ -203,7 +209,7 @@ void charge_close(void)
         __this->charge_timer = 0;
     }
     if (__this->cc_timer) {
-        sys_timer_del(__this->cc_timer);
+        usr_timer_del(__this->cc_timer);
         __this->cc_timer = 0;
     }
 }
@@ -251,8 +257,12 @@ static void ldo5v_detect(void *priv)
             /* printf("ldo5V_IN\n"); */
             set_charge_online_flag(1);
             ldo5v_off_cnt = 0;
-            ldo5v_on_cnt = 0;
             ldo5v_keep_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
+            ldo5v_on_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
             power_enter_charge_mode();
@@ -268,9 +278,13 @@ static void ldo5v_detect(void *priv)
         } else {
             /* printf("ldo5V_OFF\n"); */
             set_charge_online_flag(0);
-            ldo5v_off_cnt = 0;
             ldo5v_on_cnt = 0;
             ldo5v_keep_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
+            ldo5v_off_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
             power_exit_charge_mode();
@@ -288,6 +302,10 @@ static void ldo5v_detect(void *priv)
             set_charge_online_flag(1);
             ldo5v_off_cnt = 0;
             ldo5v_on_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
             ldo5v_keep_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             power_exit_charge_mode();
@@ -451,6 +469,11 @@ void charge_module_restart(void)
     }
     power_awakeup_enable_with_port(IO_LDOIN_DET);
     power_awakeup_enable_with_port(IO_VBTCH_DET);
+}
+
+int charge_api_init(void *arg)
+{
+    return charge_init(NULL, arg);
 }
 
 const struct device_operations charge_dev_ops = {

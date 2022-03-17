@@ -83,6 +83,7 @@ extern const int config_bredr_master_afh ;
 extern const int CONFIG_ESCO_MUX_RX_BULK_ENABLE ;
 extern const int config_bt_temperature_pll_trim ;
 extern const int CONFIG_WIFI_DETECT_ENABLE;
+extern const int ESCO_FORWARD_ENABLE;
 /********************************************************************************/
 /*
  *                   API
@@ -129,15 +130,17 @@ void bt_production_test(u8 en);
  *
  *
 
-                TX     RX
-       AI800x   PA13   PA12
-       AC692x   PA13   PA12
-       AC693x   PA8    PA9
-       AC695x   PA9    PA10
-       AC696x   PC1    PC2
-       AC694x   PB1    PB2
-       AC697x   PC2    PC3
-       AC631x   PA7    PA8
+                        TX     RX
+       AI800x           PA13   PA12
+       AC692x           PA13   PA12
+       AC693x           PA8    PA9
+       AC695x,AC635x    PA9    PA10
+       AC696x,AC636x    PC1    PC2
+       AC694x           PB1    PB2
+       AC697x,AC637x    PC2    PC3
+       AC698x,AC638x    PC2    PC3
+       AC631x           PA7    PA8
+       AC632x           PA7    PA8
 
  */
 /* ----------------------------------------------------------------------------*/
@@ -267,6 +270,7 @@ void ble_vendor_set_hold_prio(u8 role, u8 enable);
 
 void set_bt_afh_classs_enc(u8 afh_class);
 void set_bt_enhanced_power_control(u8 en);
+void set_bt_data_rate_acl_3mbs_mode(u8 en);
 
 void set_bt_full_name_event(u8 en);
 

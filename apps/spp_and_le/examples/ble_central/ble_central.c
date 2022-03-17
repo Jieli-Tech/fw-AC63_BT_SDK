@@ -51,9 +51,9 @@
 //搜索类型
 #define SET_SCAN_TYPE       SCAN_ACTIVE
 //搜索 周期大小
-#define SET_SCAN_INTERVAL   ADV_SCAN_MS(10) // unit: ms
+#define SET_SCAN_INTERVAL   ADV_SCAN_MS(24) // unit: 0.625ms
 //搜索 窗口大小
-#define SET_SCAN_WINDOW     ADV_SCAN_MS(10) // unit: ms
+#define SET_SCAN_WINDOW     ADV_SCAN_MS(8)  // unit: 0.625ms, <= SET_SCAN_INTERVAL
 
 //连接周期
 #define BASE_INTERVAL_MIN   (6)//最小的interval
@@ -67,8 +67,18 @@
 #define SET_CREAT_CONN_TIMEOUT    8000 //(unit:ms)
 
 //------------------------------------------------------
-static u16 cetl_con_handle;
-#define cetl_TEST_WRITE_SEND_DATA          1//连上测试自动发送数据
+static  u16 cetl_con_handle;
+static  u8 search_profile_complete_flag[SUPPORT_MAX_GATT_CLIENT]; /*搜索完服务*/
+
+#define CETL_TEST_WRITE_SEND_DATA             1//连上测试自动发送数据
+#define CETL_TEST_SEND_EN                     1//
+
+#define TEST_TIMER_MS                         500/*定时发包的时间*/
+#define CETL_TEST_DISPLAY_DATA                1//显示数据打印
+#define CETL_TEST_PAYLOAD_LEN                (256)//包的长度
+
+static  u32 send_test_count[SUPPORT_MAX_GATT_CLIENT];
+static  u32 recieve_test_count[SUPPORT_MAX_GATT_CLIENT];
 //------------------------------------------------------
 extern const char *bt_get_local_name();
 extern void clr_wdt(void);
@@ -77,16 +87,16 @@ extern void clr_wdt(void);
 #define PASSKEY_ENABLE                     0
 
 static const sm_cfg_t cetl_sm_init_config = {
-    .master_security_auto_req = 0,
-    .master_set_wait_security = 0,
+    .master_security_auto_req = 1,
+    .master_set_wait_security = 1,
 
 #if PASSKEY_ENABLE
-    .io_capabilities = IO_CAPABILITY_DISPLAY_ONLY,
+    .io_capabilities = IO_CAPABILITY_KEYBOARD_ONLY,
 #else
     .io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT,
 #endif
 
-    .authentication_req_flags = SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION,
+    .authentication_req_flags = SM_AUTHREQ_MITM_PROTECTION,
     .min_key_size = 7,
     .max_key_size = 16,
     .sm_cb_packet_handler = NULL,
@@ -182,7 +192,7 @@ static const target_uuid_t  jl_cetl_search_uuid_table[] = {
 
 //配置多个扫描匹配设备
 static const u8 cetl_test_remoter_name1[] = "AC897N_MX(BLE)";//
-static const u8 cetl_test_remoter_name2[] = "AC632N_TEST(BLE)";//
+static const u8 cetl_test_remoter_name2[] = "AC632N_MX(BLE)";//
 
 static client_match_cfg_t cetl_match_device_table[] = {
 #if MATCH_CONFIG_NAME
@@ -190,6 +200,7 @@ static client_match_cfg_t cetl_match_device_table[] = {
         .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
         .compare_data_len = 0, //去结束符
         .compare_data = 0,
+        .filter_pdu_bitmap = 0,
     },
 #endif
 
@@ -197,29 +208,62 @@ static client_match_cfg_t cetl_match_device_table[] = {
         .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
         .compare_data_len = sizeof(cetl_test_remoter_name1) - 1, //去结束符
         .compare_data = cetl_test_remoter_name1,
+        .filter_pdu_bitmap = 0,
     },
 
     {
         .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
         .compare_data_len = sizeof(cetl_test_remoter_name2) - 1, //去结束符
         .compare_data = cetl_test_remoter_name2,
+        .filter_pdu_bitmap = 0,
     },
 
 };
 
 static void cetl_client_test_write(void)
 {
-#if cetl_TEST_WRITE_SEND_DATA
+#if CETL_TEST_WRITE_SEND_DATA
     static u32 count = 0;
+    static u32 send_index[SUPPORT_MAX_GATT_CLIENT];
+
     int i, ret = 0;
+    int send_len = CETL_TEST_PAYLOAD_LEN;
     u16 tmp_handle;
+    u32 time_index_max = 1000 / TEST_TIMER_MS;
 
     count++;
     for (i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) {
+        send_index[i]++;
+
         tmp_handle = ble_comm_dev_get_handle(i, GATT_ROLE_CLIENT);
-        if (tmp_handle && cetl_ble_client_write_handle) {
-            ret = ble_comm_att_send_data(tmp_handle, cetl_ble_client_write_handle, &count, 16, ATT_OP_WRITE_WITHOUT_RESPOND);
-            log_info("test_write:%04x,%d", tmp_handle, ret);
+
+#if CETL_TEST_SEND_EN
+        if (tmp_handle && cetl_ble_client_write_handle && search_profile_complete_flag[i]) {
+            if (ble_comm_att_check_send(tmp_handle, send_len)) {
+                ret = ble_comm_att_send_data(tmp_handle, cetl_ble_client_write_handle, &count, send_len, ATT_OP_WRITE_WITHOUT_RESPOND);
+
+#if CETL_TEST_DISPLAY_DATA
+                log_info("test_write:%04x,%d", tmp_handle, ret);
+#endif
+                if (!ret) {
+                    /* putchar('T'); */
+                    send_test_count[i] += send_len;
+                }
+            }
+        }
+#endif
+
+        if (send_index[i] >= time_index_max) {
+            if (send_test_count[i]) {
+                log_info("conn_handle:%04x,send_rate= %d byte/s\n", tmp_handle, send_test_count[i]);
+            }
+            send_index[i] = 0;
+            send_test_count[i] = 0;
+
+            if (recieve_test_count[i]) {
+                log_info("conn_handle:%04x,recieve_rate= %d byte/s\n", tmp_handle, recieve_test_count[i]);
+                recieve_test_count[i] = 0;
+            }
         }
     }
 #endif
@@ -238,12 +282,22 @@ static const gatt_search_cfg_t cetl_client_search_config = {
 //-------------------------------------------------------------------------------------
 static int cetl_client_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_param)
 {
+    int i;
     /* log_info("event: %02x,size= %d\n",event,size); */
     switch (event) {
     case GATT_COMM_EVENT_GATT_DATA_REPORT: {
         att_data_report_t *report_data = (void *)packet;
+
+#if CETL_TEST_DISPLAY_DATA
         log_info("data_report:hdl=%04x,pk_type=%02x,size=%d\n", report_data->conn_handle, report_data->packet_type, report_data->blob_length);
         put_buf(report_data->blob, report_data->blob_length);
+#else
+        /* putchar('R'); */
+#endif
+        i = ble_comm_dev_get_index(report_data->conn_handle, SUPPORT_MAX_GATT_CLIENT);
+        if (i != INVAIL_INDEX) {
+            recieve_test_count[i] += report_data->blob_length;
+        }
 
         switch (report_data->packet_type) {
         case GATT_EVENT_NOTIFICATION://notify
@@ -263,6 +317,12 @@ static int cetl_client_event_packet_handler(int event, u8 *packet, u16 size, u8 
     case GATT_COMM_EVENT_CAN_SEND_NOW:
         break;
 
+    case GATT_COMM_EVENT_SCAN_ADV_REPORT:
+        putchar('V');
+        /* log_info("adv_report_data(%d):",size); */
+        /* put_buf(packet,size);  */
+        break;
+
     case GATT_COMM_EVENT_CONNECTION_COMPLETE:
         cetl_con_handle = little_endian_read_16(packet, 0);
         log_info("connection_handle:%04x, rssi= %d\n", cetl_con_handle, ble_vendor_get_peer_rssi(cetl_con_handle));
@@ -275,6 +335,11 @@ static int cetl_client_event_packet_handler(int event, u8 *packet, u16 size, u8 
 
         if (cetl_con_handle == little_endian_read_16(packet, 0)) {
             cetl_con_handle = 0;
+        }
+
+        i = ble_comm_dev_get_index(little_endian_read_16(packet, 0), SUPPORT_MAX_GATT_CLIENT);
+        if (i != INVAIL_INDEX) {
+            search_profile_complete_flag[i] = 0;
         }
         break;
 
@@ -309,7 +374,7 @@ static int cetl_client_event_packet_handler(int event, u8 *packet, u16 size, u8 
         opt_handle_t *opt_hdl = packet;
         log_info("match:server_uuid= %04x,charactc_uuid= %04x,value_handle= %04x\n", \
                  opt_hdl->search_uuid->services_uuid16, opt_hdl->search_uuid->characteristic_uuid16, opt_hdl->value_handle);
-#if cetl_TEST_WRITE_SEND_DATA
+#if CETL_TEST_WRITE_SEND_DATA
         //for test
         if (opt_hdl->search_uuid->characteristic_uuid16 == 0xae01) {
             cetl_ble_client_write_handle = opt_hdl->value_handle;
@@ -322,8 +387,21 @@ static int cetl_client_event_packet_handler(int event, u8 *packet, u16 size, u8 
     case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE:
         break;
 
-    case GATT_COMM_EVENT_GATT_SEARCH_PROFILE_COMPLETE:
-        break;
+    case GATT_COMM_EVENT_GATT_SEARCH_PROFILE_COMPLETE: {
+        log_info("GATT_SEARCH_PROFILE_COMPLETE:%04x\n", little_endian_read_16(packet, 0));
+        i = ble_comm_dev_get_index(little_endian_read_16(packet, 0), SUPPORT_MAX_GATT_CLIENT);
+        if (i != INVAIL_INDEX) {
+            search_profile_complete_flag[i] = 1;
+        }
+    }
+    break;
+
+    case GATT_COMM_EVENT_SM_PASSKEY_INPUT: {
+        u32 *key = little_endian_read_32(packet, 2);
+        *key = 888888;
+        log_info("input_key:%6u\n", *key);
+    }
+    break;
 
     default:
         break;
@@ -331,7 +409,7 @@ static int cetl_client_event_packet_handler(int event, u8 *packet, u16 size, u8 
     return 0;
 }
 
-//广播参数设置
+//scan参数设置
 static void cetl_scan_conn_config_set(void)
 {
     cetl_client_scan_cfg.scan_auto_do = 1;
@@ -361,10 +439,15 @@ void cetl_client_init(void)
 #endif
 
     ble_gatt_client_set_search_config(&cetl_client_search_config);
+    //ble_gatt_client_set_search_config(NULL);
     cetl_scan_conn_config_set();
 
-#if cetl_TEST_WRITE_SEND_DATA
-    sys_timer_add(0, cetl_client_test_write, 500);
+#if CETL_TEST_WRITE_SEND_DATA
+    if (TEST_TIMER_MS < 10) {
+        sys_hi_timer_add(0, cetl_client_test_write, TEST_TIMER_MS);
+    } else {
+        sys_timer_add(0, cetl_client_test_write, TEST_TIMER_MS);
+    }
 #endif
 }
 
@@ -398,7 +481,7 @@ void bt_ble_exit(void)
 
 void ble_module_enable(u8 en)
 {
-    ble_comm_module_enable(1);
+    ble_comm_module_enable(en);
 }
 
 /*************************************************************************************************/

@@ -58,6 +58,7 @@
 #define IRQ_TIME4_IDX      54   	//0
 #define IRQ_TIME5_IDX      55   	//0
 #define IRQ_SPI2_IDX       56
+#define IRQ_MCPWM_TIMER    57
 #define IRQ_CHX_PWM_IDX    58
 #define IRQ_SOFT0_IDX      60
 #define IRQ_SOFT1_IDX      61

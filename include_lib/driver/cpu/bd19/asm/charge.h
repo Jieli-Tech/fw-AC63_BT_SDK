@@ -110,6 +110,7 @@ enum {
 };
 
 
+extern void set_charge_event_flag(u8 flag);
 extern void set_charge_online_flag(u8 flag);
 extern u8 get_charge_online_flag(void);
 extern u8 get_charge_poweron_en(void);

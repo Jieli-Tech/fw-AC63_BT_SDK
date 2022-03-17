@@ -8,6 +8,10 @@
 #include "app_main.h"
 #include "bt_common.h"
 
+#ifdef CONFIG_LITE_AUDIO
+#include "audio_config.h"
+#endif /*CONFIG_LITE_AUDIO*/
+
 #define LOG_TAG_CONST       USER_CFG
 #define LOG_TAG             "[USER_CFG]"
 #define LOG_ERROR_ENABLE
@@ -41,6 +45,33 @@ BT_CONFIG bt_cfg = {
     .tws_device_indicate = 0x6688,
 };
 
+
+u8 get_max_sys_vol(void)
+{
+#if TCFG_APP_FM_EMITTER_EN
+    return FM_EMITTER_MAX_VOL;
+#else
+    /* return (audio_cfg.max_sys_vol); */
+    return 30;
+#endif
+}
+
+#if 1
+u8 get_tone_vol(void)
+{
+    return 15;
+#if 0
+    if (!audio_cfg.tone_vol) {
+        return (get_max_sys_vol());
+    }
+    if (audio_cfg.tone_vol > get_max_sys_vol()) {
+        return (get_max_sys_vol());
+    }
+
+    return (audio_cfg.tone_vol);
+#endif
+}
+#endif
 
 //======================================================================================//
 //                                 		BTIF配置项表                               		//
@@ -144,6 +175,7 @@ extern u8 key_table[KEY_EVENT_MAX][KEY_NUM_MAX];
 #define USE_CONFIG_MIC_TYPE_SETTING          USE_CONFIG_BIN_FILE        //MIC类型设置
 #define USE_CONFIG_LOWPOWER_V_SETTING        USE_CONFIG_BIN_FILE        //低电提示设置
 #define USE_CONFIG_AUTO_OFF_SETTING          USE_CONFIG_BIN_FILE        //自动关机时间设置
+#define USE_CONFIG_COMBINE_VOL_SETTING                 1
 
 #define LOW_POWER_SHUTDOWN      320  //低电直接关机电压
 #define LOW_POWER_OFF_VAL   	330  //低电关机电压
@@ -160,6 +192,12 @@ void cfg_file_parse(u8 idx)
     /*                      CFG READ IN cfg_tools.bin                        */
     /*************************************************************************/
 
+    //-----------------------------CFG_COMBINE_VOL----------------------------------//
+#if TCFG_AUDIO_ENABLE
+#if (defined SYS_VOL_TYPE && (SYS_VOL_TYPE == VOL_TYPE_AD))
+    audio_combined_vol_init(USE_CONFIG_COMBINE_VOL_SETTING);
+#endif/*SYS_VOL_TYPE*/
+#endif /*TCFG_AUDIO_ENABLE*/
     //-----------------------------CFG_BT_NAME--------------------------------------//
     ret = syscfg_read(CFG_BT_NAME, tmp, 32);
     if (ret < 0) {
@@ -185,6 +223,9 @@ void cfg_file_parse(u8 idx)
     bt_max_pwr_set(app_var.rf_power, 5, 8, SET_BLE_TX_POWER_LEVEL);
     /* g_printf("rf config:%d\n", app_var.rf_power); */
     log_info("rf config:%d\n", app_var.rf_power);
+
+    app_var.music_volume = 30;
+    app_var.wtone_volume = 14;
 
 
 #if (USE_CONFIG_CHARGE_SETTING) && (TCFG_CHARGE_ENABLE)

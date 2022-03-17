@@ -97,6 +97,10 @@ SECTIONS
         KEEP(*(.clock_critical_txt))
         clock_critical_handler_end = .;
 
+        chargestore_handler_begin = .;
+        KEEP(*(.chargestore_callback_txt))
+        chargestore_handler_end = .;
+
 		/********maskrom arithmetic ****/
         *(.bfilt_code)
         *(.bfilt_table_maskroom)

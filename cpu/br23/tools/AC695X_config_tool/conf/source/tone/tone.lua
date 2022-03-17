@@ -213,7 +213,7 @@ local to_wts_format = function(frompath, topath)
 	
 	cfg:runProg{cfg.rootDir .. '/3rd/ffmpeg', '-i', frompath, '-ar', math.floor(tv:getFormatSampleRate() * 2), '-ac', '1', '-f', 's16le', '-acodec', 'pcm_s16le', pcmtmp};
 	cfg:runProg{srcdir .. '/tone/wtgv2_resample.exe', pcmtmp, pcmtmp2};
-	cfg:runProg{srcdir .. '/tone/wtgv2_encode.exe', pcmtmp2, topath, "o.raw", math.floor(tv:getFormatSampleRate()), math.floor(tv:getFormatBitRate()), '20', '0.35'};
+	cfg:runProg{srcdir .. '/tone/wtgv2_encode.exe', pcmtmp2, topath, "o.raw", math.floor(tv:getFormatBitRate()), math.floor(tv:getFormatSampleRate()), '20', '0.35'};
 	os.remove(pcmtmp);
 	os.remove(pcmtmp2);
 	return true;

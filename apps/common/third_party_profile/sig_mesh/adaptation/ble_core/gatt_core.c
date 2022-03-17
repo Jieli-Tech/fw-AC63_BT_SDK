@@ -60,8 +60,6 @@ void proxy_gatt_init(void) {}
 
 #else /* ADAPTATION_COMPILE_DEBUG */
 
-#define BYTE_LEN(x...)                      sizeof((u8 []) {x})
-
 /** @brief Helper to declare elements of bt_data arrays
  *
  *  This macro is mainly for creating an array of struct bt_data
@@ -459,9 +457,11 @@ static u16 gatt_read_callback(u16 conn_handle, u16 att_handle, u16 offset, u8 *b
 
 #if RCSP_BTMATE_EN
     case ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE:
-        buf[0] = att_get_ccc_config(handle);
-        buf[1] = 0;
-        att_value_len = 2;
+        if (buf) {
+            buf[0] = att_get_ccc_config(handle);
+            buf[1] = 0;
+            att_value_len = 2;
+        }
         break;
 #endif
     default:

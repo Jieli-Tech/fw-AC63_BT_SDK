@@ -23,6 +23,7 @@ insert_list_to_list(output_bin_tabs, board_output_bin_tabs);
 insert_list_to_list(output_bin_tabs, status_output_bin_tabs);
 insert_list_to_list(output_bin_tabs, bt_output_bin_tabs);
 insert_item_to_list(output_bin_tabs, lua_cfg_output_bin);
+insert_list_to_list(output_bin_tabs, comvol_bin_groups);
 -- insert_list_to_list(output_bin_tabs, anc_output_bin_tabs);
 
 

@@ -98,7 +98,7 @@
   DcuCmdSend = ABSOLUTE(0x10fdcc);
   flush_dcache = ABSOLUTE(0x10fdd0);
   flushinv_dcache = ABSOLUTE(0x10fdd4);
-  sfc_suspend = ABSOLUTE(0x10fdd8);
+  /* sfc_suspend = ABSOLUTE(0x10fdd8); */
   sfc_resume = ABSOLUTE(0x10fddc);
   sfc_drop_cache = ABSOLUTE(0x10fde0);
   chip_crc16 = ABSOLUTE(0x10fde4);

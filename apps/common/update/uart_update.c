@@ -42,6 +42,10 @@ static int (*uart_update_sleep_hdl)(void *priv) = NULL;
 
 #define THIS_TASK_NAME "uart_update"
 
+#define NEED_TO_EXIT_LOW_POWER_AND_SNIFF		1
+#if NEED_TO_EXIT_LOW_POWER_AND_SNIFF
+#include "asm/power_interface.h"
+#endif
 
 static protocal_frame_t protocal_frame __attribute__((aligned(4)));
 u32 update_baudrate = 9600;             //初始波特率
@@ -106,7 +110,6 @@ static void uart_ufw_update_before_jump_handle(int type)
 static void uart_update_state_cbk(int type, u32 state, void *priv)
 {
     update_ret_code_t *ret_code = (update_ret_code_t *)priv;
-
     if (ret_code) {
         printf("state:%x err:%x\n", ret_code->stu, ret_code->err_code);
     }
@@ -119,6 +122,10 @@ static void uart_update_state_cbk(int type, u32 state, void *priv)
                                uart_ufw_update_private_param_fill,
                                uart_ufw_update_before_jump_handle);
         }
+
+        uart_file_offset = 0;
+        update_baudrate = 9600;
+        uart_update_set_baud(update_baudrate);
 
         break;
 
@@ -188,6 +195,7 @@ __recheck:
                         break;
                     case CMD_UART_JEEP_ALIVE:
                         log_info("CMD_UART_KEEP_ALIVE\n");
+                        os_taskq_post_msg(THIS_TASK_NAME, 1, MSG_UART_UPDATE_ALIVE_RSP);
                         break;
                     case CMD_UART_UPDATE_READY:
                         log_info("CMD_UART_UPDATE_READY\n");
@@ -251,7 +259,7 @@ u32 uart_dev_receive_data(void *buf, u32 relen, u32 addr)
         return (protocal_frame.data.length - sizeof(file_cmd));
     }
     putchar('R');
-    return relen;
+    return -1;
 }
 
 bool uart_update_cmd(u8 cmd, u8 *buf, u32 len)
@@ -362,6 +370,36 @@ const update_op_api_t uart_ch_update_op = {
     .f_stop  = uart_f_stop,
 };
 
+#if NEED_TO_EXIT_LOW_POWER_AND_SNIFF
+static u8 uart_trans_idle = 0;
+u8 uart_trans_idle_query(void)
+{
+    return (!uart_trans_idle);
+}
+
+REGISTER_LP_TARGET(uart_lp_target) = {
+    .name = "uart_update",
+    .is_idle = uart_trans_idle_query,
+};
+
+extern int bt_comm_edr_sniff_clean(void);
+static void uart_trans_state_check(void *priv)
+{
+    static u16 uart_trans_state_check_timer = 0;
+    if (uart_trans_state_check_timer) {
+        sys_timeout_del(uart_trans_state_check_timer);
+        uart_trans_state_check_timer = 0;
+    }
+    if (priv) {
+        uart_trans_idle = 0;
+    } else {
+        uart_trans_idle = 1;
+        bt_comm_edr_sniff_clean();
+        uart_trans_state_check_timer = sys_timeout_add((void *)&uart_trans_state_check_timer, uart_trans_state_check, 1000);
+    }
+}
+#endif
+
 static void update_loader_download_task(void *p)
 {
     int ret;
@@ -372,6 +410,9 @@ static void update_loader_download_task(void *p)
 
     while (1) {
         ret = os_taskq_pend("taskq", msg, ARRAY_SIZE(msg));
+#if NEED_TO_EXIT_LOW_POWER_AND_SNIFF
+        uart_trans_state_check(NULL);
+#endif
         if (ret != OS_TASKQ) {
             continue;
         }
@@ -390,6 +431,10 @@ static void update_loader_download_task(void *p)
 
         case MSG_UART_UPDATE_READ_RSP:
             log_info("MSG_UART_UPDATE_READ_RSP\n");
+            break;
+        case MSG_UART_UPDATE_ALIVE_RSP:
+            log_info("MSG_UART_UPDATE_ALIVE_RSP\n");
+            uart_update_cmd(CMD_UART_JEEP_ALIVE, NULL, 0);
             break;
 
         default:

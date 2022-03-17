@@ -153,7 +153,7 @@
   __fixsfsi = ABSOLUTE(0x117fa0);
   spi_get_port = ABSOLUTE(0x117fa4);
   spi_set_port = ABSOLUTE(0x117fa8);
-  sfc_suspend = ABSOLUTE(0x117fac);
+  /* sfc_suspend = ABSOLUTE(0x117fac); */
   sfc_resume = ABSOLUTE(0x117fb0);
   sfc_drop_cache = ABSOLUTE(0x117fb4);
   chip_crc16 = ABSOLUTE(0x117fb8);

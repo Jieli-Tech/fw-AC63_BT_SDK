@@ -244,11 +244,11 @@ ble_state_e ble_gatt_server_get_connect_state(u16 conn_handle)
 void ble_gatt_server_passkey_input(u32 *key, u16 conn_handle)
 {
     u16 tmp_val[3];
-    *key = 123456; //default
-    log_info("conn_handle= %04x,set new_key= %06u\n", conn_handle, *key);
+    *key = 123456; //default key
     tmp_val[0] = conn_handle;
     little_endian_store_32(&tmp_val, 2, (u32)key);
     __gatt_server_event_callback_handler(GATT_COMM_EVENT_SM_PASSKEY_INPUT, tmp_val, 6, 0);
+    log_info("conn_handle= %04x,set new_key= %06u\n", conn_handle, *key);
 }
 
 /*************************************************************************************************/
@@ -282,6 +282,14 @@ void ble_gatt_server_sm_packet(uint8_t packet_type, uint16_t channel, uint8_t *p
             memcpy(&tmp32, event->data, 4);
             log_info("%04x->Passkey display: %06u.\n", event->con_handle, tmp32);
             __gatt_server_event_callback_handler(GATT_COMM_EVENT_ENCRYPTION_REQUEST, &event->con_handle, 2, &__this->server_encrypt_process);
+            break;
+
+        case SM_EVENT_PASSKEY_INPUT_NUMBER:
+            /*IO_CAPABILITY_KEYBOARD_ONLY 方式*/
+            __gatt_server_event_callback_handler(GATT_COMM_EVENT_ENCRYPTION_REQUEST, &event->con_handle, 2, &__this->server_encrypt_process);
+            ble_gatt_server_passkey_input(&tmp32, event->con_handle);
+            log_info("%04x->Passkey input: %06u.\n", event->con_handle, tmp32);
+            sm_passkey_input(event->con_handle, tmp32); /*update passkey*/
             break;
 
         case SM_EVENT_PAIR_PROCESS:
@@ -344,9 +352,12 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
             break;
 
         case ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE:
-            log_info("ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE:conn_handle= %04x,att_handle= %04x\n", \
+            log_info("ATT_INDICATION_COMPLETE:con_handle= %04x,att_handle= %04x\n", \
                      little_endian_read_16(packet, 3), little_endian_read_16(packet, 5));
-
+            tmp_val[0] = little_endian_read_16(packet, 3);
+            tmp_val[1] = little_endian_read_16(packet, 5);
+            __gatt_server_event_callback_handler(GATT_COMM_EVENT_SERVER_INDICATION_COMPLETE, tmp_val, 4, packet);
+            break;
 
         case HCI_EVENT_LE_META:
             switch (hci_event_le_meta_get_subevent_code(packet)) {
@@ -360,30 +371,29 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
                     log_info("conn_interval = %d\n", hci_subevent_le_enhanced_connection_complete_get_conn_interval(packet));
                     log_info("conn_latency = %d\n", hci_subevent_le_enhanced_connection_complete_get_conn_latency(packet));
                     log_info("conn_timeout = %d\n", hci_subevent_le_enhanced_connection_complete_get_supervision_timeout(packet));
-                    __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_COMPLETE, tmp_val, 2, packet);
                     __this->server_encrypt_process = LINK_ENCRYPTION_NULL;
                     __gatt_server_set_work_state(INVAIL_CONN_HANDLE, BLE_ST_IDLE, 0);
-
+                    __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_COMPLETE, tmp_val, 2, packet);
                     break;
 
                 case BT_ERR_ADVERTISING_TIMEOUT:
                     log_info("DIRECT_ADV TO!\n");
-                    __gatt_server_event_callback_handler(GATT_COMM_EVENT_DIRECT_ADV_TIMEOUT, tmp_val, 2, packet);
                     __gatt_server_set_work_state(INVAIL_CONN_HANDLE, BLE_ST_IDLE, 1);
+                    __gatt_server_event_callback_handler(GATT_COMM_EVENT_DIRECT_ADV_TIMEOUT, tmp_val, 2, packet);
                     break;
 
                 default:
                     log_info("CONNECTION FAIL!!! %0x\n", packet[3]);
-                    __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_COMPLETE_FAIL, tmp_val, 2, packet);
                     __gatt_server_set_work_state(INVAIL_CONN_HANDLE, BLE_ST_IDLE, 1);
+                    __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_COMPLETE_FAIL, tmp_val, 2, packet);
                     break;
                 }
 
                 if (BT_OP_SUCCESS != packet[3]) {
                     __gatt_server_check_auto_adv();
                 } else {
-                    __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_COMPLETE, tmp_val, 2, packet);
                     __this->server_encrypt_process = LINK_ENCRYPTION_NULL;
+                    __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_COMPLETE, tmp_val, 2, packet);
                 }
 
             }
@@ -395,14 +405,14 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
                     switch (packet[3]) {
                     case BT_ERR_ADVERTISING_TIMEOUT:
                         log_info("DIRECT_ADV TO!\n");
-                        __gatt_server_event_callback_handler(GATT_COMM_EVENT_DIRECT_ADV_TIMEOUT, tmp_val, 2, packet);
                         __gatt_server_set_work_state(INVAIL_CONN_HANDLE, BLE_ST_IDLE, 1);
+                        __gatt_server_event_callback_handler(GATT_COMM_EVENT_DIRECT_ADV_TIMEOUT, tmp_val, 2, packet);
                         break;
 
                     default:
                         log_info("CONNECTION FAIL!!! %0x\n", packet[3]);
-                        __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_COMPLETE_FAIL, tmp_val, 2, packet);
                         __gatt_server_set_work_state(INVAIL_CONN_HANDLE, BLE_ST_IDLE, 1);
+                        __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_COMPLETE_FAIL, tmp_val, 2, packet);
                         break;
                     }
                     __gatt_server_check_auto_adv();
@@ -426,11 +436,10 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
                 }
 #endif
                 ble_comm_dev_set_handle_state(tmp_val[0], GATT_ROLE_SERVER, BLE_ST_CONNECT);
-                __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_COMPLETE, tmp_val, 2, packet);
                 __this->server_encrypt_process = LINK_ENCRYPTION_NULL;
-
                 __gatt_server_set_work_state(tmp_val[0], BLE_ST_CONNECT, 1);
                 __gatt_server_set_work_state(INVAIL_CONN_HANDLE, BLE_ST_IDLE, 0);
+                __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_COMPLETE, tmp_val, 2, packet);
             }
             break;
 
@@ -476,8 +485,8 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
 
             multi_att_clear_ccc_config(tmp_val[0]);
             ble_comm_dev_set_handle_state(tmp_val[0], GATT_ROLE_SERVER, BLE_ST_DISCONN);
-            __gatt_server_event_callback_handler(GATT_COMM_EVENT_DISCONNECT_COMPLETE, tmp_val, 4, packet);
             __gatt_server_set_work_state(tmp_val[0], BLE_ST_DISCONN, 1);
+            __gatt_server_event_callback_handler(GATT_COMM_EVENT_DISCONNECT_COMPLETE, tmp_val, 4, packet);
             //配设备开adv
             if (!ble_update_get_ready_jump_flag()) {
                 __gatt_server_check_auto_adv();
@@ -534,45 +543,10 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
 
 #define EXT_ADV_NAME                    'J', 'L', '_', 'E', 'X', 'T', '_', 'A', 'D', 'V'
 /* #define EXT_ADV_NAME                    "JL_EXT_ADV" */
-#define BYTE_LEN(x...)                  sizeof((u8 []) {x})
 #define EXT_ADV_DATA                    \
     0x02, 0x01, 0x06, \
     0x03, 0x02, 0xF0, 0xFF, \
     BYTE_LEN(EXT_ADV_NAME) + 1, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, EXT_ADV_NAME
-
-struct ext_advertising_param {
-    u8 Advertising_Handle;
-    u16 Advertising_Event_Properties;
-    u8 Primary_Advertising_Interval_Min[3];
-    u8 Primary_Advertising_Interval_Max[3];
-    u8 Primary_Advertising_Channel_Map;
-    u8 Own_Address_Type;
-    u8 Peer_Address_Type;
-    u8 Peer_Address[6];
-    u8 Advertising_Filter_Policy;
-    u8 Advertising_Tx_Power;
-    u8 Primary_Advertising_PHY;
-    u8 Secondary_Advertising_Max_Skip;
-    u8 Secondary_Advertising_PHY;
-    u8 Advertising_SID;
-    u8 Scan_Request_Notification_Enable;
-} _GNU_PACKED_;
-
-struct ext_advertising_data  {
-    u8 Advertising_Handle;
-    u8 Operation;
-    u8 Fragment_Preference;
-    u8 Advertising_Data_Length;
-    u8 Advertising_Data[BYTE_LEN(EXT_ADV_DATA)];
-} _GNU_PACKED_;
-
-struct ext_advertising_enable {
-    u8  Enable;
-    u8  Number_of_Sets;
-    u8  Advertising_Handle;
-    u16 Duration;
-    u8  Max_Extended_Advertising_Events;
-} _GNU_PACKED_;
 
 const struct ext_advertising_param ext_adv_param = {
     .Advertising_Handle = 0,
@@ -644,6 +618,12 @@ static bool __gatt_server_just_new_dev_adv(void)
     log_info("%s\n", __FUNCTION__);
     u8 state = ble_gatt_server_get_work_state();
 
+#if RCSP_UPDATE_EN
+    if (get_jl_update_flag()) {
+        return false;
+    }
+#endif
+
     if (state != BLE_ST_IDLE && state != BLE_ST_DISCONN && state != BLE_ST_INIT_OK) {
         log_info("dev_doing\n");
         return false;
@@ -674,7 +654,7 @@ int ble_gatt_server_adv_enable(u32 en)
 {
     ble_state_e next_state, cur_state;
 
-    if (!__this->adv_ctrl_en) {
+    if (!__this->adv_ctrl_en && en) {
         return GATT_CMD_OPT_FAIL;
     }
 
@@ -794,9 +774,10 @@ void ble_gatt_server_module_enable(u8 en)
         __this->adv_ctrl_en = 1;
         __gatt_server_check_auto_adv();
     } else {
-        __this->adv_ctrl_en = 0;
         ble_gatt_server_adv_enable(0);
+        __this->adv_ctrl_en = 0;
         ble_gatt_server_disconnect_all();
+        __gatt_server_set_work_state(INVAIL_CONN_HANDLE, BLE_ST_IDLE, 0);
     }
 }
 
@@ -841,25 +822,22 @@ int ble_gatt_server_connetion_update_request(u16 conn_handle, const struct conn_
  *
  *  \param      [in]
  *
- *  \return
- GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE
- GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION
- GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION
+ *  \return     gatt_op_ret_e
  *
  *  \note       注意多机应用是，此接口会主动触发是否开新设备广播功能
  */
 /*************************************************************************************************/
 int ble_gatt_server_characteristic_ccc_set(u16 conn_handle, u16 att_handle, u16 ccc_config)
 {
-    //多机等使能服务通知后才打开新广播
-    if (SUPPORT_MAX_GATT_SERVER > 1) {
-        __gatt_server_check_auto_adv();
-    }
-
     multi_att_set_ccc_config(conn_handle, att_handle, ccc_config);
     if (BLE_ST_NOTIFY_IDICATE != ble_comm_dev_get_handle_state(conn_handle, GATT_ROLE_SERVER)) {
         ble_comm_dev_set_handle_state(conn_handle, GATT_ROLE_SERVER, BLE_ST_NOTIFY_IDICATE);
         __gatt_server_set_work_state(conn_handle, BLE_ST_NOTIFY_IDICATE, 1);
+    }
+
+    //多机等使能服务通知后才打开新广播
+    if (SUPPORT_MAX_GATT_SERVER > 1) {
+        __gatt_server_check_auto_adv();
     }
     return GATT_OP_RET_SUCESS;
 }

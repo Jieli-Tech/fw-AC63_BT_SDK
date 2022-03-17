@@ -43,6 +43,12 @@ const int device_bulk_read_async_enable = 1;
 const int device_bulk_read_async_enable = 0;
 #endif
 
+//================================================//
+//                  UI 							  //
+//================================================//
+const int ENABLE_LUA_VIRTUAL_MACHINE = 0;
+
+
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)
  */

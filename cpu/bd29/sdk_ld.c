@@ -124,6 +124,7 @@ SECTIONS
         *(.flushinv_icache)
         *(.volatile_ram_code)
         *(.os_critical_code)
+        *(.chargebox_code)
 		_os_begin = .;
 		PROVIDE(os_begin = .);
 		   *(.os_code)

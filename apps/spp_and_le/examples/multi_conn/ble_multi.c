@@ -46,8 +46,13 @@
 
 //ATT发送的包长,    note: 23 <=need >= MTU
 #define ATT_LOCAL_MTU_SIZE        (517)
+
+//ATT缓存的buffer支持缓存数据包个数
+#define ATT_PACKET_NUMS_MAX       (2)
+
 //ATT缓存的buffer大小,  note: need >= 23,可修改
-#define ATT_SEND_CBUF_SIZE        (512 *2)
+#define ATT_SEND_CBUF_SIZE        (ATT_PACKET_NUMS_MAX * (ATT_PACKET_HEAD_SIZE + ATT_LOCAL_MTU_SIZE))
+
 //------------------------------------------------------
 extern const char *bt_get_local_name();
 extern void clr_wdt(void);
@@ -58,7 +63,7 @@ extern void clr_wdt(void);
 static const sm_cfg_t sm_init_config = {
     .master_security_auto_req = 1,
     .master_set_wait_security = 1,
-    .slave_security_auto_req = 1,
+    .slave_security_auto_req = 0,
     .slave_set_wait_security = 1,
 
 #if PASSKEY_ENABLE
@@ -136,7 +141,17 @@ void bt_ble_exit(void)
 {
     log_info("%s\n", __FUNCTION__);
     ble_module_enable(0);
+
     ble_comm_exit();
+
+#if CONFIG_BT_GATT_SERVER_NUM
+    multi_server_exit();
+#endif
+
+#if CONFIG_BT_GATT_CLIENT_NUM
+    multi_client_exit();
+#endif
+
 }
 
 //模块使能

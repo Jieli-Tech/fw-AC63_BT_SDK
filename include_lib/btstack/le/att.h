@@ -89,6 +89,13 @@ extern "C" {
         u16 characteristic_index;
     } search_result_t;
 
+    typedef struct {
+        u16 handle;//descriptor's handle
+        u16 uuid16;//为0则是 uuid128
+        u8  uuid128[16];
+    } charact_descriptor_t;
+
+
     void att_ccc_config_init(void);
     void att_set_ccc_config(uint16_t handle, uint16_t cfg);
     uint16_t att_get_ccc_config(uint16_t handle);

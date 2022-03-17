@@ -3,6 +3,10 @@
 
 #include "generic/typedef.h"
 
+/*降噪版本定义*/
+#define ANS_V100	0xA1
+#define ANS_V200	0xA2
+
 //aec_cfg:
 typedef struct __AEC_CONFIG {
     u8 mic_again;			//DAC增益,default:3(0~14)
@@ -80,6 +84,11 @@ struct aec_s_attr {
 
     /*Extended-Parameters*/
     u16 ref_sr;
+
+    /*DNS Parameters*/
+    float DNS_GainFloor;
+    float DNS_OverDrive;
+    float DNS_Loudness;
 };
 
 s32 aec_init(struct aec_s_attr *attr);

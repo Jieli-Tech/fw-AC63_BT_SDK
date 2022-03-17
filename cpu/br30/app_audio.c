@@ -421,6 +421,14 @@ static int audio_combined_fade_timer_add(u8 gain_l, u8 gain_r)
 
 #endif/*SYS_VOL_TYPE == VOL_TYPE_AD*/
 
+void audio_volume_list_init(u8 cfg_en)
+{
+#if (SYS_VOL_TYPE == VOL_TYPE_AD)
+    audio_combined_vol_init(cfg_en);
+#elif (SYS_VOL_TYPE == VOL_TYPE_DIGITAL_HW)
+    /* audio_hw_digital_vol_init(cfg_en); */
+#endif/*SYS_VOL_TYPE*/
+}
 
 static void set_audio_device_volume(u8 type, s16 vol)
 {
@@ -535,7 +543,6 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
         extern void a2dp_digital_vol_set(u8 vol);
         a2dp_digital_vol_set(volume);
-        return;
 #endif/*SYS_VOL_TYPE == VOL_TYPE_DIGITAL*/
         break;
     case APP_AUDIO_STATE_CALL:
@@ -543,15 +550,14 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
         extern void esco_digital_vol_set(u8 vol);
         esco_digital_vol_set(volume);
-        return;
-#endif/*SYS_VOL_TYPE == VOL_TYPE_DIGITAL*/
-
+#else
 #if TCFG_CALL_USE_DIGITAL_VOLUME
         __this->digital_volume = phone_call_dig_vol_tab[volume];
         audio_dac_set_volume(&dac_hdl, volume);
         dac_digital_vol_set(volume, volume, 1);
         return;
 #endif/*TCFG_CALL_USE_DIGITAL_VOLUME*/
+#endif/*SYS_VOL_TYPE == VOL_TYPE_DIGITAL*/
 
 #if (SYS_VOL_TYPE == VOL_TYPE_ANALOG)
         /*
@@ -917,16 +923,32 @@ int read_mic_type_config(void)
     return -1;
 }
 
+void audio_adda_dump(void) //打印所有的dac,adc寄存器
+{
+    printf("DAC_VL0:%x", JL_AUDIO->DAC_VL0);
+    printf("DAC_TM0:%x", JL_AUDIO->DAC_TM0);
+    printf("DAC_DTB:%x", JL_AUDIO->DAC_DTB);
+    printf("DAC_CON:%x", JL_AUDIO->DAC_CON);
+    printf("ADC_CON:%x", JL_AUDIO->ADC_CON);
+    printf("DAC RES: DA0:0x%x DA1:0x%x DA2:0x%x DA3:0x%x DA7:0x%x,ADC RES:ADA0:0X%x ADA1:0X%x ADA2:0X%x  ADA3:0X%x ADA4:0X%x\\n", \
+           JL_ADDA->DAA_CON0, JL_ADDA->DAA_CON1, JL_ADDA->DAA_CON2, JL_ADDA->DAA_CON3,  JL_ADDA->DAA_CON7, \
+           JL_ADDA->ADA_CON0, JL_ADDA->ADA_CON1, JL_ADDA->ADA_CON2, JL_ADDA->ADA_CON3, JL_ADDA->ADA_CON4);
+}
+
+
 void audio_gain_dump()
 {
     u8 dac_again_l = JL_ADDA->DAA_CON1 & 0xF;
     u8 dac_again_r = (JL_ADDA->DAA_CON1 >> 4) & 0xF;
     u32 dac_dgain_l = JL_AUDIO->DAC_VL0 & 0xFFFF;
     u32 dac_dgain_r = (JL_AUDIO->DAC_VL0 >> 16) & 0xFFFF;
+
+    u8 mic0_0_6 = JL_ADDA->ADA_CON1 & 0x1;
+    u8 mic1_0_6 = JL_ADDA->ADA_CON2 & 0x1;
     u8 mic0_gain = JL_ADDA->ADA_CON0 & 0x1F;
     u8 mic1_gain = (JL_ADDA->ADA_CON0 >> 5) & 0x1F;
     short anc_gain = JL_ANC->CON5 & 0xFFFF;
-    printf("MIC_G:%d,%d,DAC_AG:%d,%d,DAC_DG:%d,%d,ANC_G:%d\n", mic0_gain, mic1_gain, dac_again_l, dac_again_r, dac_dgain_l, dac_dgain_r, anc_gain);
+    printf("MIC_G:%d,%d,MIC_0_6:%d,%d,DAC_AG:%d,%d,DAC_DG:%d,%d,ANC_G:%d\n", mic0_gain, mic1_gain, mic0_0_6, mic1_0_6, dac_again_l, dac_again_r, dac_dgain_l, dac_dgain_r, anc_gain);
 
 }
 

@@ -37,7 +37,11 @@ void clock_remove_set(u32 type)
 *****/
 
 ////  如果clock_fix 为0 就按照配置设置时钟，如果有值就固定频率
+#if TCFG_EQ_ONLINE_ENABLE || TCFG_MIC_EFFECT_ONLINE_ENABLE
+#define CLOCK_FIX   (196)  //在线调试开启时，固定时钟
+#else
 #define CLOCK_FIX   0
+#endif
 
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR) && TCFG_EQ_DIVIDE_ENABLE
 #define  EQ4_CLK  (24)

@@ -10,7 +10,7 @@
   strstr = ABSOLUTE(0x1127c8);
   flush_dcache = ABSOLUTE(0x1127cc);
   flushinv_dcache = ABSOLUTE(0x1127d0);
-  sfc_suspend = ABSOLUTE(0x1127d4);
+  /* sfc_suspend = ABSOLUTE(0x1127d4); */
   sfc_resume = ABSOLUTE(0x1127d8);
   chip_crc16 = ABSOLUTE(0x1127e0);
   nvram_set_boot_state = ABSOLUTE(0x1127f0);

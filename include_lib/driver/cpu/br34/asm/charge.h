@@ -70,14 +70,18 @@
 
 
 struct charge_platform_data {
-    u8 charge_en;	//内置充电使能
+    u8 charge_en;			//内置充电使能
     u8 charge_poweron_en;	//开机充电使能
-    u8 charge_full_V;	//充满电电压大小
-    u8 charge_full_mA;	//充满电电流大小
-    u8 charge_mA;	//充电电流大小
+    u8 charge_full_V;		//充满电电压大小
+    u8 charge_full_mA;		//充满电电流大小
+    u8 charge_mA;			//充电电流大小
+    u8 charge_trickle_mA;	//涓流电流大小
     u8 ldo5v_pulldown_en;   //下拉使能位
     u8 ldo5v_pulldown_lvl;	//ldo5v的下拉电阻配置项,若充电舱需要更大的负载才能检测到插入时，请将该变量置为对应阻值
+    u8 ldo5v_pulldown_keep; //下拉电阻在softoff时是否保持,ldo5v_pulldown_en=1时有效
     u16 ldo5v_off_filter;	//ldo5v拔出过滤值，过滤时间 = (filter*2 + 20)ms,ldoin<0.6V且时间大于过滤时间才认为拔出,对于充满直接从5V掉到0V的充电仓，该值必须设置成0，对于充满由5V先掉到0V之后再升压到xV的充电仓，需要根据实际情况设置该值大小
+    u16 ldo5v_on_filter;    //ldo5v>vbat插入过滤值,电压的过滤时间 = (filter*2)ms
+    u16 ldo5v_keep_filter;  //1V<ldo5v<vbat维持电压过滤值,过滤时间= (filter*2)ms
 };
 
 #define CHARGE_PLATFORM_DATA_BEGIN(data) \
@@ -106,6 +110,7 @@ enum {
 };
 
 
+extern void set_charge_event_flag(u8 flag);
 extern void set_charge_online_flag(u8 flag);
 extern u8 get_charge_online_flag(void);
 extern u8 get_charge_poweron_en(void);

@@ -1,6 +1,12 @@
 
         media_text_start = .;
 
+		. = ALIGN(4);
+        *(.dns_16k_data)
+        *(.dns_8k_data)
+		*(.jlsp_const)
+		*(.jlsp_code)
+
 		*(.aec_code)
 		*(.aec_const)
 		*(.der_code)
@@ -175,6 +181,12 @@
 		. = ALIGN(4);
 		*(.lc3_decoder_code)
 		*(.lc3_decoder_const)
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*( .lc3_codec_c_sparse_code)
+		*(.lc3_codec_d_code)
+        	/* *(.lc3_codec_c_const) */
+		/* *(.lc3_codec_c_code) */
+#endif
 
 		. = ALIGN(4);
 
@@ -413,6 +425,10 @@
 		*(.limiter_const)
 		*(.bt_limiter_const)
 		*(.bt_limiter_code)
+		*(.drc_const)
+		*(.drc_code)
+		*(.drc_sparse_code)
+		*(.drc_sparse_const)
 		. = ALIGN(4);
 		*(.lib_pitchshift_code)
 		*(.lib_pitchshift_const)

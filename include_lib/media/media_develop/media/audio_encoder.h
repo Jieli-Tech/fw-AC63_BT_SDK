@@ -350,6 +350,15 @@ int audio_encoder_close(struct audio_encoder *enc);
 */
 int audio_encoder_ioctrl(struct audio_encoder *enc, int argc, ...);
 
-
+/*
+*********************************************************************
+*                  Audio Encoder Get channel
+* Description: 获取编码器声道配置参数
+* Arguments  : *enc 	编码句柄
+* Return	 : 声道数
+* Note(s)    : None
+*********************************************************************
+*/
+int audio_encoder_get_channel(struct audio_encoder *enc);
 #endif
 

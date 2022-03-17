@@ -45,6 +45,7 @@ static u32 spp_test_start;
 
 void rfcomm_change_credits_setting(u16 init_credits, u8 base);
 int rfcomm_send_cretits_by_profile(u16 rfcomm_cid, u16 credit, u8 auto_flag);
+extern void uart_db_regiest_recieve_callback(void *rx_cb);
 
 static struct spp_operation_t *spp_api = NULL;
 static u8 spp_state;
@@ -72,13 +73,25 @@ int transport_spp_send_data_check(u16 len)
     return 1;
 }
 
+static void transport_uart_rx_to_spp(u8 *packet, u32 size)
+{
+    if (SPP_USER_ST_CONNECT == spp_state && transport_spp_send_data_check(size)) {
+        transport_spp_send_data(packet, size);
+    } else {
+        log_info("drop uart data!!!\n");
+    }
+}
+
 static void transport_spp_state_cbk(u8 state)
 {
     spp_state = state;
     switch (state) {
     case SPP_USER_ST_CONNECT:
         log_info("SPP_USER_ST_CONNECT ~~~\n");
-
+#if TCFG_UART0_RX_PORT != NO_CONFIG_PORT
+        //for test 串口数据直通到蓝牙
+        uart_db_regiest_recieve_callback(transport_uart_rx_to_spp);
+#endif
         break;
 
     case SPP_USER_ST_DISCONN:

@@ -191,6 +191,9 @@ static u8 update_result_handle(u8 err)
         case UPDATE_RESULT_FLASH_DATA_VERIFY_ERR:
             res = DEVICE_UPDATE_STA_VERIFY_ERR;
             break;
+        case UPDATE_RESULT_FILE_SAME:           //相同文件升级直接报升级成功
+            res = DEVICE_UPDATE_STA_SUCCESS;
+            break;
 
         }
     } else if (BT_UPDATE_OVER == err) {

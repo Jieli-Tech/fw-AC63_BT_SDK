@@ -303,6 +303,12 @@ int audio_demo_enc_open(int (*demo_output)(void *priv, void *buf, int len), u32 
     audio_encoder_set_event_handler(&demo_enc->encoder, demo_enc_event_handler, 0);
     audio_encoder_set_output_buffs(&demo_enc->encoder, demo_enc->output_frame,
                                    sizeof(demo_enc->output_frame), 1);
+    if (!demo_enc->encoder.enc_priv) {
+        log_e("encoder err, maybe coding(0x%x) disable \n", fmt.coding_type);
+        err = -EINVAL;
+        goto __err;
+    }
+
     int start_err = audio_encoder_start(&demo_enc->encoder);
     // 用timer模拟填数,填入需要编码的源数据
     /* demo_frame_test_tmr = sys_hi_timer_add(NULL, demo_frame_test_time_func, 40); */
@@ -315,7 +321,9 @@ int audio_demo_enc_open(int (*demo_output)(void *priv, void *buf, int len), u32 
     }
     u32 clk_debug = clk_get("sys");
     fmt.sample_rate = 16000;
+#if !defined(CONFIG_MEDIA_DEVELOP_ENABLE)
     audio_mic_pwr_ctl(MIC_PWR_ON);
+#endif
     audio_adc_mic_open(&demo_enc->mic_ch, AUDIO_ADC_MIC_CH, &adc_hdl);
     audio_adc_mic_set_sample_rate(&demo_enc->mic_ch, fmt.sample_rate);
 #if TCFG_AUDIO_ANC_ENABLE
@@ -333,6 +341,13 @@ int audio_demo_enc_open(int (*demo_output)(void *priv, void *buf, int len), u32 
 #endif
     printf("demo_enc_open ok %d\n", start_err);
     return 0;
+__err:
+    audio_encoder_close(&demo_enc->encoder);
+    local_irq_disable();
+    free(demo_enc);
+    demo_enc = NULL;
+    local_irq_enable();
+    return err;
 }
 
 int audio_demo_enc_close()

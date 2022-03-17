@@ -9,6 +9,7 @@
 		*(.nlp_const)
 		*(.qmf_code)
 		*(.qmf_const)
+     		*(.bark_const)
 		*(.bt_audioplc_sparse_code)
 		*(.bt_audioplc_code)
 		*(.bt_audioplc_const)
@@ -402,6 +403,10 @@
 		*(.limiter_const)
 		*(.bt_limiter_const)
 		*(.bt_limiter_code)
+	    *(.drc_const)
+		*(.drc_code)
+		*(.drc_sparse_code)
+		*(.drc_sparse_const)
 		. = ALIGN(4);
 		*(.lib_pitchshift_code)
 		*(.lib_pitchshift_const)

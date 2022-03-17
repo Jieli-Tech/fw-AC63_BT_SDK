@@ -59,7 +59,7 @@ enum audio_channel {
 
 struct audio_fmt {
     u8  channel;
-    u8  frame_len;
+    u16 frame_len;
     u32 sample_rate;
     u32 coding_type;
     u32 bit_rate;

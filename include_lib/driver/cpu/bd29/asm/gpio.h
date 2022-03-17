@@ -556,5 +556,19 @@ u32 gpio_irflt_to_timer(u32 t);
 
 u32 get_gpio(const char *p);
 
+/**
+  * @brief gpio_longpress_pin0_reset_config
+  *
+  * @param pin 任意GPIO
+  * @param level 0(下降沿触发) 1(上升沿触发)
+  * @param time 0(disable) 1 2 4 8 16单位为秒
+  */
+void gpio_longpress_pin0_reset_config(u32 pin, u32 level, u32 time);
 
+
+/**
+  * @brief gpio_shortpress_reset_config
+  * @param enable  0(disalbe) 1(enable)
+  */
+void gpio_shortpress_reset_config(u32 enable);
 #endif  /*GPIO_H*/

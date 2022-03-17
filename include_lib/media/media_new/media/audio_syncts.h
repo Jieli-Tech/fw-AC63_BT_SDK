@@ -48,10 +48,15 @@ int audio_syncts_trigger_resume(void *syncts, void *priv, void (*resume)(void *p
 
 int audio_syncts_update_sample_rate(void *syncts, int sample_rate);
 
+void audio_syncts_resample_suspend(void *syncts);
+
+void audio_syncts_resample_resume(void *syncts);
+
 int sound_pcm_update_frame_num(void *syncts, int frames);
 
 int sound_pcm_syncts_latch_trigger(void *syncts);
 
 u32 sound_buffered_between_syncts_and_device(void *priv, u8 time_select);
 
+void sound_pcm_enter_update_frame(void *syncts);
 #endif

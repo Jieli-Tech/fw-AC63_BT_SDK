@@ -497,7 +497,7 @@ static int set_adv_enable(void *priv, u32 en)
 {
     ble_state_e next_state, cur_state;
 
-    if (!adv_ctrl_en) {
+    if (!adv_ctrl_en && en) {
         return APP_BLE_OPERATION_ERROR;
     }
 

@@ -1,7 +1,7 @@
 #include "btstack/bluetooth.h"
 #include "system/includes.h"
 #include "bt_common.h"
-#include "system/crypto_toolbox/sha256.h"
+#include "sha256.h"
 #include "api/sig_mesh_api.h"
 #include "model_api.h"
 #include "unix_timestamp.h"

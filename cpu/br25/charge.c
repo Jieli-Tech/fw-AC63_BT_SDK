@@ -10,6 +10,7 @@
 #include "asm/efuse.h"
 #include "gpio.h"
 #include "app_config.h"
+#include "asm/adc_api.h"
 
 #define LOG_TAG_CONST   CHARGE
 #define LOG_TAG         "[CHARGE]"
@@ -33,12 +34,14 @@ enum {
 typedef struct _CHARGE_VAR {
     struct charge_platform_data *data;
     volatile u8 charge_online_flag;
+    volatile u8 charge_event_flag;
     volatile u8 init_ok;
     volatile u8 detect_stop;
     volatile u8 timer_period;
     volatile int ldo5v_timer;
     volatile int charge_timer;
     volatile int charge_timer_pre;
+    volatile int cc_timer;      //涓流切恒流的sys timer
 } CHARGE_VAR;
 
 #define __this 	(&charge_var)
@@ -156,6 +159,10 @@ u8 get_charge_online_flag(void)
     return __this->charge_online_flag;
 }
 
+void set_charge_event_flag(u8 flag)
+{
+    __this->charge_event_flag = flag;
+}
 
 u8 get_ldo5v_online_hw(void)
 {
@@ -192,6 +199,18 @@ static void set_charge_wkup_source(u8 source)
     CHARGE_WKUP_PND_CLR();
 }
 
+/*检测是否满足进入恒流充电条件*/
+static void charge_cc_check(void *priv)
+{
+    log_info("%s\n", __func__);
+    if ((adc_get_voltage(AD_CH_VBAT) * 4 / 10) > CHARGE_CCVOL_V) {
+        /*满足进入恒流充电条件 设置恒流充电电流大小*/
+        set_charge_mA(__this->data->charge_mA);
+        usr_timer_del(__this->cc_timer);
+        __this->cc_timer = 0;
+    }
+}
+
 void charge_start(void)
 {
     log_info("%s\n", __func__);
@@ -208,11 +227,27 @@ void charge_start(void)
 
     set_charge_wkup_source(CHARGE_FULL_33V);
 
+    /*进入恒流充电(VBAT > 3V)*/
+    if ((adc_get_voltage(AD_CH_VBAT) * 4 / 10) > CHARGE_CCVOL_V) {
+        /*设置恒流充电电流大小*/
+        set_charge_mA(__this->data->charge_mA);
+    } else {
+        /*设置涓流电流大小*/
+        CHARGE_mA_SEL(CHARGE_mA_20);
+        if (!__this->cc_timer) {
+            /*每1分钟检测一次是否具备进入恒流充电的条件*/
+            __this->cc_timer = usr_timer_add(NULL, charge_cc_check, 1000, 1);
+        }
+    }
+
     CHGBG_EN(1);
     CHARGE_EN(1);
     /* PDIO_KEEP(1);//防止进入pdown后充电通路被切断 */
 
     charge_event_to_user(CHARGE_EVENT_CHARGE_START);
+
+    //开始充电,加速电池电压采集速率
+    adc_set_sample_freq(AD_CH_VBAT, 5000);
 }
 
 void charge_close(void)
@@ -238,18 +273,29 @@ void charge_close(void)
         sys_timer_del(__this->charge_timer);
         __this->charge_timer = 0;
     }
+
+    if (__this->cc_timer) {
+        usr_timer_del(__this->cc_timer);
+        __this->cc_timer = 0;
+    }
+
+    //关闭充电,恢复电池电压采集速率
+    adc_set_sample_freq(AD_CH_VBAT, 30000);
 }
 
 static void charge_full_detect(void *priv)
 {
     static u16 charge_full_cnt = 0;
+    u16 vbat_vol = adc_get_voltage(AD_CH_VBAT) * 4 / 10;
+    u16 vpwr_vol = adc_get_voltage(AD_CH_LDO5V) * 4 / 10;
 
     if (__this->timer_period == CHARGE_TIMER_10_S) {
         sys_timer_modify(__this->charge_timer, 10);
         __this->timer_period = CHARGE_TIMER_10_MS;
     }
 
-    if (CHARGE_FULL_FLAG_GET() && LVCMP_DET_GET()) {
+    //满足 充满标记 && (VPWR > VBAT) && (VPWR > 4.5V) && (VBAT > 4.1V)
+    if (CHARGE_FULL_FLAG_GET() && LVCMP_DET_GET() && (vpwr_vol > 450) && (vbat_vol >= ((get_charge_full_value() - 100) / 10))) {
         /* putchar('F'); */
         if (charge_full_cnt < 5) {
             charge_full_cnt++;
@@ -314,13 +360,17 @@ static void ldo5v_detect(void *priv)
 
     if (LVCMP_DET_GET()) {	//ldoin > vbat
         /* putchar('X'); */
-        ldo5v_off_cnt = 0;
-        ldo5v_in_err_cnt = 0;
         if (ldo5v_in_normal_cnt < 50) {
             ldo5v_in_normal_cnt++;
         } else {
             /* printf("ldo5V_IN\n"); */
             set_charge_online_flag(1);
+            ldo5v_off_cnt = 0;
+            ldo5v_in_err_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
             ldo5v_in_normal_cnt = 0;
             sys_hi_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
@@ -339,13 +389,17 @@ static void ldo5v_detect(void *priv)
         }
     } else if (LDO5V_DET_GET() == 0) {	//ldoin<拔出电压（0.6）
         /* putchar('Q'); */
-        ldo5v_in_normal_cnt = 0;
-        ldo5v_in_err_cnt = 0;
         if (ldo5v_off_cnt < (__this->data->ldo5v_off_filter + 20)) {
             ldo5v_off_cnt++;
         } else {
             /* printf("ldo5V_OFF\n"); */
             set_charge_online_flag(0);
+            ldo5v_in_normal_cnt = 0;
+            ldo5v_in_err_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
             ldo5v_off_cnt = 0;
             sys_hi_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
@@ -363,14 +417,18 @@ static void ldo5v_detect(void *priv)
             }
         }
     } else {	//拔出电压（0.6左右）< ldoin < vbat
-        ldo5v_in_normal_cnt = 0;
         /* putchar('E'); */
-        ldo5v_off_cnt = 0;
         if (ldo5v_in_err_cnt < 50) {
             ldo5v_in_err_cnt++;
         } else {
             /* printf("ldo5V_ERR\n"); */
             set_charge_online_flag(1);
+            ldo5v_off_cnt = 0;
+            ldo5v_in_normal_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
             ldo5v_in_err_cnt = 0;
             sys_hi_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
@@ -532,6 +590,8 @@ int charge_init(const struct dev_node *node, void *arg)
     }
     charge_set_callback(charge_wakeup_isr, sub_wakeup_isr);
     /* sys_hi_timer_add(0,test_func,1); */
+
+    adc_add_sample_ch(AD_CH_LDO5V);
 
     __this->init_ok = 1;
 

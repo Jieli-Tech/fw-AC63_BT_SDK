@@ -294,6 +294,12 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
     audio_encoder_set_output_buffs(&esco_enc->encoder, esco_enc->output_frame,
                                    sizeof(esco_enc->output_frame), 1);
 
+    if (!esco_enc->encoder.enc_priv) {
+        log_e("encoder err, maybe coding(0x%x) disable \n", fmt.coding_type);
+        err = -EINVAL;
+        goto __err;
+    }
+
     audio_encoder_start(&esco_enc->encoder);
 
 #if TCFG_AUDIO_ANC_ENABLE
@@ -340,6 +346,15 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
 #endif
 
     return 0;
+__err:
+    audio_encoder_close(&esco_enc->encoder);
+
+    local_irq_disable();
+    free(esco_enc);
+    esco_enc = NULL;
+    local_irq_enable();
+
+    return err;
 }
 
 void esco_enc_close()
@@ -541,6 +556,12 @@ int pcm2tws_enc_open(u32 codec_type, u32 info)
     audio_encoder_set_fmt(&pcm2tws_enc->encoder, &fmt);
     audio_encoder_set_output_buffs(&pcm2tws_enc->encoder, pcm2tws_enc->output_frame,
                                    sizeof(pcm2tws_enc->output_frame), 1);
+    if (!pcm2tws_enc->encoder.enc_priv) {
+        log_e("encoder err, maybe coding(0x%x) disable \n", fmt.coding_type);
+        err = -EINVAL;
+        goto __err;
+    }
+
 
     local_tws_start(pcm2tws_enc->encoder.fmt.coding_type, pcm2tws_enc->encoder.fmt.sample_rate | (pcm2tws_enc->encoder.fmt.channel << 16));
 
@@ -551,6 +572,15 @@ int pcm2tws_enc_open(u32 codec_type, u32 info)
     printf("sample_rate: %d\n", fmt.sample_rate);
 
     return 0;
+__err:
+    audio_encoder_close(&pcm2tws_enc->encoder);
+
+    local_irq_disable();
+    free(pcm2tws_enc);
+    pcm2tws_enc = NULL;
+    local_irq_enable();
+
+    return err;
 }
 
 void pcm2tws_enc_close()

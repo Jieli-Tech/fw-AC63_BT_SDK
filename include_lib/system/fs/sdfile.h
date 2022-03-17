@@ -11,6 +11,7 @@
 #define SDFILE_STORAGE 			0
 #endif /* #ifndef SDFILE_STORAGE */
 
+#define NOR_SDFILE_ENABLE  1
 /********* sdfile 文件头 **********/
 #define SDFILE_NAME_LEN 			16
 
@@ -212,7 +213,7 @@ u32 sdfile_flash_addr2cpu_addr(u32 offset);
 //cpu addr  -> flash addr
 u32 sdfile_cpu_addr2flash_addr(u32 offset);
 
-u32 decode_data_by_user_key_in_sdfile(u16 key, u8 *buff, u16 size, u32 dec_addr, u8 dec_len);
+void sdfile_head_addr_get(char *name, u32 *addr, u32 *len);
 
 u32 init_norsdfile_hdl(void);
 int set_res_startaddr(int offset);

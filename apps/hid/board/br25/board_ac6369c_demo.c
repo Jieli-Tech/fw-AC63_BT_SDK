@@ -50,6 +50,23 @@ UART0_PLATFORM_DATA_BEGIN(uart0_data)
 UART0_PLATFORM_DATA_END()
 #endif //TCFG_UART0_ENABLE
 
+/************************** CHARGE config****************************/
+#if TCFG_CHARGE_ENABLE
+CHARGE_PLATFORM_DATA_BEGIN(charge_data)
+    .charge_en              = TCFG_CHARGE_ENABLE,              //内置充电使能
+    .charge_poweron_en      = TCFG_CHARGE_POWERON_ENABLE,      //是否支持充电开机
+    .charge_full_V          = TCFG_CHARGE_FULL_V,              //充电截止电压
+    .charge_full_mA			= TCFG_CHARGE_FULL_MA,             //充电截止电流
+    .charge_mA				= TCFG_CHARGE_MA,                  //充电电流
+/*ldo5v拔出过滤值，过滤时间 = (filter*2 + 20)ms,ldoin<0.6V且时间大于过滤时间才认为拔出
+ 对于充满直接从5V掉到0V的充电仓，该值必须设置成0，对于充满由5V先掉到0V之后再升压到xV的
+ 充电仓，需要根据实际情况设置该值大小*/
+	.ldo5v_off_filter		= 100,
+/*ldo5v的10k下拉电阻使能,若充电舱需要更大的负载才能检测到插入时，请将该变量置1,默认值设置为1
+  对于充电舱需要按键升压,且维持电压是从充电舱经过上拉电阻到充电口的舱，请将该值改为0*/
+	.ldo5v_pulldown_en		= 0,
+CHARGE_PLATFORM_DATA_END()
+#endif//TCFG_CHARGE_ENABLE
 
     /************************** AD KEY ****************************/
 #if TCFG_ADKEY_ENABLE
@@ -178,8 +195,21 @@ void board_init()
 
 	board_devices_init();
 
-	log_info("board_init");
+#if TCFG_CHARGE_ENABLE
+    extern int charge_init(const struct dev_node *node, void *arg);
+    charge_init(NULL, (void *)&charge_data);
+#if TCFG_HANDSHAKE_ENABLE
+    if(get_charge_online_flag()){
+        handshake_app_start(0, NULL);
+    }
+#endif
+#else
+	/*close FAST CHARGE */
+	CHARGE_EN(0);
+	CHGBG_EN(0);
+#endif
 
+	log_info("board_init");
 	//必须在切换到dcdc前设置好
 	if(get_charge_online_flag()){
 		log_info("charge...select LDO15");
@@ -187,12 +217,6 @@ void board_init()
 	}else{
 		power_set_mode(TCFG_LOWPOWER_POWER_SEL);
 	}
-
-#if(!TCFG_CHARGE_ENABLE)
-	/*close FAST CHARGE */
-	 CHARGE_EN(0);
-	 CHGBG_EN(0);
-#endif
 }
 enum {
     PORTA_GROUP = 0,
@@ -226,6 +250,13 @@ static void close_gpio(void)
     port_protect(port_group, TCFG_IOKEY_PREV_ONE_PORT);
     port_protect(port_group, TCFG_IOKEY_NEXT_ONE_PORT);
 #endif /* TCFG_IOKEY_ENABLE */
+
+#if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
+    if (is_softoff == 0) {
+        port_protect(port_group, TCFG_HANDSHAKE_IO_DATA1);
+        port_protect(port_group, TCFG_HANDSHAKE_IO_DATA2);
+    }
+#endif
 
     //< close gpio
     gpio_dir(GPIOA, 0, 16, port_group[PORTA_GROUP], GPIO_OR);
@@ -321,34 +352,11 @@ static void keep_set_io_input(int io_sel,u8 pull_up_en,u8 pull_down_en)
 extern void dac_power_off(void);
 void board_set_soft_poweroff(void)
 {
-    u32 porta_value = 0xffff;
-    u32 portb_value = 0xfffe;
-    u32 portc_value = 0xffff;
-
 	if(TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15){
 		power_set_mode(PWR_LDO15);
 	}
 
 	close_gpio();
-
-    gpio_dir(GPIOA, 0, 16, porta_value, GPIO_OR);
-    gpio_set_pu(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_set_pd(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_die(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_dieh(GPIOA, 0, 16, ~portc_value, GPIO_AND);
-
-    //保留长按Reset Pin - PB1
-    gpio_dir(GPIOB, 1, 15, portb_value, GPIO_OR);
-    gpio_set_pu(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_set_pd(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_die(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_dieh(GPIOB, 0, 16, ~portc_value, GPIO_AND);
-
-    gpio_dir(GPIOC, 0, 16, portc_value, GPIO_OR);
-    gpio_set_pu(GPIOC, 0, 16, ~portc_value, GPIO_AND);
-    gpio_set_pd(GPIOC, 0, 16, ~portc_value, GPIO_AND);
-    gpio_die(GPIOC, 0, 16, ~portc_value, GPIO_AND);
-    gpio_dieh(GPIOC, 0, 16, ~portc_value, GPIO_AND);
 
     gpio_set_pull_up(IO_PORT_DP, 0);
     gpio_set_pull_down(IO_PORT_DP, 0);

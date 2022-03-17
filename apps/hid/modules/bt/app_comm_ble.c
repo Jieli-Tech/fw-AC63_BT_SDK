@@ -76,6 +76,7 @@ void btstack_ble_start_before_init(const ble_init_cfg_t *cfg, int param)
 
     le_hogp_set_icon(cfg->appearance);
     le_hogp_set_ReportMap(cfg->report_map, cfg->report_map_size);
+    le_hogp_regiest_get_battery(get_vbat_percent);
 
     log_info("---ble's address");
     printf_buf((void *)tmp_ble_addr, 6);

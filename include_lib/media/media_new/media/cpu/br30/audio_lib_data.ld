@@ -4,7 +4,7 @@
         *(.audio_sync_data)
 	audio_sync_data_end = .;
 	. = ALIGN(4);
-
+	*(.jlsp_data)
     *(.sbc_data)
     *(.msbc_data)
     *(.cvsd_data)
@@ -13,6 +13,11 @@
 *(.sbc_encoder_data)
 	*(.bt_audioplc_data)
     *(.lc3_decoder_data)
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_const)
+		*(.lc3_codec_ari_c_data)
+		*(.lc3_codec_c_data)
+#endif
    *(.wtgv2_data)
     *(.wtgv2dec_data)
 

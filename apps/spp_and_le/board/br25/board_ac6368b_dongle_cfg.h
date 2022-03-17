@@ -278,7 +278,12 @@ DAC硬件上的连接方式,可选的配置：
 ///USB 配置重定义
 #undef USB_DEVICE_CLASS_CONFIG
 #define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS)
+#undef  USB_REMOTE_WAKEUP_TIMEOUT_DETECT_TIMES//休眠唤醒超时时间设置(ms)
+#define USB_REMOTE_WAKEUP_TIMEOUT_DETECT_TIMES  2000
 
+/*定义支持wakeup*/
+#undef  USB_SUSPEND_RESUME_SYSTEM_NO_SLEEP
+#define USB_SUSPEND_RESUME_SYSTEM_NO_SLEEP      1
 //*********************************************************************************//
 //                                  LED 配置                                       //
 //*********************************************************************************//

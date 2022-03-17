@@ -193,7 +193,7 @@ local to_wts_format = function(frompath, topath)
 	
 	cfg:runProg{cfg.rootDir .. '/3rd/ffmpeg', '-i', frompath, '-ar', math.floor(tv:getFormatSampleRate() * 2), '-ac', '1', '-f', 's16le', '-acodec', 'pcm_s16le', pcmtmp};
 	cfg:runProg{tool_path .. '/wtgv2_resample.exe', pcmtmp, pcmtmp2};
-	cfg:runProg{tool_path .. '/wtgv2_encode.exe', pcmtmp2, topath, "o.raw", math.floor(tv:getFormatSampleRate()), math.floor(tv:getFormatBitRate()), '20', '0.35'};
+	cfg:runProg{tool_path .. '/wtgv2_encode.exe', pcmtmp2, topath, "o.raw", math.floor(tv:getFormatBitRate()), math.floor(tv:getFormatSampleRate()), '20', '0.35'};
 	os.remove(pcmtmp);
 	os.remove(pcmtmp2);
 	return true;
@@ -224,8 +224,17 @@ end
 local to_sbc_format = function (frompath, topath)
 	local pcmtmp = os.tmpname();
 	cfg:runProg{cfg.rootDir .. "/3rd/ffmpeg.exe", "-i", frompath,  "-ar", "48000", "-ac", "1" , "-f", "wav", pcmtmp};
-	cfg:runProg{tool_path .. '/sbc_encode.exe', pcmtmp, topath, "35"};
+	local wavheader_standard = tool_path .. '/wavheader_standard.exe';
+	if not cfg:utilsFileExists(wavheader_standard) then
+		cfg:msgBox("warn", "未能找到转换程序，你可能需要在配置工具入口（jlxproj文件）处【检查依赖的软件包是否更新】");
+		os.remove(pcmtmp);
+		return false;
+	end
+	local pcmtmp2 = os.tmpname();
+	cfg:runProg{wavheader_standard, pcmtmp, pcmtmp2};
+	cfg:runProg{tool_path .. '/sbc_encode.exe', pcmtmp2, topath, "35"};
 	os.remove(pcmtmp);
+	os.remove(pcmtmp2);
 	return true; -- good
 end;
 

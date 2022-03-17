@@ -22,6 +22,7 @@
 #define TWS_STA_MONITOR_START               0x00000040      //tws从机开始监听手机链路
 #define TWS_STA_LOCAL_TWS_OPEN              0x00000080      //开启local_tws
 #define TWS_STA_ESCO_OPEN_LINK              0x00000100      //正在打电话，create link
+#define TWS_STA_MONITOR_ING                 0x00000200      //tws主从收到监听信息
 
 #define TWS_SYNC_CALL_TX                1
 #define TWS_SYNC_CALL_RX                2
@@ -234,5 +235,8 @@ int tws_api_enter_pure_monitor_mode();
 
 void tws_try_connect_disable(void);
 
-extern void tws_conn_switch_role();
+void tws_conn_switch_role();
+
+void tws_api_role_switch();
+
 #endif

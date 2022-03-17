@@ -204,8 +204,17 @@ end
 local to_sbc_format = function (frompath, topath)
 	local pcmtmp = os.tmpname();
 	cfg:runProg{cfg.rootDir .. "/3rd/ffmpeg.exe", "-i", frompath,  "-ar", "48000", "-ac", "1" , "-f", "wav", pcmtmp};
-	cfg:runProg{tool_path .. "/sbc_encode.exe", pcmtmp, topath, "35"};
+	local wavheader_standard = tool_path .. '/wavheader_standard.exe';
+	if not cfg:utilsFileExists(wavheader_standard) then
+		cfg:msgBox("warn", "未能找到转换程序，你可能需要在配置工具入口（jlxproj文件）处【检查依赖的软件包是否更新】");
+		os.remove(pcmtmp);
+		return false;
+	end
+	local pcmtmp2 = os.tmpname();
+	cfg:runProg{wavheader_standard, pcmtmp, pcmtmp2};
+	cfg:runProg{tool_path .. '/sbc_encode.exe', pcmtmp2, topath, "35"};
 	os.remove(pcmtmp);
+	os.remove(pcmtmp2);
 	return true; -- good
 end;
 

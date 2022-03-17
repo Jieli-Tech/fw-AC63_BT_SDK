@@ -62,6 +62,12 @@
 #define LL_FEAT_POWER_CHANGE_IND                    (UINT64_C(1) << (34))   /*!< Power control power change indication supported. */
 #define LL_FEAT_PATH_LOSS_MONITOR                   (UINT64_C(1) << (35))   /*!< Path loss monitoring supported. */
 
+#define LL_FEAT_PATH_LOSS_MONITOR                   (UINT64_C(1) << (35))   /*!< Path loss monitoring supported. */
+#define LL_FEAT_PERIODIC_ADV_ADI_SUPPORT            (UINT64_C(1) << (36))   /*!< Periodic Advertising ADI supported. */
+#define LL_FEAT_CONN_SUBRATE                        (UINT64_C(1) << (37))   /*!< Connection subrating supported. */
+#define LL_FEAT_CONN_SUBRATE_HOST_SUPPORT           (UINT64_C(1) << (38))   /*!< Connection subratingHost supported. */
+#define LL_FEAT_CHANNEL_CLASSIFICATION              (UINT64_C(1) << (39))   /*!< Channel classification supported. */
+
 #define LE_ENCRYPTION                       LL_FEAT_ENCRYPTION
 #define CONNECTION_PARAMETER_REQUEST        LL_FEAT_CONN_PARAM_REQ_PROC
 #define EXTENDED_REJECT_INDICATION          LL_FEAT_EXT_REJECT_IND
@@ -177,21 +183,21 @@ extern const int config_btctler_le_master_multilink;
 /*
  *-------------------LE Vendor baseband CONTROL
  */
-#define VENDOR_BB_PHY_2M            1
-#define VENDOR_BB_PHY_S2            2
-#define VENDOR_BB_PHY_S8            3
-#define VENDOR_BB_MD_CLOSE          BIT(4)
-#define VENDOR_BB_CONNECT_SLOT      BIT(5)
-#define VENDOR_BB_EVT_HOLD          BIT(6)
-#define VENDOR_BB_DUL_MODE1         BIT(7) // 双发双收优化
-#define VENDOR_BB_ADV_PDU_INT(x)    ((x) << 8)
-#define VENDOR_BB_EVT_HOLD_TRIGG(x) ((x) << 12)
-#define VENDOR_BB_EVT_HOLD_TICK(x)  ((x) << 18)
-#define VENDOR_BB_RX_PAYLOAD_LEN(x) ((x) << 25)
-#define VENDOR_BB_WL_COEX_ROLE_EN   BIT(2)
-#define VENDOR_BB_WL_COEX_ROLE      BIT(3)
+#define VENDOR_BB_PIS_EN                BIT(0)
+#define VENDOR_BB_PIS_HB                BIT(1)
+#define VENDOR_BB_PIS_HB_M              BIT(2)
+#define VENDOR_BB_MD_CLOSE              BIT(3)
+#define VENDOR_BB_CONNECT_SLOT          BIT(4)
+#define VENDOR_BB_NEW_SCAN_STRATEGY		BIT(5)
+#define VENDOR_BB_WL_COEX_ROLE_EN       BIT(6)
+#define VENDOR_BB_WL_COEX_ROLE          BIT(7)
+#define VENDOR_BB_ADV_PDU_INT(x)        ((x) << 8)  /* 4bit */
+#define VENDOR_BB_EVT_HOLD_TRIGG(x)     ((x) << 12) /* 6bit */
+#define VENDOR_BB_RX_PAYLOAD_LEN(x)     ((x) << 18) /* 7bit */
+#define VENDOR_BB_PIS_TX_PAYLOAD_LEN(x) ((x) << 25) /* 7bit*/
 
 extern const u32 config_vendor_le_bb;
+extern const int config_rf_oob;
 /*-----------------------------------------------------------*/
 
 /*

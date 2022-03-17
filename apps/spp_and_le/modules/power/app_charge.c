@@ -8,6 +8,7 @@
 #include "asm/wdt.h"
 #include "app_main.h"
 #include "app_power_manage.h"
+#include "app_handshake.h"
 
 #define LOG_TAG_CONST       APP_CHARGE
 #define LOG_TAG             "[APP_CHARGE]"
@@ -20,6 +21,16 @@
 
 #if TCFG_CHARGE_ENABLE
 
+#if TCFG_HANDSHAKE_ENABLE
+static void handshake_complete(void)
+{
+    handshake_app_stop();
+    if (get_lvcmp_det()) {
+        charge_start();
+    }
+}
+#endif
+
 void charge_start_deal(void)
 {
     log_info("%s\n", __func__);
@@ -29,6 +40,9 @@ void charge_start_deal(void)
 void ldo5v_keep_deal(void)
 {
     log_info("%s\n", __func__);
+#if TCFG_HANDSHAKE_ENABLE
+    handshake_app_start(2, handshake_complete);
+#endif
 }
 
 void charge_full_deal(void)
@@ -45,12 +59,19 @@ void charge_close_deal(void)
 void charge_ldo5v_in_deal(void)
 {
     log_info("%s\n", __FUNCTION__);
+#if TCFG_HANDSHAKE_ENABLE
+    handshake_app_start(2, handshake_complete);
+#else
     charge_start();
+#endif
 }
 
 void charge_ldo5v_off_deal(void)
 {
     log_info("%s\n", __FUNCTION__);
+#if TCFG_HANDSHAKE_ENABLE
+    handshake_app_stop();
+#endif
     charge_close();
     power_set_mode(TCFG_LOWPOWER_POWER_SEL);
 #if TCFG_SYS_LVD_EN

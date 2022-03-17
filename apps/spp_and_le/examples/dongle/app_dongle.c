@@ -45,16 +45,41 @@
 
 static u8  is_app_dongle_active = 0;
 
+
 //配置选择上报PC的描述符
-#define CONFIG_HID_REPORT_MAP        2 //0--hid_key,1--mouse,2--standard_keyboard
+
+
 //---------------------------------------------------------------------
-#if CONFIG_HID_REPORT_MAP == 2
+//==========hid_key
+static const u8 sHIDReportDesc_hidkey[] = {
+    0x05, 0x0C,        // Usage Page (Consumer)
+    0x09, 0x01,        // Usage (Consumer Control)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x01,        //   Report ID (1)
+    0x09, 0xE9,        //   Usage (Volume Increment)
+    0x09, 0xEA,        //   Usage (Volume Decrement)
+    0x09, 0xCD,        //   Usage (Play/Pause)
+    0x09, 0xE2,        //   Usage (Mute)
+    0x09, 0xB6,        //   Usage (Scan Previous Track)
+    0x09, 0xB5,        //   Usage (Scan Next Track)
+    0x09, 0xB3,        //   Usage (Fast Forward)
+    0x09, 0xB4,        //   Usage (Rewind)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x01,        //   Logical Maximum (1)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x10,        //   Report Count (16)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              // End Collection
+    // 35 bytes
+};
+
+
+//==========键盘 1
 #define KEYBOARD_REPORT_ID          0x1
 #define COUSTOM_CONTROL_REPORT_ID   0x2
 #define MOUSE_POINT_REPORT_ID       0x3
 
-//键盘
-static const u8 sHIDReportDesc[] = {
+static const u8 sHIDReportDesc_keyboard1[] = {
     0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
     0x09, 0x06,        // Usage (Keyboard)
     0xA1, 0x01,        // Collection (Application)
@@ -131,9 +156,87 @@ static const u8 sHIDReportDesc[] = {
     0xc0                                // END_COLLECTION                   49/50
 };
 
-#elif CONFIG_HID_REPORT_MAP == 1
-//mouse
-static const u8 sHIDReportDesc[] = {
+
+//==========键盘 2
+static const u8 sHIDReportDesc_stand_keyboard2[] = {
+    0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+    0x09, 0x06,        // Usage (Keyboard)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x04,//   Report ID (1)
+    0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
+    0x19, 0xE0,        //   Usage Minimum (0xE0)
+    0x29, 0xE7,        //   Usage Maximum (0xE7)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x01,        //   Logical Maximum (1)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x08,        //   Report Count (8)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x08,        //   Report Size (8)
+    0x81, 0x01,        //   Input (Const,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x95, 0x03,        //   Report Count (3)
+    0x75, 0x01,        //   Report Size (1)
+    0x05, 0x08,        //   Usage Page (LEDs)
+    0x19, 0x01,        //   Usage Minimum (Num Lock)
+    0x29, 0x03,        //   Usage Maximum (Scroll Lock)
+    0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x95, 0x05,        //   Report Count (5)
+    0x75, 0x01,        //   Report Size (1)
+    0x91, 0x01,        //   Output (Const,Array,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x95, 0x06,        //   Report Count (6)
+    0x75, 0x08,        //   Report Size (8)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x26, 0xFF, 0x00,  //   Logical Maximum (255)
+    0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
+    0x19, 0x00,        //   Usage Minimum (0x00)
+    0x2A, 0xFF, 0x00,  //   Usage Maximum (0xFF)
+    0x81, 0x00,        //   Input (Data,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              // End Collection
+    0x05, 0x0C,        // Usage Page (Consumer)
+    0x09, 0x01,        // Usage (Consumer Control)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x05,//   Report ID (3)
+    0x75, 0x10,        //   Report Size (16)
+    0x95, 0x01,        //   Report Count (1)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x26, 0x8C, 0x02,  //   Logical Maximum (652)
+    0x19, 0x00,        //   Usage Minimum (Unassigned)
+    0x2A, 0x8C, 0x02,  //   Usage Maximum (AC Send)
+    0x81, 0x00,        //   Input (Data,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              // End Collection
+//
+    // Dummy mouse collection starts here
+    //
+    0x05, 0x01,                         // USAGE_PAGE (Generic Desktop)     0
+    0x09, 0x02,                         // USAGE (Mouse)                    2
+    0xa1, 0x01,                         // COLLECTION (Application)         4
+    0x85, 0x06,               //   REPORT_ID (Mouse)              6
+    0x09, 0x01,                         //   USAGE (Pointer)                8
+    0xa1, 0x00,                         //   COLLECTION (Physical)          10
+    0x05, 0x09,                         //     USAGE_PAGE (Button)          12
+    0x19, 0x01,                         //     USAGE_MINIMUM (Button 1)     14
+    0x29, 0x02,                         //     USAGE_MAXIMUM (Button 2)     16
+    0x15, 0x00,                         //     LOGICAL_MINIMUM (0)          18
+    0x25, 0x01,                         //     LOGICAL_MAXIMUM (1)          20
+    0x75, 0x01,                         //     REPORT_SIZE (1)              22
+    0x95, 0x02,                         //     REPORT_COUNT (2)             24
+    0x81, 0x02,                         //     INPUT (Data,Var,Abs)         26
+    0x95, 0x06,                         //     REPORT_COUNT (6)             28
+    0x81, 0x03,                         //     INPUT (Cnst,Var,Abs)         30
+    0x05, 0x01,                         //     USAGE_PAGE (Generic Desktop) 32
+    0x09, 0x30,                         //     USAGE (X)                    34
+    0x09, 0x31,                         //     USAGE (Y)                    36
+    0x15, 0x81,                         //     LOGICAL_MINIMUM (-127)       38
+    0x25, 0x7f,                         //     LOGICAL_MAXIMUM (127)        40
+    0x75, 0x08,                         //     REPORT_SIZE (8)              42
+    0x95, 0x02,                         //     REPORT_COUNT (2)             44
+    0x81, 0x06,                         //     INPUT (Data,Var,Rel)         46
+    0xc0,                               //   END_COLLECTION                 48
+    0xc0                                // END_COLLECTION                   49/50
+};
+
+//==========鼠标
+static const u8 sHIDReportDesc_mouse[] = {
     0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
     0x09, 0x02,        // Usage (Mouse)
     0xA1, 0x01,        // Collection (Application)
@@ -210,30 +313,6 @@ static const u8 sHIDReportDesc[] = {
 // 149 bytes
 };
 
-#else
-//hid_key
-static const u8 sHIDReportDesc[] = {
-    0x05, 0x0C,        // Usage Page (Consumer)
-    0x09, 0x01,        // Usage (Consumer Control)
-    0xA1, 0x01,        // Collection (Application)
-    0x85, 0x01,        //   Report ID (1)
-    0x09, 0xE9,        //   Usage (Volume Increment)
-    0x09, 0xEA,        //   Usage (Volume Decrement)
-    0x09, 0xCD,        //   Usage (Play/Pause)
-    0x09, 0xE2,        //   Usage (Mute)
-    0x09, 0xB6,        //   Usage (Scan Previous Track)
-    0x09, 0xB5,        //   Usage (Scan Next Track)
-    0x09, 0xB3,        //   Usage (Fast Forward)
-    0x09, 0xB4,        //   Usage (Rewind)
-    0x15, 0x00,        //   Logical Minimum (0)
-    0x25, 0x01,        //   Logical Maximum (1)
-    0x75, 0x01,        //   Report Size (1)
-    0x95, 0x10,        //   Report Count (16)
-    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-    0xC0,              // End Collection
-    // 35 bytes
-};
-#endif
 
 //---------------------------------------------------------------------
 static void dongle_edr_hid_input_handler(u8 *packet, u16 size, u16 channel);
@@ -266,6 +345,7 @@ static const char *edr_bd_name_filt[] = {
     /* "Bluetooth Keyboard 3.0 A2", */
     "BlueTooth_Keyboard  3.0",
     "AC630N_mx",
+    "br30_mx",
 };
 
 
@@ -274,6 +354,8 @@ static void dongle_timer_handle_test(void)
     log_info("not_bt");
 }
 
+static const u8 fix_target_address[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+void bt_set_mac_addr(u8 *addr);
 static void dongle_app_start()
 {
     log_info("=======================================");
@@ -292,7 +374,7 @@ static void dongle_app_start()
 #if TCFG_USER_EDR_ENABLE
     btstack_edr_start_before_init(NULL, 0);
     __change_hci_class_type(0);//
-
+//    bt_set_mac_addr(fix_target_address);//for test
 #if EDR_EMITTER_EN
     bt_emitter_set_match_name(&edr_bd_name_filt, sizeof(edr_bd_name_filt) / (sizeof(edr_bd_name_filt[0])));
 #endif
@@ -316,9 +398,19 @@ static void dongle_app_start()
     sys_key_event_enable();
 
 #if (TCFG_PC_ENABLE)
-    void usb_start();
-    void usb_hid_set_repport_map(const u8 * map, int size);
-    usb_hid_set_repport_map(sHIDReportDesc, sizeof(sHIDReportDesc));
+    extern void usb_start();
+    extern void usb_hid_set_repport_map(const u8 * map, int size);
+    extern void usb_hid_set_second_repport_map(const u8 * map, int size);
+
+    //配置选择上报PC的描述符
+    //first device
+    /* usb_hid_set_repport_map(sHIDReportDesc_hidkey, sizeof(sHIDReportDesc_hidkey)); */
+    usb_hid_set_repport_map(sHIDReportDesc_mouse, sizeof(sHIDReportDesc_mouse));
+    /* usb_hid_set_repport_map(sHIDReportDesc_keyboard1, sizeof(sHIDReportDesc_keyboard1)); */
+
+    //second device
+    /*usb_hid_set_second_repport_map(sHIDReportDesc_hidkey, sizeof(sHIDReportDesc_hidkey));*/
+    usb_hid_set_second_repport_map(sHIDReportDesc_stand_keyboard2, sizeof(sHIDReportDesc_stand_keyboard2));
     usb_start();
 #endif
 
@@ -361,19 +453,39 @@ static void dongle_edr_hid_input_handler(u8 *packet, u16 size, u16 channel)
     if (packet[0] == 0xA1) {
 #if TCFG_PC_ENABLE
         putchar('@');
-        hid_send_data(packet + 1, size - 1);
+        if (hid_send_data(packet + 1, size - 1)) {
+            putchar('f');
+        }
 #endif
     }
 }
 
 //ble 接收设备数据
-void dongle_ble_hid_input_handler(u8 *packet, u16 size)
+int dongle_ble_hid_input_handler(u8 *packet, u16 size)
 {
-    log_info("ble_hid_data_input:size=%d", size);
-    put_buf(packet, size);
+    /* log_info("ble_hid_data_input:size=%d", size); */
+    /* put_buf(packet, size); */
+
+    putchar('&');
 
 #if TCFG_PC_ENABLE
-    hid_send_data(packet, size);
+    return hid_send_data(packet, size);
+#else
+    return 0;
+#endif
+}
+
+//ble 接收第二个设备数据
+int dongle_second_ble_hid_input_handler(u8 *packet, u16 size)
+{
+    /* log_info("ble_hid_data_input:size=%d", size); */
+    /* put_buf(packet, size); */
+
+    putchar('#');
+#if TCFG_PC_ENABLE
+    return hid_send_second_data(packet, size);
+#else
+    return 0;
 #endif
 }
 

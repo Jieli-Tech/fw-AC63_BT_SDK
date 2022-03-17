@@ -321,6 +321,8 @@ u8 check_wvdd_pvdd_trim(u8 tieup);
 /*-----------------------------------------------------------*/
 int load_p11_bank_code2ram(u8 mode, u8 index);
 
+u8 power_set_vddio_keep(u8 en);
+
 //配置Low power target 睡眠深度
 // -- LOW_POWER_MODE_SLEEP : 系统掉电，RAM 进入省电模式，数字逻辑不掉电，模拟掉电
 // -- LOW_POWER_MODE_LIGHT_SLEEP : 系统不掉电，BTOSC 保持，系统运行RC

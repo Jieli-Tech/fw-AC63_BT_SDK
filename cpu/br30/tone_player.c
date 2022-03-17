@@ -12,6 +12,10 @@
 #include "fm_emitter/fm_emitter_manage.h"
 #endif
 
+#if TCFG_AUDIO_MUSIC_SIDETONE_ENABLE     //播歌时侧耳监听功能
+#include "audio_dec_mic2pcm.h"
+#endif
+
 #ifdef CONFIG_LITE_AUDIO
 #include "tone_player_api.h"
 #endif /*CONFIG_LITE_AUDIO*/
@@ -156,6 +160,11 @@ int tone_event_handler(struct tone_dec_handle *dec, u8 end_flag)
     if (!dec->user_evt_handler) {
         /* log_info("user_evt_handler null\n"); */
         return -1;
+    }
+
+    if (strcmp(os_current_task(), dec->user_evt_owner) == 0) {
+        dec->user_evt_handler(dec->priv);
+        return 0;
     }
     /* dec->user_evt_handler(dec->priv); */
     argv[0] = (int)dec->user_evt_handler;
@@ -554,13 +563,19 @@ const struct tone_format tone_fmt_support_list[] = {
     {"sbc", AUDIO_CODING_SBC},
     {"mty", AUDIO_CODING_MTY},
     {"aac", AUDIO_CODING_AAC},
+#if TCFG_DEC_OPUS_ENABLE
+    {"opus", AUDIO_CODING_OPUS},
+#endif/*TCFG_DEC_WTGV2_ENABLE*/
+#if TCFG_DEC_SPEEX_ENABLE
+    {"speex", AUDIO_CODING_SPEEX},
+#endif/*TCFG_DEC_WTGV2_ENABLE*/
 #if TCFG_DEC_WTGV2_ENABLE
     {"wts", AUDIO_CODING_WTGV2},
 #endif/*TCFG_DEC_WTGV2_ENABLE*/
 #if TCFG_DEC_MP3_ENABLE
     {"mp3", AUDIO_CODING_MP3},
 #endif/*TCFG_DEC_MP3_ENABLE*/
-#if TCFG_WAV_TONE_MIX_ENABLE
+#if (TCFG_WAV_TONE_MIX_ENABLE || TCFG_DEC_WAV_ENABLE)
     {"wav", AUDIO_CODING_WAV},
 #endif/*TCFG_WAV_TONE_MIX_ENABLE*/
 };
@@ -684,11 +699,7 @@ static void tone_dec_set_output_channel(struct tone_file_handle *dec)
 {
     int state;
     enum audio_channel channel;
-#if TCFG_AUDIO_OUTPUT_IIS
-    dec->channel = AUDIO_CH_LR;
-    audio_decoder_set_output_channel(&dec->decoder, dec->channel);
-    dec->ch_num = 2;
-#elif TCFG_APP_FM_EMITTER_EN
+#if TCFG_APP_FM_EMITTER_EN
     dec->channel = AUDIO_CH_LR;
     audio_decoder_set_output_channel(&dec->decoder, dec->channel);
     dec->ch_num = 2;
@@ -720,35 +731,49 @@ static int file_decoder_syncts_setup(struct tone_file_handle *dec)
 {
     int err = 0;
 #if TCFG_USER_TWS_ENABLE
-    struct audio_syncts_params params;
-    params.nch = dec->ch_num;
-    params.pcm_device = PCM_INSIDE_DAC;
-    params.network = AUDIO_NETWORK_BT2_1;
-    params.rin_sample_rate = dec->decoder.fmt.sample_rate;
-    params.rout_sample_rate = dec->target_sample_rate;
-    params.priv = dec;
-    params.factor = TIME_US_FACTOR;
-    params.output = tone_output_after_syncts_filter;
-
-    bt_audio_sync_nettime_select(dec->dec_mix ? 3 : 1);//3 - 优先选择远端主机为网络时钟
-
-    dec->ts_handle = file_audio_timestamp_create(0,
-                     dec->decoder.fmt.sample_rate,
-                     bt_audio_sync_lat_time(),
-                     TWS_TONE_CONFIRM_TIME,
-                     TIME_US_FACTOR);
-    audio_syncts_open(&dec->syncts, &params);
-    if (!err) {
-        dec->mix_ch_event_params[0] = (u32)&dec->mix_ch;
-        dec->mix_ch_event_params[1] = (u32)dec->syncts;
-        audio_mixer_ch_set_event_handler(&dec->mix_ch, (void *)dec->mix_ch_event_params, audio_mix_ch_event_handler);
-    }
-
     if (dec->hw_src) {
         audio_hw_src_close(dec->hw_src);
         free(dec->hw_src);
         dec->hw_src = NULL;
     }
+    struct audio_syncts_params params = {0};
+    params.nch = dec->ch_num;
+#if defined(TCFG_AUDIO_OUTPUT_IIS) && TCFG_AUDIO_OUTPUT_IIS
+    params.pcm_device = PCM_OUTSIDE_DAC;
+    params.rout_sample_rate = TCFG_IIS_SAMPLE_RATE;
+#else
+    params.pcm_device = PCM_INSIDE_DAC;
+    params.rout_sample_rate = dec->target_sample_rate;
+#endif
+    params.network = AUDIO_NETWORK_BT2_1;
+    params.rin_sample_rate = dec->decoder.fmt.sample_rate;
+    params.priv = dec;
+    params.factor = TIME_US_FACTOR;
+    params.output = tone_output_after_syncts_filter;
+
+    u8 base = 3;
+    int state = tws_api_get_tws_state();
+    if (state & TWS_STA_SIBLING_CONNECTED) {
+        base = dec->dec_mix ? 3 : 1;
+    }
+
+    bt_audio_sync_nettime_select(base);//3 - 优先选择远端主机为网络时钟
+
+    dec->ts_start = 0;
+    dec->ts_handle = file_audio_timestamp_create(0,
+                     dec->decoder.fmt.sample_rate,
+                     bt_audio_sync_lat_time(),
+                     TWS_TONE_CONFIRM_TIME,
+                     TIME_US_FACTOR);
+    err = audio_syncts_open(&dec->syncts, &params);
+    if (!err) {
+        dec->mix_ch_event_params[0] = (u32)&dec->mix_ch;
+        dec->mix_ch_event_params[1] = (u32)dec->syncts;
+        audio_mixer_ch_set_event_handler(&dec->mix_ch, (void *)dec->mix_ch_event_params, audio_mix_ch_event_handler);
+    } else {
+        log_e("tone audio syncts open err\n");
+    }
+
 #endif
     return err;
 }
@@ -836,7 +861,20 @@ int tone_file_dec_start()
 
 #if TONE_FILE_DEC_MIX
     int mixer_sample_rate = audio_mixer_get_sample_rate(&mixer);
-    file_dec->target_sample_rate = (file_dec->dec_mix && mixer_sample_rate) ? mixer_sample_rate : fmt->sample_rate;
+
+#if TCFG_AUDIO_OUTPUT_IIS
+    if (!file_dec->tws) {
+        file_dec->target_sample_rate = TCFG_IIS_SAMPLE_RATE;
+    } else {
+        file_dec->target_sample_rate = fmt->sample_rate;
+    }
+    /* 开mic监听功能时，如果获取不到采样率，即未处于通话状态，或是打断播放，采用统一的采样率输出
+    	如果获取到采样率就按照获取的采样率输出 */
+#elif defined(TCFG_AUDIO_MUSIC_SIDETONE_ENABLE) && TCFG_AUDIO_MUSIC_SIDETONE_ENABLE
+    file_dec->target_sample_rate = mixer_sample_rate ? mixer_sample_rate : FIXED_SAMPLE_RATE;
+#else
+    file_dec->target_sample_rate = mixer_sample_rate ? mixer_sample_rate : fmt->sample_rate;
+#endif
 
     audio_mixer_ch_set_sample_rate(&file_dec->mix_ch, file_dec->target_sample_rate);
     printf("fmt->sample_rate %d\n", fmt->sample_rate);
@@ -852,7 +890,7 @@ int tone_file_dec_start()
         }
     }
 
-    if (file_dec->dec_mix && (audio_mixer_get_ch_num(&mixer) > 1)) {
+    if (file_dec->dec_mix && (audio_mixer_get_ch_num(&mixer) > 1) && (SYS_VOL_TYPE != VOL_TYPE_DIGITAL)) {
         goto __dec_start;
     }
 #else
@@ -1222,6 +1260,9 @@ static int sine_dec_probe_handler(struct audio_decoder *decoder)
             sample_rate = 16000;
         }
 
+#if TCFG_AUDIO_OUTPUT_IIS
+        sample_rate = TCFG_IIS_SAMPLE_RATE;
+#endif
         printf("sine: %d, %d\n", sample_rate, channel);
 
         param = get_sine_param(sine_dec->sine_id, sample_rate, &num);
@@ -1392,7 +1433,7 @@ int sine_dec_open(u32 sine_id, u8 repeat, u8 preemption)
     printf("sine_dec_open,preemption = %d", preemption);
     audio_decoder_task_add_wait(&decode_task, &tone_dec->wait);
 
-    if (preemption == 0 && sine_dec->start == 0) {
+    if (sine_dec && preemption == 0 && sine_dec->start == 0) {
         err = sine_dec_start();
     }
 
@@ -1521,7 +1562,9 @@ int tone_list_play_start(const char **list, u8 preemption, u8 tws)
         }
 #endif
         if (err) {
-            audio_decoder_task_del_wait(&decode_task, &tone_dec->wait);
+            if (tone_dec) {
+                audio_decoder_task_del_wait(&decode_task, &tone_dec->wait);
+            }
         } else {
             if (file_dec->dec_mix && !file_dec->start) {
                 err = tone_file_dec_start();

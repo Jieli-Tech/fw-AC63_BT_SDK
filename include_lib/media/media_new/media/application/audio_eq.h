@@ -7,7 +7,8 @@
 
 #define EQ_SR_IDX_MAX       9
 
-#ifndef EQ_CORE_V1
+#if (defined(EQ_CORE_V1)|| defined(EQ_CORE_V2))
+#else
 #define EQ_SECTION_MAX_DEFAULT   10
 #define AUDIO_SONG_EQ_NAME  0
 #define AUDIO_CALL_EQ_NAME 1
@@ -35,7 +36,7 @@ typedef enum {
 
 #define audio_eq_filter_info 	eq_coeff_info
 
-#ifdef EQ_CORE_V1
+#if (defined(EQ_CORE_V1)|| defined(EQ_CORE_V2))
 typedef int (*audio_eq_filter_cb)(void *eq, int sr, struct audio_eq_filter_info *info);
 
 struct audio_eq_param {
@@ -88,8 +89,8 @@ struct audio_eq_async {
     u16 ptr;
     u16 len;
     u16 buf_len;
-    u16 clear : 1;
-    u16 out_stu : 1;
+    u8 clear;
+    u8 out_stu;
     char *buf;
 };
 #endif
@@ -102,10 +103,11 @@ struct audio_eq {
     u32 online_en : 1;                         //是否支持在线调试  1:支持 0：不支持
     u32 mode_en : 1;                           //支持默认系数表写1
     u32 remain_en : 1;                         //数据输出支持remain,写1
-    u32 start : 1;                             //eq start标识
+
     u32 max_nsection : 6;                      //eq最大段数
     u32 check_hw_running : 1;                  //检测到硬件正在运行时不等待其完成1:设置检查  0：不检查
     u32 eq_name;                               //eq标识
+    u8 start;                             //eq start标识
 
 #ifdef CONFIG_EQ_SUPPORT_ASYNC
     void *run_buf;
@@ -121,7 +123,7 @@ struct audio_eq {
     audio_eq_filter_cb cb;                           //系数回调
     void *output_priv;                               //私有指针
     int (*output)(void *priv, void *data, u32 len);  //输出回调
-#ifdef EQ_CORE_V1
+#if (defined(EQ_CORE_V1)|| defined(EQ_CORE_V2))
     struct eq_seg_info *eq_seg_tab;                 //运算前系数表
     float *eq_coeff_tab;                              //运算后系数表
     void *entry;                                   //无效
@@ -282,7 +284,8 @@ struct audio_eq *audio_dec_eq_open(struct audio_eq_param *parm);
 /*----------------------------------------------------------------------------*/
 void audio_dec_eq_close(struct audio_eq *eq);
 
-#ifndef EQ_CORE_V1
+#if (defined(EQ_CORE_V1)|| defined(EQ_CORE_V2))
+#else
 void eq_app_run_check(struct audio_eq *eq);
 int eq_get_filter_info(int sr, struct audio_eq_filter_info *info);
 int aec_ul_eq_filter(int sr, struct audio_eq_filter_info *info);

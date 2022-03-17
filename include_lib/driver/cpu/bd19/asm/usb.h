@@ -173,6 +173,7 @@ void usb_var_init(const usb_dev usb_id, void *ptr);
 void usb_var_release(const usb_dev usb_id);
 void usb_enable_ep(const usb_dev usb_id, u32 eps);
 void usb_disable_ep(const usb_dev usb_id, u32 eps);
+u32 usb_get_ep_status(const usb_dev usb_id, u32 epx);
 
 void usb_sofie_enable(const usb_dev id);
 void usb_sofie_disable(const usb_dev id);

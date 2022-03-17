@@ -75,12 +75,12 @@ static adv_cfg_t multi_server_adv_config;
 static u8 pair_bond_enalbe;
 
 //配对信息表
-#define   PAIR_BOND_ENABLE    1
-#define   PAIR_BOND_TAG       0x53
-#define   DIRECT_ADV_MAX_CNT   2
-static u8 pair_bond_info[8]; //tag + addr_type + address
-static u8 direct_adv_count;  //定向广播次数
-static u8 cur_peer_addr_info[7];//当前连接对方地址信息
+#define PER_PAIR_BOND_ENABLE    CONFIG_BT_SM_SUPPORT_ENABLE
+#define PER_PAIR_BOND_TAG       0x53
+#define DIRECT_ADV_MAX_CNT      2
+static  u8 pair_bond_info[8]; //tag + addr_type + address
+static  u8 direct_adv_count;  //定向广播次数
+static  u8 cur_peer_addr_info[7];//当前连接对方地址信息
 
 //------------------------------------------------------
 //广播参数设置
@@ -104,6 +104,7 @@ const gatt_server_cfg_t mul_server_init_cfg = {
 //vm 绑定对方信息读写
 static int multi_pair_vm_do(u8 *info, u8 info_len, u8 rw_flag)
 {
+#if PER_PAIR_BOND_ENABLE
     int ret;
     int vm_len = info_len;
 
@@ -114,18 +115,21 @@ static int multi_pair_vm_do(u8 *info, u8 info_len, u8 rw_flag)
             log_info("-null--\n");
             memset(info, 0xff, info_len);
         }
-        if (info[0] != PAIR_BOND_TAG) {
+        if (info[0] != PER_PAIR_BOND_TAG) {
             return -1;
         }
     } else {
         syscfg_write(CFG_BLE_BONDING_REMOTE_INFO, (u8 *)info, vm_len);
     }
+#endif
     return 0;
 }
 
 //清配对信息
-static int multi_server_clear_pair(void)
+int multi_server_clear_pair(void)
 {
+#if PER_PAIR_BOND_ENABLE
+    ble_gatt_server_disconnect_all();
     memset(pair_bond_info, 0, sizeof(pair_bond_info));
     multi_pair_vm_do(pair_bond_info, sizeof(pair_bond_info), 1);
     if (BLE_ST_ADV == ble_gatt_server_get_work_state()) {
@@ -133,6 +137,8 @@ static int multi_server_clear_pair(void)
         multi_adv_config_set();
         ble_gatt_server_adv_enable(1);
     }
+#endif
+    return 0;
 }
 
 
@@ -172,6 +178,15 @@ static int multi_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
     /* log_info("event: %02x,size= %d\n",event,size); */
 
     switch (event) {
+
+    case GATT_COMM_EVENT_CAN_SEND_NOW:
+        break;
+
+    case GATT_COMM_EVENT_SERVER_INDICATION_COMPLETE:
+        log_info("INDICATION_COMPLETE:con_handle= %04x,att_handle= %04x\n", \
+                 little_endian_read_16(packet, 0), little_endian_read_16(packet, 2));
+        break;
+
     case GATT_COMM_EVENT_CONNECTION_COMPLETE:
         log_info("connection_handle:%04x\n", little_endian_read_16(packet, 0));
         log_info("peer_address_info:");
@@ -184,7 +199,7 @@ static int multi_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
     case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
         log_info("disconnect_handle:%04x,reason= %02x\n", little_endian_read_16(packet, 0), packet[2]);
         if (packet[2] == 8) {
-            if (pair_bond_info[0] == PAIR_BOND_TAG) {
+            if (pair_bond_info[0] == PER_PAIR_BOND_TAG) {
                 direct_adv_count = DIRECT_ADV_MAX_CNT;
                 multi_adv_config_set();
             }
@@ -199,14 +214,14 @@ static int multi_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
             if (memcmp(&pair_bond_info[1], cur_peer_addr_info, 7)) {
                 log_info("update peer\n");
                 memcpy(&pair_bond_info[1], cur_peer_addr_info, 7);
-                pair_bond_info[0] = PAIR_BOND_TAG;
+                pair_bond_info[0] = PER_PAIR_BOND_TAG;
                 multi_pair_vm_do(pair_bond_info, sizeof(pair_bond_info), 1);
             }
         } else {
             log_info("first pair...\n");
-#if PAIR_BOND_ENABLE
+#if PER_PAIR_BOND_ENABLE
             memcpy(&pair_bond_info[1], cur_peer_addr_info, 7);
-            pair_bond_info[0] = PAIR_BOND_TAG;
+            pair_bond_info[0] = PER_PAIR_BOND_TAG;
             multi_pair_vm_do(pair_bond_info, sizeof(pair_bond_info), 1);
             log_info("bonding remote");
             put_buf(pair_bond_info, sizeof(pair_bond_info));
@@ -232,7 +247,6 @@ static int multi_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
         break;
 
 
-    case GATT_COMM_EVENT_CAN_SEND_NOW:
     case GATT_COMM_EVENT_CONNECTION_UPDATE_REQUEST_RESULT:
     case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE:
         break;
@@ -299,6 +313,7 @@ static uint16_t multi_att_read_callback(hci_con_handle_t connection_handle, uint
     case ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae3c_01_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
         if (buffer) {
             buffer[0] = ble_gatt_server_characteristic_ccc_get(connection_handle, handle);
             buffer[1] = 0;
@@ -343,6 +358,7 @@ static int multi_att_write_callback(hci_con_handle_t connection_handle, uint16_t
     case ATT_CHARACTERISTIC_ae04_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae3c_01_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
         multi_send_connetion_update_deal(connection_handle);
         log_info("\n------write ccc:%04x,%02x\n", handle, buffer[0]);
         ble_gatt_server_characteristic_ccc_set(connection_handle, handle, buffer[0]);
@@ -502,7 +518,7 @@ void multi_server_init(void)
 {
     log_info("%s", __FUNCTION__);
 
-#if CONFIG_BT_SM_SUPPORT_ENABLE && PAIR_BOND_ENABLE
+#if PER_PAIR_BOND_ENABLE
     if (0 == multi_pair_vm_do(pair_bond_info, sizeof(pair_bond_info), 0)) {
         log_info("server already bond dev");
         put_buf(pair_bond_info, sizeof(pair_bond_info));
@@ -512,6 +528,13 @@ void multi_server_init(void)
 
     ble_gatt_server_set_profile(multi_profile_data, sizeof(multi_profile_data));
     multi_adv_config_set();
+
+}
+
+//server exit
+void multi_server_exit(void)
+{
+    log_info("%s", __FUNCTION__);
 
 }
 

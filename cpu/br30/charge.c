@@ -25,11 +25,13 @@
 typedef struct _CHARGE_VAR {
     struct charge_platform_data *data;
     volatile u8 charge_online_flag;
+    volatile u8 charge_event_flag;
     volatile u8 init_ok;
     volatile u8 detect_stop;
     volatile int ldo5v_timer;
     volatile int charge_timer;
     volatile int power_sw_timer;
+    volatile int cc_timer;      //涓流切恒流的sys timer
 } CHARGE_VAR;
 
 #define __this 	(&charge_var)
@@ -40,6 +42,8 @@ static u8 charge_flag;
 #define BIT_LDO5V_IN		BIT(0)
 #define BIT_LDO5V_OFF		BIT(1)
 #define BIT_LDO5V_ERR		BIT(2)
+
+void charge_wakeup_isr(void);
 
 u8 get_charge_poweron_en(void)
 {
@@ -102,6 +106,11 @@ u8 get_charge_online_flag(void)
     return __this->charge_online_flag;
 }
 
+void set_charge_event_flag(u8 flag)
+{
+    __this->charge_event_flag = flag;
+}
+
 u8 get_ldo5v_online_hw(void)
 {
     return LDO5V_DET_GET();
@@ -114,10 +123,15 @@ u8 get_lvcmp_det(void)
 
 u8 get_ldo5v_pulldown_en(void)
 {
-    if (__this->data) {
-        return __this->data->ldo5v_pulldown_en;
+    if (!__this->data) {
+        return 0;
     }
-    return 0;
+    if (get_ldo5v_online_hw()) {
+        if (__this->data->ldo5v_pulldown_keep == 0) {
+            return 0;
+        }
+    }
+    return __this->data->ldo5v_pulldown_en;
 }
 
 u8 get_ldo5v_pulldown_res(void)
@@ -192,16 +206,48 @@ void power_exit_charge_mode(void)
     }
 }
 
-void charge_start(void)
+/*检测是否满足进入恒流充电条件*/
+static void charge_cc_check(void *priv)
 {
     log_info("%s\n", __func__);
+    if ((adc_get_voltage(AD_CH_VBAT) * 4 / 10) > CHARGE_CCVOL_V) {
+        /*满足进入恒流充电条件 设置恒流充电电流大小*/
+        set_charge_mA(__this->data->charge_mA);
+        usr_timer_del(__this->cc_timer);
+        __this->cc_timer = 0;
+        /*触发一次满电唤醒服务函数 将满电使能打开*/
+        charge_wakeup_isr();
+    }
+}
 
+void charge_start(void)
+{
+    u8 check_full = 0;
+    log_info("%s\n", __func__);
+    /*充电开始先将满电检测的定时器关闭*/
     if (__this->charge_timer) {
         usr_timer_del(__this->charge_timer);
         __this->charge_timer = 0;
     }
 
-    power_wakeup_enable_with_port(IO_CHGFL_DET);
+    /*充电开始先将满电唤醒关闭，待过涓流阶段再打开*/
+    power_wakeup_disable_with_port(IO_CHGFL_DET);
+
+    /*进入恒流充电之后(VBAT > 3V),才开启充满检测*/
+    if ((adc_get_voltage(AD_CH_VBAT) * 4 / 10) > CHARGE_CCVOL_V) {
+        /*设置恒流充电电流大小*/
+        set_charge_mA(__this->data->charge_mA);
+        /*恒流充电开启满电唤醒使能*/
+        power_wakeup_enable_with_port(IO_CHGFL_DET);
+        check_full = 1;
+    } else {
+        /*设置涓流电流大小*/
+        set_charge_mA(__this->data->charge_trickle_mA);
+        if (!__this->cc_timer) {
+            /*每1分钟检测一次是否具备进入恒流充电的条件*/
+            __this->cc_timer = usr_timer_add(NULL, charge_cc_check, 1000, 1);
+        }
+    }
 
     power_enter_charge_mode();
 
@@ -209,6 +255,11 @@ void charge_start(void)
     CHARGE_EN(1);
 
     charge_event_to_user(CHARGE_EVENT_CHARGE_START);
+
+    /*开启充电时,充满标记为1时,主动检测一次是否充满*/
+    if (check_full && CHARGE_FULL_FLAG_GET()) {
+        charge_wakeup_isr();
+    }
 }
 
 void charge_close(void)
@@ -230,14 +281,30 @@ void charge_close(void)
         usr_timer_del(__this->charge_timer);
         __this->charge_timer = 0;
     }
+    if (__this->cc_timer) {
+        usr_timer_del(__this->cc_timer);
+        __this->cc_timer = 0;
+    }
 }
 
 static void charge_full_detect(void *priv)
 {
     static u16 charge_full_cnt = 0;
+    u16 vbat_vol, vpwr_vol;
+    u8 chip_id = get_chip_version() & 0x0f;
 
     if (CHARGE_FULL_FLAG_GET() && LVCMP_DET_GET()) {
         /* putchar('F'); */
+        //AB版可能出现误判满
+        if ((chip_id >= 0x0C) || (chip_id == 0x01)) {
+            vbat_vol = adc_get_voltage(AD_CH_VBAT) * 4 / 10;
+            vpwr_vol = adc_get_voltage(AD_CH_LDO5V) * 4 / 10;
+            if ((vpwr_vol < 450) || (vbat_vol < 410)) {
+                /* putchar('P'); */
+                charge_full_cnt = 0;
+                return;
+            }
+        }
         if (charge_full_cnt < 5) {
             charge_full_cnt++;
         } else {
@@ -251,6 +318,7 @@ static void charge_full_detect(void *priv)
         charge_full_cnt = 0;
         usr_timer_del(__this->charge_timer);
         __this->charge_timer = 0;
+        /*电池未满电，开启满电唤醒使能*/
         power_wakeup_enable_with_port(IO_CHGFL_DET);
     }
 }
@@ -269,14 +337,18 @@ static void ldo5v_detect(void *priv)
 
     if (LVCMP_DET_GET()) {	//ldoin > vbat
         /* putchar('X'); */
-        if (ldo5v_in_normal_cnt < 50) {
+        if (ldo5v_in_normal_cnt < __this->data->ldo5v_on_filter) {
             ldo5v_in_normal_cnt++;
         } else {
             /* printf("ldo5V_IN\n"); */
             set_charge_online_flag(1);
             ldo5v_off_cnt = 0;
-            ldo5v_in_normal_cnt = 0;
             ldo5v_in_err_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
+            ldo5v_in_normal_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
             if ((charge_flag & BIT_LDO5V_IN) == 0) {
@@ -292,9 +364,13 @@ static void ldo5v_detect(void *priv)
         } else {
             /* printf("ldo5V_OFF\n"); */
             set_charge_online_flag(0);
-            ldo5v_off_cnt = 0;
             ldo5v_in_normal_cnt = 0;
             ldo5v_in_err_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
+            ldo5v_off_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
             if ((charge_flag & BIT_LDO5V_OFF) == 0) {
@@ -305,13 +381,17 @@ static void ldo5v_detect(void *priv)
         }
     } else {	//拔出电压（0.6左右）< ldoin < vbat
         /* putchar('E'); */
-        if (ldo5v_in_err_cnt < 220) {
+        if (ldo5v_in_err_cnt < __this->data->ldo5v_keep_filter) {
             ldo5v_in_err_cnt++;
         } else {
             /* printf("ldo5V_ERR\n"); */
             set_charge_online_flag(1);
             ldo5v_off_cnt = 0;
             ldo5v_in_normal_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
             ldo5v_in_err_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
@@ -334,6 +414,7 @@ void sub_wakeup_isr(void)
     }
 }
 
+/*满电唤醒服务函数*/
 void charge_wakeup_isr(void)
 {
     /* printf(" %s \n", __func__); */
@@ -419,7 +500,8 @@ static void charge_config(void)
     CHARGE_FULL_V_SEL(charge_full_v_val);
     CHARGE_FULL_mA_SEL(__this->data->charge_full_mA);
     /* CHARGE_mA_SEL(__this->data->charge_mA); */
-    CHARGE_mA_SEL(CHARGE_mA_20);
+    /* CHARGE_mA_SEL(CHARGE_mA_20); */
+    CHARGE_mA_SEL(__this->data->charge_trickle_mA);
 }
 
 static int charge_init(const struct dev_node *node, void *arg)
@@ -454,6 +536,12 @@ static int charge_init(const struct dev_node *node, void *arg)
     charge_set_callback(charge_wakeup_isr, sub_wakeup_isr);
 
     /* usr_timer_add(0, test_func, 10); */
+
+    //AB版可能出现误判满
+    u8 chip_id = get_chip_version() & 0x0f;
+    if ((chip_id >= 0x0C) || (chip_id == 0x01)) {
+        adc_add_sample_ch(AD_CH_LDO5V);
+    }
 
     __this->init_ok = 1;
 

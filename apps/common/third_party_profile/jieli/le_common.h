@@ -22,9 +22,14 @@
 #include "btstack/le/le_common_define.h"
 
 //--------------------------------------------
+#ifdef CONFIG_DEBUG_ENABLE
 #define LE_DEBUG_PRINT_EN               1     // log switch
+#else
+#define LE_DEBUG_PRINT_EN               0     // log switch
+#endif
 //--------------------------------------------
 
+/*毫秒 转换到 0.625ms 单位*/
 #define ADV_SCAN_MS(_ms)                ((_ms) * 8 / 5)
 
 extern void bt_ble_init(void);

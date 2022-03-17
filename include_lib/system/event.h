@@ -63,6 +63,8 @@
 #define DEVICE_EVENT_FROM_CI_UART	   (('C' << 24) | ('I' << 16) | ('U' << 8) | '\0')
 #define DEVICE_EVENT_FROM_CI_TWS 	   (('C' << 24) | ('I' << 16) | ('T' << 8) | '\0')
 #define DEVICE_EVENT_CHARGE_STORE	   (('S' << 24) | ('T' << 16) | ('O' << 8) | '\0')
+#define DEVICE_EVENT_UMIDIGI_CHARGE_STORE	   (('Q' << 24) | ('C' << 16) | ('Y' << 8) | '\0')
+#define DEVICE_EVENT_TEST_BOX    	   (('T' << 24) | ('S' << 16) | ('B' << 8) | '\0')
 #define DEVICE_EVENT_FROM_TONE		   (('T' << 24) | ('N' << 16) | ('E' << 8) | '\0')
 #define DEVICE_EVENT_FROM_FM		   (('F' << 24) | ('M' << 16) | ('\0'<< 8) | '\0')
 #define KEY_EVENT_FROM_TWS             (('T' << 24) | ('W' << 16) | ('S' << 8) | '\0')
@@ -97,6 +99,7 @@
 #define DEVICE_EVENT_FROM_ANC   	   (('A' << 24) | ('N' << 16) | ('C' << 8) | '\0')
 #define SYS_BT_EVENT_FORM_AT          (('I' << 24) | ('A' << 16) | ('T' << 8) | '\0')
 #define DEVICE_EVENT_FROM_ADAPTER      (('A' << 24) | ('D' << 16) | ('A' << 8) | '\0')
+#define DEVICE_EVENT_FROM_BOARD_UART   (('B' << 24) | ('D' << 16) | ('U' << 8) | '\0')
 
 enum {
     KEY_EVENT_CLICK,
@@ -166,10 +169,22 @@ struct device_event {
     u8 event;
     int value;
 };
+
 struct chargestore_event {
     u8 event;
-    u8 *packet ;
+    u8 *packet;
     u8 size;
+};
+
+struct testbox_event {
+    u8 event;
+    u8 *packet;
+    u8 size;
+};
+
+struct umidigi_chargestore_event {
+    u8 event;
+    u8 value;
 };
 
 struct ancbox_event {
@@ -270,6 +285,8 @@ struct sys_event {
         struct ear_event    ear;
         struct rcsp_event	rcsp;
         struct chargebox_event chargebox;
+        struct testbox_event testbox;
+        struct umidigi_chargestore_event umidigi_chargestore;
         struct ancbox_event ancbox;
         struct matrix_key_event  matrix_key;
         struct touchpad_event touchpad;

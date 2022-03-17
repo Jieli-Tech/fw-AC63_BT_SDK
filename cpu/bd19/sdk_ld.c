@@ -105,6 +105,10 @@ SECTIONS
         KEEP(*(.clock_critical_txt))
         clock_critical_handler_end = .;
 
+        chargestore_handler_begin = .;
+        KEEP(*(.chargestore_callback_txt))
+        chargestore_handler_end = .;
+
         gsensor_dev_begin = .;
         KEEP(*(.gsensor_dev))
         gsensor_dev_end = .;
@@ -225,6 +229,7 @@ SECTIONS
         *(.cache)
         *(.os_critical_code)
         *(.volatile_ram_code)
+        *(.chargebox_code)
 		*(.os_code)
 		*(.os_str)
 

@@ -50,6 +50,10 @@ struct esco_enc_hdl {
 static void adc_mic_output_handler(void *priv, s16 *data, int len)
 {
     /* printf("buf:%x,data:%x,len:%d",esco_enc->adc_buf,data,len); */
+#if (RECORDER_MIX_EN)
+    recorder_mix_sco_data_write(data, len);
+#endif/*RECORDER_MIX_EN*/
+
     audio_aec_inbuf(data, len);
 }
 
@@ -241,6 +245,10 @@ static void adc_mic_output_handler_downsr(void *priv, s16 *data, int len)
         int wlen = esco_enc->mic_sw_src_api->run(esco_enc->mic_sw_src_buf, data, len / 2, temp_buf);
         audio_aec_inbuf(temp_buf, wlen << 1);
     }
+#if (RECORDER_MIX_EN)
+    recorder_mix_sco_data_write(data, len);
+#endif/*RECORDER_MIX_EN*/
+
     /* audio_aec_inbuf(temp_buf, len / 2); */
 }
 
@@ -281,7 +289,7 @@ static int esco_enc_pcm_get(struct audio_encoder *encoder, s16 **frame, u16 fram
         if (rlen == frame_len) {
             /*esco编码读取数据正常*/
 #if (RECORDER_MIX_EN)
-            recorder_mix_sco_data_write(enc->pcm_frame, frame_len);
+            /* recorder_mix_sco_data_write(enc->pcm_frame, frame_len); */
 #endif/*RECORDER_MIX_EN*/
             break;
         } else if (rlen == 0) {
@@ -363,7 +371,11 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
     }
 
 #if (RECORDER_MIX_EN)
+#if	TCFG_MIC_EFFECT_ENABLE
+    recorder_mix_pcm_set_info(MIC_EFFECT_SAMPLERATE, fmt.channel);
+#else
     recorder_mix_pcm_set_info(fmt.sample_rate, fmt.channel);
+#endif
 #endif/*RECORDER_MIX_EN*/
 
     audio_encoder_task_open();
@@ -379,6 +391,12 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
     audio_encoder_set_event_handler(&esco_enc->encoder, esco_enc_event_handler, 0);
     audio_encoder_set_output_buffs(&esco_enc->encoder, esco_enc->output_frame,
                                    sizeof(esco_enc->output_frame), 1);
+
+    if (!esco_enc->encoder.enc_priv) {
+        log_e("encoder err, maybe coding(0x%x) disable \n", fmt.coding_type);
+        err = -EINVAL;
+        goto __err;
+    }
 
     audio_encoder_start(&esco_enc->encoder);
 
@@ -435,6 +453,18 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
     audio_aec_ref_start(1);
 #endif //(TCFG_IIS_ENABLE && TCFG_IIS_OUTPUT_EN)
     return 0;
+
+__err:
+    audio_encoder_close(&esco_enc->encoder);
+
+    local_irq_disable();
+    free(esco_enc);
+    esco_enc = NULL;
+    local_irq_enable();
+
+    audio_encoder_task_close();
+
+    return err;
 }
 
 int esco_adc_mic_en()

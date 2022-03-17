@@ -118,6 +118,25 @@ void app_bank_init()
     load_common_code();
 }
 
+static void (*uart_db_irq_handler_callback)(u8 *packet, u32 size);
+extern void uart_dev_set_irq_handler_hook(void *uart_irq_hook);
+static void uart_db_irq_handler_hook(u8 *rbuf, u32 len)
+{
+    if (len) {
+        log_info("uart_rx_data %d:", len);
+        put_buf(rbuf, len);
+    }
+
+    if (uart_db_irq_handler_callback) {
+        uart_db_irq_handler_callback(rbuf, len);
+    }
+}
+
+void uart_db_regiest_recieve_callback(void *rx_cb)
+{
+    uart_db_irq_handler_callback = rx_cb;
+}
+
 u32 stack_magic[4] sec(.stack_magic);
 u32 stack_magic0[4] sec(.stack_magic0);
 void memory_init(void);
@@ -151,6 +170,16 @@ void setup_arch()
 #if (defined CONFIG_DEBUG_ENABLE) || (defined CONFIG_DEBUG_LITE_ENABLE)
     debug_uart_init(NULL);
 
+#if TCFG_UART0_RX_PORT != NO_CONFIG_PORT
+    JL_UART0->CON0 &= ~BIT(2); //disable Tx pending Enable
+    uart_dev_set_irq_handler_hook(uart_db_irq_handler_hook);
+
+#if TCFG_LOWPOWER_LOWPOWER_SEL
+    /*需要关闭POWERDOWN,否则接收会丢数据*/
+#error "need define TCFG_LOWPOWER_LOWPOWER_SEL  0 !!!!!!"
+#endif
+#endif
+
 #ifdef CONFIG_DEBUG_ENABLE
     log_early_init(1024);
 #endif
@@ -177,9 +206,7 @@ void setup_arch()
 
     debug_init();
 
-#ifdef CONFIG_DEBUG_ENABLE
-    sys_timer_add(NULL, timer, 5 * 1000);
-#endif
+    //sys_timer_add(NULL, timer, 5 * 1000);
 
     __crc16_mutex_init();
 }

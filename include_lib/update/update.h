@@ -62,6 +62,9 @@ typedef struct _UPDATA_SD {
     u8 hc_mode;
     u8(*io_det_func)(void);
     u8 power;
+    u8 control_io_clk;
+    u8 control_io_cmd;
+    u8 control_io_dat;
 } UPDATA_SD;
 
 // uart
@@ -99,6 +102,7 @@ typedef struct _UPDATA_PARM {
 
 enum EXT_ARG_TYPE {
     EXT_LDO_TRIM_RES = 0,
+    EXT_JUMP_FLAG,
     EXT_TYPE_MAX = 0xff,
 };
 
@@ -126,6 +130,7 @@ u16 update_result_get(void);
 bool device_is_first_start();
 int update_result_deal();
 void update_result_set(u16 result);
+void update_clear_result();
 bool update_success_boot_check(void);
 typedef u8(*update_handler_t)(void);
 

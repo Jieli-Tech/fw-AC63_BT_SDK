@@ -305,6 +305,7 @@ PRCT_LEN = CONFIG_PRCT_LEN;
 PRCT_OPT = CONFIG_PRCT_OPT;
 
 //for volatile memory area cfg
+//VM大小默认为CONFIG_VM_LEAST_SIZE，如果代码空间不够可以适当改小，需要满足4*2*n; 改小可能会导致不支持测试盒蓝牙升级（不影响串口升级）
 VM_ADR = CONFIG_VM_ADDR;
 VM_LEN = CONFIG_VM_LEAST_SIZE;
 VM_OPT = CONFIG_VM_OPT;
@@ -355,6 +356,11 @@ ANCIF1_OPT = CONFIG_ANCIF1_OPT;
 
 [BURNER_CONFIG]
 SIZE = CONFIG_BURNER_INFO_SIZE;
+
+[TOOL_CONFIG]
+1TO2_MIN_VER = 2.26.1;//一拖二烧写器最低版本
+
+1TO8_MIN_VER = 3.1.8;//一拖八烧写器最低版本
 
 
 

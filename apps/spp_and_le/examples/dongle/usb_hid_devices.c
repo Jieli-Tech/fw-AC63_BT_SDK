@@ -156,10 +156,15 @@ static u32 hid_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreques
     }
     hid_device_hdl = usb_device;
 
+
+
     const usb_dev usb_id = usb_device2id(usb_device);
     u32 tx_len;
     u8 *tx_payload = usb_get_setup_buffer(usb_device);
     u32 bRequestType = req->bRequestType & USB_TYPE_MASK;
+
+    printf("====== %s,%08x\n", __FUNCTION__, bRequestType);
+
     switch (bRequestType) {
     case USB_TYPE_STANDARD:
         switch (req->bRequest) {

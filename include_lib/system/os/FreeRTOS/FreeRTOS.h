@@ -871,14 +871,32 @@ point support. */
  * real objects are used for this purpose.  The dummy list and list item
  * structures below are used for inclusion in such a dummy structure.
  */
+
+#if( configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES == 0 )
+/* Define the macros to do nothing. */
+#define listFIRST_LIST_ITEM_INTEGRITY_CHECK_VALUE
+#define listSECOND_LIST_ITEM_INTEGRITY_CHECK_VALUE
+#define listFIRST_LIST_INTEGRITY_CHECK_VALUE
+#define listSECOND_LIST_INTEGRITY_CHECK_VALUE
+#else
+/* Define macros that add new members into the list structures. */
+#define listFIRST_LIST_ITEM_INTEGRITY_CHECK_VALUE				TickType_t xListItemIntegrityValue1;
+#define listSECOND_LIST_ITEM_INTEGRITY_CHECK_VALUE				TickType_t xListItemIntegrityValue2;
+#define listFIRST_LIST_INTEGRITY_CHECK_VALUE					TickType_t xListIntegrityValue1;
+#define listSECOND_LIST_INTEGRITY_CHECK_VALUE					TickType_t xListIntegrityValue2;
+#endif /* configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES */
+
 struct xSTATIC_LIST_ITEM {
+    listFIRST_LIST_ITEM_INTEGRITY_CHECK_VALUE
     TickType_t xDummy1;
     void *pvDummy2[ 4 ];
+    listSECOND_LIST_ITEM_INTEGRITY_CHECK_VALUE
 };
 typedef struct xSTATIC_LIST_ITEM StaticListItem_t;
 
 /* See the comments above the struct xSTATIC_LIST_ITEM definition. */
 struct xSTATIC_MINI_LIST_ITEM {
+    listFIRST_LIST_ITEM_INTEGRITY_CHECK_VALUE
     TickType_t xDummy1;
     void *pvDummy2[ 2 ];
 };
@@ -886,9 +904,11 @@ typedef struct xSTATIC_MINI_LIST_ITEM StaticMiniListItem_t;
 
 /* See the comments above the struct xSTATIC_LIST_ITEM definition. */
 typedef struct xSTATIC_LIST {
+    listFIRST_LIST_INTEGRITY_CHECK_VALUE
     UBaseType_t uxDummy1;
     void *pvDummy2;
     StaticMiniListItem_t xDummy3;
+    listSECOND_LIST_INTEGRITY_CHECK_VALUE
 } StaticList_t;
 
 /*

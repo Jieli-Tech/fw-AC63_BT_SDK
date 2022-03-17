@@ -268,6 +268,34 @@ void debug_uart_init(const struct uart_platform_data *data)
 #endif
 }
 
+/*其他封装板级，移该函数*/
+u8 get_power_on_status(void)
+{
+#if TCFG_IOKEY_ENABLE
+    struct iokey_port *power_io_list = NULL;
+    power_io_list = iokey_data.port;
+
+    if (iokey_data.enable) {
+        if (gpio_read(power_io_list->key_type.one_io.port) == power_io_list->connect_way){
+            return 1;
+        }
+    }
+#endif
+
+#if TCFG_ADKEY_ENABLE
+    if (adkey_data.enable) {
+    	return 1;
+    }
+#endif
+
+#if TCFG_LP_TOUCH_KEY_ENABLE
+	return lp_touch_key_power_on_status();
+#endif
+
+    return 0;
+}
+
+
 static void board_devices_init(void)
 {
 #if TCFG_PWMLED_ENABLE
@@ -322,6 +350,12 @@ void board_init()
 
 	board_devices_init();
 
+#if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
+    if(get_charge_online_flag()){
+        handshake_app_start(0, NULL);
+    }
+#endif
+
 	if(get_charge_online_flag()) {
 		power_set_mode(PWR_LDO15);
 	} else {
@@ -353,7 +387,7 @@ static void port_protect(u16 *port_group, u32 port_num)
 
 void usb1_iomode(u32 enable);
 /*进软关机之前默认将IO口都设置成高阻状态，需要保留原来状态的请修改该函数*/
-static void close_gpio(void)
+static void close_gpio(u8 is_softoff)
 {
     u16 port_group[] = {
         [PORTA_GROUP] = 0x1ff,
@@ -403,6 +437,13 @@ static void close_gpio(void)
     /* port_protect(port_group, IO_PORTA_01); */
     /* port_protect(port_group, IO_PORTA_02); */
 #endif /* TCFG_RTC_ALARM_ENABLE */
+
+#if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
+    if (is_softoff == 0) {
+        port_protect(port_group, TCFG_HANDSHAKE_IO_DATA1);
+        port_protect(port_group, TCFG_HANDSHAKE_IO_DATA2);
+    }
+#endif
 
     //< close gpio
     gpio_dir(GPIOA, 0, 9, port_group[PORTA_GROUP], GPIO_OR);
@@ -533,7 +574,7 @@ void board_set_soft_poweroff(void)
 	power_wakeup_index_disable(2);
 #endif
 
-	close_gpio();
+	close_gpio(1);
 }
 
 #define     APP_IO_DEBUG_0(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT &= ~BIT(x);}
@@ -554,7 +595,7 @@ void sleep_enter_callback(u8  step)
 		APP_IO_DEBUG_1(A, 5);
 		/*dac_power_off();*/
 	} else {
-		close_gpio();
+		close_gpio(0);
 	}
 }
 
@@ -598,6 +639,8 @@ void board_power_init(void)
 
     power_init(&power_param);
 
+    gpio_longpress_pin0_reset_config(IO_PORTA_09, 0, 0);
+    gpio_shortpress_reset_config(0);//1--enable 0--disable
     //< close short key reset
     /* power_mclr(0); */
     //< close long key reset

@@ -168,6 +168,7 @@ void btstack_edr_start_before_init(const edr_init_cfg_t *cfg, int param)
     //io_capabilities ; /*0: Display only 1: Display YesNo 2: KeyboardOnly 3: NoInputNoOutput*/
     //authentication_requirements: 0:not protect  1 :protect
     __set_simple_pair_param(cfg->io_capabilities, cfg->oob_data, cfg->authentication_req);
+    //__set_simple_pair_flag(!cfg->passkey_enable);
 
     log_info("---edr's address");
     printf_buf((void *)bt_get_mac_addr(), 6);
@@ -191,8 +192,12 @@ void btstack_edr_start_after_init(int param)
         lmp_sniff_t_slot_attemp_reset(sniff_param_info->max_interval_slots, sniff_param_info->attempt_slots);
     }
 
+#if SNIFF_ENABLE
     /* bt_wait_phone_connect_control_ext(1, 1); */
     sys_auto_sniff_controle(1, NULL);
+#else
+    /* lmp_set_sniff_disable();[>set disable<] */
+#endif
 }
 
 /*************************************************************************************************/
@@ -334,10 +339,12 @@ static int bt_comm_edr_status_event_handler(struct bt_event *bt)
 /*************************************************************************************************/
 int bt_comm_edr_sniff_clean(void)
 {
-    sniff_ready_status = 1;
-    if (sniff_timer) {
-        user_send_cmd_prepare(USER_CTRL_ALL_SNIFF_EXIT, 0, NULL);
-        return 0;
+    if (sniff_param_info->sniff_mode == SNIFF_MODE_DEF) {
+        sniff_ready_status = 1;
+        if (sniff_timer) {
+            user_send_cmd_prepare(USER_CTRL_ALL_SNIFF_EXIT, 0, NULL);
+            return 0;
+        }
     }
     return 1;
 }
@@ -524,7 +531,9 @@ static void bt_hci_event_page_timeout(struct bt_event *bt)
 //连接超时
 static void bt_hci_event_connection_timeout(struct bt_event *bt)
 {
-    bt_wait_phone_connect_control_ext(1, 1);
+    if (!bt_connect_phone_back_start()) {
+        bt_wait_phone_connect_control_ext(1, 1);
+    }
 }
 
 //连接退出
@@ -675,6 +684,23 @@ int bt_connect_phone_back_start(void)
     }
     return 0;
 }
+
+/*************************************************************************************************/
+/*!
+ *  \brief      get remote address
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+void bt_comm_edr_get_remote_address(bd_addr_t address)
+{
+    memcpy(address, edr_remote_address, 6);
+}
+
 /*************************************************************************************************/
 /*!
  *  \brief       edr_mode_enable
@@ -734,6 +760,7 @@ void bt_comm_edr_mode_enable(u8 enable)
 
     log_info("%s end", __FUNCTION__);
 }
+
 
 #endif
 

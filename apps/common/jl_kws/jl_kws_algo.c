@@ -27,6 +27,14 @@ extern void JL_kws_free(void *_jl_det_kws);
 #define     KWS_IO_DEBUG_0(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT &= ~BIT(x);}
 #define     KWS_IO_DEBUG_1(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT |= BIT(x);}
 
+/*
+ *Yes/No词条识别阈值:
+ *(1)越大越难识别，相应的，词条识别匹配度就越高，即越不容易误触发
+ *(2)越小越容易识别，相应的，词条识别匹配度就越低，即越容易误触发
+ */
+#define KWS_YES_THR		0.6f
+#define KWS_NO_THR		0.6f
+
 struct jl_kws_algo {
     void *kws_handle;
     void *kws_algo_buf;
@@ -48,8 +56,8 @@ static void kws_algo_local_init(void *buf, void *param_ptr)
     //int online_cmvn = 1;
     int smooth_yes = 25;
     int smooth_no = 30;
-    float confidence_yes = 0.6;
-    float confidence_no = 0.6;
+    float confidence_yes = KWS_YES_THR;
+    float confidence_no = KWS_NO_THR;
     __kws_algo.kws_handle = JL_kws_init(buf_align, param_ptr, cmn_online, confidence_yes, confidence_no, smooth_yes, smooth_no);
 }
 

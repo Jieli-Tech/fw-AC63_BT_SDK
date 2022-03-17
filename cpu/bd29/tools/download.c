@@ -33,6 +33,8 @@ ${OBJSIZEDUMP} -lite -skip-zero -enable-dbg-info $1.elf | sort -k 1 > symbol_tbl
 
 cat text.bin data.bin data_code.bin aec.bin aac.bin bank.bin aptx.bin > app.bin
 
+/opt/utils/strip-ini -i isd_config.ini -o isd_config.ini
+
 files="app.bin ${CPU}loader.* uboot*  ota*.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
 
 NICKNAME="${CPU}_sdk"

@@ -193,6 +193,8 @@
     CHARGE_mA_160		CHARGE_mA_180		CHARGE_mA_200		CHARGE_mA_220
  */
 #define TCFG_CHARGE_MA						CHARGE_mA_50
+/*涓流电流可配置*/
+#define TCFG_CHARGE_TRICKLE_MA				CHARGE_mA_20
 
 //*********************************************************************************//
 //                                  LED 配置                                       //

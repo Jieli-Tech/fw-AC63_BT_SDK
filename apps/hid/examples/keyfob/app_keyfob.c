@@ -329,22 +329,26 @@ static void led_on_off(u8 state, u8 res)
         case LED_KEY_UP:
             led_timeout_count = 1;//
             led_timer_start(300);
+#if TCFG_USER_EDR_ENABLE
             if (edr_hid_is_connected() || (ble_connect != 0)) {
                 led_next_state = LED_CLOSE;
             } else {
                 led_next_state = LED_WAIT_CONNECT;
             }
+#endif
             KEYF_LED_ON();
             break;
 
         case LED_KEY_IO_VAILD:
             led_timeout_count = 1;//
             led_timer_start(650);
+#if TCFG_USER_EDR_ENABLE
             if (edr_hid_is_connected()) {
                 led_next_state = LED_CLOSE;
             } else {
                 led_next_state = LED_WAIT_CONNECT;
             }
+#endif
             KEYF_LED_ON();
             break;
 
@@ -352,11 +356,13 @@ static void led_on_off(u8 state, u8 res)
         case LED_KEY_HOLD:
             led_timeout_count = 4;//2s
             led_timer_start(500);
+#if TCFG_USER_EDR_ENABLE
             if (edr_hid_is_connected()) {
                 led_next_state = LED_CLOSE;
             } else {
                 led_next_state = LED_WAIT_CONNECT;
             }
+#endif
             KEYF_LED_ON();
             break;
 
@@ -394,7 +400,9 @@ static void led_timer_handle(void)
 
     if (led_timeout_count < 2) {
         if (LED_INIT == led_state) {
+#if TCFG_USER_EDR_ENABLE
             bt_wait_phone_connect_control(1);
+#endif
         }
         led_on_off(led_next_state, 0);
         return;
@@ -850,8 +858,9 @@ static int keyfob_event_handler(struct application *app, struct sys_event *event
     }
 #endif
 
+#if TCFG_USER_EDR_ENABLE
     bt_comm_edr_sniff_clean();
-
+#endif
     /* log_info("event: %s", event->arg); */
     switch (event->type) {
     case SYS_KEY_EVENT:

@@ -17,6 +17,7 @@
 #include "app_main.h"
 #include "update.h"
 #include "update_loader_download.h"
+#include "asm/charge.h"
 
 #define LOG_TAG_CONST       APP
 #define LOG_TAG             "[APP]"
@@ -29,17 +30,21 @@
 
 /*任务列表 */
 const struct task_info task_info_table[] = {
-    {"app_core",            1,     640,   128  },
-    {"sys_event",           7,     256,   0    },
-    {"btctrler",            4,     512,   256  },
-    {"btencry",             1,     512,   128  },
-    {"btstack",             3,     768,   256  },
-    {"systimer",		    7,	   128,   0		},
-    {"update",				1,	   320,   0		},
-    {"dw_update",		 	2,	   256,   128  },
+    {"app_core",            1,     0,   640,   128  },
+    {"sys_event",           7,     0,   256,   0    },
+    {"btctrler",            4,     0,   512,   256  },
+    {"btencry",             1,     0,   512,   128  },
+    {"btstack",             3,     0,   768,   768},
+    {"systimer",		    7,	   0,   128,   0    },
+    {"update",				1,	   0,   512,   0    },
+    {"dw_update",		 	2,	   0,   256,   128  },
 #if (RCSP_BTMATE_EN)
-    {"rcsp_task",		    2,		640,	0	},
+    {"rcsp_task",		    2,	   0,   640,	0	},
 #endif
+#if TCFG_AUDIO_ENABLE
+    {"audio_dec",           3,     0,   768,   128  },
+    {"audio_enc",           4,     0,   512,   128  },
+#endif/*TCFG_AUDIO_ENABLE*/
     {0, 0},
 };
 
@@ -62,12 +67,27 @@ void app_main()
         int update = 0;
         update = update_result_deal();
     }
+
+#if TCFG_AUDIO_ENABLE
+    extern int audio_dec_init();
+    extern int audio_enc_init();
+    audio_dec_init();
+    audio_enc_init();
+#endif/*TCFG_AUDIO_ENABLE*/
+
     init_intent(&it);
 
     it.name = "mesh";
     it.action = ACTION_AT_MAIN;
 
+    log_info("run app>>> %s", it.name);
+    log_info("%s,%s", __DATE__, __TIME__);
+
     start_app(&it);
+
+#if TCFG_CHARGE_ENABLE
+    set_charge_event_flag(1);
+#endif
 }
 
 /*

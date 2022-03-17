@@ -67,11 +67,15 @@ CHARGE_PLATFORM_DATA_BEGIN(charge_data)
 	.charge_full_V          = TCFG_CHARGE_FULL_V,              //充电截止电压
 	.charge_full_mA			= TCFG_CHARGE_FULL_MA,             //充电截止电流
 	.charge_mA				= TCFG_CHARGE_MA,                  //充电电流
+	.charge_trickle_mA		= TCFG_CHARGE_TRICKLE_MA,          //涓流电流
 	/*ldo5v拔出过滤值，过滤时间 = (filter*2 + 20)ms,ldoin<0.6V且时间大于过滤时间才认为拔出
 	  对于充满直接从5V掉到0V的充电仓，该值必须设置成0，对于充满由5V先掉到0V之后再升压到xV的
 	  充电仓，需要根据实际情况设置该值大小*/
 	.ldo5v_off_filter		= 100,
-	.ldo5v_pulldown_lvl     = CHARGE_PULLDOWN_200K,            //下拉电阻档位选择
+	.ldo5v_on_filter        = 50,
+	.ldo5v_keep_filter      = 220,
+	.ldo5v_pulldown_lvl     = CHARGE_PULLDOWN_200K,
+	.ldo5v_pulldown_keep    = 1,
 #if !TCFG_CHARGESTORE_ENABLE
 	//1、对于自动升压充电舱,若充电舱需要更大的负载才能检测到插入时，请将该变量置1,并且根据需求配置下拉电阻档位
 	//2、对于按键升压,并且是通过上拉电阻去提供维持电压的舱,请将该变量设置1,并且根据舱的上拉配置下拉需要的电阻挡位

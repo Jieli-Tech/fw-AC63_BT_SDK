@@ -763,6 +763,11 @@ void app_audio_volume_down(u8 value)
     app_audio_set_volume(__this->state, volume, 1);
 }
 
+void app_audio_volume_set(u8 value)
+{
+    app_audio_set_volume(__this->state, value, 1);
+}
+
 void app_audio_state_switch(u8 state, s16 max_volume)
 {
     r_printf("audio state old:%s,new:%s,vol:%d\n", audio_state[__this->state], audio_state[state], max_volume);
@@ -791,11 +796,14 @@ void app_audio_state_switch(u8 state, s16 max_volume)
         audio_dac_vol_set(TYPE_DAC_AGAIN, BIT(0), 0, 1);
         audio_dac_vol_set(TYPE_DAC_DGAIN, BIT(0) | BIT(1), 16384, 1);
         break;
-
-    default :
+    case DAC_OUTPUT_LR:
+    case DAC_OUTPUT_MONO_LR_DIFF:
         audio_dac_vol_set(TYPE_DAC_AGAIN, BIT(0) | BIT(1), 30, 1);
         audio_dac_vol_set(TYPE_DAC_DGAIN, BIT(0) | BIT(1), 16384, 1);
-
+        break;
+    default :
+        audio_dac_vol_set(TYPE_DAC_AGAIN, BIT(0) | BIT(1) | BIT(2) | BIT(3), 30, 1);
+        audio_dac_vol_set(TYPE_DAC_DGAIN, BIT(0) | BIT(1) | BIT(2) | BIT(3), 16384, 1);
     }
 #endif
     app_audio_set_volume(__this->state, app_audio_get_volume(__this->state), 1);
@@ -1459,7 +1467,7 @@ void app_audio_output_init(void)
 
     audio_dac_set_buff(&dac_hdl, dac_buff, sizeof(dac_buff));
 
-    struct audio_dac_trim dac_trim;
+    struct audio_dac_trim dac_trim = {0};
     int len = syscfg_read(CFG_DAC_TRIM_INFO, (void *)&dac_trim, sizeof(dac_trim));
     if (len != sizeof(dac_trim) || dac_trim.left == 0 || dac_trim.right == 0) {
         audio_dac_do_trim(&dac_hdl, &dac_trim, 0);
@@ -1766,4 +1774,39 @@ int audio_output_sync_stop(void)
 }
 
 #endif
+
+void audio_adda_dump(void) //打印所有的dac,adc寄存器
+{
+    printf("DAC_VL0:%x", JL_AUDIO->DAC_VL0);
+    printf("DAC_TM0:%x", JL_AUDIO->DAC_TM0);
+    printf("DAC_DTB:%x", JL_AUDIO->DAC_DTB);
+    printf("DAC_CON:%x", JL_AUDIO->DAC_CON);
+    printf("ADC_CON:%x", JL_AUDIO->ADC_CON);
+    printf("DAC RES: DA0:0x%x DA1:0x%x DA2:0x%x DA3:0x%x ,ADC RES:ADA0:0X%x ADA1:0X%x ADA2:0X%x  ADA3:0X%x\n", \
+           JL_ANA->DAA_CON0, JL_ANA->DAA_CON1, JL_ANA->DAA_CON2, JL_ANA->DAA_CON3, \
+           JL_ANA->ADA_CON0, JL_ANA->ADA_CON1, JL_ANA->ADA_CON2, JL_ANA->ADA_CON3);
+}
+
+void audio_adda_gain_dump(void)//打印所有adc,dac的增益
+{
+    u8 dac_again_fl = JL_ANA->DAA_CON1 & 0x1F;
+    u8 dac_again_fr = (JL_ANA->DAA_CON1 >> 5) & 0x1F;
+    u8 dac_again_rl = (JL_ANA->DAA_CON1 >> 10) & 0x1F;
+    u8 dac_again_rr = (JL_ANA->DAA_CON1 >> 15) & 0x1F;
+
+
+    u32 dac_dgain_fl = JL_AUDIO->DAC_VL0 & 0xFFFF;
+    u32 dac_dgain_fr = (JL_AUDIO->DAC_VL0 >> 16) & 0xFFFF;
+    u32 dac_dgain_rl = JL_AUDIO->DAC_VL1 & 0xFFFF;
+    u32 dac_dgain_rr = (JL_AUDIO->DAC_VL1 >> 16) & 0xFFFF;
+
+
+    u8 mic0_gain = (JL_ANA->ADA_CON0 >> 8) & 0x1F;
+    u8 mic0_db = (JL_ANA->ADA_CON4 >> 29) & 0x1; //0db还是6db
+
+    u8 linein_r_gain = (JL_ANA->ADA_CON0 >> 4) & 0xF;
+    u8 linein_l_gain = JL_ANA->ADA_CON0 & 0xF;
+    printf("MIC_G:%d,MIC_0_6:%d, linein_gain:%d,%d,DAC_AG:%d,%d,%d,%d,DAC_DG:%d,%d,%d,%d\n", mic0_gain, mic0_db, linein_l_gain, linein_r_gain, dac_again_fl, dac_again_fr, dac_again_rl, dac_again_rr, dac_dgain_fl, dac_dgain_fr, dac_dgain_rl, dac_dgain_rr);
+
+}
 

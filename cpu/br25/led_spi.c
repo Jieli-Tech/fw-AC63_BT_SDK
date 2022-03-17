@@ -11,11 +11,10 @@ static const u8 SPI2_DO[2] = {
     IO_PORT_DM  //'B'
 };
 #define LED_SPI                 JL_SPI1
-#define LED_SPI_PORT            'A'
-#define LED_SPI_DAT_BAUD        2
-#define LED_SPI_REST_BAUD       15
-#define LED_NUM_MAX             2
-#define LED_SPI_CLOCK_BASE		(clk_get("lsb") / 24000000)
+#define LED_SPI_PORT            'B'
+#define LED_SPI_DAT_BAUD        8000000
+#define LED_SPI_REST_BAUD       1000000
+#define LED_SPI_CLOCK_BASE		clk_get("lsb")
 
 static OS_SEM led_spi_sem;
 static u32 spi_do = 0;
@@ -53,8 +52,9 @@ void led_spi_init(void)
     LED_SPI->CON = 0x4021;
 }
 
-void led_rgb_to_24byte(u8 r, u8 g, u8 b, u8 *buf)
+void led_spi_rgb_to_24byte(u8 r, u8 g, u8 b, u8 *buf, int idx)
 {
+    buf = buf + idx * 24;
     u32 dat = ((g << 16) | (r << 8) | b);
     for (u8 i = 0; i < 24; i ++) {
         if (dat & BIT(23 - i)) {
@@ -65,10 +65,10 @@ void led_rgb_to_24byte(u8 r, u8 g, u8 b, u8 *buf)
     }
 }
 
-void led_rest()
+void led_spi_rest()
 {
     u8 tmp_buf[16] = {0};
-    LED_SPI->BAUD = (LED_SPI_REST_BAUD + 1) * LED_SPI_CLOCK_BASE - 1;
+    LED_SPI->BAUD = LED_SPI_CLOCK_BASE / LED_SPI_REST_BAUD - 1;
     LED_SPI->CON |= BIT(14);
     LED_SPI->ADR = (u32)tmp_buf;
     LED_SPI->CNT = 16;
@@ -81,15 +81,12 @@ void led_spi_send_rgbbuf(u8 *rgb_buf, u16 led_num) //rgb_buf的大小 至少要�
     if (!led_num) {
         return;
     }
-    if (led_num > LED_NUM_MAX) {
-        led_num = LED_NUM_MAX;
-    }
     while (led_spi_sus) {
         os_time_dly(1);
     }
     led_spi_busy = 1;
-    led_rest();
-    LED_SPI->BAUD = (LED_SPI_DAT_BAUD + 1) * LED_SPI_CLOCK_BASE - 1;
+    led_spi_rest();
+    LED_SPI->BAUD = LED_SPI_CLOCK_BASE / LED_SPI_DAT_BAUD - 1;
     LED_SPI->CON |= BIT(14);
     LED_SPI->ADR = (u32)rgb_buf;
     LED_SPI->CNT = led_num * 24;
@@ -103,16 +100,13 @@ void led_spi_send_rgbbuf_isr(u8 *rgb_buf, u16 led_num) //rgb_buf的大小 至少
     if (!led_num) {
         return;
     }
-    if (led_num > LED_NUM_MAX) {
-        led_num = LED_NUM_MAX;
-    }
     while (led_spi_sus) {
         os_time_dly(1);
     }
     led_spi_busy = 1;
     os_sem_pend(&led_spi_sem, 0);
-    led_rest();
-    LED_SPI->BAUD = (LED_SPI_DAT_BAUD + 1) * LED_SPI_CLOCK_BASE - 1;
+    led_spi_rest();
+    LED_SPI->BAUD = LED_SPI_CLOCK_BASE / LED_SPI_DAT_BAUD - 1;
     LED_SPI->CON |= BIT(14);
     LED_SPI->ADR = (u32)rgb_buf;
     LED_SPI->CNT = led_num * 24;
@@ -148,7 +142,7 @@ u8 led_spi_resume(void)
     return 0;
 }
 
-static u8 spi_dat_buf[24 * LED_NUM_MAX] __attribute__((aligned(4)));
+static u8 spi_dat_buf[24 * 2] __attribute__((aligned(4)));
 extern void wdt_clear();
 void led_spi_test(void)
 {
@@ -158,8 +152,8 @@ void led_spi_test(void)
     u8 pulse = 0;
     while (1) {
         cnt ++;
-        led_rgb_to_24byte(cnt, 255 - cnt, 0, (u8 *)(&spi_dat_buf[0]));
-        led_rgb_to_24byte(0, 0, cnt, (u8 *)(&spi_dat_buf[24]));
+        led_spi_rgb_to_24byte(cnt, 255 - cnt, 0, spi_dat_buf, 0);
+        led_spi_rgb_to_24byte(0, 0, cnt, spi_dat_buf, 1);
 #if 1
         led_spi_send_rgbbuf(spi_dat_buf, 2);        //等待的方式，建议用在发的数据量小的场合
 #else
@@ -169,4 +163,3 @@ void led_spi_test(void)
         wdt_clear();
     }
 }
-

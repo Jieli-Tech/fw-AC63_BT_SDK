@@ -181,13 +181,6 @@ const char log_tag_const_d_HID_VRC AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_w_HID_VRC AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_e_HID_VRC AT(.LOG_TAG_CONST) = 1;
 
-const char log_tag_const_v_REMOTE_S AT(.LOG_TAG_CONST) = 0;
-const char log_tag_const_i_REMOTE_S AT(.LOG_TAG_CONST) = 1;
-const char log_tag_const_d_REMOTE_S AT(.LOG_TAG_CONST) = 1;
-const char log_tag_const_w_REMOTE_S AT(.LOG_TAG_CONST) = 1;
-const char log_tag_const_e_REMOTE_S AT(.LOG_TAG_CONST) = 1;
-
-
 /* const char log_tag_const_v_ AT(.LOG_TAG_CONST) = 0; */
 /* const char log_tag_const_i_ AT(.LOG_TAG_CONST) = 1; */
 /* const char log_tag_const_d_ AT(.LOG_TAG_CONST) = 1; */

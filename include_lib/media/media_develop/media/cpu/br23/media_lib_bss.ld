@@ -1,6 +1,7 @@
 
         media_bss_start = .;
         . = ALIGN(4);
+        *(.jlsp_bss)
 		*(.aec_bss)
 		*(.res_bss)
 		*(.ns_bss)
@@ -129,6 +130,10 @@
 		*(.sbc_hwaccel_bss)
 		*(.resample_fastcal_bss)
 		*(.lc3_decoder_bss)
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+	*(.lc3_codec_ari_c_bss)
+	*(.lc3_codec_c_bss)
+#endif
 		*(.lfwordana_bss)
         media_bss_end = .;
 

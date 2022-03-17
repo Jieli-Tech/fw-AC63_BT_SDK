@@ -23,7 +23,7 @@
 //*********************************************************************************//
 #define TCFG_UART0_ENABLE					DISABLE_THIS_MOUDLE                     //串口打印模块使能
 #define TCFG_UART0_RX_PORT					NO_CONFIG_PORT                         //串口接收脚配置（用于打印可以选择NO_CONFIG_PORT）
-#define TCFG_UART0_TX_PORT  				IO_PORT_DP                            //串口发送脚配置
+#define TCFG_UART0_TX_PORT  				IO_PORT_DP//IO_PORTA_00                           //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
 //*********************************************************************************//
@@ -33,7 +33,7 @@
 #define USB_MEM_NO_USE_OVERLAY_EN	        1
 #define TCFG_USB_SLAVE_USER_HID             1
 #define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE//U盘模块使能
-#define TCFG_OTG_USB_DEV_EN                 BIT(0)//USB0 = BIT(0)  USB1 = BIT(1)
+#define TCFG_OTG_USB_DEV_EN                 0//USB0 = BIT(0)  USB1 = BIT(1)
 
 #include "usb_std_class_def.h"
 
@@ -41,6 +41,11 @@
 #undef USB_DEVICE_CLASS_CONFIG
 #define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS)
 
+/*定义支持wakeup*/
+#undef  USB_SUSPEND_RESUME_SYSTEM_NO_SLEEP
+#define USB_SUSPEND_RESUME_SYSTEM_NO_SLEEP      1
+#undef  USB_REMOTE_WAKEUP_TIMEOUT_DETECT_TIMES  //休眠----唤醒超时时间设置(ms)
+#define USB_REMOTE_WAKEUP_TIMEOUT_DETECT_TIMES  2000
 
 //*********************************************************************************//
 //                                 IIC配置                                        //
@@ -276,6 +281,7 @@
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
 #define TCFG_USER_EDR_ENABLE                      0   //EDR功能使能
 
+#if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    0
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
@@ -283,7 +289,7 @@
 #define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    0
 #define USER_SUPPORT_PROFILE_PBAP   0
-
+#endif
 
 #if(TCFG_USER_TWS_ENABLE || TCFG_USER_BLE_ENABLE)
 #define TCFG_BD_NUM						          1   //连接设备个数配置

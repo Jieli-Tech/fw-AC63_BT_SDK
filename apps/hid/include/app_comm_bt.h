@@ -23,9 +23,10 @@ typedef struct {
     u32 class_type;//搜索显示图标
     u16 page_timeout;
     u16 super_timeout;
-    u8 io_capabilities: 3;
+    u8 io_capabilities: 2;
     u8 authentication_req: 3;
     u8 oob_data: 2;
+    u8 passkey_enable: 1;
     u16 report_map_size;
     const u8 *report_map;
     const edr_sniff_par_t *sniff_param;
@@ -39,7 +40,6 @@ typedef struct {
     const u8 *report_map;
 
 } ble_init_cfg_t;
-
 
 
 #define HCI_EVENT_INQUIRY_COMPLETE                            0x01
@@ -94,9 +94,15 @@ int bt_comm_edr_sniff_clean(void);
 void bt_comm_edr_mode_enable(u8 enable);
 void sys_auto_sniff_controle(u8 enable, u8 *addr);
 int bt_connect_phone_back_start(void);
+void bt_comm_edr_get_remote_address(bd_addr_t address);
 
+void lmp_set_sniff_disable(void);
 extern void lmp_sniff_t_slot_attemp_reset(u16 slot, u16 attemp);
 extern const int sniff_support_reset_anchor_point;   //sniff状态下是否支持reset到最近一次通信点，用于HID
+/*简易配对开关接口*/
+void __set_simple_pair_flag(bool flag);
 
+// void le_hogp_set_direct_adv_type(u8 type);
+void le_hogp_set_reconnect_adv_cfg(u8 adv_type, u32 adv_timeout);
 
 #endif    //_APP_BT_COMMON_H_

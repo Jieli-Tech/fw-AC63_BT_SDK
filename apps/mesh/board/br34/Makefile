@@ -2,6 +2,12 @@
 # make 编译并下载
 # make VERBOSE=1 显示编译详细过程
 # make clean 清除编译临时文件
+# 注意： Linux 下编译方式：
+# 1. 从 http://pkgman.jieliapp.com/doc/all 处找到下载链接
+# 2. 下载后，解压到 /opt/jieli 目录下，保证
+#   /opt/jieli/common/bin/clang 存在（注意目录层次）
+# 3. 确认 ulimit -n 的结果足够大（建议大于8096），否则链接可能会因为打开文件太多而失败
+#   可以通过 ulimit -n 8096 来设置一个较大的值
 
 # 工具路径设置
 ifeq ($(OS), Windows_NT)
@@ -16,8 +22,10 @@ RM    := rm -rf
 
 SYS_LIB_DIR := C:/JL/pi32/pi32v2-lib/r3
 SYS_INC_DIR := C:/JL/pi32/pi32v2-include
+EXT_CFLAGS  := # Windows 下不需要 -D__SHELL__
 
 ## 后处理脚本
+FIXBAT          := ..\..\..\..\tools\utils\fixbat.exe # 用于处理 utf8->gbk 编码问题
 POST_SCRIPT     := ..\..\..\..\cpu\br34\tools\download.bat
 RUN_POST_SCRIPT := $(POST_SCRIPT)
 else
@@ -32,8 +40,10 @@ RM    := rm -rf
 
 SYS_LIB_DIR := $(TOOL_DIR)/../lib/r3
 SYS_INC_DIR := $(TOOL_DIR)/../include
+EXT_CFLAGS  := -D__SHELL__ # Linux 下需要这个保证正确处理 download.c
 
 ## 后处理脚本
+FIXBAT          := touch # Linux下不需要处理 bat 编码问题
 POST_SCRIPT     := ../../../../cpu/br34/tools/download.sh
 RUN_POST_SCRIPT := bash $(POST_SCRIPT)
 endif
@@ -68,6 +78,9 @@ CFLAGS := \
 	-Wno-shift-negative-value \
 	-Wundef \
 	-Wframe-larger-than=256 \
+	-Wincompatible-pointer-types \
+	-Wreturn-type \
+	-Wimplicit-function-declaration \
 	-fms-extensions \
 	-fdiscrete-bitfield-abi \
 	-w \
@@ -82,11 +95,15 @@ DEFINES := \
 	-DCONFIG_NEW_BREDR_ENABLE \
 	-DCONFIG_FREE_RTOS_ENABLE \
 	-DCONFIG_EQ_SUPPORT_ASYNC \
+	-DEQ_CORE_V2 \
 	-DEQ_DESIGN_IN_MASK \
 	-DSINE_MAKE_IN_MASK \
+	-DCONFIG_DNS_ENABLE \
 	-DCONFIG_MMU_ENABLE \
 	-DCONFIG_SBC_CODEC_HW \
 	-DCONFIG_MSBC_CODEC_HW \
+	-DCONFIG_NEW_TWS_FORWARD_ENABLE \
+	-DCONFIG_SUPPORT_WIFI_DETECT \
 	-DCONFIG_AEC_M=256 \
 	-DCONFIG_AUDIO_ONCHIP \
 	-DCONFIG_MEDIA_NEW_ENABLE \
@@ -108,6 +125,7 @@ DEFINES := \
 	-DCONFIG_MESH_CASE_ENABLE \
 	-DCONFIG_TRANSFER_ENABLE \
 	-DCONFIG_LITE_AEC_ENABLE=0 \
+	-DCONFIG_LITE_AUDIO \
 	-DCONFIG_LMP_RESET_ENABLE \
 	-DCONFIG_LMP_REFRESH_ENCRYPTION_KEY_ENABLE \
 	-DCONFIG_LINK_DISTURB_SCAN_ENABLE=0 \
@@ -119,6 +137,8 @@ DEFINES := \
 	-DUSB_PC_NO_APP_MODE \
 	-D__LD__ \
 
+
+DEFINES += $(EXT_CFLAGS) # 额外的一些定义
 
 # 头文件搜索路径
 INCLUDES := \
@@ -152,6 +172,10 @@ INCLUDES := \
 	-I../../../../apps/common/third_party_profile/jieli \
 	-I../../../../include_lib/system/os/FreeRTOS \
 	-I../../../../include_lib/btstack \
+	-I../../../../apps/common/audio \
+	-I../../../../cpu/br34/audio_dec \
+	-I../../../../cpu/br34/audio_enc \
+	-I../../../../cpu/br34 \
 	-I../../../../apps/common/third_party_profile \
 	-I../../../../apps/common/third_party_profile/sig_mesh \
 	-I../../../../apps/common/third_party_profile/sig_mesh/tinycrypt/include \
@@ -162,10 +186,14 @@ INCLUDES := \
 
 # 需要编译的 .c 文件
 c_SRC_FILES := \
+	../../../../apps/common/audio/audio_utils.c \
+	../../../../apps/common/audio/decode/decode.c \
+	../../../../apps/common/audio/sine_make.c \
+	../../../../apps/common/bt_common/bt_test_api.c \
 	../../../../apps/common/debug/debug.c \
-	../../../../apps/common/key/adkey.c \
-	../../../../apps/common/key/iokey.c \
-	../../../../apps/common/key/key_driver.c \
+	../../../../apps/common/device/key/adkey.c \
+	../../../../apps/common/device/key/iokey.c \
+	../../../../apps/common/device/key/key_driver.c \
 	../../../../apps/common/third_party_profile/common/custom_cfg.c \
 	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.c \
 	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_ch_loader_download.c \
@@ -213,12 +241,15 @@ c_SRC_FILES := \
 	../../../../apps/mesh/app_idle.c \
 	../../../../apps/mesh/app_main.c \
 	../../../../apps/mesh/app_mesh.c \
+	../../../../apps/mesh/audio_codec_demo.c \
 	../../../../apps/mesh/board/br34/board_ac6381a_demo.c \
 	../../../../apps/mesh/board/br34/board_ac6385a_demo.c \
 	../../../../apps/mesh/board/br34/board_ac638n_demo.c \
+	../../../../apps/mesh/demo_dec_frame_play.c \
 	../../../../apps/mesh/examples/AliGenie_fan.c \
 	../../../../apps/mesh/examples/AliGenie_light.c \
 	../../../../apps/mesh/examples/AliGenie_socket.c \
+	../../../../apps/mesh/examples/TUYA_light.c \
 	../../../../apps/mesh/examples/generic_onoff_client.c \
 	../../../../apps/mesh/examples/generic_onoff_server.c \
 	../../../../apps/mesh/examples/light_lightness_server.c \
@@ -227,17 +258,26 @@ c_SRC_FILES := \
 	../../../../apps/mesh/lib_config/lib_btctrler_config.c \
 	../../../../apps/mesh/lib_config/lib_btstack_config.c \
 	../../../../apps/mesh/lib_config/lib_driver_config.c \
+	../../../../apps/mesh/lib_config/lib_media_config.c \
 	../../../../apps/mesh/lib_config/lib_profile_config.c \
 	../../../../apps/mesh/lib_config/lib_system_config.c \
 	../../../../apps/mesh/lib_config/lib_update_config.c \
 	../../../../apps/mesh/log_config.c \
+	../../../../apps/mesh/tone_table.c \
 	../../../../apps/mesh/user_cfg.c \
 	../../../../apps/mesh/version.c \
 	../../../../cpu/br34/adc_api.c \
+	../../../../cpu/br34/app_audio.c \
+	../../../../cpu/br34/audio_codec_clock.c \
+	../../../../cpu/br34/audio_dec.c \
+	../../../../cpu/br34/audio_enc.c \
+	../../../../cpu/br34/audio_mic_capless.c \
+	../../../../cpu/br34/audio_mic_codec.c \
 	../../../../cpu/br34/charge.c \
 	../../../../cpu/br34/chargestore.c \
 	../../../../cpu/br34/clock_manager.c \
 	../../../../cpu/br34/ctmu.c \
+	../../../../cpu/br34/handshake_timer.c \
 	../../../../cpu/br34/iic_hw.c \
 	../../../../cpu/br34/iic_soft.c \
 	../../../../cpu/br34/irflt.c \
@@ -245,6 +285,7 @@ c_SRC_FILES := \
 	../../../../cpu/br34/setup.c \
 	../../../../cpu/br34/spi.c \
 	../../../../cpu/br34/timer_pwm.c \
+	../../../../cpu/br34/tone_player.c \
 	../../../../cpu/br34/uart_dev.c \
 
 
@@ -288,6 +329,22 @@ LFLAGS := \
 	../../../../cpu/br34/liba/crypto_toolbox_Osize.a \
 	../../../../cpu/br34/liba/rcsp_stack.a \
 	../../../../cpu/br34/liba/update.a \
+	../../../../cpu/br34/liba/aec.a \
+	../../../../cpu/br34/liba/media.a \
+	../../../../cpu/br34/liba/media_app.a \
+	../../../../cpu/br34/liba/libAptFilt_pi32v2_OnChip.a \
+	../../../../cpu/br34/liba/libEchoSuppress_pi32v2_OnChip.a \
+	../../../../cpu/br34/liba/libNoiseSuppress_pi32v2_OnChip.a \
+	../../../../cpu/br34/liba/libSplittingFilter_pi32v2_OnChip.a \
+	../../../../cpu/br34/liba/libFFT_pi32v2_OnChip.a \
+	../../../../cpu/br34/liba/libOpcore_maskrom_pi32v2_OnChip.a \
+	../../../../cpu/br34/liba/wtgv2_dec_lib.a \
+	../../../../cpu/br34/liba/opus_enc_lib.a \
+	../../../../cpu/br34/liba/speex_enc_lib.a \
+	../../../../cpu/br34/liba/lib_adpcm_ima_code.a \
+	../../../../cpu/br34/liba/lib_adpcm_code.a \
+	../../../../cpu/br34/liba/lc3_codec_lib.a \
+	../../../../cpu/br34/liba/wav_dec_lib.a \
 	--end-group \
 	-T../../../../cpu/br34/sdk.ld \
 	-M=../../../../cpu/br34/tools/sdk.map \
@@ -327,50 +384,63 @@ else
 QUITE := @
 endif
 
+# 一些旧的 make 不支持 file 函数，需要 make 的时候指定 LINK_AT=0 make
+LINK_AT ?= 1
+
 .PHONY: all clean pre_build
 
 all: pre_build $(OUT_ELF)
-	@echo +POST-BUILD
+	$(info +POST-BUILD)
 	$(QUITE) $(RUN_POST_SCRIPT) sdk
 
 pre_build:
-	@echo +PRE-BUILD
+	$(info +PRE-BUILD)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br34/sdk_used_list.c -o ../../../../cpu/br34/sdk_used_list.used
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br34/sdk_ld.c -o ../../../../cpu/br34/sdk.ld
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br34/tools/download.c -o $(POST_SCRIPT)
-	$(QUITE) ..\..\..\..\tools\utils\fixbat.exe $(POST_SCRIPT)
+	$(QUITE) $(FIXBAT) $(POST_SCRIPT)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br34/tools/isd_config_rule.c -o ../../../../cpu/br34/tools/isd_config.ini
 
 clean:
 	$(QUITE) $(RM) $(OUT_ELF)
-	$(QUITE) $(RM) $(OBJS)
-	$(QUITE) $(RM) $(DEP_FILES)
+	$(QUITE) $(RM) $(BUILD_DIR)
 
+
+
+ifeq ($(LINK_AT), 1)
 $(OUT_ELF): $(OBJS)
-	@echo +LINK $@
+	$(info +LINK $@)
+	$(shell $(MKDIR) $(@D))
 	$(file >$(OBJ_FILE), $(OBJS))
 	$(QUITE) $(LD) -o $(OUT_ELF) @$(OBJ_FILE) $(LFLAGS) $(LIBPATHS) $(LIBS)
+else
+$(OUT_ELF): $(OBJS)
+	$(info +LINK $@)
+	$(shell $(MKDIR) $(@D))
+	$(QUITE) $(LD) -o $(OUT_ELF) $(OBJS) $(LFLAGS) $(LIBPATHS) $(LIBS)
+endif
+
 
 $(BUILD_DIR)/%.c.o : $(ROOT_PREFIX)/%.c
-	@echo +CC $<
+	$(info +CC $<)
 	@$(MKDIR) $(@D)
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.S.o : $(ROOT_PREFIX)/%.S
-	@echo +AS $<
+	$(info +AS $<)
 	@$(MKDIR) $(@D)
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.s.o : $(ROOT_PREFIX)/%.s
-	@echo +AS $<
+	$(info +AS $<)
 	@$(MKDIR) $(@D)
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cpp.o : $(ROOT_PREFIX)/%.cpp
-	@echo +CXX $<
+	$(info +CXX $<)
 	@$(MKDIR) $(@D)
 	@$(CXX) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@

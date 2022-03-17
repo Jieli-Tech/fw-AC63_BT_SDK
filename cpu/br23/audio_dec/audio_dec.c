@@ -21,6 +21,8 @@
 #include "application/audio_equalloudness_eq.h"
 #include "audio_spectrum.h"
 #include "application/audio_vocal_remove.h"
+#include "audio_effect/audio_sound_track_2_p_x.h"
+#include "audio_utils.h"
 
 #if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
@@ -130,9 +132,58 @@ void mix_out_eq_drc_close(struct audio_eq_drc *eq_drc);
 extern spectrum_fft_hdl *spec_hdl;
 struct channel_switch *spectrum_ch_switch = NULL;//声道变换
 #endif
+#if defined(SOUND_TRACK_2_P_X_CH_CONFIG) &&SOUND_TRACK_2_P_X_CH_CONFIG
+struct sound_track_2_p_x  *mix_dec = NULL;
+static float  bass_gain  = 0;
+//低音调节测试例子
+void sound_track_bass_vol_test_demo(u8 up_down)
+{
+    if (up_down) {
+        bass_gain++;
+    } else {
+        bass_gain--;
+    }
+    if (bass_gain > 6) {
+        bass_gain = 6;
+        tone_play_by_path(TONE_NORMAL, 0);   //播放一段正弦波
+    }
+    if (bass_gain < -6) {
+        bass_gain = -6;
+        tone_play_by_path(TONE_NORMAL, 0);   //播放一段正弦波
+    }
+    //printf("=====bass gain %d\n", (int)bass_gain);
+    if (mix_dec) {
+        low_bass_set_global_gain(mix_dec, bass_gain, bass_gain);
+    }
+}
 
+#endif/*defined(SOUND_TRACK_2_P_X_CH_CONFIG) &&SOUND_TRACK_2_P_X_CH_CONFIG*/
 
 //////////////////////////////////////////////////////////////////////////////
+struct _audio_phase_inver_hdl {
+    struct audio_stream_entry entry;	// 音频流入口
+} audio_phase_inver_hdl;
+
+static void audio_phase_inver_output_data_process_len(struct audio_stream_entry *entry,  int len)
+{
+}
+
+static int audio_phase_inver_data_handler(struct audio_stream_entry *entry,
+        struct audio_data_frame *in,
+        struct audio_data_frame *out)
+{
+    struct _audio_phase_inver_hdl *hdl = container_of(entry, struct _audio_phase_inver_hdl, entry);
+    out->data = in->data;
+    out->data_len = in->data_len;
+    if (in->data_len - in->offset > 0) {
+        digital_phase_inverter_s16(in->data + in->offset / 2, in->data_len - in->offset);
+    }
+    return in->data_len;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+
 /*----------------------------------------------------------------------------*/
 /**@brief   获取dac能量值
    @param
@@ -273,6 +324,9 @@ u32 audio_output_nor_rate(void)
     return 44100;
 #endif
 
+#if defined(SOUND_TRACK_2_P_X_CH_CONFIG) &&SOUND_TRACK_2_P_X_CH_CONFIG
+    return 44100;
+#endif
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DAC)
 
@@ -704,7 +758,12 @@ int audio_dec_init()
     if (ch_num <= 2) {
         mix_eq_drc = mix_out_eq_drc_open(sr, ch_num);// 高低音
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR)
+#if defined(SOUND_TRACK_2_P_X_CH_CONFIG) &&SOUND_TRACK_2_P_X_CH_CONFIG
+        // 2.x音效处理
+        mix_dec = sound_track_2_p_x_open(TWO_POINT_X_CH, sr, ch_num);
+#else
         mix_ch_switch = channel_switch_open(AUDIO_CH_QUAD, AUDIO_SYNTHESIS_LEN / 2);
+#endif/*defined(SOUND_TRACK_2_P_X_CH_CONFIG) && SOUND_TRACK_2_P_X_CH_CONFIG*/
 #endif
     }
 #endif
@@ -746,6 +805,12 @@ int audio_dec_init()
     u8 entry_cnt = 0;
     entries[entry_cnt++] = &mixer.entry;
 
+#if TCFG_DIG_PHASE_INVERTER_EN
+    audio_phase_inver_hdl.entry.data_process_len = audio_phase_inver_output_data_process_len;
+    audio_phase_inver_hdl.entry.data_handler = audio_phase_inver_data_handler;
+    entries[entry_cnt++] = &(audio_phase_inver_hdl.entry);
+#endif/*TCFG_DIG_PHASE_INVERTER_EN*/
+
 #if AUDIO_EQUALLOUDNESS_CONFIG
     if (loudness) {
         entries[entry_cnt++] = &loudness->loudness->entry;
@@ -758,11 +823,17 @@ int audio_dec_init()
 #endif
 
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR)
+#if defined(SOUND_TRACK_2_P_X_CH_CONFIG) &&SOUND_TRACK_2_P_X_CH_CONFIG
+    if (mix_dec) {
+        entries[entry_cnt++] = &mix_dec->entry;
+    }
+#else
 #if !TCFG_EQ_DIVIDE_ENABLE
     if (mix_ch_switch) {
         entries[entry_cnt++] = &mix_ch_switch->entry;
     }
 #endif
+#endif/*defined(SOUND_TRACK_2_P_X_CH_CONFIG) && SOUND_TRACK_2_P_X_CH_CONFIG*/
 #endif
 
 #if AUDIO_SPECTRUM_CONFIG

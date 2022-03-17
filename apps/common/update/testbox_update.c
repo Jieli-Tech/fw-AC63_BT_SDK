@@ -4,6 +4,10 @@
 #include "btctrler_task.h"
 #include "app_config.h"
 
+#include "asm/power/p33.h"
+#include "asm/power_interface.h"
+void power_set_mode(u8 mode);
+
 
 #if defined(CONFIG_SPP_AND_LE_CASE_ENABLE) || defined(CONFIG_HID_CASE_ENABLE)
 #include "lib_profile_cfg.h"
@@ -32,6 +36,7 @@ extern const update_op_api_t lmp_ch_update_op;
 extern const update_op_api_t ble_ll_ch_update_op;
 static u8 ble_update_ready_jump_flag = 0;
 
+
 static void testbox_bt_classic_update_private_param_fill(UPDATA_PARM *p)
 {
 
@@ -39,11 +44,13 @@ static void testbox_bt_classic_update_private_param_fill(UPDATA_PARM *p)
 
 static void testbox_bt_classic_update_before_jump_handle(int type)
 {
+
     if (UPDATE_MODULE_IS_SUPPORT(UPDATE_BT_LMP_EN)) {
 #if TCFG_USER_TWS_ENABLE || TCFG_USER_BLE_ENABLE
         log_info("close ble hw\n");
         ll_hci_destory();
 #endif
+        y_printf("\n >>>[test]:func = %s,line= %d\n", __FUNCTION__, __LINE__);
 
         update_close_hw("bredr");
         if (__bt_updata_save_connection_info()) {
@@ -53,6 +60,7 @@ static void testbox_bt_classic_update_before_jump_handle(int type)
 
         ram_protect_close();
         //note:last func will not return;
+        power_set_mode(PWR_LDO15);
         __bt_updata_reset_bt_bredrexm_addr();
     }
 }
@@ -81,6 +89,8 @@ static void testbox_bt_classic_update_state_cbk(int type, u32 state, void *priv)
                 update_mode_api_v2(BT_UPDATA,
                                    testbox_bt_classic_update_private_param_fill,
                                    testbox_bt_classic_update_before_jump_handle);
+            } else if ((1 == ret_code->stu)) {     //文件相同的情况
+                cpu_reset();
             }
         }
         break;
@@ -110,8 +120,23 @@ static void testbox_ble_update_before_jump_handle(int type)
     if (BT_MODULES_IS_SUPPORT(BT_MODULE_LE) && UPDATE_MODULE_IS_SUPPORT(UPDATE_BLE_TEST_EN)) {
         ll_hci_destory();
     }
+#if CONFIG_UPDATE_JUMP_TO_MASK
+    y_printf(">>>[test]:latch reset update\n");
+    latch_reset();
 
+#if 0
+    update_close_hw("null");
+    ram_protect_close();
+    /* save_spi_port(); */
+    extern void __BT_UPDATA_JUMP();
+    y_printf("update jump to __BT_UPDATA ...\n");
+    /* clk_set("sys", 48 * 1000000L); */
+    //跳转到uboot加载完,30ms左右(200410_yzb)
+    __BT_UPDATA_JUMP();
+#endif
+#else
     cpu_reset();
+#endif
 }
 
 static void testbox_ble_update_state_cbk(int type, u32 state, void *priv)
@@ -156,6 +181,22 @@ static void testbox_ble_update_state_cbk(int type, u32 state, void *priv)
                                    testbox_ble_update_private_param_fill,
                                    testbox_ble_update_before_jump_handle);
 #endif
+            } else if ((1 == ret_code->stu)) {     //文件相同的情况,默认是复位
+#if TCFG_USER_BLE_ENABLE && (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_NULL) \
+        &&(TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_ADV || defined(CONFIG_MESH_CASE_ENABLE))\
+		&& (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_CLIENT)
+                extern void ble_module_enable(u8 en);
+                ble_module_enable(0);
+                u8 cnt = 0;
+                while (!check_le_conn_disconnet_flag()) {
+                    log_info("wait discon\n");
+                    os_time_dly(2);
+                    if (cnt++ > 5) {
+                        break;
+                    }
+                }
+#endif
+                cpu_reset();
             }
         }
         break;

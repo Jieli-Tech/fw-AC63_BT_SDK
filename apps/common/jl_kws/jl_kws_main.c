@@ -84,7 +84,7 @@ static int kws_speech_recognition_run(void)
         audio_data_len = jl_kws_audio_get_data(rbuf, rbuf_len);
 
         if (audio_data_len == rbuf_len) {
-            kws_putchar('r');
+            /* kws_putchar('r'); */
             event = jl_kws_algo_detect_run(rbuf, rbuf_len);
             if (event != KWS_VOICE_EVENT_NONE) {
                 jl_kws_event_state_update(event);

@@ -22,7 +22,6 @@
   nvram_set_boot_state = ABSOLUTE(0x103fd8);
   nvram_jumpaddr_set = ABSOLUTE(0x103fdc);
   nvram_signature_set = ABSOLUTE(0x103fe0);
-  sfc_suspend = ABSOLUTE(0x103fe4);
   sfc_resume = ABSOLUTE(0x103fe8);
   sfc_drop_cache = ABSOLUTE(0x103fec);
   chip_crc16 = ABSOLUTE(0x103ff0);

@@ -288,31 +288,126 @@ static const ble_init_cfg_t keypage_ble_config = {
     .report_map = keypage_report_map,
     .report_map_size = sizeof(keypage_report_map),
 };
-
+static int handle_send_packect(const u8 *packet_table, u16 table_size, u8 packet_len);
 
 
 
 #define PACKET_DELAY_TIME()        os_time_dly(3)
 #define DOUBLE_KEY_DELAY_TIME()    os_time_dly(5)
 
+///音量加减
+#define  REPROT_CONSUMER_LEN      (1+3)
+static const u8 key_vol_add[][REPROT_CONSUMER_LEN] = {
+    {3, 0x02, 0x00, 0x00 },
+    {3, 0x00, 0x00, 0x00 },
+};
+static const u8 key_vol_dec[][REPROT_CONSUMER_LEN] = {
+    {3, 0x01, 0x00, 0x00 },
+    {3, 0x00, 0x00, 0x00 },
+};
+
+void key_vol_ctrl(u8 add_dec)
+{
+    r_printf("%s[%d]", __func__, add_dec);
+    if (add_dec) {
+        handle_send_packect(key_vol_add, sizeof(key_vol_add), REPROT_CONSUMER_LEN);
+    } else {
+        handle_send_packect(key_vol_dec, sizeof(key_vol_dec), REPROT_CONSUMER_LEN);
+    }
+}
+
 //report_id + data
 #define  REPROT_INFO_LEN0         (1+3)
 #define  REPROT_INFO_LEN1         (1+8)
 //------------------------------------------------------
+static const u8 key_idle_ios_0[][REPROT_INFO_LEN0] = {
+    //松手
+    {5, 0x00, 0xE0, 0xFF },
+    {4, 0x00, 0x00, 0x00 },
+};
+static const u8 key_idle_ios_1[][REPROT_INFO_LEN0] = {
+    //松手
+    {5, 0x00, 0x10, 0x00 },
+    {4, 0x00, 0x00, 0x00 },
+};
+
+extern u8 get_key_active(void);
+void bt_connect_timer_loop(void *priv)
+{
+    static u8 flag = 0;
+#if TCFG_USER_BLE_ENABLE
+    if (!ble_hid_is_connected()) {
+        return;
+    }
+#endif
+#if TCFG_USER_EDR_ENABLE
+    if (!edr_hid_is_connected()) {
+        return;
+    }
+#endif
+    if (get_key_active()) {
+        return;
+    }
+    if (REMOTE_IS_IOS()) {
+        if (flag) {
+            handle_send_packect(key_idle_ios_0, sizeof(key_idle_ios_0), REPROT_INFO_LEN0);
+            flag = 0;
+        } else {
+            handle_send_packect(key_idle_ios_1, sizeof(key_idle_ios_1), REPROT_INFO_LEN0);
+            flag = 1;
+        }
+    }
+}
+
+//连接复位坐标
+static const u8 key_connect_before[][REPROT_INFO_LEN0] = {
+    {4, 0x00, 0x00, 0x00 },
+    {4, 0x00, 0x00, 0x00 },
+    /* {5, 0x01, 0xF8, 0x7F }, //左下*/
+    /* {5, 0xFF, 0x17, 0x80 }, //右上 */
+    {5, 0x01, 0x18, 0x80 }, //左上
+    {5, 0x01, 0x18, 0x80 }, //左上
+    {5, 0x01, 0x18, 0x80 }, //左上
+    //复位坐标点，发松手坐标
+
+    {5, 0x30, 0x00, 0x00 },
+    {5, 0x30, 0x00, 0x00 },
+    {5, 0x30, 0x00, 0x00 },
+
+    {5, 0x00, 0x00, 0x04 },
+    {5, 0x00, 0x00, 0x04 },
+    {5, 0x00, 0x00, 0x04 },
+
+    {4, 0x00, 0x00, 0x00 },
+};
+
+void bt_connect_reset_xy(void)
+{
+    r_printf("%s", __func__);
+#if TCFG_USER_BLE_ENABLE
+    if (!ble_hid_is_connected()) {
+        return;
+    }
+#endif
+#if TCFG_USER_EDR_ENABLE
+    if (!edr_hid_is_connected()) {
+        return;
+    }
+#endif
+    if (REMOTE_IS_IOS()) {
+        handle_send_packect(key_connect_before, sizeof(key_connect_before), REPROT_INFO_LEN0);
+    }
+}
+
 //上键（短按）
-static const u8 key_up_before[][REPROT_INFO_LEN0] = {
-    //Report ID (5)
-    {5, 0x01, 0x18, 0x80 },
-    {5, 0x3c, 0xc0, 0x03 },
-
-    //Report ID (4)
+static const u8 key_up_before[][REPROT_INFO_LEN0] = {//上一个
     {4, 0x01, 0x00, 0x00 },
+    {5, 0x00, 0x00, 0x02 },
+    {5, 0x00, 0x00, 0x03 },
+    {4, 0x00, 0x00, 0x00 },
 
-    //Report ID (5)
-    {5, 0x00, 0xc0, 0x03 },
-    {5, 0x00, 0xc0, 0x03 },
-
-    //Report ID (4)
+    {5, 0x00, 0x00, 0xFE },
+    {5, 0x00, 0x00, 0xFD },
     {4, 0x00, 0x00, 0x00 },
 };
 
@@ -341,19 +436,14 @@ static const u8 key_up_hold_release[][REPROT_INFO_LEN0] = {
 
 //------------------------------------------------------
 //下键（短按）
-static const u8 key_down_before[][REPROT_INFO_LEN0] = {
-    //Report ID (5)
-    {5, 0x01, 0xf8, 0x7f },
-    {5, 0x3c, 0x40, 0xfc },
-
-    //Report ID (4)
+static const u8 key_down_before[][REPROT_INFO_LEN0] = {//下一个
     {4, 0x01, 0x00, 0x00 },
+    {5, 0x00, 0x00, 0xFE },
+    {5, 0x00, 0x00, 0xFD },
+    {4, 0x00, 0x00, 0x00 },
 
-    //Report ID (5)
-    {5, 0x00, 0x40, 0xfc },
-    {5, 0x00, 0x40, 0xfc },
-
-    //Report ID (4)
+    {5, 0x00, 0x00, 0x02 },
+    {5, 0x00, 0x00, 0x03 },
     {4, 0x00, 0x00, 0x00 },
 };
 
@@ -383,19 +473,14 @@ static const u8 key_down_hold_release[][REPROT_INFO_LEN0] = {
 
 //---------------------------------------------------------
 //左键（短按）
-static const u8 key_left_before[][REPROT_INFO_LEN0] = {
-    //Report ID (5)
-    {5, 0x01, 0x18, 0x80 },
-    {5, 0x28, 0x00, 0x05 },
-
-    //Report ID (4)
+static const u8 key_left_before[][REPROT_INFO_LEN0] = { //左滑
     {4, 0x01, 0x00, 0x00 },
+    {5, 0x20, 0x00, 0x00 },
+    {5, 0x20, 0x00, 0x00 },
+    {4, 0x00, 0x00, 0x00 },
 
-    //Report ID (5)
-    {5, 0x28, 0x00, 0x00 },
-    {5, 0x28, 0x00, 0x00 },
-
-    //Report ID (4)
+    {5, 0xE0, 0x0F, 0x00 },
+    {5, 0xE0, 0x0F, 0x00 },
     {4, 0x00, 0x00, 0x00 },
 };
 
@@ -416,19 +501,14 @@ static const u8 key_left_click[][REPROT_INFO_LEN1] = {
 
 //---------------------------------------------------------
 //右键（短按）
-static const u8 key_right_before[][REPROT_INFO_LEN0] = {
-    //Report ID (5)
-    {5, 0xff, 0x17, 0x80 },
-    {5, 0xd8, 0x0f, 0x05 },
-
-    //Report ID (4)
+static const u8 key_right_before[][REPROT_INFO_LEN0] = {//右滑
     {4, 0x01, 0x00, 0x00 },
+    {5, 0xE0, 0x0F, 0x00 },
+    {5, 0xE0, 0x0F, 0x00 },
+    {4, 0x00, 0x00, 0x00 },
 
-    //Report ID (5)
-    {5, 0xd8, 0x0f, 0x00 },
-    {5, 0xd8, 0x0f, 0x00 },
-
-    //Report ID (4)
+    {5, 0x20, 0x00, 0x00 },
+    {5, 0x20, 0x00, 0x00 },
     {4, 0x00, 0x00, 0x00 },
 };
 
@@ -456,12 +536,7 @@ static u8 key_pp_press[][REPROT_INFO_LEN1] = {
 };
 
 //-------松开-------
-static const u8 key_pp_release_before[][REPROT_INFO_LEN0] = {
-    //Report ID (5)
-    {5, 0x01, 0xf8, 0x7f },
-    {5, 0x3c, 0x80, 0xf8 },
-
-    //Report ID (4)
+static u8 key_pp_release_before[][REPROT_INFO_LEN0] = {//点赞
     {4, 0x01, 0x00, 0x00 },
     {4, 0x00, 0x00, 0x00 },
 };
@@ -477,12 +552,7 @@ static u8 key_pp_release[][REPROT_INFO_LEN1] = {
 //---------------------------------------------------------
 //单键（短按，长按）
 //-------按下-------
-static const u8 key_one_press_before[][REPROT_INFO_LEN0] = {
-    //Report ID (5)
-    {5, 0x01, 0xf8, 0x7f },
-    {5, 0x3d, 0xe0, 0xfc },
-
-    //Report ID (4)
+static const u8 key_one_press_before[][REPROT_INFO_LEN0] = {//暂停
     {4, 0x01, 0x00, 0x00 },
 };
 
@@ -557,10 +627,45 @@ static void keypage_auto_shutdown_disable(void)
     }
 }
 
+static u8 key_focus_ios[][REPROT_INFO_LEN0] = {//相机移动焦点
+    {4, 0x00, 0x00, 0x00 },
+    {5, 0x00, 0x00, 0x00 },
+};
+#define MOUSE_STEP   16//8
+static void keypage_coordinate_equal_ios(u8 x, u8 y)
+{
+    if ((x == 0) && (y == 0)) { /// 复位原点
+        bt_connect_reset_xy();
+        return;
+    }
+    u16 ios_x = 0, ios_y = 0;
+    u8 *pos = key_focus_ios[1];
+    if (x == 1) {
+        ios_x = MOUSE_STEP;
+    }
+    if (x == 2) {
+        ios_x = 0x0FFF - MOUSE_STEP;
+    }
+    if (y == 1) {
+        ios_y = MOUSE_STEP;
+    }
+    if (y == 2) {
+        ios_y = 0x0FFF - MOUSE_STEP;
+    }
+    pos[1] = (ios_x & 0xFF);
+    pos[2] = ((ios_y & 0x0F) << 4) | (ios_x >> 8 & 0x0F);
+    pos[3] = (ios_y >> 4 & 0xFF);
+    put_buf(pos, REPROT_INFO_LEN0);
+    if (REMOTE_IS_IOS()) {
+        handle_send_packect(key_focus_ios, sizeof(key_focus_ios), REPROT_INFO_LEN0);
+    }
+}
 
 static void keypage_coordinate_equal(void)
 {
-
+    if (REMOTE_IS_IOS()) {
+        return;
+    }
     x_lab_low = x_lab & 0xff;
     x_lab_hig = x_lab >> 8;
     y_lab_low = y_lab & 0xff;
@@ -576,11 +681,7 @@ static void keypage_coordinate_equal(void)
     /* r_printf("0x%x,0x%x\n",y_lab_low,y_lab_hig); */
     put_buf(key_pp_press, sizeof(key_pp_press));
     handle_send_packect(key_pp_press, sizeof(key_pp_press), REPROT_INFO_LEN1);
-    if (REMOTE_IS_IOS()) {
-        handle_send_packect(key_pp_release_before, sizeof(key_pp_release_before), REPROT_INFO_LEN0);
-    }
     handle_send_packect(key_pp_release, sizeof(key_pp_release), REPROT_INFO_LEN1);
-
 }
 
 //---------------------------------------------------------------------------------------
@@ -603,52 +704,94 @@ static void keypage_app_key_deal_test(u8 key_type, u8 key_value)
         case 0:
             if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_up_before, sizeof(key_up_before), REPROT_INFO_LEN0);
+            } else {
+                handle_send_packect(key_up_click, sizeof(key_up_click), REPROT_INFO_LEN1);
             }
-            handle_send_packect(key_up_click, sizeof(key_up_click), REPROT_INFO_LEN1);
             break;
 
         case 1:
             if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_down_before, sizeof(key_down_before), REPROT_INFO_LEN0);
+            } else {
+                handle_send_packect(key_down_click, sizeof(key_down_click), REPROT_INFO_LEN1);
             }
-            handle_send_packect(key_down_click, sizeof(key_down_click), REPROT_INFO_LEN1);
             break;
 
         case 2:
             if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_left_before, sizeof(key_left_before), REPROT_INFO_LEN0);
+            } else {
+                handle_send_packect(key_left_click, sizeof(key_left_click), REPROT_INFO_LEN1);
             }
-            handle_send_packect(key_left_click, sizeof(key_left_click), REPROT_INFO_LEN1);
             break;
 
         case 3:
             if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_right_before, sizeof(key_right_before), REPROT_INFO_LEN0);
+            } else {
+                handle_send_packect(key_right_click, sizeof(key_right_click), REPROT_INFO_LEN1);
             }
-            handle_send_packect(key_right_click, sizeof(key_right_click), REPROT_INFO_LEN1);
             break;
 
         case 4:
-            keypage_coordinate_equal();
-            handle_send_packect(key_pp_press, sizeof(key_pp_press), REPROT_INFO_LEN1);
             if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_pp_release_before, sizeof(key_pp_release_before), REPROT_INFO_LEN0);
+                bt_connect_reset_xy();
+            } else {
+                handle_send_packect(key_pp_press, sizeof(key_pp_press), REPROT_INFO_LEN1);
+                handle_send_packect(key_pp_release, sizeof(key_pp_release), REPROT_INFO_LEN1);
             }
-            handle_send_packect(key_pp_release, sizeof(key_pp_release), REPROT_INFO_LEN1);
             break;
 
         case 5:
             if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_one_press_before, sizeof(key_one_press_before), REPROT_INFO_LEN0);
-            }
-            handle_send_packect(key_one_press, sizeof(key_one_press), REPROT_INFO_LEN1);
-
-            if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_one_release_before, sizeof(key_one_release_before), REPROT_INFO_LEN0);
+            } else {
+                handle_send_packect(key_one_press, sizeof(key_one_press), REPROT_INFO_LEN1);
+                handle_send_packect(key_one_release, sizeof(key_one_release), REPROT_INFO_LEN1);
             }
-            handle_send_packect(key_one_release, sizeof(key_one_release), REPROT_INFO_LEN1);
             break;
 
+        default:
+            break;
+        }
+    }
+    if (key_type == KEY_EVENT_DOUBLE_CLICK) {
+        switch (key_value) {
+        case 0:
+            key_vol_ctrl(1);
+            break;
+        case 1:
+            key_vol_ctrl(0);
+            break;
+        case 4: {
+            u8 count = 2;
+            while (count--) {
+                if (REMOTE_IS_IOS()) {
+                    handle_send_packect(key_pp_release_before, sizeof(key_pp_release_before), REPROT_INFO_LEN0);
+                } else {
+                    handle_send_packect(key_pp_press, sizeof(key_pp_press), REPROT_INFO_LEN1);
+                    handle_send_packect(key_pp_release, sizeof(key_pp_release), REPROT_INFO_LEN1);
+                }
+                DOUBLE_KEY_DELAY_TIME();
+            }
+        }
+        break;
+
+        case 5: {
+            u8 count = 2;
+            while (count--) {
+                if (REMOTE_IS_IOS()) {
+                    handle_send_packect(key_one_press_before, sizeof(key_one_press_before), REPROT_INFO_LEN0);
+                    handle_send_packect(key_one_release_before, sizeof(key_one_release_before), REPROT_INFO_LEN0);
+                }
+                handle_send_packect(key_one_press, sizeof(key_one_press), REPROT_INFO_LEN1);
+                handle_send_packect(key_one_release, sizeof(key_one_release), REPROT_INFO_LEN1);
+                DOUBLE_KEY_DELAY_TIME();
+            }
+        }
+        break;
         default:
             break;
         }
@@ -658,6 +801,8 @@ static void keypage_app_key_deal_test(u8 key_type, u8 key_value)
     if (key_type == KEY_EVENT_LONG) {
         switch (key_value) {
         case 0:
+            key_vol_ctrl(1);
+            break;
             //for test
 #if (TCFG_USER_EDR_ENABLE && TCFG_USER_BLE_ENABLE)
             //switch ble & edr
@@ -686,36 +831,6 @@ static void keypage_app_key_deal_test(u8 key_type, u8 key_value)
         case 3:
             break;
 
-        case 4: {
-            u8 count = 2;
-            while (count--) {
-                handle_send_packect(key_pp_press, sizeof(key_pp_press), REPROT_INFO_LEN1);
-                if (REMOTE_IS_IOS()) {
-                    handle_send_packect(key_pp_release_before, sizeof(key_pp_release_before), REPROT_INFO_LEN0);
-                }
-                handle_send_packect(key_pp_release, sizeof(key_pp_release), REPROT_INFO_LEN1);
-                DOUBLE_KEY_DELAY_TIME();
-            }
-        }
-        break;
-
-        case 5: {
-            u8 count = 2;
-            while (count--) {
-                if (REMOTE_IS_IOS()) {
-                    handle_send_packect(key_one_press_before, sizeof(key_one_press_before), REPROT_INFO_LEN0);
-                }
-                handle_send_packect(key_one_press, sizeof(key_one_press), REPROT_INFO_LEN1);
-
-                if (REMOTE_IS_IOS()) {
-                    handle_send_packect(key_one_release_before, sizeof(key_one_release_before), REPROT_INFO_LEN0);
-                }
-                handle_send_packect(key_one_release, sizeof(key_one_release), REPROT_INFO_LEN1);
-                DOUBLE_KEY_DELAY_TIME();
-            }
-        }
-        break;
-
         default:
             break;
         }
@@ -724,36 +839,37 @@ static void keypage_app_key_deal_test(u8 key_type, u8 key_value)
     if (key_type == KEY_EVENT_TRIPLE_CLICK) {
         switch (key_value) {
         case 0:
-            x_lab += 128;
-            if (x_lab > 4095) {
-                x_lab = 0;
-
-            }
-            keypage_coordinate_equal();
-            break;
-        case 1:
-            x_lab -= 128;
-            if (x_lab <= 0) {
-                x_lab = 4095;
-
-            }
-            keypage_coordinate_equal();
-            break;
-
-        case 2:
             y_lab += 128;
             if (y_lab >= 4100) {
                 y_lab = 0;
-
             }
+            keypage_coordinate_equal_ios(0, 2);
             keypage_coordinate_equal();
             break;
-
-        case 3:
+        case 1:
             y_lab -= 128;
             if (y_lab <= 0) {
                 y_lab =  4100 ;
             }
+            keypage_coordinate_equal_ios(0, 1);
+            keypage_coordinate_equal();
+            break;
+
+        case 2:
+            x_lab -= 128;
+            if (x_lab <= 0) {
+                x_lab = 4095;
+            }
+            keypage_coordinate_equal_ios(2, 0);
+            keypage_coordinate_equal();
+            break;
+
+        case 3:
+            x_lab += 128;
+            if (x_lab > 4095) {
+                x_lab = 0;
+            }
+            keypage_coordinate_equal_ios(1, 0);
             keypage_coordinate_equal();
             break;
 
@@ -763,8 +879,9 @@ static void keypage_app_key_deal_test(u8 key_type, u8 key_value)
             //send press
             if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_one_press_before, sizeof(key_one_press_before), REPROT_INFO_LEN0);
+            } else {
+                handle_send_packect(key_one_press, sizeof(key_one_press), REPROT_INFO_LEN1);
             }
-            handle_send_packect(key_one_press, sizeof(key_one_press), REPROT_INFO_LEN1);
             break;
 
         default:
@@ -819,16 +936,18 @@ static void keypage_app_key_deal_test(u8 key_type, u8 key_value)
             //send release
             if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_pp_release_before, sizeof(key_pp_release_before), REPROT_INFO_LEN0);
+            } else {
+                handle_send_packect(key_pp_release, sizeof(key_pp_release), REPROT_INFO_LEN1);
             }
-            handle_send_packect(key_pp_release, sizeof(key_pp_release), REPROT_INFO_LEN1);
             break;
 
         case 5:
             //send release
             if (REMOTE_IS_IOS()) {
                 handle_send_packect(key_one_release_before, sizeof(key_one_release_before), REPROT_INFO_LEN0);
+            } else {
+                handle_send_packect(key_one_release, sizeof(key_one_release), REPROT_INFO_LEN1);
             }
-            handle_send_packect(key_one_release, sizeof(key_one_release), REPROT_INFO_LEN1);
             break;
 
         default:
@@ -957,6 +1076,7 @@ static void keypage_app_start()
     log_info("=======================================");
     log_info("-------------keypage demo--------------");
     log_info("=======================================");
+//    bt_osc_offset_ext_save(20);//频偏多少填多少,-10K填-10
 
     clk_set("sys", BT_NORMAL_HZ);
 
@@ -1065,6 +1185,9 @@ static int keypage_bt_connction_status_event_handler(struct bt_event *bt)
     default:
 #if TCFG_USER_EDR_ENABLE
         bt_comm_edr_status_event_handler(bt);
+        if (bt->event == BT_STATUS_SECOND_CONNECTED || bt->event == BT_STATUS_FIRST_CONNECTED) {
+            sys_timeout_add(NULL, bt_connect_reset_xy, 200);//复位触点
+        }
 #endif
 
 #if TCFG_USER_BLE_ENABLE
@@ -1129,6 +1252,31 @@ static int keypage_common_event_handler(struct bt_event *bt)
     return 0;
 }
 
+static void keypage_ble_status_callback(ble_state_e status, u8 reason)
+{
+    log_info("%s[status:0x%x reason:0x%x]", __func__, status, reason);
+    switch (status) {
+    case BLE_ST_IDLE:
+        break;
+    case BLE_ST_ADV:
+        break;
+    case BLE_ST_CONNECT:
+        break;
+    case BLE_ST_SEND_DISCONN:
+        break;
+    case BLE_ST_DISCONN:
+        break;
+    case BLE_ST_NOTIFY_IDICATE:
+        break;
+    case BLE_PRIV_MSG_PAIR_CONFIRM:
+        break;
+    case BLE_PRIV_PAIR_ENCRYPTION_CHANGE:
+        sys_timeout_add(NULL, bt_connect_reset_xy, 2000);//复位触点
+        break;
+    default:
+        break;
+    }
+}
 
 static int keypage_event_handler(struct application *app, struct sys_event *event)
 {
@@ -1153,6 +1301,8 @@ static int keypage_event_handler(struct application *app, struct sys_event *even
             keypage_bt_connction_status_event_handler(&event->u.bt);
         } else if ((u32)event->arg == SYS_BT_EVENT_TYPE_HCI_STATUS) {
             keypage_bt_hci_event_handler(&event->u.bt);
+        } else if ((u32)event->arg == SYS_BT_EVENT_BLE_STATUS) {
+            keypage_ble_status_callback(event->u.bt.event, event->u.bt.value);
         } else if ((u32)event->arg == SYS_BT_EVENT_FORM_COMMON) {
             return keypage_common_event_handler(&event->u.dev);
         }
@@ -1252,16 +1402,16 @@ REGISTER_LP_TARGET(app_keypage_lp_target) = {
 
 static const struct application_operation app_keypage_ops = {
     .state_machine  = keypage_state_machine,
-    .event_handler 	= keypage_event_handler,
+    .event_handler  = keypage_event_handler,
 };
 
 /*
  * 注册模式
  */
 REGISTER_APPLICATION(app_keypage) = {
-    .name 	= "keypage",
+    .name   = "keypage",
     .action	= ACTION_KEYPAGE,
-    .ops 	= &app_keypage_ops,
+    .ops    = &app_keypage_ops,
     .state  = APP_STA_DESTROY,
 };
 

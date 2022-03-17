@@ -72,7 +72,7 @@ anc_config.coeff_header.view = cfg:hBox {
 	cfg:stLabel("系数版本：" .. anc_coeff_config_version)
 };
 
-anc_config.coeff.cfg = cfg:fixbin("anc-coeff", anc_coeff_size, ""); -- default empty
+anc_config.coeff.cfg = cfg:varbin("anc-coeff", anc_coeff_size, ""); -- default empty
 anc_config.coeff.view = cfg:hBox {
 	cfg:stLabel("系数"), cfg:labelView(anc_config.coeff.cfg)
 };

@@ -27,7 +27,7 @@ fat_vfs_ops
 sdfile_vfs_ops
 #endif
 
-#if TCFG_NORFLASH_DEV_ENABLE && VFS_ENABLE
+#if (TCFG_VIRFAT_INSERT_FLASH_ENABLE || TCFG_NORFLASH_DEV_ENABLE) && VFS_ENABLE
 nor_fs_vfs_ops
 nor_sdfile_vfs_ops
 nor_rec_fs_vfs_ops
@@ -41,8 +41,9 @@ inside_nor_fs_vfs_ops
 #if TCFG_DEC_SBC_ENABLE
 sbc_decoder
 msbc_decoder
-sbc_hwaccel
 #endif
+
+sbc_hwaccel
 
 #if TCFG_DEC_CVSD_ENABLE
 cvsd_decoder

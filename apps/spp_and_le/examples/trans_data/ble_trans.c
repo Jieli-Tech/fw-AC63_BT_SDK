@@ -44,12 +44,28 @@
 #define log_info_hexdump(...)
 #endif
 
+//测试NRF连接,工具不会主动发起交换流程,需要手动操作; 但设备可配置主动发起MTU长度交换请求
+#define ATT_MTU_REQUEST_ENALBE     0    /*配置1,就是设备端主动发起交换*/
+
 //ATT发送的包长,    note: 23 <=need >= MTU
-#define ATT_LOCAL_MTU_SIZE        (512)
+#define ATT_LOCAL_MTU_SIZE        (512) /*一般是主机发起交换,如果主机没有发起,设备端也可以主动发起(ATT_MTU_REQUEST_ENALBE set 1)*/
+
+//ATT缓存的buffer支持缓存数据包个数
+#define ATT_PACKET_NUMS_MAX       (2)
+
 //ATT缓存的buffer大小,  note: need >= 23,可修改
-#define ATT_SEND_CBUF_SIZE        (512 *2)
+#define ATT_SEND_CBUF_SIZE        (ATT_PACKET_NUMS_MAX * (ATT_PACKET_HEAD_SIZE + ATT_LOCAL_MTU_SIZE))
+
 // 广播周期 (unit:0.625ms)
 #define ADV_INTERVAL_MIN          (160 * 5)//
+
+#define TEST_TRANS_CHANNEL_DATA      0 /*测试记录收发数据速度*/
+#define TEST_TRANS_NOTIFY_HANDLE     ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE /*主动发送hanlde,为空则不测试发数*/
+#define TEST_TRANS_TIMER_MS          500
+#define TEST_PAYLOAD_LEN            (256)
+
+static u32 trans_recieve_test_count;
+static u32 trans_send_test_count;
 
 //---------------
 //连接参数更新请求设置
@@ -78,6 +94,7 @@ static adv_cfg_t trans_server_adv_config;
 static uint16_t trans_att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static int trans_att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static int trans_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_param);
+extern void uart_db_regiest_recieve_callback(void *rx_cb);
 //-------------------------------------------------------------------------------------
 //输入passkey 加密
 #define PASSKEY_ENABLE                     0
@@ -200,6 +217,27 @@ static void trans_test_send_audio_data(int init_flag)
 
 /*************************************************************************************************/
 /*!
+ *  \brief      串口接收转发到BLE
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+static void trans_uart_rx_to_ble(u8 *packet, u32 size)
+{
+    if (trans_con_handle && ble_comm_att_check_send(trans_con_handle, size) &&
+        ble_gatt_server_characteristic_ccc_get(trans_con_handle, ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE)) {
+        ble_comm_att_send_data(trans_con_handle, ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE, packet, size, ATT_OP_AUTO_READ_CCC);
+    } else {
+        log_info("drop uart data!!!\n");
+    }
+}
+
+/*************************************************************************************************/
+/*!
  *  \brief      发送请求连接参数表
  *
  *  \param      [in]
@@ -263,6 +301,19 @@ static int trans_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
     /* log_info("event: %02x,size= %d\n",event,size); */
 
     switch (event) {
+
+    case GATT_COMM_EVENT_CAN_SEND_NOW:
+#if TEST_AUDIO_DATA_UPLOAD
+        trans_test_send_audio_data(0);
+#endif
+        break;
+
+    case GATT_COMM_EVENT_SERVER_INDICATION_COMPLETE:
+        log_info("INDICATION_COMPLETE:con_handle= %04x,att_handle= %04x\n", \
+                 little_endian_read_16(packet, 0), little_endian_read_16(packet, 2));
+        break;
+
+
     case GATT_COMM_EVENT_CONNECTION_COMPLETE:
         trans_con_handle = little_endian_read_16(packet, 0);
         trans_connection_update_enable = 1;
@@ -275,6 +326,15 @@ static int trans_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
         log_info("con_interval = %d\n", little_endian_read_16(ext_param, 14 + 0));
         log_info("con_latency = %d\n", little_endian_read_16(ext_param, 14 + 2));
         log_info("cnn_timeout = %d\n", little_endian_read_16(ext_param, 14 + 4));
+
+#if ATT_MTU_REQUEST_ENALBE
+        att_server_set_exchange_mtu(trans_con_handle);/*主动请求MTU长度交换*/
+#endif
+
+#if TCFG_UART0_RX_PORT != NO_CONFIG_PORT
+        //for test 串口数据直通到蓝牙
+        uart_db_regiest_recieve_callback(trans_uart_rx_to_ble);
+#endif
         break;
 
     case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
@@ -298,12 +358,6 @@ static int trans_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
         log_info("update_timeout = %d\n", little_endian_read_16(ext_param, 6 + 4));
         break;
 
-    case GATT_COMM_EVENT_CAN_SEND_NOW:
-#if TEST_AUDIO_DATA_UPLOAD
-        trans_test_send_audio_data(0);
-#endif
-        break;
-
     case GATT_COMM_EVENT_CONNECTION_UPDATE_REQUEST_RESULT:
     case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE:
         break;
@@ -311,6 +365,13 @@ static int trans_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
     case GATT_COMM_EVENT_SERVER_STATE:
         log_info("server_state: handle=%02x,%02x\n", little_endian_read_16(packet, 1), packet[0]);
         break;
+
+    case GATT_COMM_EVENT_SM_PASSKEY_INPUT: {
+        u32 *key = little_endian_read_32(packet, 2);
+        *key = 888888;
+        r_printf("input_key:%6u\n", *key);
+    }
+    break;
 
     default:
         break;
@@ -378,8 +439,9 @@ static uint16_t trans_att_read_callback(hci_con_handle_t connection_handle, uint
     case ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae3c_01_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
         if (buffer) {
-            buffer[0] = att_get_ccc_config(handle);
+            buffer[0] = ble_gatt_server_characteristic_ccc_get(connection_handle, handle);
             buffer[1] = 0;
         }
         att_value_len = 2;
@@ -422,7 +484,9 @@ static int trans_att_write_callback(hci_con_handle_t connection_handle, uint16_t
 
     u16 handle = att_handle;
 
+#if !TEST_TRANS_CHANNEL_DATA
     log_info("write_callback,conn_handle =%04x, handle =%04x,size =%d\n", connection_handle, handle, buffer_size);
+#endif
 
     switch (handle) {
 
@@ -433,6 +497,7 @@ static int trans_att_write_callback(hci_con_handle_t connection_handle, uint16_t
     case ATT_CHARACTERISTIC_ae04_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae3c_01_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
         trans_send_connetion_updata_deal(connection_handle);
         log_info("\n------write ccc:%04x,%02x\n", handle, buffer[0]);
         ble_gatt_server_characteristic_ccc_set(connection_handle, handle, buffer[0]);
@@ -447,22 +512,31 @@ static int trans_att_write_callback(hci_con_handle_t connection_handle, uint16_t
         break;
 
     case ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE:
+
+#if TEST_TRANS_CHANNEL_DATA
+        /* putchar('R'); */
+        trans_recieve_test_count += buffer_size;
+        break;
+#endif
+
         log_info("\n-ae01_rx(%d):", buffer_size);
         put_buf(buffer, buffer_size);
 
         //收发测试，自动发送收到的数据;for test
-        if (ble_comm_att_check_send(connection_handle, buffer_size)) {
+        if (ble_comm_att_check_send(connection_handle, buffer_size) &&
+            ble_gatt_server_characteristic_ccc_get(trans_con_handle, ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE)) {
             log_info("-loop send1\n");
             ble_comm_att_send_data(connection_handle, ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE, buffer, buffer_size, ATT_OP_AUTO_READ_CCC);
         }
         break;
 
     case ATT_CHARACTERISTIC_ae03_01_VALUE_HANDLE:
-        log_info("\n-ae_rx(%d):", buffer_size);
+        log_info("\n-ae03_rx(%d):", buffer_size);
         put_buf(buffer, buffer_size);
 
         //收发测试，自动发送收到的数据;for test
-        if (ble_comm_att_check_send(connection_handle, buffer_size)) {
+        if (ble_comm_att_check_send(connection_handle, buffer_size) && \
+            ble_gatt_server_characteristic_ccc_get(trans_con_handle, ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE)) {
             log_info("-loop send2\n");
             ble_comm_att_send_data(connection_handle, ATT_CHARACTERISTIC_ae05_01_VALUE_HANDLE, buffer, buffer_size, ATT_OP_AUTO_READ_CCC);
         }
@@ -677,6 +751,63 @@ void bt_ble_before_start_init(void)
     log_info("%s", __FUNCTION__);
     ble_comm_init(&trans_gatt_control_block);
 }
+
+
+/*************************************************************************************************/
+/*!
+ *  \brief
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+static void trans_test_send_data(void)
+{
+#if TEST_TRANS_CHANNEL_DATA
+    static u32 count = 0;
+    static u32 send_index;
+
+    int i, ret = 0;
+    int send_len = TEST_PAYLOAD_LEN;
+    u32 time_index_max = 1000 / TEST_TRANS_TIMER_MS;
+
+    if (!trans_con_handle) {
+        return;
+    }
+
+    send_index++;
+
+#if TEST_TRANS_NOTIFY_HANDLE
+    count++;
+    if (ble_comm_att_check_send(trans_con_handle, send_len) && ble_gatt_server_characteristic_ccc_get(trans_con_handle, TEST_TRANS_NOTIFY_HANDLE + 1)) {
+        ret = ble_comm_att_send_data(trans_con_handle, TEST_TRANS_NOTIFY_HANDLE, &count, send_len, ATT_OP_AUTO_READ_CCC);
+        if (!ret) {
+            /* putchar('T'); */
+            trans_send_test_count += send_len;
+        }
+    }
+#endif
+
+    if (send_index >= time_index_max) {
+        if (trans_send_test_count) {
+            log_info(">>>>>> send_rate= %d byte/s\n", trans_send_test_count);
+        }
+        send_index = 0;
+        trans_send_test_count = 0;
+
+        if (trans_recieve_test_count) {
+            log_info("<<<<<<< recieve_rate= %d byte/s\n", trans_recieve_test_count);
+            trans_recieve_test_count = 0;
+        }
+    }
+#endif
+}
+
+
+
 /*************************************************************************************************/
 /*!
  *  \brief      模块初始化
@@ -701,6 +832,15 @@ void bt_ble_init(void)
     trans_con_handle = 0;
     trans_server_init();
     ble_module_enable(1);
+
+#if TEST_TRANS_CHANNEL_DATA
+    if (TEST_TRANS_TIMER_MS < 10) {
+        sys_hi_timer_add(0, trans_test_send_data, TEST_TRANS_TIMER_MS);
+    } else {
+        sys_timer_add(0, trans_test_send_data, TEST_TRANS_TIMER_MS);
+    }
+#endif
+
 }
 
 /*************************************************************************************************/

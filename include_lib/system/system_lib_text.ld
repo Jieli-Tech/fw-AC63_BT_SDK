@@ -156,6 +156,8 @@
         *(.os_port_code)
         *(.os_port_const)
 
+        *(.math_fast_funtion_code)
+
         __movable_function_start = .;
         *(movable.text.*);
         *(movable.stub.*);

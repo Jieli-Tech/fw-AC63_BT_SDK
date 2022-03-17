@@ -72,6 +72,12 @@
 
 #define BLE_WAIT_PAIR_TIME_MS      (5000)
 
+
+/*配置发送周期和sniff周期匹配*/
+#define TEST_REPORT_DATA_PERIOD_MS (8)  //鼠标发数周期 >= 8ms
+#define EDR_SET_SNIFF_SLOTS       (TEST_REPORT_DATA_PERIOD_MS * 8 / 5)
+#define EDR_SET_TIMER_VALUE       (TEST_REPORT_DATA_PERIOD_MS)
+
 static u8 cpi_key_long_cnt = 0;
 static u8 double_key_long_cnt = 0;
 
@@ -295,8 +301,8 @@ static const u8 mouse_report_map[] = {
 #define SNIFF_MODE_TYPE               SNIFF_MODE_ANCHOR
 #define SNIFF_CNT_TIME                1/////<空闲?S之后进入sniff模式
 
-#define SNIFF_MAX_INTERVALSLOT        12
-#define SNIFF_MIN_INTERVALSLOT        12
+#define SNIFF_MAX_INTERVALSLOT        EDR_SET_SNIFF_SLOTS
+#define SNIFF_MIN_INTERVALSLOT        EDR_SET_SNIFF_SLOTS
 #define SNIFF_ATTEMPT_SLOT            2
 #define SNIFF_TIMEOUT_SLOT            1
 #define SNIFF_CHECK_TIMER_PERIOD      100
@@ -661,7 +667,7 @@ static void bt_edr_mode_enable(u8 enable)
         sys_auto_sniff_controle(1, NULL);
         if (!edr_hid_timer_handle)   {
             log_info("add edr timer");
-            edr_hid_timer_handle = sys_s_hi_timer_add((void *)0, edr_mouse_timer_handler, 7);
+            edr_hid_timer_handle = sys_s_hi_timer_add((void *)0, edr_mouse_timer_handler, EDR_SET_TIMER_VALUE);
         }
     } else {
         user_hid_enable(0);
@@ -1405,7 +1411,6 @@ static void detect_mouse(void)
 #endif
 }
 
-extern void ble_vendor_change_disconn_reason(u8 reason);
 extern void mouse_board_devices_init(void);
 static int mouse_dual_bt_connction_status_event_handler(struct bt_event *bt)
 {
@@ -1427,7 +1432,6 @@ static int mouse_dual_bt_connction_status_event_handler(struct bt_event *bt)
         mouse_dual_vm_deal(0);//bt_hid_mode read for VM
 
 #if TCFG_USER_BLE_ENABLE
-        ble_vendor_change_disconn_reason(0x15);
         ble_set_fix_pwr(6);//range:0~9
         log_info("##init_24g_code: %04x", CFG_RF_24G_CODE_ID);
         bt_ble_init();

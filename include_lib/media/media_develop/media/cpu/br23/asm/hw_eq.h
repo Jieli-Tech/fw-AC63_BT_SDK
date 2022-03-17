@@ -92,6 +92,15 @@ struct hw_eq_ch {
     };
 
 //系数计算子函数
+
+    /*
+     * 多阶级低通滤波器
+    fc: 低通滤波器-3dB衰减频点
+    fs: 采样率
+    nSOS: 生成多少个2阶IIR
+    coeff: 输出系数地址 （ 大小为 nSOS*5 , 顺序是按照硬件EQ摆放了 )*/
+    extern void  butterworth_lp_design(int fc, int fs, int nSOS, int *coeff);
+//
     /*----------------------------------------------------------------------------*/
     /**@brief    低通滤波器
        @param    fc:中心截止频率

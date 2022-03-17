@@ -1,3 +1,4 @@
+#include "system/includes.h"
 #include "system/debug.h"
 #include "generic/gpio.h"
 #include "asm/clock.h"
@@ -11,17 +12,23 @@ static JL_LEDC_TypeDef *JL_LEDCx[2] = {
 static void (*ledc0_isr_cbfun)(void) = NULL;
 static void (*ledc1_isr_cbfun)(void) = NULL;
 
+static OS_SEM ledc0_sem;
+static OS_SEM ledc1_sem;
+
+
 ___interrupt
 void ledc_isr(void)
 {
     if (JL_LEDC0->CON & BIT(7)) {
         JL_LEDC0->CON |= BIT(6);
+        os_sem_post(&ledc0_sem);
         if (ledc0_isr_cbfun) {
             ledc0_isr_cbfun();
         }
     }
     if (JL_LEDC1->CON & BIT(7)) {
         JL_LEDC1->CON |= BIT(6);
+        os_sem_post(&ledc1_sem);
         if (ledc1_isr_cbfun) {
             ledc1_isr_cbfun();
         }
@@ -46,9 +53,10 @@ void ledc_init(const struct ledc_platform_data *arg)
 
     JL_LEDCx[arg->index]->CON = BIT(6);
 
+    os_sem_create(&ledc0_sem, 1);
+    os_sem_create(&ledc1_sem, 1);
+    request_irq(16, 1, ledc_isr, 0);
     if (arg->cbfun) {
-        JL_LEDCx[arg->index]->CON |= BIT(5);
-        request_irq(16, 1, ledc_isr, 0);
         if (arg->index == 0) {
             ledc0_isr_cbfun = arg->cbfun;
         } else {
@@ -79,16 +87,43 @@ void ledc_init(const struct ledc_platform_data *arg)
     printf("JL_LEDCx[%d]->RSTX = 0x%x\n", arg->index, JL_LEDCx[arg->index]->RSTX);
 }
 
-void ledc_send_rgbbuf(u8 index, u8 *rgbbuf, u32 buf_len, u16 again_cnt)
+void ledc_rgb_to_buf(u8 r, u8 g, u8 b, u8 *buf, int idx)
 {
+    buf = buf + idx * 3;
+    buf[2] = b;
+    buf[1] = r;
+    buf[0] = g;
+}
+
+void ledc_send_rgbbuf(u8 index, u8 *rgbbuf, u32 led_num, u16 again_cnt)
+{
+    if (!led_num) {
+        return;
+    }
     JL_LEDCx[index]->ADR = (u32)rgbbuf;
-    JL_LEDCx[index]->FD = buf_len * 8;
+    JL_LEDCx[index]->FD = led_num * 3 * 8;
     JL_LEDCx[index]->LP = again_cnt;
     JL_LEDCx[index]->CON |= BIT(0);//启动
-    if (!(JL_LEDCx[index]->CON & BIT(5))) {
-        while (!(JL_LEDCx[index]->CON & BIT(7)));
-        JL_LEDCx[index]->CON |= BIT(6);
+    JL_LEDCx[index]->CON &= ~BIT(5);//关闭中断
+    while (!(JL_LEDCx[index]->CON & BIT(7)));
+    JL_LEDCx[index]->CON |= BIT(6);
+}
+
+void ledc_send_rgbbuf_isr(u8 index, u8 *rgbbuf, u32 led_num, u16 again_cnt)
+{
+    if (!led_num) {
+        return;
     }
+    if (index == 0) {
+        os_sem_pend(&ledc0_sem, 0);
+    } else {
+        os_sem_pend(&ledc1_sem, 0);
+    }
+    JL_LEDCx[index]->ADR = (u32)rgbbuf;
+    JL_LEDCx[index]->FD = led_num * 3 * 8;
+    JL_LEDCx[index]->LP = again_cnt;
+    JL_LEDCx[index]->CON |= BIT(0);//启动
+    JL_LEDCx[index]->CON |= BIT(5);//使能中断
 }
 
 // *INDENT-OFF*
@@ -109,23 +144,31 @@ LEDC_PLATFORM_DATA_BEGIN(ledc0_data)
     .cbfun = NULL,
 LEDC_PLATFORM_DATA_END()
 
-static u8 ledc_test_buf[4] __attribute__((aligned(4)));
+#define LED_NUM_MAX     5
+static u8 ledc_test_buf[3 * LED_NUM_MAX] __attribute__((aligned(4)));
 void ledc_test(void)
 {
     printf("*************  ledc test  **************\n");
 
     ledc_init(&ledc0_data);
 
-    ledc_test_buf[0] = 0;
-    ledc_test_buf[1] = 85;
-    ledc_test_buf[2] = 170;
-    u16 led_num = 5;
+    u8 r_val = 0;
+    u8 g_val = 85;
+    u8 b_val = 175;
+    u16 sec_num = 5;//循环发送的次数，用于一条大灯带又分为几条效果一样的小灯带
+    extern void wdt_clear();
     while (1) {
-        ledc_send_rgbbuf(0, ledc_test_buf, 3, led_num);
-        delay(150000);
-        ledc_test_buf[0] ++;
-        ledc_test_buf[1] ++;
-        ledc_test_buf[2] ++;
+        wdt_clear();
+        os_time_dly(1);
+        r_val += 1;
+        g_val += 1;
+        b_val += 1;
+        ledc_rgb_to_buf(r_val, g_val, b_val, ledc_test_buf, 0);
+#if 0
+        ledc_send_rgbbuf(0, ledc_test_buf, 1, sec_num - 1);
+#else
+        ledc_send_rgbbuf_isr(0, ledc_test_buf, 1, sec_num - 1);
+#endif
     }
 }
 

@@ -69,7 +69,10 @@ struct audio_mixer_task {
     OS_SEM sem;
     volatile u8	busy;
     volatile u8	start;
+    u8 ext_resume;	// 由上层应用激活。默认1
     const char *task_name;
+    void *check_priv;
+    int (*check_out_len)(void *priv, struct audio_mixer *mixer, int len); // 检查输出长度
 };
 
 /*
@@ -170,6 +173,8 @@ struct audio_mixer_ch {
     u16 start_points;	// 初始化数据长度。默认为0
     u32 sample_rate;	// 当前通道采样率
     u32 sample_rate_follow;	// 当前通道follow采样率。follow_resample==1有效
+    u32 slience_samples;
+    u32 slience_offset;
     struct list_head list_entry;	// 链表
     struct audio_mixer *mixer;	// mixer句柄
     struct audio_src_handle *src;	// 变采样
@@ -688,6 +693,31 @@ int audio_mixer_task_ch_open(struct audio_mixer *mixer, struct audio_mixer_task 
 */
 void audio_mixer_task_ch_close(struct audio_mixer *mixer);
 
+/*
+*********************************************************************
+*                  Mixer Cyclic Task Resume
+* Description: mixer任务激活
+* Arguments  : *mtask		mixer任务句柄
+* Return	 : None.
+* Note(s)    : None.
+*********************************************************************
+*/
+void audio_mixer_task_resume(struct audio_mixer_task *mtask);
+
+/*
+*********************************************************************
+*                  Mixer Cyclic Task Set Check Out Lenght Callback
+* Description: mixer检查输出长度回调函数
+* Arguments  : *mtask		mixer任务句柄
+*			   *check_priv	回调函数私有参数
+*			   *check_out_len	输出长度检查回调。返回要输出的长度（不超过len）
+* Return	 : None.
+* Note(s)    : None.
+*********************************************************************
+*/
+void audio_mixer_task_set_check_out_len(struct audio_mixer_task *mtask,
+                                        void *check_priv,
+                                        int (*check_out_len)(void *priv, struct audio_mixer *mixer, int len));
 
 #endif /*CONFIG_MIXER_CYCLIC*/
 

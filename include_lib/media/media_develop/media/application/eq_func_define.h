@@ -26,6 +26,7 @@ enum {
     EQ_HW_CROSSOVER_TYPE0_EN  = BIT(14),//支持硬件分频器,且分频器使用序列进序列出，需使能BIT(13)
     EQ_HW_CROSSOVER_TYPE1_EN  = BIT(15),//硬件分频器使用使用块出方式，会增加mem(该方式仅支持单声道处理)
     EQ_LR_DIVIDE_EN = BIT(16),//eq左右声道效果拆分,四声道时可能会使用
+    EQ_ONLINE_FILE_SAVE = BIT(17),//eq在线调试保存到vm使能
 };
 
 #define config_audio_eq_online_en      (config_audio_eq_en & EQ_ONLINE_EN)
@@ -44,6 +45,7 @@ enum {
 #define config_eq_lite_en              (config_audio_eq_en & EQ_LITE_VER_EN)
 #define config_eq_support_old_ver_en   (config_audio_eq_en & EQ_SUPPORT_OLD_VER_EN)
 #define config_divide_en               (config_audio_eq_en & EQ_LR_DIVIDE_EN)
+#define config_eq_online_file_save     (config_audio_eq_en & EQ_ONLINE_FILE_SAVE)
 
 extern const int config_audio_drc_en;
 enum {
@@ -58,7 +60,7 @@ enum {
 #define config_drc_limiter_en         (!(config_audio_drc_en & DRC_LIMITER_DIS))
 #define config_drc_compressor_en      (!(config_audio_drc_en & DRC_COMPRESSOF_DIS))
 #define config_drc_nband_en           (!(config_audio_drc_en & DRC_NBAND_DIS))
-#define config_drc_nband_merg_asm_en  (config_audio_drc_en & DRC_NBAND_MERGING_ASM_EN)
+#define config_drc_nband_merg_asm_en  (!(config_audio_drc_en & DRC_NBAND_MERGING_ASM_EN))
 #define config_wdrc_en                (config_audio_drc_en & WDRC_TYPE_EN)
 
 

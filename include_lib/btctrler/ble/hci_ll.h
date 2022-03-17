@@ -59,12 +59,11 @@ void ll_hci_scan_set_params(uint8_t scan_type, uint16_t scan_interval, uint16_t 
 int ll_hci_scan_enable(bool enable, u8 filter_duplicates);
 
 int ll_hci_create_conn(u8 *conn_param, u8 *addr_param);
+int ll_hci_create_conn_ext(void *param);
 
 int ll_hci_create_conn_cancel(void);
 
 int ll_hci_vendor_send_key_num(u16 con_handle, u8 num);
-
-int ll_vendor_latency_hold_cnt(u16 conn_handle, u16 hold_cnt);
 
 int ll_hci_encryption(u8 *key, u8 *plaintext_data);
 
@@ -104,6 +103,7 @@ void ll_hci_set_data_length(u16 conn_handle, u16 tx_octets, u16 tx_time);
 
 hci_ll_param_t *ll_hci_param_config_get(void);
 void hci_ll_get_device_address(uint8_t *addr_type, u8 *addr);
+void ll_hci_set_host_channel_classification(u8 *channel_map);
 
 // ble5
 void ll_hci_set_ext_adv_params(u8 *data, u32 size);
@@ -117,7 +117,15 @@ void ll_hci_set_periodic_adv_params(u8 *data, u32 size);
 void ll_hci_set_periodic_adv_data(u8 *data, u32 size);
 void ll_hci_set_periodic_adv_enable(u8 *data, u32 size);
 void ll_hci_periodic_adv_creat_sync(u8 *data, u32 size);
+void ll_hci_periodic_adv_terminate_sync(u8 *data, u32 size);
+void ll_hci_periodic_adv_create_sync_cancel(void);
 
 int le_controller_set_mac(void *addr);
+
+/*vendor function*/
+int ll_vendor_latency_hold_cnt(u16 conn_handle, u16 hold_cnt);
+void ll_vendor_set_code_type(u8 code_type);
+void ll_vendor_access_addr_generate(u8 *out_address);
+
 
 #endif

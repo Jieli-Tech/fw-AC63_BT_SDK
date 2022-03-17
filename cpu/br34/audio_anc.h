@@ -11,7 +11,7 @@
 #define ANC_COEFF_SAVE_ENABLE	1	/*ANC滤波器表保存使能*/
 #define ANC_INFO_SAVE_ENABLE	0	/*ANC信息记忆:保存上一次关机时所处的降噪模式等等*/
 #define ANC_TONE_PREEMPTION		0	/*ANC提示音打断播放(1)还是叠加播放(0)*/
-#define ANC_TRANSPARENCY_ONLY	1	/*仅支持通透模式*/
+#define ANC_TRANSPARENCY_ONLY	1	/*仅支持通透模式, 不需要ANC配置文件, 但不支持高级通透*/
 #define ANC_BOX_READ_COEFF		1	/*支持通过工具读取ANC训练系数*/
 #define ANC_FADE_EN				1	/*ANC淡入淡出使能*/
 #define ANC_MODE_SYSVDD_EN 		0	/*ANC模式提高SYSVDD，避免某些IC电压太低导致ADC模块工作不正常*/

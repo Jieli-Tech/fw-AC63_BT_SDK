@@ -10,9 +10,9 @@
 #endif
 #include "app_main.h"
 #include "btstack/avctp_user.h"
+#include "application/audio_eq.h"
 
 #if (TCFG_ENC_OPUS_ENABLE) || (TCFG_ENC_SPEEX_ENABLE)
-
 extern struct audio_encoder_task *encode_task;
 //static struct audio_encoder_task *encode_task = NULL;
 
@@ -23,6 +23,13 @@ extern struct audio_encoder_task *encode_task;
 #define MIC_USE_MIC_CHANNEL    (1)
 #define MIC_ENC_IN_SIZE		(ENC_ADC_IRQ_POINTS * 2)
 #define MIC_ENC_OUT_SIZE       (ENC_ADC_IRQ_POINTS)
+#if  TCFG_CODEC_DCCS_EQ_ENABLE && TCFG_MIC_CAPLESS_ENABLE
+/*mic去直流滤波eq*/
+#define AEC_DCCS_EN				1
+#else
+#define AEC_DCCS_EN				0
+#endif
+extern struct adc_platform_data adc_data;
 
 struct mic_enc_hdl {
     struct audio_encoder encoder;
@@ -37,12 +44,46 @@ struct mic_enc_hdl {
     u16 cp_type;
     u16 packet_head_sn;
 #endif
+#if AEC_DCCS_EN
+    struct audio_eq dccs_eq;
+    struct hw_eq_ch dccs_eq_ch;
+#endif/*AEC_DCCS_EN*/
 #if MIC_USE_MIC_CHANNEL
     struct audio_adc_output_hdl adc_output;
     struct adc_mic_ch mic_ch;
     s16 adc_buf[ENC_ADC_BUFS_SIZE];    //align 4Bytes
 #endif
 };
+
+#if AEC_DCCS_EN
+const int DCCS_8k_Coeff[5] = {
+    (943718 << 2),	-(856687 << 2),	(1048576 << 2),	(1887437 << 2),	-(2097152 << 2)
+};
+const int DCCS_16k_Coeff[5] = {
+    (1006633 << 2),	-(967542 << 2),	(1048576 << 2),	(2013266 << 2),	-(2097152 << 2)
+};
+static int aec_dccs_eq_filter(int sr, struct audio_eq_filter_info *info)
+{
+    //r_printf("dccs_eq sr:%d\n", sr);
+    if (sr == 16000) {
+        info->L_coeff = (void *)DCCS_16k_Coeff;
+        info->R_coeff = (void *)DCCS_16k_Coeff;
+    } else {
+        info->L_coeff = (void *)DCCS_8k_Coeff;
+        info->R_coeff = (void *)DCCS_8k_Coeff;
+    }
+    info->L_gain = 0;
+    info->R_gain = 0;
+    info->nsection = 1;
+    return 0;
+}
+
+static int dccs_eq_output(void *priv, void *data, u32 len)
+{
+    /* put_buf(data,len); */
+    return 0;
+}
+#endif/*AEC_DCCS_EN*/
 
 static struct mic_enc_hdl *mic_enc = NULL;
 
@@ -83,10 +124,17 @@ static int mic_enc_pcm_get(struct audio_encoder *encoder, s16 **frame, u16 frame
     pcm_len = cbuf_read(&mic_enc->pcm_in_cbuf, mic_enc->pcm_frame, frame_len);
     if (pcm_len != frame_len) {
         putchar('L');
+    } else {
+#if AEC_DCCS_EN
+        if (mic_enc->dccs_eq.start) {
+            audio_eq_run(&mic_enc->dccs_eq, mic_enc->pcm_frame, pcm_len);
+        }
+#endif/*AEC_DCCS_EN*/
     }
     /* putchar('D'); */
 
     *frame = mic_enc->pcm_frame;
+    // printf("@ %d\n", **frame);  //eq后的数据
     return pcm_len;
 }
 
@@ -140,6 +188,7 @@ static void mic_enc_event_handler(struct audio_decoder *decoder, int argc, int *
 
 static void adc_mic_output_handler(void *priv, s16 *data, int len)
 {
+    //printf("# %d\n", data[0]); //eq前的数据
     if (mic_enc) {
         u16 wlen = cbuf_write(&mic_enc->pcm_in_cbuf, data, len);
         if (wlen != len) {
@@ -199,6 +248,25 @@ int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 co
         memset(mic_enc, 0x00, sizeof(*mic_enc));
     }
 
+#if AEC_DCCS_EN
+    if (adc_data.mic_capless) {
+        memset(&mic_enc->dccs_eq, 0, sizeof(struct audio_eq));
+        memset(&mic_enc->dccs_eq_ch, 0, sizeof(struct hw_eq_ch));
+        mic_enc->dccs_eq.eq_ch = &mic_enc->dccs_eq_ch;
+        struct audio_eq_param dccs_eq_param;
+        dccs_eq_param.channels = 1;
+        dccs_eq_param.online_en = 0;
+        dccs_eq_param.mode_en = 0;
+        dccs_eq_param.remain_en = 0;
+        dccs_eq_param.max_nsection = EQ_SECTION_MAX;
+        dccs_eq_param.cb = aec_dccs_eq_filter;
+        audio_eq_open(&mic_enc->dccs_eq, &dccs_eq_param);
+        audio_eq_set_samplerate(&mic_enc->dccs_eq, fmt.sample_rate);
+        audio_eq_set_output_handle(&mic_enc->dccs_eq, dccs_eq_output, NULL);
+        audio_eq_start(&mic_enc->dccs_eq);
+    }
+#endif
+
     mic_enc_output_func_register(mic_output);
     cbuf_init(&mic_enc->pcm_in_cbuf, mic_enc->in_cbuf_buf, MIC_ENC_IN_SIZE * 4);
     os_sem_create(&mic_enc->pcm_frame_sem, 0);
@@ -208,6 +276,12 @@ int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 co
     audio_encoder_set_event_handler(&mic_enc->encoder, mic_enc_event_handler, 0);
     audio_encoder_set_output_buffs(&mic_enc->encoder, mic_enc->output_frame,
                                    sizeof(mic_enc->output_frame), 1);
+    if (!mic_enc->encoder.enc_priv) {
+        log_e("encoder err, maybe coding(0x%x) disable \n", fmt.coding_type);
+        err = -EINVAL;
+        goto __err;
+    }
+
     int start_err = audio_encoder_start(&mic_enc->encoder);
 
 #if MIC_USE_MIC_CHANNEL
@@ -235,6 +309,15 @@ int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 co
 
 
     return 0;
+__err:
+    audio_encoder_close(&mic_enc->encoder);
+
+    local_irq_disable();
+    free(mic_enc);
+    mic_enc = NULL;
+    local_irq_enable();
+
+    return err;
 }
 
 
@@ -265,6 +348,12 @@ int audio_mic_enc_close()
     /* free(encode_task); */
     /* encode_task = NULL; */
     /* } */
+    /* } */
+#if AEC_DCCS_EN
+    if (mic_enc->dccs_eq.start) {
+        audio_eq_close(&mic_enc->dccs_eq);
+    }
+#endif/*AEC_DCCS_EN*/
 
     free(mic_enc);
     mic_enc = NULL;

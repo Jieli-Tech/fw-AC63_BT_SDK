@@ -22,5 +22,6 @@ int edr_hid_data_send_ext(u8 report_type, u8 report_id, u8 *data, u16 len);
 void edr_hid_key_deal_test(u16 key_msg);
 int edr_hid_is_connected(void);
 int edr_hid_tx_buff_is_ok(void);
+int edr_hid_is_connected(void);
 
 #endif//__SPP_USER_H__

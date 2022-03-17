@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "app_config.h"
 #include "le_client_demo.h"
-
+#include "btcontroller_config.h"
 //注释编译宏，关闭蓝牙功能可以编译通过
 #if 1//TCFG_USER_BLE_ENABLE && CONFIG_BT_GATT_COMMON_ENABLE
 //----------------------------------------------------------------------------------------
@@ -54,6 +54,7 @@ typedef enum {
 
     //type:gatt server
     GATT_COMM_EVENT_SERVER_STATE = 0x40,/*状态变化*/
+    GATT_COMM_EVENT_SERVER_INDICATION_COMPLETE,/*INDICATE应答结束*/
 
     /*======master + client event*/
     //type:ble master
@@ -109,11 +110,11 @@ typedef struct {
     u8  rsp_data_len;   /*无定向广播respone包长度*/
     u16 adv_interval;	/*无定向广播周期,(unit:0.625ms),Range: 0x0020 to 0x4000 */
     u8  adv_auto_do: 4; /*是否gatt模块自动打开广播（使能，断开等状态下）*/
-    u8  adv_type: 4;	   /*广播类型，包含：无定向可连接广播，无定向不可连接广播，定向广播等*/
+    u8  adv_type: 4;	/*广播类型，包含：无定向可连接广播，无定向不可连接广播，定向广播等*/
     u8  adv_channel;	/*广播使用的通道，bit0~2对应 channel 37~38*/
-    u8  direct_address_info[7];/*定向广播使用主机的地址信息,addr_type + address*/
-    u8  set_local_addr_tag;    /*= USE_SET_LOCAL_ADDRESS_TAG,指定使用当前local_address_info,可以用于开多机指定设备地址*/
-    u8  local_address_info[7];/*可以指定设备地址开广播,addr_type + address*/
+    u8  direct_address_info[7]; /*定向广播使用主机的地址信息,addr_type + address*/
+    u8  set_local_addr_tag;     /*= USE_SET_LOCAL_ADDRESS_TAG,指定使用当前local_address_info,可以用于开多机指定设备地址*/
+    u8  local_address_info[7];  /*可以指定设备地址开广播,addr_type + address*/
 } adv_cfg_t;
 
 typedef struct {
@@ -127,16 +128,16 @@ typedef struct {
 /* ================ gatt client 配置 ================*/
 typedef struct {
     //common
-    u8 scan_auto_do: 4;	/*是否gatt模块自动打开搜索（使能，断开等状态下）*/
-    u8 creat_auto_do: 4; /*是否gatt模块搜索到匹配的设备自动发起连接*/
+    u8 scan_auto_do: 4;	       /*是否gatt模块自动打开搜索（使能，断开等状态下）*/
+    u8 creat_auto_do: 4;       /*是否gatt模块搜索到匹配的设备自动发起连接*/
     u8  set_local_addr_tag;    /*= USE_SET_LOCAL_ADDRESS_TAG,指定使用当前local_address_info,可以用于开多机指定设备地址*/
     u8  local_address_info[7]; /*可以指定设备地址开scan,addr_type + address*/
 
     //scan
-    u8 scan_type: 4;	 /*搜索类型*/
-    u8 scan_filter: 4; /*是否开搜索重复过滤*/
-    u16 scan_interval;/*搜索周期,(unit:0.625ms),>= scan_window,   Range: 0x0004 to 0x4000 */
-    u16 scan_window;  /*搜索窗口,(unit:0.625ms),<= scan_interval, Range: 0x0004 to 0x4000 */
+    u8 scan_type: 4;    /*搜索类型*/
+    u8 scan_filter: 4;  /*是否开搜索重复过滤*/
+    u16 scan_interval;  /*搜索周期,(unit:0.625ms),>= scan_window,   Range: 0x0004 to 0x4000 */
+    u16 scan_window;    /*搜索窗口,(unit:0.625ms),<= scan_interval, Range: 0x0004 to 0x4000 */
 
     //creat
     u16 creat_conn_interval;        /*创建连接的周期,(unit:1.25ms),Range: 0x0006 to 0x0c08*/
@@ -145,13 +146,13 @@ typedef struct {
 
     //control
     u32 creat_state_timeout_ms;	    /*创建连接后,超时未连上会取消连接,重新开搜索;=0,只能手动取消建立连接*/
-    u8  conn_update_accept;	        /*连接过程,接收从机的连接参数请求使能*/
+    u8  conn_update_accept;	        /*连接过程,接受从机的连接参数请求使能*/
 } scan_conn_cfg_t;
 
 typedef struct {
     /*未连接,扫描设备配置*/
     const client_match_cfg_t  *match_devices;     /*扫描匹配设备表*/
-    u16   match_devices_count;   /*搜索devices的个数*/
+    u16   match_devices_count;    /*搜索devices的个数*/
     u8    match_rssi_enable;      /*creat_auto_do 建立连接,是否检测rssi*/
     s8    match_rssi_value;       /*至少的rssi强度值*/
 
@@ -172,12 +173,12 @@ typedef struct {
     //sm
     u8 master_security_auto_req: 1; /*主机主动发起加密*/
     u8 master_set_wait_security: 1; /*主机等待加密完成再执行profile搜索*/
-    u8 slave_security_auto_req: 1; /*从机机发起加密请求命令*/
-    u8 slave_set_wait_security: 1; /*从机等待加密处理*/
-    u8 io_capabilities: 4;         /*加密io能力配置*/
-    u8 authentication_req_flags;   /*加密认证配置*/
-    u8 min_key_size;               /*加密key支持的最小长度,range:7~16*/
-    u8 max_key_size;               /*加密key支持的最大长度,range:7~16*/
+    u8 slave_security_auto_req: 1;  /*从机发起加密请求命令*/
+    u8 slave_set_wait_security: 1;  /*从机等待加密处理*/
+    u8 io_capabilities: 4;          /*加密io能力配置*/
+    u8 authentication_req_flags;    /*加密认证配置*/
+    u8 min_key_size;                /*加密key支持的最小长度,range:7~16*/
+    u8 max_key_size;                /*加密key支持的最大长度,range:7~16*/
     /*sm 回调，保留未用*/
     int (*sm_cb_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 } sm_cfg_t;

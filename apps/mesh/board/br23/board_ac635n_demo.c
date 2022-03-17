@@ -424,6 +424,9 @@ void board_power_init(void)
 
     power_init(&power_param);
 
+    gpio_longpress_pin0_reset_config(IO_PORTB_01, 0, 0);
+    gpio_shortpress_reset_config(0);//1--enable 0--disable
+
     /*sdpg_config(1);*/
 
     power_set_callback(TCFG_LOWPOWER_LOWPOWER_SEL, sleep_enter_callback, sleep_exit_callback, board_set_soft_poweroff);

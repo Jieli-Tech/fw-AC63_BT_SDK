@@ -91,6 +91,12 @@ typedef struct _update_file_link_key {
     u8 link_key[16];
 }   update_file_link_key_t;
 
+struct excfg_rsp_payload {
+    u16 vid;
+    u8 logo[5];
+    u8 version;
+    u8 addr[6];
+};
 //u32 custom_cfg_file_init(void);
 //void ex_cfg_write_to_flash(void);
 //u32 ex_cfg_fill_content_api(u8 cfg_index, u8 *data, u16 len);

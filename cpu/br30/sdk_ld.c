@@ -125,6 +125,10 @@ SECTIONS
         KEEP(*(.clock_critical_txt))
         clock_critical_handler_end = .;
 
+        chargestore_handler_begin = .;
+        KEEP(*(.chargestore_callback_txt))
+        chargestore_handler_end = .;
+
         gsensor_dev_begin = .;
         KEEP(*(.gsensor_dev))
         gsensor_dev_end = .;
@@ -216,13 +220,6 @@ SECTIONS
 		*( .wtg_dec_code )
 		*( .wtg_dec_const)
 		*( .wtg_dec_sparse_code)
-#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
-		*( .lc3_codec_c_sparse_code)
-		*(.lc3_codec_d_code)
-		/* *(.lc3_codec_c_const) */
-		/* *(.lc3_codec_c_code) */
-#endif
-
 		. = ALIGN(32);
 	  } > code0
 
@@ -279,11 +276,6 @@ SECTIONS
 		. = ALIGN(4);
 		#include "system/system_lib_data.ld"
 		. = ALIGN(4);
-#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
-		*(.lc3_codec_ari_c_const)
-		*(.lc3_codec_ari_c_data)
-		*(.lc3_codec_c_data)
-#endif
 
 	} > ram0
 
@@ -320,10 +312,6 @@ SECTIONS
 		*(.non_volatile_ram)
 
         . = ALIGN(32);
-#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
-		*(.lc3_codec_ari_c_bss)
-		*(.lc3_codec_c_bss)
-#endif
 
     } > ram0
 
@@ -334,17 +322,20 @@ SECTIONS
         *(.cache)
         *(.os_critical_code)
         *(.volatile_ram_code)
+        *(.chargebox_code)
 	  	 *(.media.aec.text)
 		*(.os_code)
 		*(.os_str)
 
         *(.fat_data_code)
+
 #if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
 		*(.lc3_codec_ari_c_code)
 		*(.lc3_codec_e_code)
 		*(.lc3_codec_c_const)
 		*(.lc3_codec_c_code)
 #endif
+
 
 #ifndef CONFIG_MOVABLE_ENABLE
     	audio_sync_code_begin = .;

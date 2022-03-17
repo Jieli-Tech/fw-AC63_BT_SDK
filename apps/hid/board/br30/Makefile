@@ -2,6 +2,12 @@
 # make 编译并下载
 # make VERBOSE=1 显示编译详细过程
 # make clean 清除编译临时文件
+# 注意： Linux 下编译方式：
+# 1. 从 http://pkgman.jieliapp.com/doc/all 处找到下载链接
+# 2. 下载后，解压到 /opt/jieli 目录下，保证
+#   /opt/jieli/common/bin/clang 存在（注意目录层次）
+# 3. 确认 ulimit -n 的结果足够大（建议大于8096），否则链接可能会因为打开文件太多而失败
+#   可以通过 ulimit -n 8096 来设置一个较大的值
 
 # 工具路径设置
 ifeq ($(OS), Windows_NT)
@@ -16,8 +22,10 @@ RM    := rm -rf
 
 SYS_LIB_DIR := C:/JL/pi32/pi32v2-lib/r3
 SYS_INC_DIR := C:/JL/pi32/pi32v2-include
+EXT_CFLAGS  := # Windows 下不需要 -D__SHELL__
 
 ## 后处理脚本
+FIXBAT          := ..\..\..\..\tools\utils\fixbat.exe # 用于处理 utf8->gbk 编码问题
 POST_SCRIPT     := ..\..\..\..\cpu\br30\tools\download.bat
 RUN_POST_SCRIPT := $(POST_SCRIPT)
 else
@@ -32,8 +40,10 @@ RM    := rm -rf
 
 SYS_LIB_DIR := $(TOOL_DIR)/../lib/r3
 SYS_INC_DIR := $(TOOL_DIR)/../include
+EXT_CFLAGS  := -D__SHELL__ # Linux 下需要这个保证正确处理 download.c
 
 ## 后处理脚本
+FIXBAT          := touch # Linux下不需要处理 bat 编码问题
 POST_SCRIPT     := ../../../../cpu/br30/tools/download.sh
 RUN_POST_SCRIPT := bash $(POST_SCRIPT)
 endif
@@ -68,6 +78,9 @@ CFLAGS := \
 	-Wno-shift-negative-value \
 	-Wundef \
 	-Wframe-larger-than=256 \
+	-Wincompatible-pointer-types \
+	-Wreturn-type \
+	-Wimplicit-function-declaration \
 	-fms-extensions \
 	-w \
 
@@ -79,8 +92,11 @@ DEFINES := \
 	-DCONFIG_CPU_BR30 \
 	-DCONFIG_SUPPORT_WIFI_DETECT \
 	-DCONFIG_NEW_BREDR_ENABLE \
+	-DCONFIG_NEW_TWS_FORWARD_ENABLE \
 	-DCONFIG_FREE_RTOS_ENABLE \
 	-DCONFIG_EQ_SUPPORT_ASYNC \
+	-DEQ_CORE_V2 \
+	-DCONFIG_DNS_ENABLE \
 	-DCONFIG_ASR_ENABLE \
 	-DCONFIG_DMS_MALLOC \
 	-DCONFIG_MMU_ENABLE \
@@ -120,6 +136,8 @@ DEFINES := \
 	-D__LD__ \
 
 
+DEFINES += $(EXT_CFLAGS) # 额外的一些定义
+
 # 头文件搜索路径
 INCLUDES := \
 	-I../../../../include_lib \
@@ -151,40 +169,67 @@ INCLUDES := \
 	-I../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data \
 	-I../../../../apps/common/third_party_profile/jieli/trans_data_demo \
 	-I../../../../apps/common/third_party_profile/common \
-	-I../../../../apps/common/usb \
+	-I../../../../apps/common/device \
+	-I../../../../apps/common/device/usb \
 	-I../../../../include_lib/ai_stack/JL_rcsp \
 	-I../../../../include_lib/btstack \
 	-I../../../../cpu/br30 \
+	-I../../../../include_lib/system/ex_mcu \
 	-I../../../../apps/common/code_switch/include \
 	-I../../../../apps/common/device/optical_mouse_sensor/include \
-	-I../../../../apps/common/touch_pad \
+	-I../../../../apps/common/device/touch_pad \
 	-I../../../../apps/common/audio \
 	-I../../../../cpu/br30/audio_dec \
 	-I../../../../cpu/br30/audio_enc \
-	-I../../../../apps/common/usb/device \
-	-I../../../../apps/common/usb/host \
+	-I../../../../apps/common/device/usb/device \
+	-I../../../../apps/common/device/usb/host \
 	-I$(SYS_INC_DIR) \
 
 
 # 需要编译的 .c 文件
 c_SRC_FILES := \
+	../../../../apps/common/audio/audio_utils.c \
 	../../../../apps/common/audio/decode/decode.c \
 	../../../../apps/common/audio/sine_make.c \
 	../../../../apps/common/code_switch/code_switch.c \
 	../../../../apps/common/debug/debug.c \
+	../../../../apps/common/device/key/adkey.c \
+	../../../../apps/common/device/key/ctmu_touch_key.c \
+	../../../../apps/common/device/key/iokey.c \
+	../../../../apps/common/device/key/key_driver.c \
+	../../../../apps/common/device/key/matrix_keyboard.c \
+	../../../../apps/common/device/key/matrix_keyboard_ex_mcu.c \
+	../../../../apps/common/device/key/touch_key.c \
 	../../../../apps/common/device/optical_mouse_sensor/OMSensor_manage.c \
 	../../../../apps/common/device/optical_mouse_sensor/hal3205/hal3205.c \
 	../../../../apps/common/device/optical_mouse_sensor/hal3212/hal3212.c \
+	../../../../apps/common/device/touch_pad/SYD9557M.c \
+	../../../../apps/common/device/usb/device/cdc.c \
+	../../../../apps/common/device/usb/device/descriptor.c \
+	../../../../apps/common/device/usb/device/hid.c \
+	../../../../apps/common/device/usb/device/msd.c \
+	../../../../apps/common/device/usb/device/msd_upgrade.c \
+	../../../../apps/common/device/usb/device/task_pc.c \
+	../../../../apps/common/device/usb/device/uac1.c \
+	../../../../apps/common/device/usb/device/uac_stream.c \
+	../../../../apps/common/device/usb/device/usb_device.c \
+	../../../../apps/common/device/usb/device/user_setup.c \
+	../../../../apps/common/device/usb/host/adb.c \
+	../../../../apps/common/device/usb/host/aoa.c \
+	../../../../apps/common/device/usb/host/audio.c \
+	../../../../apps/common/device/usb/host/audio_demo.c \
+	../../../../apps/common/device/usb/host/hid.c \
+	../../../../apps/common/device/usb/host/usb_bulk_transfer.c \
+	../../../../apps/common/device/usb/host/usb_ctrl_transfer.c \
+	../../../../apps/common/device/usb/host/usb_host.c \
+	../../../../apps/common/device/usb/host/usb_storage.c \
+	../../../../apps/common/device/usb/usb_config.c \
+	../../../../apps/common/device/usb/usb_host_config.c \
+	../../../../apps/common/ex_mcu/ex_mcu_uart.c \
 	../../../../apps/common/jl_kws/jl_kws_algo.c \
 	../../../../apps/common/jl_kws/jl_kws_audio.c \
 	../../../../apps/common/jl_kws/jl_kws_event.c \
 	../../../../apps/common/jl_kws/jl_kws_main.c \
-	../../../../apps/common/key/adkey.c \
-	../../../../apps/common/key/ctmu_touch_key.c \
-	../../../../apps/common/key/iokey.c \
-	../../../../apps/common/key/key_driver.c \
-	../../../../apps/common/key/matrix_keyboard.c \
-	../../../../apps/common/key/touch_key.c \
 	../../../../apps/common/third_party_profile/common/custom_cfg.c \
 	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.c \
 	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_ch_loader_download.c \
@@ -192,32 +237,10 @@ c_SRC_FILES := \
 	../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_client.c \
 	../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_common.c \
 	../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_server.c \
-	../../../../apps/common/touch_pad/SYD9557M.c \
 	../../../../apps/common/update/testbox_update.c \
 	../../../../apps/common/update/uart_update.c \
 	../../../../apps/common/update/uart_update_master.c \
 	../../../../apps/common/update/update.c \
-	../../../../apps/common/usb/device/cdc.c \
-	../../../../apps/common/usb/device/descriptor.c \
-	../../../../apps/common/usb/device/hid.c \
-	../../../../apps/common/usb/device/msd.c \
-	../../../../apps/common/usb/device/msd_upgrade.c \
-	../../../../apps/common/usb/device/task_pc.c \
-	../../../../apps/common/usb/device/uac1.c \
-	../../../../apps/common/usb/device/uac_stream.c \
-	../../../../apps/common/usb/device/usb_device.c \
-	../../../../apps/common/usb/device/user_setup.c \
-	../../../../apps/common/usb/host/adb.c \
-	../../../../apps/common/usb/host/aoa.c \
-	../../../../apps/common/usb/host/audio.c \
-	../../../../apps/common/usb/host/audio_demo.c \
-	../../../../apps/common/usb/host/hid.c \
-	../../../../apps/common/usb/host/usb_bulk_transfer.c \
-	../../../../apps/common/usb/host/usb_ctrl_transfer.c \
-	../../../../apps/common/usb/host/usb_host.c \
-	../../../../apps/common/usb/host/usb_storage.c \
-	../../../../apps/common/usb/usb_config.c \
-	../../../../apps/common/usb/usb_host_config.c \
 	../../../../apps/hid/app_main.c \
 	../../../../apps/hid/board/br30/board_ac6373b_mouse.c \
 	../../../../apps/hid/board/br30/board_ac6376f_demo.c \
@@ -242,7 +265,6 @@ c_SRC_FILES := \
 	../../../../apps/hid/examples/keypage/app_keypage.c \
 	../../../../apps/hid/examples/mouse_dual/app_mouse_dual.c \
 	../../../../apps/hid/examples/mouse_single/app_mouse.c \
-	../../../../apps/hid/examples/remote_24g_server/app_remote_24g_server.c \
 	../../../../apps/hid/examples/standard_keyboard/app_standard_keyboard.c \
 	../../../../apps/hid/examples/standard_keyboard/usb_hid_devices.c \
 	../../../../apps/hid/examples/voice_remote_control/app_remote_control.c \
@@ -255,6 +277,7 @@ c_SRC_FILES := \
 	../../../../apps/hid/modules/misc.c \
 	../../../../apps/hid/modules/power/app_charge.c \
 	../../../../apps/hid/modules/power/app_chargestore.c \
+	../../../../apps/hid/modules/power/app_handshake.c \
 	../../../../apps/hid/modules/power/app_power_manage.c \
 	../../../../apps/hid/modules/rtc_alarm.c \
 	../../../../apps/hid/modules/tone_table.c \
@@ -273,6 +296,7 @@ c_SRC_FILES := \
 	../../../../cpu/br30/chargestore.c \
 	../../../../cpu/br30/clock_manager.c \
 	../../../../cpu/br30/ctmu.c \
+	../../../../cpu/br30/handshake_timer.c \
 	../../../../cpu/br30/iic_hw.c \
 	../../../../cpu/br30/iic_slave_test.c \
 	../../../../cpu/br30/iic_soft.c \
@@ -395,50 +419,63 @@ else
 QUITE := @
 endif
 
+# 一些旧的 make 不支持 file 函数，需要 make 的时候指定 LINK_AT=0 make
+LINK_AT ?= 1
+
 .PHONY: all clean pre_build
 
 all: pre_build $(OUT_ELF)
-	@echo +POST-BUILD
+	$(info +POST-BUILD)
 	$(QUITE) $(RUN_POST_SCRIPT) sdk
 
 pre_build:
-	@echo +PRE-BUILD
+	$(info +PRE-BUILD)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br30/sdk_used_list.c -o ../../../../cpu/br30/sdk_used_list.used
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br30/sdk_ld.c -o ../../../../cpu/br30/sdk.ld
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br30/tools/download.c -o $(POST_SCRIPT)
-	$(QUITE) ..\..\..\..\tools\utils\fixbat.exe $(POST_SCRIPT)
+	$(QUITE) $(FIXBAT) $(POST_SCRIPT)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br30/tools/isd_config_rule.c -o ../../../../cpu/br30/tools/isd_config.ini
 
 clean:
 	$(QUITE) $(RM) $(OUT_ELF)
-	$(QUITE) $(RM) $(OBJS)
-	$(QUITE) $(RM) $(DEP_FILES)
+	$(QUITE) $(RM) $(BUILD_DIR)
 
+
+
+ifeq ($(LINK_AT), 1)
 $(OUT_ELF): $(OBJS)
-	@echo +LINK $@
+	$(info +LINK $@)
+	$(shell $(MKDIR) $(@D))
 	$(file >$(OBJ_FILE), $(OBJS))
 	$(QUITE) $(LD) -o $(OUT_ELF) @$(OBJ_FILE) $(LFLAGS) $(LIBPATHS) $(LIBS)
+else
+$(OUT_ELF): $(OBJS)
+	$(info +LINK $@)
+	$(shell $(MKDIR) $(@D))
+	$(QUITE) $(LD) -o $(OUT_ELF) $(OBJS) $(LFLAGS) $(LIBPATHS) $(LIBS)
+endif
+
 
 $(BUILD_DIR)/%.c.o : $(ROOT_PREFIX)/%.c
-	@echo +CC $<
+	$(info +CC $<)
 	@$(MKDIR) $(@D)
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.S.o : $(ROOT_PREFIX)/%.S
-	@echo +AS $<
+	$(info +AS $<)
 	@$(MKDIR) $(@D)
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.s.o : $(ROOT_PREFIX)/%.s
-	@echo +AS $<
+	$(info +AS $<)
 	@$(MKDIR) $(@D)
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cpp.o : $(ROOT_PREFIX)/%.cpp
-	@echo +CXX $<
+	$(info +CXX $<)
 	@$(MKDIR) $(@D)
 	@$(CXX) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@

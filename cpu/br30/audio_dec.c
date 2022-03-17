@@ -4,8 +4,7 @@
 #include "classic/tws_api.h"
 #include "classic/hci_lmp.h"
 #include "effectrs_sync.h"
-#include "application/audio_eq.h"
-#include "application/audio_drc.h"
+#include "application/eq_config.h"
 #include "application/audio_energy_detect.h"
 #include "application/audio_surround.h"
 #include "app_config.h"
@@ -21,7 +20,11 @@
 #include "math.h"
 #include "audio_syncts.h"
 #include "media/bt_audio_timestamp.h"
+#include "media/a2dp_sample_detect.h"
 #include "audio_codec_clock.h"
+#include "audio_dec_eff.h"
+#include "audio_utils.h"
+#include "audio_dec_mic2pcm.h"
 
 #if TCFG_USER_TWS_ENABLE
 #include "bt_tws.h"
@@ -63,47 +66,9 @@
 
 #define A2DP_RX_AND_AUDIO_DELAY     1
 
-#define A2DP_EQ_SUPPORT_ASYNC		1
-#define MUSIC_EQ_SUPPORT_ASYNC		1
 
-#ifndef CONFIG_EQ_SUPPORT_ASYNC
-#undef A2DP_EQ_SUPPORT_ASYNC
-#define A2DP_EQ_SUPPORT_ASYNC		0
-#endif
 
-#ifndef CONFIG_EQ_SUPPORT_ASYNC
-#undef MUSIC_EQ_SUPPORT_ASYNC
-#define MUSIC_EQ_SUPPORT_ASYNC	0
-#endif
 
-#if !TCFG_EQ_ENABLE
-#undef TCFG_BT_MUSIC_EQ_ENABLE
-#define TCFG_BT_MUSIC_EQ_ENABLE 0
-#undef TCFG_PHONE_EQ_ENABLE
-#define TCFG_PHONE_EQ_ENABLE 0
-#undef TCFG_AUDIO_OUT_EQ_ENABLE
-#define TCFG_AUDIO_OUT_EQ_ENABLE 0
-#endif
-
-#if !TCFG_DRC_ENABLE
-#undef TCFG_BT_MUSIC_DRC_ENABLE
-#define TCFG_BT_MUSIC_DRC_ENABLE 0
-#endif
-#if A2DP_EQ_SUPPORT_ASYNC && TCFG_BT_MUSIC_EQ_ENABLE
-#if TCFG_DRC_ENABLE
-#define A2DP_EQ_SUPPORT_32BIT		1
-#else
-#define A2DP_EQ_SUPPORT_32BIT		0
-#endif
-#else
-#define A2DP_EQ_SUPPORT_32BIT		0
-#endif
-
-#if (defined(TCFG_AUDIO_OUT_EQ_ENABLE) && (TCFG_AUDIO_OUT_EQ_ENABLE != 0))
-#define AUDIO_OUT_EFFECT_ENABLE			1	// 音频输出时的音效处理
-#else
-#define AUDIO_OUT_EFFECT_ENABLE			0
-#endif
 
 
 #define ESCO_DRC_EN	0  //通话下行增加限幅器处理，默认关闭
@@ -114,35 +79,12 @@
 #endif
 
 #if AUDIO_OUT_EFFECT_ENABLE
-
-#define AUDIO_OUT_EQ_SUPPORT_ASYNC		1
-
-#if	((!defined(CONFIG_EQ_SUPPORT_ASYNC)))
-#undef AUDIO_OUT_EQ_SUPPORT_ASYNC
-#define AUDIO_OUT_EQ_SUPPORT_ASYNC		0
-#endif
-
-#if (defined(TCFG_AUDIO_OUT_EQ_ENABLE) && (TCFG_AUDIO_OUT_EQ_ENABLE != 0))
-#define AUDIO_OUT_EQ_USE_SPEC_NUM		2	// 使用特定的eq段
-#else
-#define AUDIO_OUT_EQ_USE_SPEC_NUM		0
-#endif
-
-struct audio_out_effect_hdl {
-#if (defined(TCFG_AUDIO_OUT_EQ_ENABLE) && (TCFG_AUDIO_OUT_EQ_ENABLE != 0))
-    struct audio_eq *eq;
-#endif
-#if AUDIO_OUT_EQ_USE_SPEC_NUM
-    int EQ_Coeff_table[AUDIO_OUT_EQ_USE_SPEC_NUM * 5];
-#endif
-#if AUDIO_OUT_EQ_SUPPORT_ASYNC
-    u8 eq_async_remain;
-#endif
-    u8 remain;
-};
-struct audio_out_effect_hdl *audio_out_effect = NULL;
-
+int audio_out_effect_open(void *priv, u16 sample_rate);
+void audio_out_effect_close(void);
+int audio_out_effect_stream_clear();
+struct dec_eq_drc *audio_out_effect = NULL;
 #endif /*AUDIO_OUT_EFFECT_ENABLE*/
+
 static u8 audio_out_effect_dis = 0;
 
 
@@ -161,28 +103,26 @@ struct a2dp_dec_hdl {
     u8 ch;
     s16 header_len;
     u8 remain;
-    u8 eq_remain;
+
     u8 fetch_lock;
-    u8 state;
+    u8 preempt;
     u8 stream_error;
     u8 new_frame;
-    u32 stream_timeout_time;
+    u8 repair;
+    void *sample_detect;
     void *syncts;
     void *repair_pkt;
     s16 repair_pkt_len;
     u16 missed_num;
     u16 repair_frames;
     u16 overrun_seqn;
+    u16 slience_frames;
 #if AUDIO_CODEC_SUPPORT_SYNC
-    void *ts_handle;
     u8 ts_start;
     u8 sync_step;
-    u8 preempt_state;
+    void *ts_handle;
     u32 timestamp;
-#if TCFG_USER_TWS_ENABLE
-    u32 wait_time;
-#endif /*TCFG_USER_TWS_ENABLE*/
-    u32 time_base;
+    u32 base_time;
 #endif /*AUDIO_CODEC_SUPPORT_SYNC*/
 #if A2DP_AUDIO_PLC_ENABLE
     LFaudio_PLC_API *plc_ops;
@@ -197,20 +137,17 @@ struct a2dp_dec_hdl {
     u16 delay_time;
     u16 detect_timer;
     u8  underrun_feedback;
-#if A2DP_EQ_SUPPORT_32BIT
-    s16 *eq_out_buf;
-    int eq_out_buf_len;
-    int eq_out_points;
-    int eq_out_total;
-#endif
+#if TCFG_EQ_ENABLE&&TCFG_BT_MUSIC_EQ_ENABLE
+    struct dec_eq_drc *eq_drc;
+#endif//TCFG_BT_MUSIC_EQ_ENABLE
+
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
     dvol_handle *dvol;
 #endif
 
 #if AUDIO_SURROUND_CONFIG
-    surround_hdl *surround;         //环绕音效句柄
-    u8 surround_eff;  //音效模式记录
-#endif
+    struct dec_sur *sur;
+#endif//AUDIO_SURROUND_CONFIG
 
 #if AUDIO_VBASS_CONFIG
     vbass_hdl *vbass;               //虚拟低音句柄
@@ -218,12 +155,10 @@ struct a2dp_dec_hdl {
 };
 #if AUDIO_SURROUND_CONFIG
 static u8 a2dp_surround_eff;  //音效模式记录
-#endif
-#define AUDIO_VBASS_TEST 0
-
-#if AUDIO_VBASS_TEST
-u16 vbass_t = 0;
-extern void vbass_udate_parm_test(void *p);
+void a2dp_surround_set(u8 eff)
+{
+    a2dp_surround_eff = eff;
+}
 #endif
 
 struct esco_dec_hdl {
@@ -238,6 +173,9 @@ struct esco_dec_hdl {
     u8 tws_mute_en;
     u8 start;
     u8 enc_start;
+    u8 frame_time;
+    u8 preempt;
+    u16 slience_frames;
     void *syncts;
 #if AUDIO_CODEC_SUPPORT_SYNC
     void *ts_handle;
@@ -252,21 +190,14 @@ struct esco_dec_hdl {
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
     dvol_handle *dvol;
 #endif
+    u32 hash;
 
-#if ESCO_DRC_EN
-    s16 *eq_out_buf;
-    int eq_out_buf_len;
-#endif
+#if TCFG_EQ_ENABLE&&TCFG_PHONE_EQ_ENABLE
+    struct dec_eq_drc *eq_drc;
+#endif//TCFG_PHONE_EQ_ENABLE
+
 
 };
-
-#if TCFG_BT_MUSIC_EQ_ENABLE
-struct audio_eq *a2dp_eq = NULL;
-#endif
-
-#if TCFG_PHONE_EQ_ENABLE
-struct audio_eq *esco_eq = NULL;
-#endif
 
 #if AUDIO_OUTPUT_AUTOMUTE
 void *mix_out_automute_hdl = NULL;
@@ -274,17 +205,15 @@ extern void mix_out_automute_open();
 extern void mix_out_automute_close();
 #endif  //#if AUDIO_OUTPUT_AUTOMUTE
 
-#if TCFG_BT_MUSIC_DRC_ENABLE
-struct audio_drc *a2dp_drc = NULL;
-#endif
 
-#if ESCO_DRC_EN
-struct audio_drc *esco_drc = NULL;
-#endif
 
 void *audio_sync = NULL;
 
+#if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_LR)
+#define MIX_POINTS_NUM  256
+#else
 #define MIX_POINTS_NUM  128
+#endif
 #if A2DP_RX_AND_AUDIO_DELAY
 #define AUDIO_DAC_DELAY_TIME    30
 #else
@@ -296,7 +225,7 @@ void *audio_sync = NULL;
 
 #define A2DP_TO_PCM_DEVICE_FORMAT           0//48000
 
-#if TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_LR
+#if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_LR)
 s16 dac_buff[4 * 1024];
 #else
 #if A2DP_KSR_AEC_ENABLE
@@ -313,14 +242,7 @@ s16 dac_buff[2 * 1024 - 512];
 #define DEC_PREEMTED_BY_PRIORITY        1
 #define DEC_PREEMTED_BY_OUTSIDE         3
 #define DEC_RESUME_BY_OUTSIDE           2
-#if TCFG_BT_SUPPORT_AAC
-/*AAC解码需要加大同步和MIX的buffer用来提高异步效率*/
-s16 dac_sync_buff[128];
-#undef MIX_POINTS_NUM
-#define MIX_POINTS_NUM  128
-#else
-s16 dac_sync_buff[128];
-#endif
+/* [>AAC解码需要加大同步和MIX的buffer用来提高异步效率<] */
 s16 dac_sync_filt[24 * 2 * 2];
 #endif
 s16 mix_buff[MIX_POINTS_NUM];
@@ -328,10 +250,11 @@ s16 mix_buff[MIX_POINTS_NUM];
 #define MAX_SRC_NUMBER      3
 s16 audio_src_hw_filt[24 * 2 * MAX_SRC_NUMBER];
 
+#define A2DP_TO_PCM_DEVICE_FORMAT           0//48000
 #define A2DP_FLUENT_STREAM_MODE             1//流畅模式
 #define A2DP_FLUENT_DETECT_INTERVAL         100000//ms 流畅播放延时检测时长
 #if A2DP_FLUENT_STREAM_MODE
-#define A2DP_MAX_PENDING_TIME               80
+#define A2DP_MAX_PENDING_TIME               120
 #else
 #define A2DP_MAX_PENDING_TIME               40
 #endif
@@ -341,6 +264,7 @@ s16 audio_src_hw_filt[24 * 2 * MAX_SRC_NUMBER];
 #define A2DP_STREAM_OVERRUN                 2
 #define A2DP_STREAM_MISSED                  3
 #define A2DP_STREAM_DECODE_ERR              4
+#define A2DP_STREAM_LOW_UNDERRUN            5
 
 /*OS_SEM dac_sem;*/
 static u16 dac_idle_delay_max = 10000;
@@ -386,10 +310,6 @@ void audio_fade_in_fade_out(u8 left_gain, u8 right_gain);
 
 void set_source_sample_rate(u16 sample_rate);
 u8 bt_audio_is_running(void);
-#if AUDIO_SURROUND_CONFIG
-void surround_switch_test(void *p);
-void audio_surround_voice(struct a2dp_dec_hdl *dec);
-#endif
 void audio_resume_all_decoder(void)
 {
     audio_decoder_resume_all(&decode_task);
@@ -458,6 +378,14 @@ int audio_decoder_wakeup_select(u8 source)
         }
         local_irq_enable();
     } else if (source == 1) {
+#if TCFG_AUDIO_OUTPUT_IIS
+        /*唤醒源为输出目标中断*/
+        if (!audio_iis_is_working()) {
+            return audio_decoder_wakeup_select(0);
+        }
+
+        int err = audio_iis_irq_resume_decoder(a2dp_low_latency ? 2 : AUDIO_DECODE_TASK_WAKEUP_TIME, NULL, audio_decoder_wakeup_timer);
+#else
         /*唤醒源为输出目标中断*/
         if (!audio_dac_is_working(&dac_hdl)) {
             return audio_decoder_wakeup_select(0);
@@ -466,6 +394,7 @@ int audio_decoder_wakeup_select(u8 source)
         /*int err = audio_dac_set_irq_time(&dac_hdl, a2dp_low_latency ? 2 : AUDIO_DECODE_TASK_WAKEUP_TIME);*/
         int err = audio_dac_irq_enable(&dac_hdl, a2dp_low_latency ? 2 : AUDIO_DECODE_TASK_WAKEUP_TIME,
                                        NULL, audio_decoder_wakeup_timer);
+#endif
         if (err) {
             return audio_decoder_wakeup_select(0);
         }
@@ -516,93 +445,6 @@ static void audio_irq_handler()
         }
     }
 }
-
-#if A2DP_EQ_SUPPORT_32BIT
-void a2dp_eq_32bit_out(struct a2dp_dec_hdl *dec)
-{
-    int wlen = 0;
-    wlen = audio_mixer_ch_write(&dec->mix_ch, &dec->eq_out_buf[dec->eq_out_points], (dec->eq_out_total - dec->eq_out_points) * 2);
-    dec->eq_out_points += wlen / 2;
-}
-#endif /*A2DP_EQ_SUPPORT_32BIT*/
-
-#if TCFG_BT_MUSIC_EQ_ENABLE
-static int a2dp_eq_output(void *priv,  void *buf, u32 len)
-{
-    int wlen = 0;
-    int rlen = len;
-    s16 *data = (s16 *)buf;
-    struct a2dp_dec_hdl *dec = priv;
-
-#if A2DP_EQ_SUPPORT_ASYNC
-    if (!dec->eq_remain) {
-
-#if A2DP_EQ_SUPPORT_32BIT
-        if (dec->eq_out_buf && (dec->eq_out_points < dec->eq_out_total)) {
-            a2dp_eq_32bit_out(dec);
-            if (dec->eq_out_points < dec->eq_out_total) {
-                return 0;
-            }
-        }
-#endif /*A2DP_EQ_SUPPORT_32BIT*/
-
-#if TCFG_BT_MUSIC_DRC_ENABLE
-
-        if (a2dp_drc) {
-            audio_drc_run(a2dp_drc, data, len);
-        }
-#endif
-
-#if A2DP_EQ_SUPPORT_32BIT
-        if ((!dec->eq_out_buf) || (dec->eq_out_buf_len < len / 2)) {
-            if (dec->eq_out_buf) {
-                free(dec->eq_out_buf);
-            }
-            dec->eq_out_buf_len = len / 2;
-            dec->eq_out_buf = malloc(dec->eq_out_buf_len);
-            ASSERT(dec->eq_out_buf);
-        }
-        s32 *idat = data;
-        s16 *odat = dec->eq_out_buf;
-        for (int i = 0; i < len / 4; i++) {
-            s32 outdat = *idat++;
-            if (outdat > 32767) {
-                outdat = 32767;
-            } else if (outdat < -32768) {
-                outdat = -32768;
-            }
-            *odat++ = outdat;
-        }
-        dec->eq_out_points = 0;
-        dec->eq_out_total = len / 4;
-
-        a2dp_eq_32bit_out(dec);
-        return len;
-#endif /*A2DP_EQ_SUPPORT_32BIT*/
-    }
-
-    /* printf("dec:0x%x, a2dp:0x%x ", dec, a2dp_dec); */
-    /* printf("data:0x%x, len:%d ", data, len); */
-#if 0
-    do {
-        /*wlen = audio_dac_write(&dac_hdl, data, len);*/
-        wlen = audio_mixer_ch_write(&dec->mix_ch, data, len);
-        if (!wlen) {
-            break;
-        }
-
-        data += (wlen >> 1);
-        len -= wlen;
-    } while (len);
-    return rlen - len;
-#else
-    return audio_mixer_ch_write(&dec->mix_ch, data, len);
-#endif
-#endif
-    return rlen;
-}
-#endif
-
 
 #if AUDIO_OUTPUT_AUTOMUTE
 
@@ -657,295 +499,15 @@ void mix_out_automute_close()
 }
 #endif  //#if AUDIO_OUTPUT_AUTOMUTE
 
-#if (defined(TCFG_AUDIO_OUT_EQ_ENABLE) && (TCFG_AUDIO_OUT_EQ_ENABLE != 0))
-
-#if AUDIO_OUT_EQ_USE_SPEC_NUM
-
-static struct eq_seg_info audio_out_eq_tab[AUDIO_OUT_EQ_USE_SPEC_NUM] = {
-    {0, EQ_IIR_TYPE_BAND_PASS, 125,   0 << 20, (int)(0.7f * (1 << 24))},
-    {1, EQ_IIR_TYPE_BAND_PASS, 12000, 0 << 20, (int)(0.3f * (1 << 24))},
-};
-#define AUDIO_EQ_FADE_EN  1
-#if AUDIO_EQ_FADE_EN
-typedef struct {
-    u16 tmr;
-    int cur_gain[AUDIO_OUT_EQ_USE_SPEC_NUM];
-    int use_gain[AUDIO_OUT_EQ_USE_SPEC_NUM];
-} _EQ_FADE_CFG;
-static _EQ_FADE_CFG eq_fade_cfg = {0};
-#endif
 
 
 
-
-
-static int audio_out_eq_get_filter_info(int sr, struct audio_eq_filter_info *info)
-{
-    if (!audio_out_effect) {
-        return -1;
-    }
-    local_irq_disable();
-    for (int i = 0; i < AUDIO_OUT_EQ_USE_SPEC_NUM; i++) {
-        eq_seg_design(&audio_out_eq_tab[i], sr, &audio_out_effect->EQ_Coeff_table[5 * i]);
-    }
-    local_irq_enable();
-
-    info->L_coeff = info->R_coeff = (void *)audio_out_effect->EQ_Coeff_table;
-    info->L_gain = info->R_gain = 0;
-    info->nsection = AUDIO_OUT_EQ_USE_SPEC_NUM;
-    return 0;
-}
-int audio_out_eq_spec_set_info(u8 idx, int freq, int gain)
-{
-    if (idx >= AUDIO_OUT_EQ_USE_SPEC_NUM) {
-        return false;
-    }
-    if (gain > 12) {
-        gain = 12;
-    }
-    if (gain < -12) {
-        gain = -12;
-    }
-    if (freq) {
-        audio_out_eq_tab[idx].freq = freq;
-    }
-    audio_out_eq_tab[idx].gain = gain << 20;
-
-    /* printf("audio out eq, idx:%d, freq:%d,%d, gain:%d,%d \n", idx, freq, audio_out_eq_tab[idx].freq, gain, audio_out_eq_tab[idx].gain); */
-
-#if !AUDIO_EQ_FADE_EN
-    local_irq_disable();
-    if (audio_out_effect && audio_out_effect->eq) {
-        audio_out_effect->eq->updata = 1;
-    }
-    local_irq_enable();
-#endif
-
-    return true;
-}
-
-#if AUDIO_EQ_FADE_EN
-
-int eq_fade_run(void *p)
-{
-    _EQ_FADE_CFG *fade_cfg = (_EQ_FADE_CFG *)p;
-
-    u8 design = 0;
-    if (fade_cfg->cur_gain[0] > fade_cfg->use_gain[0]) {
-        fade_cfg->cur_gain[0] -= 1;
-        if (fade_cfg->cur_gain[0] < fade_cfg->use_gain[0]) {
-            fade_cfg->cur_gain[0] = fade_cfg->use_gain[0];
-        }
-        design = 1;
-    } else if (fade_cfg->cur_gain[0] < fade_cfg->use_gain[0]) {
-        fade_cfg->cur_gain[0] += 1;
-        if (fade_cfg->cur_gain[0] > fade_cfg->use_gain[0]) {
-            fade_cfg->cur_gain[0] = fade_cfg->use_gain[0];
-        }
-        design = 1;
-    }
-
-    if (design) {
-        design = 0;
-        audio_out_eq_spec_set_info(0, 0, fade_cfg->cur_gain[0]);//低音
-        local_irq_disable();
-        if (audio_out_effect && audio_out_effect->eq) {
-            audio_out_effect->eq->updata = 1;
-        }
-        local_irq_enable();
-    }
-
-    if (fade_cfg->cur_gain[1] > fade_cfg->use_gain[1]) {
-        fade_cfg->cur_gain[1] -= 1;
-        if (fade_cfg->cur_gain[1] < fade_cfg->use_gain[1]) {
-            fade_cfg->cur_gain[1] = fade_cfg->use_gain[1];
-        }
-        design = 1;
-    } else if (fade_cfg->cur_gain[1] < fade_cfg->use_gain[1]) {
-        fade_cfg->cur_gain[1] += 1;
-        if (fade_cfg->cur_gain[1] > fade_cfg->use_gain[1]) {
-            fade_cfg->cur_gain[1] = fade_cfg->use_gain[1];
-        }
-        design = 1;
-    }
-
-    if (design) {
-        design = 0;
-        audio_out_eq_spec_set_info(1, 0, fade_cfg->cur_gain[1]);//高音
-
-        local_irq_disable();
-        if (audio_out_effect && audio_out_effect->eq) {
-            audio_out_effect->eq->updata = 1;
-        }
-        local_irq_enable();
-    }
-
-    return 0;
-}
-
-
-
-#endif
-
-
-int audio_out_eq_spec_set_gain(u8 idx, int gain)
-{
-    if (!idx) {
-        idx = 0;
-    } else {
-        idx = 1;
-    }
-
-#if AUDIO_EQ_FADE_EN
-    eq_fade_cfg.use_gain[idx] = gain;
-    if (eq_fade_cfg.tmr == 0) {
-        eq_fade_cfg.tmr = sys_hi_timer_add(&eq_fade_cfg, eq_fade_run, 20);
-    }
-#else
-    if (!idx) {
-        audio_out_eq_spec_set_info(0, 0, gain);//低音
-    } else {
-        audio_out_eq_spec_set_info(1, 0, gain);//高音
-    }
-#endif
-
-    return true;
-}
-
-#endif /*AUDIO_OUT_EQ_USE_SPEC_NUM*/
-
-
-static int mix_output_handler(struct audio_mixer *mixer, s16 *data, u16 len);
-static int audio_out_eq_output(void *priv, s16 *data, u32 len)
-{
-#if AUDIO_OUT_EQ_SUPPORT_ASYNC
-    if (!audio_out_effect->eq_async_remain) {
-    }
-    int wlen = mix_output_handler(priv, data, len);
-    if (wlen == len) {
-        audio_out_effect->eq_async_remain = 0;
-    } else {
-        audio_out_effect->eq_async_remain = 1;
-    }
-    return wlen;
-#endif
-    return len;
-}
-
-
-static void audio_out_effect_close(void)
-{
-    if (!audio_out_effect) {
-        return ;
-    }
-#if (defined(TCFG_AUDIO_OUT_EQ_ENABLE) && (TCFG_AUDIO_OUT_EQ_ENABLE != 0))
-
-#if AUDIO_EQ_FADE_EN
-    if (eq_fade_cfg.tmr) {
-        sys_hi_timer_del(eq_fade_cfg.tmr);
-        eq_fade_cfg.tmr = 0;
-    }
-#endif
-    if (audio_out_effect->eq) {
-        audio_eq_close(audio_out_effect->eq);
-        local_irq_disable();
-        free(audio_out_effect->eq);
-        audio_out_effect->eq = NULL;
-        local_irq_enable();
-    }
-#endif
-    local_irq_disable();
-    free(audio_out_effect);
-    audio_out_effect = NULL;
-    local_irq_enable();
-}
-
-static int audio_out_effect_stream_clear()
-{
-    if (!audio_out_effect) {
-        return 0;
-    }
-
-    if (audio_out_effect->eq) {
-#if AUDIO_OUT_EQ_SUPPORT_ASYNC
-        audio_eq_async_data_clear(audio_out_effect->eq);
-#endif
-    }
-
-    return 0;
-}
-
-static int audio_out_effect_open(void *priv, u16 sample_rate, u8 ch_num)
-{
-    audio_out_effect_close();
-
-    struct audio_out_effect_hdl *hdl = zalloc(sizeof(struct audio_out_effect_hdl));
-    if (!hdl) {
-        return false;
-    }
-#if (defined(TCFG_AUDIO_OUT_EQ_ENABLE) && (TCFG_AUDIO_OUT_EQ_ENABLE != 0))
-    hdl->eq = zalloc(sizeof(struct audio_eq) + sizeof(struct hw_eq_ch));
-    if (hdl->eq) {
-        hdl->eq->eq_ch = (struct hw_eq_ch *)((int)hdl->eq + sizeof(struct audio_eq));
-        struct audio_eq_param eq_param = {0};
-        eq_param.channels = ch_num;
-#if AUDIO_OUT_EQ_USE_SPEC_NUM
-        eq_param.max_nsection = AUDIO_OUT_EQ_USE_SPEC_NUM;
-        eq_param.cb = audio_out_eq_get_filter_info;
-#else
-        eq_param.online_en = 1;
-        eq_param.mode_en = 1;
-        eq_param.remain_en = 1;
-        eq_param.max_nsection = EQ_SECTION_MAX;
-        eq_param.cb = eq_get_filter_info;
-#endif
-
-#if AUDIO_OUT_EQ_SUPPORT_ASYNC
-        eq_param.no_wait = 1;//异步
-#endif
-        eq_param.eq_name = 0;
-        audio_eq_open(hdl->eq, &eq_param);
-        audio_eq_set_samplerate(hdl->eq, sample_rate);
-        audio_eq_set_output_handle(hdl->eq, audio_out_eq_output, priv);
-        audio_eq_start(hdl->eq);
-    }
-#endif
-    audio_out_effect = hdl;
-    return true;
-}
-
-
-static int mix_output_effect_handler(struct audio_mixer *mixer, s16 *data, u16 len)
-{
-    if (!audio_out_effect) {
-        return mix_output_handler(mixer, data, len);
-    }
-#if AUDIO_OUT_EQ_SUPPORT_ASYNC
-    if (audio_out_effect->eq) {
-        return audio_eq_run(audio_out_effect->eq, data, len);
-    }
-#endif /*AUDIO_OUT_EQ_SUPPORT_ASYNC*/
-
-
-    if (!audio_out_effect->remain) {
-#if (defined(TCFG_AUDIO_OUT_EQ_ENABLE) && (TCFG_AUDIO_OUT_EQ_ENABLE != 0))
-        if (audio_out_effect->eq) {
-            audio_eq_run(audio_out_effect->eq, data, len);
-        }
-#endif
-    }
-    int wlen = mix_output_handler(mixer, data, len);
-    if (wlen == len) {
-        audio_out_effect->remain = 0;
-    } else {
-        audio_out_effect->remain = 1;
-    }
-    return wlen;
-}
-#endif
 
 extern void audio_adc_mic_demo(u8 mic_idx, u8 gain, u8 mic_2_dac);
 extern void dac_analog_power_control(u8 en);
+extern void audio_dac_output_enable(struct audio_dac_hdl *dac);
+extern void audio_dac_output_disable(struct audio_dac_hdl *dac);
+
 u8 audio_fast_mode = 0;
 void audio_fast_mode_test()
 {
@@ -956,9 +518,6 @@ void audio_fast_mode_test()
     audio_adc_mic_demo(AUDIO_ADC_MIC_CH, 10, 1);
 
 }
-extern void audio_dac_output_enable(struct audio_dac_hdl *dac);
-extern void audio_dac_output_disable(struct audio_dac_hdl *dac);
-
 u8 dac_power_off_flag = 1;
 u8 is_dac_power_off()
 {
@@ -990,7 +549,6 @@ void dac_analog_power_control(u8 en)
         dac_power_off_flag = 1;
     }
 #endif
-
 }
 
 
@@ -998,6 +556,7 @@ static void mixer_event_handler(struct audio_mixer *mixer, int event)
 {
     switch (event) {
     case MIXER_EVENT_CH_OPEN:
+        printf("** MIXER_EVENT_CH_OPEN **\n");
         if (audio_mixer_get_start_ch_num(mixer) == 1) {
 #if AUDIO_OUTPUT_AUTOMUTE
             audio_energy_detect_sample_rate_update(mix_out_automute_hdl, audio_mixer_get_sample_rate(mixer));
@@ -1023,16 +582,8 @@ static void mixer_event_handler(struct audio_mixer *mixer, int event)
                                                  (void (*)(void *, int))audio_mixer_position_correct);
 #endif
 #if AUDIO_OUT_EFFECT_ENABLE
-#if TCFG_AUDIO_OUTPUT_IIS
-            u8 ch_num = 2;
-#elif TCFG_APP_FM_EMITTER_EN
-            u8 ch_num = 2;
-#else
-            u8 ch_num = AUDIO_CH_LR ? 2 : 1;
-#endif
-
             if (!audio_out_effect_dis) {
-                audio_out_effect_open(mixer, audio_mixer_get_sample_rate(mixer), ch_num);
+                audio_out_effect_open(mixer, audio_mixer_get_sample_rate(mixer));
             }
 #endif
 
@@ -1068,6 +619,8 @@ static int mix_probe_handler(struct audio_mixer *mixer)
     return 0;
 }
 
+#define IIS_MONO_TO_DUAL_POINTS  64
+static inline void audio_pcm_mono_to_dual(s16 *dual_pcm, s16 *mono_pcm, int points);
 static int mix_output_handler(struct audio_mixer *mixer, s16 *data, u16 len)
 {
     int rlen = len;
@@ -1081,31 +634,66 @@ static int mix_output_handler(struct audio_mixer *mixer, s16 *data, u16 len)
 #endif  //#if AUDIO_OUTPUT_AUTOMUTE
 
 #if TCFG_AUDIO_OUTPUT_IIS
-    wlen = audio_iis_output_write(data, len);
-    if (wlen == len) {
-        audio_decoder_resume_all(&decode_task);
+    u8 dac_connect_mode = audio_dac_get_channel(&dac_hdl);
+    if (dac_connect_mode == DAC_OUTPUT_LR) {
+        wlen = audio_iis_output_write(data, len);
+    } else {
+        s16 *mono_data = (s16 *)data;
+        s16 point_num = 0;
+        u16 remain_points = (len >> 1);
+        s16 two_ch_data[IIS_MONO_TO_DUAL_POINTS * 2];
+
+        do {
+            point_num = IIS_MONO_TO_DUAL_POINTS;
+            if (point_num >= remain_points) {
+                point_num = remain_points;
+            }
+            audio_pcm_mono_to_dual(two_ch_data, mono_data, point_num);
+            int tmp_len = audio_iis_output_write(two_ch_data, point_num << 2);
+            wlen += tmp_len;
+            remain_points -= (tmp_len >> 2);
+            if (tmp_len < (point_num << 2)) {
+                break;
+            }
+            mono_data += point_num;
+        } while (remain_points);
+        wlen = wlen >> 1;
     }
+
 #elif TCFG_APP_FM_EMITTER_EN
     fm_emitter_cbuf_write((u8 *)data, len);
 #else
-    /*
-    do {
-        wlen = audio_dac_write(&dac_hdl, data, len);
-        if (wlen < len) {
-            int err = os_sem_pend(&dac_sem, 6);
-            if (err) {
-                break;
-            }
-        }
-        len -= wlen;
-        data += wlen / 2;
-    } while (len);
-    */
     wlen = audio_dac_write(&dac_hdl, data, len);
 #endif
 
     return wlen;
 }
+
+#if AUDIO_OUT_EFFECT_ENABLE
+static int mix_output_effect_handler(struct audio_mixer *mixer, s16 *data, u16 len)
+{
+    if (!audio_out_effect) {
+        return mix_output_handler(mixer, data, len);
+    }
+    if (audio_out_effect && audio_out_effect->async) {
+        return eq_drc_run(audio_out_effect, data, len);
+    }
+
+
+    if (!audio_out_effect->remain) {
+        if (audio_out_effect && !audio_out_effect->async) {
+            eq_drc_run(audio_out_effect, data, len);
+        }
+    }
+    int wlen = mix_output_handler(mixer, data, len);
+    if (wlen == len) {
+        audio_out_effect->remain = 0;
+    } else {
+        audio_out_effect->remain = 1;
+    }
+    return wlen;
+}
+#endif//AUDIO_OUT_EFFECT_ENABLE
 
 static const struct audio_mix_handler mix_handler  = {
     .mix_probe  = mix_probe_handler,
@@ -1114,7 +702,7 @@ static const struct audio_mix_handler mix_handler  = {
     .mix_output = mix_output_effect_handler,
 #else
     .mix_output = mix_output_handler,
-#endif
+#endif//AUDIO_OUT_EFFECT_ENABLE
 };
 
 
@@ -1126,12 +714,20 @@ void audio_mix_ch_event_handler(void *priv, int event)
             u32 *params = (u32 *)priv;
             struct audio_mixer_ch *ch = (struct audio_mixer_ch *)params[0];
             u32 base_time = params[2];
+#if defined(TCFG_AUDIO_OUTPUT_IIS) && TCFG_AUDIO_OUTPUT_IIS
+            audio_iis_add_syncts_handle((void *)params[1]);
+#else
             audio_dac_add_syncts_handle(&dac_hdl, (void *)params[1]);
+#endif
             u32 current_time = (bt_audio_sync_lat_time() * 625 * TIME_US_FACTOR);
             u32 time_diff = ((base_time - current_time) & 0xffffffff) / TIME_US_FACTOR;
-            /*printf("-----base time : %d, current_time : %d------\n", base_time, current_time);*/
+            /*printf("-----base time : %u, current_time : %u------\n", base_time, current_time);*/
             if (time_diff < 500000) {
-                int slience_frames = (u64)time_diff * audio_mixer_get_sample_rate(&mixer) / 1000000 - audio_dac_buffered_frames(&dac_hdl);
+                int buf_frame = audio_dac_buffered_frames(&dac_hdl);
+#if defined(TCFG_AUDIO_OUTPUT_IIS) && TCFG_AUDIO_OUTPUT_IIS
+                buf_frame = audio_iis_buffered_frames();
+#endif
+                int slience_frames = (u64)time_diff * audio_mixer_get_sample_rate(&mixer) / 1000000 - buf_frame;
                 if (slience_frames < 0) {
                     slience_frames = 0;
                 }
@@ -1144,7 +740,11 @@ void audio_mix_ch_event_handler(void *priv, int event)
     case MIXER_EVENT_CH_CLOSE:
         if (priv) {
             u32 *params = (u32 *)priv;
+#if defined(TCFG_AUDIO_OUTPUT_IIS) && TCFG_AUDIO_OUTPUT_IIS
+            audio_iis_remove_syncts_handle((void *)params[1]);
+#else
             audio_dac_remove_syncts_handle(&dac_hdl, (void *)params[1]);
+#endif
         }
         break;
     }
@@ -1197,6 +797,7 @@ void __a2dp_drop_frame(void *p)
     int len;
     u8 *frame;
 
+#if 0
     int num = a2dp_media_get_packet_num();
     if (num > 1) {
         for (int i = 0; i < num; i++) {
@@ -1208,6 +809,17 @@ void __a2dp_drop_frame(void *p)
             a2dp_media_free_packet(frame);
         }
     }
+#else
+    while (1) {
+        len = a2dp_media_try_get_packet(&frame);
+        if (len <= 0) {
+            break;
+        }
+        a2dp_media_free_packet(frame);
+    }
+
+#endif
+
 }
 
 static void __a2dp_clean_frame_by_number(struct a2dp_dec_hdl *dec, u16 num)
@@ -1277,11 +889,19 @@ int a2dp_decoder_start(void)
 
     return 0;
 }
+u8 get_a2dp_drop_frame_flag()
+{
+    if (a2dp_dec) {
+        return a2dp_dec->timer;
+    }
+    return 0;
+}
 
 void a2dp_drop_frame_start()
 {
     if (a2dp_dec && (a2dp_dec->timer == 0)) {
         a2dp_dec->timer = sys_timer_add(NULL, __a2dp_drop_frame, 50);
+        a2dp_tws_audio_conn_offline();
     }
 }
 
@@ -1289,6 +909,7 @@ void a2dp_drop_frame_stop()
 {
     if (a2dp_dec && a2dp_dec->timer) {
         sys_timer_del(a2dp_dec->timer);
+        a2dp_tws_audio_conn_delete();
         a2dp_dec->timer = 0;
     }
 }
@@ -1326,37 +947,26 @@ static void a2dp_dec_set_output_channel(struct a2dp_dec_hdl *dec)
     }
 #endif
 
-#if TCFG_AUDIO_OUTPUT_IIS
-    channel = AUDIO_CH_LR;
-#elif TCFG_APP_FM_EMITTER_EN
+#if TCFG_APP_FM_EMITTER_EN
     channel = AUDIO_CH_LR;
 #endif
     if (channel != dec->channel) {
         printf("set_channel: %d\n", channel);
         audio_decoder_set_output_channel(&dec->decoder, channel);
         dec->channel = channel;
-#if TCFG_BT_MUSIC_EQ_ENABLE
-        if (a2dp_eq) {
-            audio_eq_set_channel(a2dp_eq, dec->ch);
+#if TCFG_EQ_ENABLE&&TCFG_BT_MUSIC_EQ_ENABLE
+        if (dec->eq_drc && dec->eq_drc->eq) {
+            audio_eq_set_channel(dec->eq_drc->eq, dec->ch);
         }
-#endif
+#endif//TCFG_BT_MUSIC_EQ_ENABLE
 
         /* #if TCFG_USER_TWS_ENABLE */
 #if AUDIO_SURROUND_CONFIG
-        u8 nch = EFFECT_CH_L;
-        if (channel == AUDIO_CH_L) {
-            nch = EFFECT_CH_L;
-        } else if (channel == AUDIO_CH_R) {
-            nch = EFFECT_CH_R;
-        } else if (channel == AUDIO_CH_LR) {
-            nch = 2;
+        if (dec->sur) {
+            audio_surround_set_ch(dec->sur, channel);
         }
-
-        if (dec->surround) {
-            audio_surround_switch_nch(dec->surround, nch);
-        }
-#endif
-        /* #endif */
+#endif//AUDIO_SURROUND_CONFIG
+        /* #endif//TCFG_USER_TWS_ENABLE */
 
     }
 }
@@ -1372,14 +982,10 @@ static int a2dp_decoder_set_timestamp(struct a2dp_dec_hdl *dec, u16 seqn)
     timestamp = a2dp_audio_update_timestamp(dec->ts_handle, seqn, audio_syncts_get_dts(dec->syncts));
     if (!dec->ts_start) {
         dec->ts_start = 1;
-        /*dec->mix_ch_event_params[2] = timestamp;*/
+        dec->mix_ch_event_params[2] = timestamp;
     } else {
-        int sample_rate = a2dp_audio_sample_rate(dec->ts_handle);
-        if (dec->sample_rate != sample_rate) {
-
-        }
-        audio_syncts_update_sample_rate(dec->syncts, a2dp_audio_sample_rate(dec->ts_handle));
         audio_syncts_next_pts(dec->syncts, timestamp);
+        audio_syncts_update_sample_rate(dec->syncts, a2dp_audio_sample_rate(dec->ts_handle));;
     }
     dec->timestamp = timestamp;
     /*printf("timestamp : %d, %d\n", seqn, timestamp / TIME_US_FACTOR / 625);*/
@@ -1389,16 +995,27 @@ static int a2dp_decoder_set_timestamp(struct a2dp_dec_hdl *dec, u16 seqn)
 
 static bool a2dp_audio_is_underrun(struct a2dp_dec_hdl *dec)
 {
-    if (a2dp_low_latency) {
-        if (audio_dac_data_time(&dac_hdl) < 12) {
-            return true;
-        }
-    } else {
-        if (audio_dac_data_time(&dac_hdl) < 20) {
-            return true;
-        }
+#if AUDIO_CODEC_SUPPORT_SYNC
+    if (dec->ts_start != 2) {
+        return false;
     }
+#endif
+    int underrun_time = a2dp_low_latency ? 1 : 20;
+#if defined(TCFG_AUDIO_OUTPUT_IIS) && TCFG_AUDIO_OUTPUT_IIS
+    if (audio_iis_data_time() < underrun_time) {
+        return true;
+    }
+#else
+    if (audio_dac_data_time(&dac_hdl) < underrun_time) {
+        return true;
+    }
+#endif
     return false;
+}
+
+static bool a2dp_bt_rx_overrun(void)
+{
+    return a2dp_media_get_remain_buffer_size() < 768 ? true : false;
 }
 
 static void a2dp_decoder_stream_free(struct a2dp_dec_hdl *dec, void *packet)
@@ -1421,6 +1038,30 @@ static void a2dp_decoder_stream_free(struct a2dp_dec_hdl *dec, void *packet)
 static void a2dp_stream_underrun_feedback(void *priv);
 static int a2dp_audio_delay_time(struct a2dp_dec_hdl *dec);
 #define a2dp_seqn_before(a, b)  ((a < b && (u16)(b - a) < 1000) || (a > b && (u16)(a - b) > 1000))
+static int a2dp_buffered_stream_sample_rate(struct a2dp_dec_hdl *dec, u8 *from_packet, u16 *end_seqn)
+{
+    u8 *packet = from_packet;
+    int len = 0;
+    int sample_rate = 0;
+
+    if (!dec->sample_detect) {
+        return dec->sample_rate;
+    }
+
+    a2dp_frame_sample_detect_start(dec->sample_detect, a2dp_media_dump_rx_time(packet));
+    while (1) {
+        packet = a2dp_media_fetch_packet(&len, packet);
+        if (!packet) {
+            break;
+        }
+        sample_rate = a2dp_frame_sample_detect(dec->sample_detect, packet, len, a2dp_media_dump_rx_time(packet));
+        *end_seqn = RB16(packet + 2);
+    }
+
+    /*printf("A2DP sample detect : %d - %d\n", sample_rate, dec->sample_rate);*/
+    return sample_rate;
+}
+
 static int a2dp_stream_overrun_handler(struct a2dp_dec_hdl *dec, u8 **frame, int *len)
 {
     u8 *packet = NULL;
@@ -1428,32 +1069,48 @@ static int a2dp_stream_overrun_handler(struct a2dp_dec_hdl *dec, u8 **frame, int
 
     int msecs = 0;
     int overrun = 0;
+    int sample_rate = 0;
+    u16 from_seqn = RB16(dec->repair_pkt + 2);
+    u16 seqn = from_seqn;
+    u16 end_seqn = 0;
+    overrun = 1;
     while (1) {
         msecs = a2dp_audio_delay_time(dec);
-        if (msecs < dec->delay_time) {
+        if (msecs < (CONFIG_A2DP_DELAY_TIME + 50) && !a2dp_bt_rx_overrun()) {
             break;
         }
+        overrun = 0;
         rlen = a2dp_media_try_get_packet(&packet);
         if (rlen <= 0) {
             break;
         }
-        overrun = 1;
+
+        sample_rate = a2dp_buffered_stream_sample_rate(dec, dec->repair_pkt, &end_seqn);
         a2dp_decoder_stream_free(dec, NULL);
-        /*putchar('o');*/
         dec->repair_pkt = packet;
         dec->repair_pkt_len = rlen;
-        u16 seqn = RB16(packet + 2);
-        /*printf("drop %d, %d\n", seqn, dec->overrun_seqn);*/
+        seqn = RB16(packet + 2);
         if (!a2dp_seqn_before(seqn, dec->overrun_seqn)) {
             *frame = packet;
             *len = rlen;
-            dec->repair_frames = 0;
+            /*printf("------> end frame : %d\n", dec->overrun_seqn);*/
             return 1;
         }
+
+        if (/*sample_rate < (dec->sample_rate * 4 / 5) || */sample_rate > (dec->sample_rate * 4 / 3)) {
+            if (a2dp_seqn_before(dec->overrun_seqn, end_seqn)) {
+                dec->overrun_seqn = end_seqn;
+            }
+            continue;
+        }
     }
-    dec->repair_frames++;
-    dec->overrun_seqn += (dec->repair_frames % 2);
-    /*putchar('O');*/
+    if (overrun) {
+        /*putchar('+');*/
+        /* dec->overrun_seqn++; */
+    } else {
+        /*putchar('-');*/
+    }
+
     *frame = dec->repair_pkt;
     *len = dec->repair_pkt_len;
     return 0;
@@ -1464,7 +1121,7 @@ static int a2dp_stream_missed_handler(struct a2dp_dec_hdl *dec, u8 **frame, int 
     int msecs = a2dp_audio_delay_time(dec);
     *frame = dec->repair_pkt;
     *len = dec->repair_pkt_len;
-    if (msecs >= dec->delay_time || --dec->missed_num == 0) {
+    if ((msecs >= (dec->delay_time + 50) || a2dp_bt_rx_overrun()) || --dec->missed_num == 0) {
         /*putchar('M');*/
         return 1;
     }
@@ -1481,8 +1138,11 @@ static int a2dp_stream_underrun_handler(struct a2dp_dec_hdl *dec, u8 **packet)
     }
     putchar('X');
     if (dec->stream_error != A2DP_STREAM_UNDERRUN) {
-        a2dp_stream_underrun_feedback(dec);
-        dec->stream_error = A2DP_STREAM_UNDERRUN;
+        if (!dec->stream_error) {
+            a2dp_stream_underrun_feedback(dec);
+        }
+        dec->stream_error = a2dp_low_latency ? A2DP_STREAM_LOW_UNDERRUN : A2DP_STREAM_UNDERRUN;
+        dec->repair = a2dp_low_latency ? 0 : 1;
     }
     *packet = dec->repair_pkt;
     dec->repair_frames++;
@@ -1594,6 +1254,10 @@ try_again:
 #endif
         dec->stream_error = 0;
     }
+
+    if (dec->slience_frames) {
+        dec->slience_frames--;
+    }
     a2dp_decoder_set_timestamp(dec, dec->seqn);
 
     return len;
@@ -1604,6 +1268,9 @@ static void a2dp_dec_put_frame(struct audio_decoder *decoder, u8 *frame)
     struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
 
     if (frame) {
+        if (!a2dp_media_channel_exist() || app_var.goto_poweroff_flag) {
+            a2dp_decoder_stream_free(dec, (void *)(frame - dec->header_len));
+        }
         /*a2dp_media_free_packet((void *)(frame - dec->header_len));*/
     }
 }
@@ -1669,7 +1336,12 @@ static int a2dp_audio_delay_time(struct a2dp_dec_hdl *dec)
     if (dec->syncts) {
         msecs += sound_buffered_between_syncts_and_device(dec->syncts, 0);
     }
+
+#if defined(TCFG_AUDIO_OUTPUT_IIS) && TCFG_AUDIO_OUTPUT_IIS
+    msecs += audio_iis_data_time();
+#else
     msecs += audio_dac_data_time(&dac_hdl);
+#endif
 
     return msecs;
 }
@@ -1688,7 +1360,7 @@ static int a2dp_decoder_stream_delay_update(struct audio_decoder *decoder)
 
     if (dec->sync_step == 2) {
         int distance_time = msecs - a2dp_delay_time;
-        if (a2dp_media_get_remain_buffer_size() < 768 && distance_time < 50) {
+        if (a2dp_bt_rx_overrun() && distance_time < 50) {
             distance_time = 50;
         }
 
@@ -1726,12 +1398,6 @@ static int a2dp_decoder_audio_sync_handler(struct audio_decoder *decoder)
         return -EAGAIN;
     }
 
-#if TCFG_USER_TWS_ENABLE
-    if (tws_network_audio_was_started()) {
-        /*a2dp播放中副机加入，声音复位500ms*/
-        tws_network_local_audio_start();
-    }
-#endif
     return 0;
 }
 
@@ -1795,6 +1461,19 @@ static void a2dp_stream_stability_detect(void *priv)
     }
 }
 
+#if AUDIO_CODEC_SUPPORT_SYNC
+static void a2dp_decoder_update_base_time(struct a2dp_dec_hdl *dec)
+{
+    int distance_time = a2dp_low_latency ? a2dp_delay_time : (a2dp_delay_time - a2dp_media_get_remain_play_time(1));
+    if (!a2dp_low_latency) {
+        distance_time = a2dp_delay_time;
+    } else if (distance_time < 20) {
+        distance_time = 20;
+    }
+    dec->base_time = bt_audio_sync_lat_time() + msecs_to_bt_time(distance_time);
+}
+
+#endif
 static int a2dp_decoder_stream_is_available(struct a2dp_dec_hdl *dec)
 {
     int err = 0;
@@ -1814,12 +1493,21 @@ static int a2dp_decoder_stream_is_available(struct a2dp_dec_hdl *dec)
 
     dec->seqn = RB16(packet + 2);
     if (dec->ts_handle) {
-        if (!a2dp_audio_timestamp_is_available(dec->ts_handle, dec->seqn, 0, &drop)) {
+#if TCFG_USER_TWS_ENABLE
+        if (!tws_network_audio_was_started() && !a2dp_audio_timestamp_is_available(dec->ts_handle, dec->seqn, 0, &drop)) {
             if (drop) {
-                a2dp_media_free_packet(packet);
+                local_irq_disable();
+                u8 *check_packet = (u8 *)a2dp_media_fetch_packet(&len, NULL);
+                if (check_packet && RB16(check_packet + 2) == dec->seqn) {
+                    a2dp_media_free_packet(packet);
+                }
+                local_irq_enable();
+                a2dp_decoder_update_base_time(dec);
+                a2dp_audio_set_base_time(dec->ts_handle, dec->base_time);
             }
             return -EINVAL;
         }
+#endif
     }
     dec->sync_step = 2;
 #endif
@@ -1860,28 +1548,7 @@ void a2dp_digital_vol_set(u8 vol)
 }
 #endif
 
-static int a2dp_decoder_eq_drc_filter(void *priv, void *data, int len)
-{
-#if TCFG_BT_MUSIC_EQ_ENABLE
-#if A2DP_EQ_SUPPORT_ASYNC
-    if (a2dp_eq) {
-        int eqlen = 0;
-#if AUDIO_CODEC_SUPPORT_SYNC
-        if (len > sizeof(dac_sync_buff)) {
-            /*大于异步SYNC的buf按SYNC的buffer大小做异步eq，防止异步EQ存入过多延时*/
-            eqlen = audio_eq_run(a2dp_eq, data, sizeof(dac_sync_buff));
-        } else {
-            eqlen = audio_eq_run(a2dp_eq, data, len);
-        }
-#else
-        eqlen = audio_eq_run(a2dp_eq, data, len);
-#endif
-        return eqlen;
-    }
-#endif
-#endif
-    return len;
-}
+
 
 static int a2dp_output_after_syncts_filter(void *priv, void *data, int len)
 {
@@ -1889,25 +1556,32 @@ static int a2dp_output_after_syncts_filter(void *priv, void *data, int len)
     int drop_len = 0;
     struct a2dp_dec_hdl *dec = (struct a2dp_dec_hdl *)priv;
 
+#if TCFG_EQ_ENABLE&&TCFG_BT_MUSIC_EQ_ENABLE
+    if (dec->eq_drc && dec->eq_drc->async) {
+        return eq_drc_run(dec->eq_drc, data, len);//异步eq
+    }
+#endif//TCFG_BT_MUSIC_EQ_ENABLE
+
+    return audio_mixer_ch_write(&dec->mix_ch, data, len);
+}
+
+static void a2dp_output_before_syncts_handler(struct a2dp_dec_hdl *dec, void *data, int len)
+{
 #if AUDIO_CODEC_SUPPORT_SYNC
     if (dec->ts_start == 1) {
         u32 timestamp = dec->timestamp;
-        u32 current_time = (bt_audio_sync_lat_time() + 20000 / 625) * 625 * TIME_US_FACTOR;
+        u32 current_time = ((bt_audio_sync_lat_time() + (30000 / 625)) & 0x7ffffff) * 625 * TIME_US_FACTOR;
 #define time_after_timestamp(t1, t2) \
-        ((t1 > t2 && ((t1 - t2) < (1000000L * TIME_US_FACTOR))) || (t1 < t2 && ((t2 - t1) > (1000000L * TIME_US_FACTOR))))
-        if (time_after_timestamp(current_time, timestamp)) {
-            sound_pcm_update_frame_num(dec->syncts, len / 2 / dec->ch);
-            return len;
+        ((t1 > t2 && ((t1 - t2) < (10000000L * TIME_US_FACTOR))) || (t1 < t2 && ((t2 - t1) > (10000000L * TIME_US_FACTOR))))
+        if (!time_after_timestamp(timestamp, current_time)) {
+            audio_syncts_resample_suspend(dec->syncts);
+        } else {
+            audio_syncts_resample_resume(dec->syncts);
+            dec->mix_ch_event_params[2] = timestamp;
+            dec->ts_start = 2;
         }
-        dec->mix_ch_event_params[2] = timestamp;
-        dec->ts_start = 2;
     }
 #endif
-
-#if TCFG_BT_MUSIC_EQ_ENABLE
-    return a2dp_decoder_eq_drc_filter(dec, data, len);
-#endif
-    return audio_mixer_ch_write(&dec->mix_ch, data, len);
 }
 
 static void audio_filter_resume_decoder(void *priv)
@@ -1917,42 +1591,83 @@ static void audio_filter_resume_decoder(void *priv)
     audio_decoder_resume(decoder);
 }
 
+static int a2dp_decoder_slience_plc_filter(struct a2dp_dec_hdl *dec, void *data, int len)
+{
+    if (len == 0) {
+        a2dp_decoder_stream_free(dec, NULL);
+        if (!dec->stream_error) {
+            dec->stream_error = A2DP_STREAM_DECODE_ERR;
+            dec->repair = 1;
+        }
+        return 0;
+    }
+    if (dec->stream_error) {
+        memset(data, 0x0, len);
+    }
+#if TCFG_USER_TWS_ENABLE
+    u8 tws_pairing = 0;
+    if (dec->preempt || tws_network_audio_was_started()) {
+        /*a2dp播放中副机加入，声音淡入进去*/
+        tws_network_local_audio_start();
+        dec->preempt = 0;
+        tws_pairing = 1;
+        memset(data, 0x0, len);
+        dec->slience_frames = 30;
+    }
+#endif
+#if A2DP_AUDIO_PLC_ENABLE
+    if (dec->plc_ops) {
+        if (dec->slience_frames) {
+            dec->plc_ops->run(dec->plc_mem, data, data, len >> 1, 2);
+        } else if (dec->stream_error) {
+            dec->plc_ops->run(dec->plc_mem, data, data, len >> 1, dec->repair ? 1 : 2);
+            dec->repair = 0;
+        } else {
+            dec->plc_ops->run(dec->plc_mem, data, data, len >> 1, 0);
+        }
+    }
+#endif
+    return len;
+}
+
 static int a2dp_dec_output_handler(struct audio_decoder *decoder, s16 *data, int len, void *priv)
 {
     int wlen = 0;
     struct a2dp_dec_hdl *dec = container_of(decoder, struct a2dp_dec_hdl, decoder);
 
     if (!dec->remain) {
-        if (len == 0) {
-            a2dp_decoder_stream_free(dec, NULL);
-            if (!dec->stream_error) {
-                dec->stream_error = A2DP_STREAM_DECODE_ERR;
-            }
-            return 0;
+        wlen = a2dp_decoder_slience_plc_filter(dec, data, len);
+        if (wlen < len) {
+            return wlen;
         }
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
         audio_digital_vol_run(dec->dvol, data, len);
 #endif
 
+#if TCFG_DIG_PHASE_INVERTER_EN
+        digital_phase_inverter_s16(data, len);
+#endif/*TCFG_DIG_PHASE_INVERTER_EN*/
+
 #if AUDIO_SURROUND_CONFIG
-        if (dec->surround) {
-            audio_surround_run(dec->surround, data, len);
+        if (dec->sur && dec->sur->surround) {
+            audio_surround_run(dec->sur->surround, data, len);
         }
-#endif
+#endif/*AUDIO_SURROUND_CONFIG*/
 
 #if AUDIO_VBASS_CONFIG
         if (dec->vbass) {
             audio_vbass_run(dec->vbass, data, len);
         }
-#endif
-        if (dec->stream_error) {
-            memset(data, 0x0, len);
+#endif/*AUDIO_VBASS_CONFIG*/
+
+#if TCFG_EQ_ENABLE&&TCFG_BT_MUSIC_EQ_ENABLE
+        if (dec->eq_drc && !dec->eq_drc->async) {
+            eq_drc_run(dec->eq_drc, data, len);//同步eq
         }
-#if A2DP_AUDIO_PLC_ENABLE
-        if (dec->plc_ops) {
-            dec->plc_ops->run(dec->plc_mem, data, data, len >> 1, dec->stream_error ? 2 : 0);
-        }
-#endif
+#endif//TCFG_BT_MUSIC_EQ_ENABLE
+
+
+        a2dp_output_before_syncts_handler(dec, data, len);
     }
 #if AUDIO_CODEC_SUPPORT_SYNC
     if (dec->syncts) {
@@ -1988,8 +1703,10 @@ static void a2dp_dec_release()
     audio_decoder_task_del_wait(&decode_task, &a2dp_dec->wait);
     a2dp_drop_frame_stop();
 
+    local_irq_disable();
     free(a2dp_dec);
     a2dp_dec = NULL;
+    local_irq_enable();
 }
 
 static void a2dp_dec_event_handler(struct audio_decoder *decoder, int argc, int *argv)
@@ -2036,128 +1753,40 @@ static void a2dp_decoder_delay_time_setup(struct a2dp_dec_hdl *dec)
     dec->detect_timer = sys_timer_add((void *)dec, a2dp_stream_stability_detect, A2DP_FLUENT_DETECT_INTERVAL);
 }
 
-static void a2dp_decoder_eq_filter_setup(struct a2dp_dec_hdl *dec, struct audio_fmt *fmt)
-{
-#if TCFG_EQ_ENABLE
-#if TCFG_BT_MUSIC_EQ_ENABLE
-    a2dp_eq = zalloc(sizeof(struct audio_eq) + sizeof(struct hw_eq_ch));
-    if (a2dp_eq) {
-        a2dp_eq->eq_ch = (struct hw_eq_ch *)((int)a2dp_eq + sizeof(struct audio_eq));
-        struct audio_eq_param a2dp_eq_param = {0};
-        a2dp_eq_param.channels = dec->ch;//fmt->channel;
-        a2dp_eq_param.online_en = 1;
-        a2dp_eq_param.mode_en = 1;
-        a2dp_eq_param.remain_en = 1;
-#if A2DP_EQ_SUPPORT_ASYNC
-        a2dp_eq_param.no_wait = a2dp_low_latency ? 0 : 1;
-#endif
-        a2dp_eq_param.max_nsection = EQ_SECTION_MAX;
-        a2dp_eq_param.cb = eq_get_filter_info;
-        audio_eq_open(a2dp_eq, &a2dp_eq_param);
-        audio_eq_set_samplerate(a2dp_eq, fmt->sample_rate);
-#if A2DP_EQ_SUPPORT_32BIT
-        audio_eq_set_info(a2dp_eq, a2dp_eq_param.channels, 1);
-#endif
-        audio_eq_set_output_handle(a2dp_eq, a2dp_eq_output, dec);
-        audio_eq_start(a2dp_eq);
-    }
-#endif
-#endif
-}
-
-static void a2dp_decoder_drc_filter_setup(struct a2dp_dec_hdl *dec, struct audio_fmt *fmt)
-{
-#if TCFG_EQ_ENABLE
-#if TCFG_BT_MUSIC_DRC_ENABLE
-    a2dp_drc = malloc(sizeof(struct audio_drc));
-    if (a2dp_drc) {
-        struct audio_drc_param drc_param = {0};
-        drc_param.channels = dec->ch;
-        drc_param.online_en = 1;
-        drc_param.remain_en = 1;
-        drc_param.cb = drc_get_filter_info;
-        audio_drc_open(a2dp_drc, &drc_param);
-        audio_drc_set_samplerate(a2dp_drc, fmt->sample_rate);
-#if A2DP_EQ_SUPPORT_32BIT
-        audio_drc_set_32bit_mode(a2dp_drc, 1);
-#endif
-        audio_drc_set_output_handle(a2dp_drc, NULL, NULL);
-        audio_drc_start(a2dp_drc);
-    }
-#endif
-#endif
-}
-
-static void a2dp_decoder_surround_vbass_setup(struct a2dp_dec_hdl *dec, struct audio_fmt *fmt)
-{
-#if AUDIO_SURROUND_CONFIG
-    u8 nch = EFFECT_CH_L;
-    if (dec->channel == AUDIO_CH_L) {
-        nch = EFFECT_CH_L;
-    } else if (dec->channel == AUDIO_CH_R) {
-        nch = EFFECT_CH_R;
-    } else if (dec->channel == AUDIO_CH_LR) {
-        nch = 2;
-    }
-    surround_open_parm parm = {0};
-    parm.channel = nch;
-    parm.surround_effect_type = EFFECT_3D_PANORAMA;//打开时默认使用3d全景音,使用者，根据需求修改
-    dec->surround = audio_surround_open(&parm);
-    dec->surround_eff = a2dp_surround_eff;
-    audio_surround_voice(dec);//还原按键触发的音效
-    //sur_test = sys_timer_add(dec->surround, surround_switch_test, 10000);
-#endif
-
-
-#if AUDIO_VBASS_CONFIG
-    vbass_open_parm vparm = {0};
-    vparm.sr = fmt->sample_rate;
-    vparm.channel = dec->ch;
-    dec->vbass = audio_vbass_open(&vparm);
-    if (dec->vbass) {
-        vbass_update_parm def_parm = {0};
-        def_parm.bass_f = 200;//外放的低音截止频率
-        def_parm.level = 4096;//增强强度(4096 等于 1db， 建议范围：4096 到 16384);
-        audio_vbass_parm_update(dec->vbass, VBASS_UPDATE_PARM, &def_parm);
-
-#if AUDIO_VBASS_TEST
-        //vbass_t = sys_timer_add(dec->vbass, vbass_udate_parm_test, 2000);
-#endif
-    }
-#endif
-}
 
 static int a2dp_decoder_syncts_setup(struct a2dp_dec_hdl *dec)
 {
     int err = 0;
 #if AUDIO_CODEC_SUPPORT_SYNC
-    struct audio_syncts_params params;
+    struct audio_syncts_params params = {0};
 
     params.nch = dec->ch;
+#if defined(TCFG_AUDIO_OUTPUT_IIS) && TCFG_AUDIO_OUTPUT_IIS
+    params.pcm_device = PCM_OUTSIDE_DAC;
+    params.rout_sample_rate = TCFG_IIS_SAMPLE_RATE;
+#elif defined(TCFG_AUDIO_MUSIC_SIDETONE_ENABLE) && TCFG_AUDIO_MUSIC_SIDETONE_ENABLE
     params.pcm_device = PCM_INSIDE_DAC;
+    params.rout_sample_rate = FIXED_SAMPLE_RATE;
+#else
+    params.pcm_device = PCM_INSIDE_DAC;
+    params.rout_sample_rate = dec->sample_rate;
+#endif
     params.network = AUDIO_NETWORK_BT2_1;
     params.rin_sample_rate = dec->sample_rate;
-    params.rout_sample_rate = dec->sample_rate;
     params.priv = dec;
     params.factor = TIME_US_FACTOR;
     params.output = a2dp_output_after_syncts_filter;
 
     bt_audio_sync_nettime_select(0);//0 - a2dp主机，1 - tws, 2 - BLE
 
-    int distance_time = a2dp_delay_time - a2dp_media_get_remain_play_time(1);
-    if (!a2dp_low_latency) {
-        distance_time = a2dp_delay_time;
-    } else if (distance_time < 0) {
-        distance_time = 0;
-    }
-    dec->time_base = bt_audio_sync_lat_time() + msecs_to_bt_time(distance_time);
-    dec->ts_handle = a2dp_audio_timestamp_create(dec->sample_rate, dec->time_base, TIME_US_FACTOR);
+    a2dp_decoder_update_base_time(dec);
+    dec->ts_handle = a2dp_audio_timestamp_create(dec->sample_rate, dec->base_time, TIME_US_FACTOR);
 
     err = audio_syncts_open(&dec->syncts, &params);
     if (!err) {
         dec->mix_ch_event_params[0] = (u32)&dec->mix_ch;
         dec->mix_ch_event_params[1] = (u32)dec->syncts;
-        dec->mix_ch_event_params[2] = dec->time_base * 625 * TIME_US_FACTOR;
+        dec->mix_ch_event_params[2] = dec->base_time * 625 * TIME_US_FACTOR;
         audio_mixer_ch_set_event_handler(&dec->mix_ch, (void *)dec->mix_ch_event_params, audio_mix_ch_event_handler);
     }
 
@@ -2185,7 +1814,7 @@ static int a2dp_decoder_plc_setup(struct a2dp_dec_hdl *dec)
 #if A2DP_AUDIO_PLC_ENABLE
     int plc_mem_size;
     dec->plc_ops = get_lfaudioPLC_api();
-    plc_mem_size = dec->plc_ops->need_buf(dec->ch); // 3652bytes，请衡量是否使用该空间换取PLC处理
+    plc_mem_size = dec->plc_ops->need_buf(dec->ch); // 3660bytes，请衡量是否使用该空间换取PLC处理
     dec->plc_mem = malloc(plc_mem_size);
     if (!dec->plc_mem) {
         dec->plc_ops = NULL;
@@ -2240,8 +1869,43 @@ static void a2dp_decoder_match_system_clock(struct a2dp_dec_hdl *dec)
     clk_set_sys_lock(SYS_64M, 0) ;
 #endif
 #else
+#if TCFG_AUDIO_MUSIC_SIDETONE_ENABLE
+    audio_codec_clock_set(AUDIO_A2DP_MODE, dec->coding_type, 0);		//开启mic监听功能，时钟设置为解码叠加的状态
+#else
     audio_codec_clock_set(AUDIO_A2DP_MODE, dec->coding_type, dec->wait.preemption);
+#endif /* TCFG_AUDIO_MUSIC_SIDETONE_ENABLE */
 #endif
+}
+static void a2dp_decoder_eq_drc_filter_setup(struct a2dp_dec_hdl *dec, struct audio_fmt *fmt)
+{
+#if TCFG_EQ_ENABLE&&TCFG_BT_MUSIC_EQ_ENABLE
+    u8 drc_en = 0;
+#if TCFG_DRC_ENABLE&&TCFG_BT_MUSIC_DRC_ENABLE
+    drc_en = 1;
+#endif//TCFG_BT_MUSIC_DRC_ENABLE
+
+#if defined(AUDIO_GAME_EFFECT_CONFIG) && AUDIO_GAME_EFFECT_CONFIG
+    if (a2dp_low_latency) {
+        drc_en |= BIT(1);
+    }
+#endif /*AUDIO_GAME_EFFECT_CONFIG*/
+
+    dec->eq_drc = dec_eq_drc_setup(&dec->mix_ch, (eq_output_cb)audio_mixer_ch_write, fmt->sample_rate, dec->ch, a2dp_low_latency ? 0 : 1, drc_en);
+#endif//TCFG_BT_MUSIC_EQ_ENABLE
+
+}
+
+void a2dp_decoder_sample_detect_setup(struct a2dp_dec_hdl *dec)
+{
+    dec->sample_detect = a2dp_sample_detect_open(dec->sample_rate, dec->coding_type);
+}
+
+void a2dp_decoder_sample_detect_free(struct a2dp_dec_hdl *dec)
+{
+    if (dec->sample_detect) {
+        a2dp_sample_detect_close(dec->sample_detect);
+        dec->sample_detect = NULL;
+    }
 }
 
 void audio_overlay_load_code(u32 type);
@@ -2256,6 +1920,7 @@ int a2dp_dec_start()
         return -EINVAL;
     }
 
+    a2dp_drop_frame_stop();
     puts("a2dp_dec_start: in\n");
 
     if (a2dp_dec->coding_type == AUDIO_CODING_AAC) {
@@ -2296,10 +1961,16 @@ int a2dp_dec_start()
     set_source_sample_rate(fmt->sample_rate);
     a2dp_dec_set_output_channel(dec);
 
-    audio_dac_set_protect_time(&dac_hdl, 3, dec, a2dp_stream_underrun_feedback);
+    /*audio_dac_set_protect_time(&dac_hdl, 3, dec, NULL);//a2dp_stream_underrun_feedback);*/
 
     audio_mixer_ch_open(&dec->mix_ch, &mixer);
+#if defined(TCFG_AUDIO_OUTPUT_IIS) && TCFG_AUDIO_OUTPUT_IIS
+    audio_mixer_ch_set_sample_rate(&dec->mix_ch, TCFG_IIS_SAMPLE_RATE);
+#elif defined(TCFG_AUDIO_MUSIC_SIDETONE_ENABLE) && TCFG_AUDIO_MUSIC_SIDETONE_ENABLE
+    audio_mixer_ch_set_sample_rate(&dec->mix_ch, FIXED_SAMPLE_RATE);
+#else
     audio_mixer_ch_set_sample_rate(&dec->mix_ch, fmt->sample_rate);
+#endif
     audio_mixer_ch_set_resume_handler(&dec->mix_ch, (void *)&dec->decoder, (void (*)(void *))audio_decoder_resume);
 
     app_audio_state_switch(APP_AUDIO_STATE_MUSIC, get_max_sys_vol());
@@ -2307,13 +1978,19 @@ int a2dp_dec_start()
     a2dp_dec->dvol = audio_digital_vol_open(app_audio_get_volume(APP_AUDIO_STATE_MUSIC), SYS_MAX_VOL, 2);
 #endif
 
-    a2dp_decoder_eq_filter_setup(dec, fmt);
-    a2dp_decoder_drc_filter_setup(dec, fmt);
-    a2dp_decoder_surround_vbass_setup(dec, fmt);
+    a2dp_decoder_sample_detect_setup(dec);
+    a2dp_decoder_eq_drc_filter_setup(dec, fmt);
+
+#if AUDIO_SURROUND_CONFIG
+    dec->sur = audio_surround_setup(dec->channel, a2dp_surround_eff);
+#endif//AUDIO_SURROUND_CONFIG
+
+#if AUDIO_VBASS_CONFIG
+    dec->vbass = audio_vbass_setup(fmt->sample_rate, dec->ch);
+#endif//AUDIO_VBASS_CONFIG
     a2dp_decoder_syncts_setup(dec);
     a2dp_decoder_plc_setup(dec);
 
-    a2dp_drop_frame_stop();
     dec->remain = 0;
     dec->stream_error = 0;
     a2dp_decoder_match_system_clock(dec);
@@ -2347,47 +2024,34 @@ static int __a2dp_audio_res_close(void)
     if (a2dp_dec->detect_timer) {
         sys_timer_del(a2dp_dec->detect_timer);
     }
+    a2dp_decoder_sample_detect_free(a2dp_dec);
     audio_decoder_close(&a2dp_dec->decoder);
     audio_mixer_ch_close(&a2dp_dec->mix_ch);
     a2dp_decoder_syncts_free(a2dp_dec);
     a2dp_decoder_plc_free(a2dp_dec);
     a2dp_decoder_stream_free(a2dp_dec, NULL);
-#if TCFG_BT_MUSIC_EQ_ENABLE
-    if (a2dp_eq) {
-        audio_eq_close(a2dp_eq);
-        free(a2dp_eq);
-        a2dp_eq = NULL;
-    }
-#endif
 
-#if TCFG_BT_MUSIC_DRC_ENABLE
-    if (a2dp_drc) {
-        audio_drc_close(a2dp_drc);
-        free(a2dp_drc);
-        a2dp_drc = NULL;
+#if TCFG_EQ_ENABLE&&TCFG_BT_MUSIC_EQ_ENABLE
+    if (a2dp_dec->eq_drc) {
+        dec_eq_drc_free(a2dp_dec->eq_drc);
+        a2dp_dec->eq_drc = NULL;
     }
-#endif
+#endif//TCFG_BT_MUSIC_EQ_ENABLE
 
-#if A2DP_EQ_SUPPORT_32BIT
-    if (a2dp_dec->eq_out_buf) {
-        free(a2dp_dec->eq_out_buf);
-        a2dp_dec->eq_out_buf = NULL;
-    }
-#endif
 
 #if AUDIO_SURROUND_CONFIG
-    if (a2dp_dec->surround) {
-        audio_surround_close(a2dp_dec->surround);
-        a2dp_dec->surround = NULL;
+    if (a2dp_dec->sur) {
+        audio_surround_free(a2dp_dec->sur);
+        a2dp_dec->sur = NULL;
     }
-#endif
+#endif//AUDIO_SURROUND_CONFIG
 
 #if AUDIO_VBASS_CONFIG
     if (a2dp_dec->vbass) {
-        audio_vbass_close(a2dp_dec->vbass);
+        audio_vbass_free(a2dp_dec->vbass);
         a2dp_dec->vbass = NULL;
     }
-#endif
+#endif//AUDIO_VBASS_CONFIG
 
 #if A2DP_KSR_AEC_ENABLE
     extern void KSR_aec_close(void);
@@ -2405,6 +2069,7 @@ static int __a2dp_audio_res_close(void)
     audio_codec_clock_del(AUDIO_A2DP_MODE);
 #endif
 
+    a2dp_dec->preempt = 1;
     app_audio_state_exit(APP_AUDIO_STATE_MUSIC);
     return 0;
 }
@@ -2429,7 +2094,7 @@ static int a2dp_wait_res_handler(struct audio_res_wait *wait, int event)
 #define A2DP_CODEC_SBC			0x00
 #define A2DP_CODEC_MPEG12		0x01
 #define A2DP_CODEC_MPEG24		0x02
-int a2dp_dec_open(int media_type)
+int __a2dp_dec_open(int media_type, u8 resume)
 {
     struct a2dp_dec_hdl *dec;
 
@@ -2486,9 +2151,14 @@ int a2dp_dec_open(int media_type)
         return -EINVAL;
     }
 
+#if TCFG_USER_TWS_ENABLE
+    if (CONFIG_LOW_LATENCY_ENABLE) {
+        a2dp_low_latency = tws_api_get_low_latency_state();
+    }
+#endif
     a2dp_dec = dec;
-
-    dec->wait.priority = 0;
+    dec->preempt = resume ? 1 : 0;
+    dec->wait.priority = 1;
     dec->wait.preemption = 1;
     dec->wait.handler = a2dp_wait_res_handler;
     audio_decoder_task_add_wait(&decode_task, &dec->wait);
@@ -2498,6 +2168,11 @@ int a2dp_dec_open(int media_type)
     }
 
     return 0;
+}
+
+int a2dp_dec_open(int media_type)
+{
+    return __a2dp_dec_open(media_type, 0);
 }
 
 void a2dp_dec_close()
@@ -2565,7 +2240,8 @@ static void low_latency_drop_a2dp_frame(void *p)
     }
     int type = a2dp_media_get_codec_type();
     if (type >= 0) {
-        a2dp_dec_open(type);
+        /*a2dp_dec_open(type);*/
+        __a2dp_dec_open(type, 1);
     }
 
     if (a2dp_low_latency == 0) {
@@ -2698,7 +2374,8 @@ void a2dp_tws_dec_resume(void)
                 a2dp_media_clear_packet_before_seqn(0);
             }
             a2dp_resume_time = jiffies + msecs_to_jiffies(80);
-            a2dp_dec_open(type);
+            /*a2dp_dec_open(type);*/
+            __a2dp_dec_open(type, 1);
         }
     }
 }
@@ -2773,12 +2450,13 @@ __again:
         u32 timestamp;
         if (dec->ts_handle) {
             timestamp = esco_audio_timestamp_update(dec->ts_handle, hash);
-            if (dec->syncts) {
+            if (dec->syncts && (((hash - dec->hash) & 0x7ffffff) == dec->frame_time)) {
                 audio_syncts_next_pts(dec->syncts, timestamp);
             }
+            dec->hash = hash;
             if (!dec->ts_start) {
                 dec->ts_start = 1;
-                dec->mix_ch_event_params[2] = (timestamp / TIME_US_FACTOR) / 625;
+                dec->mix_ch_event_params[2] = timestamp;
             }
         }
 #endif
@@ -2864,15 +2542,21 @@ static int esco_dec_probe_handler(struct audio_decoder *decoder)
         return -EAGAIN;
     }
 
+#if TCFG_USER_TWS_ENABLE
+    if (tws_network_audio_was_started()) {
+        /*清除从机声音加入标志*/
+        dec->slience_frames = 20;
+        tws_network_local_audio_start();
+    }
+#endif
+    if (dec->preempt) {
+        dec->preempt = 0;
+        dec->slience_frames = 20;
+    }
     return err;
 }
 
-#if TCFG_PHONE_EQ_ENABLE
-static int esco_eq_output(void *priv, void *data, u32 len)
-{
-    return len;
-}
-#endif/*TCFG_PHONE_EQ_ENABLE*/
+
 
 static int audio_esco_int2short_convert_output(void *priv, s16 *data, int len)
 {
@@ -2915,10 +2599,6 @@ static const u16 esco_dvol_tab[] = {
     14955,//14
     16384 //15
 };
-#if TCFG_AUDIO_OUTPUT_IIS
-static u8 t_esco_buf[480];
-#endif/*TCFG_AUDIO_OUTPUT_IIS*/
-
 #if TCFG_ESCO_DL_NS_ENABLE
 #include "commproc_ns.h"
 #define NS_FRAME_POINTS	160
@@ -3004,15 +2684,7 @@ static int esco_output_after_syncts_filter(void *priv, s16 *data, int len)
     int wlen = 0;
 
 #if TCFG_AUDIO_OUTPUT_IIS
-    s16 *tdata = (s16 *)t_esco_buf;
-    int n = 0;
-    for (n = 0; n < len / 2; n++) {
-        tdata[n * 2] = data[n];
-        tdata[n * 2 + 1] = data[n];
-    }
-
-    wlen = audio_mixer_ch_write(&dec->mix_ch, tdata, len << 1);
-    wlen >>= 1;
+    wlen = audio_mixer_ch_write(&dec->mix_ch, data, len);
 #else
     s16 two_ch_data[MONO_TO_DUAL_POINTS * 2];
     s16 point_num = 0;
@@ -3081,12 +2753,21 @@ static int esco_dec_output_handler(struct audio_decoder *decoder, s16 *buf, int 
 
     /*非上次残留数据,进行后处理*/
     if (!dec->remain) {
+        if (dec->slience_frames) {
+            memset(data, 0x0, len);
+            dec->slience_frames--;
+        }
 #if (defined(TCFG_PHONE_MESSAGE_ENABLE) && (TCFG_PHONE_MESSAGE_ENABLE))
         phone_message_call_api_esco_out_data(data, len);
 #endif/*TCFG_PHONE_MESSAGE_ENABLE*/
         if (priv) {
             audio_plc_run(data, len, *(u8 *)priv);
         }
+
+#if TCFG_DIG_PHASE_INVERTER_EN
+        digital_phase_inverter_s16(data, len);
+#endif/*TCFG_DIG_PHASE_INVERTER_EN*/
+
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
         audio_digital_vol_run(esco_dec->dvol, data, len);
         u16 dvol_val = esco_dvol_tab[app_var.aec_dac_gain];
@@ -3110,42 +2791,10 @@ static int esco_dec_output_handler(struct audio_decoder *decoder, s16 *buf, int 
         }
 #endif/*TCFG_AUDIO_NOISE_GATE*/
 
-#if TCFG_PHONE_EQ_ENABLE
-        if (esco_eq) {
+#if TCFG_EQ_ENABLE&&TCFG_PHONE_EQ_ENABLE
+        eq_drc_run(dec->eq_drc, data, len);
+#endif//TCFG_PHONE_EQ_ENABLE
 
-#if ESCO_DRC_EN
-            if ((!dec->eq_out_buf) || (dec->eq_out_buf_len < len * 2)) {
-                if (dec->eq_out_buf) {
-                    free(dec->eq_out_buf);
-                }
-                dec->eq_out_buf_len = len * 2;
-                dec->eq_out_buf = malloc(dec->eq_out_buf_len);
-                ASSERT(dec->eq_out_buf);
-            }
-
-            audio_eq_set_output_buf(esco_eq, dec->eq_out_buf, len);
-#endif
-            audio_eq_run(esco_eq, data, len);
-
-#if ESCO_DRC_EN
-            if (esco_drc) {
-                audio_drc_run(esco_drc, dec->eq_out_buf, len * 2);
-            }
-            s32 *idat = dec->eq_out_buf;
-            s16 *odat = data;
-            for (int i = 0; i < (len * 2) / 4; i++) {
-                s32 outdat = *idat++;
-                if (outdat > 32767) {
-                    outdat = 32767;
-                } else if (outdat < -32768) {
-                    outdat = -32768;
-                }
-                *odat++ = outdat;
-            }
-
-#endif
-        }
-#endif
     }
 
 #if AUDIO_CODEC_SUPPORT_SYNC
@@ -3249,15 +2898,20 @@ static int esco_decoder_syncts_setup(struct esco_dec_hdl *dec)
 {
     int err = 0;
 #if AUDIO_CODEC_SUPPORT_SYNC
-#define ESCO_DELAY_TIME     50
-    struct audio_syncts_params params;
+#define ESCO_DELAY_TIME     60
+    struct audio_syncts_params params = {0};
     int sample_rate = dec->decoder.fmt.sample_rate;
 
     params.nch = dec->decoder.fmt.channel;
+#if defined(TCFG_AUDIO_OUTPUT_IIS) && TCFG_AUDIO_OUTPUT_IIS
+    params.pcm_device = PCM_OUTSIDE_DAC;
+    params.rout_sample_rate = TCFG_IIS_SAMPLE_RATE;
+#else
     params.pcm_device = PCM_INSIDE_DAC;
+    params.rout_sample_rate = sample_rate;
+#endif
     params.network = AUDIO_NETWORK_BT2_1;
     params.rin_sample_rate = sample_rate;
-    params.rout_sample_rate = sample_rate;
     params.priv = dec;
     params.factor = TIME_US_FACTOR;
     params.output = (int (*)(void *, void *, int))esco_output_after_syncts_filter;
@@ -3265,7 +2919,7 @@ static int esco_decoder_syncts_setup(struct esco_dec_hdl *dec)
     bt_audio_sync_nettime_select(0);//0 - 主机，1 - tws, 2 - BLE
     u8 frame_clkn = dec->esco_len >= 60 ? 12 : 6;
     dec->ts_handle = esco_audio_timestamp_create(frame_clkn, ESCO_DELAY_TIME, TIME_US_FACTOR);
-
+    dec->frame_time = frame_clkn;
     audio_syncts_open(&dec->syncts, &params);
     if (!err) {
         dec->mix_ch_event_params[0] = (u32)&dec->mix_ch;
@@ -3337,7 +2991,12 @@ int esco_dec_start()
     /*audio_mixer_set_output_buf(&mixer, mix_buff, sizeof(mix_buff) / 8);*/
     audio_mixer_set_output_buf(&mixer, mix_buff, mix_buf_len_fix);
     audio_mixer_ch_open(&dec->mix_ch, &mixer);
+
+#if defined(TCFG_AUDIO_OUTPUT_IIS) && TCFG_AUDIO_OUTPUT_IIS
+    audio_mixer_ch_set_sample_rate(&dec->mix_ch, TCFG_IIS_SAMPLE_RATE);
+#else
     audio_mixer_ch_set_sample_rate(&dec->mix_ch, f.sample_rate);
+#endif
     audio_mixer_ch_set_resume_handler(&dec->mix_ch, (void *)&dec->decoder, (void (*)(void *))audio_decoder_resume);
 
     app_audio_state_switch(APP_AUDIO_STATE_CALL, app_var.aec_dac_gain);
@@ -3350,46 +3009,24 @@ int esco_dec_start()
     audio_plc_open(f.sample_rate);
 
 #if TCFG_AUDIO_NOISE_GATE
+    /*限幅器上限*/
+#define LIMITER_THR	 -10000 /*-12000 = -12dB,放大1000倍,(-10000参考)*/
+    /*小于CONST_NOISE_GATE的当成噪声处理,防止清0近端声音*/
+#define LIMITER_NOISE_GATE  -40000 /*-12000 = -12dB,放大1000倍,(-30000参考)*/
+    /*低于噪声门限阈值的增益 */
+#define LIMITER_NOISE_GAIN  (0 << 30) /*(0~1)*2^30*/
     audio_noise_gate_open(f.sample_rate, LIMITER_THR, LIMITER_NOISE_GATE, LIMITER_NOISE_GAIN);
 #endif/*TCFG_AUDIO_NOISE_GATE*/
 
-#if TCFG_PHONE_EQ_ENABLE
-    esco_eq = zalloc(sizeof(struct audio_eq) + sizeof(struct hw_eq_ch));
-    if (esco_eq) {
-        esco_eq->eq_ch = (struct hw_eq_ch *)((int)esco_eq + sizeof(struct audio_eq));
-        struct audio_eq_param esco_eq_param;
-        esco_eq_param.channels = f.channel;
-        esco_eq_param.online_en = 1; // 支持在线调试
-        esco_eq_param.mode_en = 0;
-        esco_eq_param.remain_en = 0;
-        esco_eq_param.max_nsection = EQ_SECTION_MAX;
-        esco_eq_param.cb = eq_phone_get_filter_info;
-        esco_eq_param.eq_name = AUDIO_CALL_EQ_NAME;
-        audio_eq_open(esco_eq, &esco_eq_param);
-        audio_eq_set_samplerate(esco_eq, f.sample_rate);
-#if ESCO_DRC_EN
-        audio_eq_set_info(esco_eq, f.channel, 1);
-#endif
-        audio_eq_set_output_handle(esco_eq, esco_eq_output, dec);
-        audio_eq_start(esco_eq);
-    }
-#endif/*TCFG_PHONE_EQ_ENABLE*/
+#if TCFG_EQ_ENABLE&&TCFG_PHONE_EQ_ENABLE
+    u8 drc_en = 0;
+#if TCFG_DRC_ENABLE&&ESCO_DRC_EN
+    drc_en = 1;
+#endif//ESCO_DRC_EN
 
-#if ESCO_DRC_EN
-    esco_drc = malloc(sizeof(struct audio_drc));
-    if (esco_drc) {
-        struct audio_drc_param drc_param = {0};
-        drc_param.channels = f.channel;
-        drc_param.online_en = 0;
-        drc_param.remain_en = 0;
-        drc_param.cb = esco_drc_get_filter_info;
-        audio_drc_open(esco_drc, &drc_param);
-        audio_drc_set_samplerate(esco_drc, f.sample_rate);
-        audio_drc_set_32bit_mode(esco_drc, 1);
-        audio_drc_set_output_handle(esco_drc, NULL, NULL);
-        audio_drc_start(esco_drc);
-    }
-#endif
+    dec->eq_drc = esco_eq_drc_setup(&dec->mix_ch, (eq_output_cb)audio_mixer_ch_write, f.sample_rate, f.channel, 0, drc_en);
+#endif//TCFG_PHONE_EQ_ENABLE
+
 
 
 #if AUDIO_CODEC_SUPPORT_SYNC
@@ -3421,12 +3058,12 @@ int esco_dec_start()
     err = esco_enc_open(dec->coding_type, dec->esco_len);
     if (err) {
         printf("audio_enc_open failed:%d", err);
-        //goto __err3;
+        goto __err3;
     }
 
-#if ESCO_DRC_EN
+#if TCFG_DRC_ENABLE&&ESCO_DRC_EN
     clk_set_sys_lock(96 * (1000000L), 0);
-#endif
+#endif//ESCO_DRC_EN
     audio_codec_clock_set(AUDIO_ESCO_MODE, dec->coding_type, dec->wait.preemption);
     dec->enc_start = 1; //该函数所在任务优先级低可能未open编码就开始解码，加入enc开始的标志防止解码过快输出
     printf("esco_dec_start ok\n");
@@ -3449,6 +3086,7 @@ static int __esco_dec_res_close(void)
     }
     esco_dec->start = 0;
     esco_dec->enc_start = 0;
+    esco_dec->preempt = 1;
 
     audio_aec_close();
     esco_enc_close();
@@ -3465,25 +3103,13 @@ static int __esco_dec_res_close(void)
     esco_dec->sync_step = 0;
     esco_dec->preempt_state = DEC_PREEMTED_BY_PRIORITY;
 #endif
-#if TCFG_PHONE_EQ_ENABLE
-    if (esco_eq) {
-        audio_eq_close(esco_eq);
-        free(esco_eq);
-        esco_eq = NULL;
-    }
-#endif
 
-#if ESCO_DRC_EN
-    if (esco_drc) {
-        audio_drc_close(esco_drc);
-        free(esco_drc);
-        esco_drc = NULL;
+#if TCFG_EQ_ENABLE&&TCFG_PHONE_EQ_ENABLE
+    if (esco_dec->eq_drc) {
+        esco_eq_drc_free(esco_dec->eq_drc);
+        esco_dec->eq_drc = NULL;
     }
-    if (esco_dec->eq_out_buf) {
-        free(esco_dec->eq_out_buf);
-        esco_dec->eq_out_buf = NULL;
-    }
-#endif
+#endif//TCFG_PHONE_EQ_ENABLE
 
 
     audio_out_effect_dis = 0;
@@ -3527,6 +3153,12 @@ int esco_dec_open(void *param, u8 mute)
     u32 esco_param = *(u32 *)param;
     int esco_len = esco_param >> 16;
     int codec_type = esco_param & 0x000000ff;
+
+#if TCFG_AUDIO_MUSIC_SIDETONE_ENABLE
+    if (mic2pcm_dec_is_running) {
+        mic2pcm_dec_close();       //在来电和通话的时候 需要将mic监听功能关闭
+    }
+#endif
 
 #if TCFG_AUDIO_ANC_ENABLE
 #ifdef CONFIG_ANC_OVERLAY
@@ -3640,7 +3272,7 @@ int audio_dec_init()
     /*os_sem_create(&dac_sem, 0);*/
     err = audio_decoder_task_create(&decode_task, "audio_dec");
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
-    audio_digital_vol_init();
+    audio_digital_vol_init(NULL, 0);
 #endif/*VOL_TYPE_DIGITAL*/
     audio_dac_init(&dac_hdl, &dac_data);
 
@@ -3652,9 +3284,9 @@ int audio_dec_init()
     audio_dac_set_capless_DTB(&dac_hdl, dacr32);
     audio_dac_set_buff(&dac_hdl, dac_buff, sizeof(dac_buff));
 #if A2DP_RX_AND_AUDIO_DELAY
-    audio_dac_set_delay_time(&dac_hdl, 20, AUDIO_DAC_DELAY_TIME);
+    audio_dac_set_delay_time(&dac_hdl, 10, AUDIO_DAC_DELAY_TIME);
 #else
-    audio_dac_set_delay_time(&dac_hdl, 30, AUDIO_DAC_DELAY_TIME);
+    audio_dac_set_delay_time(&dac_hdl, 10, AUDIO_DAC_DELAY_TIME);
 #endif/*A2DP_RX_AND_AUDIO_DELAY*/
     audio_dac_set_analog_vol(&dac_hdl, 0);
 
@@ -3724,78 +3356,58 @@ REGISTER_LP_TARGET(audio_dec_init_lp_target) = {
     .is_idle = audio_dec_init_complete,
 };
 
-
-/*----------------------------------------------------------------------------*/
-/**@brief    环绕音效切换测试例子
-   @param
-   @return
-   @note
-*/
-/*----------------------------------------------------------------------------*/
-#if AUDIO_SURROUND_CONFIG
-void surround_switch_test(void *p)
+#if AUDIO_OUT_EFFECT_ENABLE
+int audio_out_effect_stream_clear()
 {
-
-    if (!p) {
-        return;
+    if (!audio_out_effect) {
+        return 0;
     }
 
-    static u8 cnt_type = 0;
-    if (EFFECT_OFF == cnt_type) {
-        //中途关开测试
-        static u8 en = 0;
-        en = !en;
-        audio_surround_parm_update(p, cnt_type, (surround_update_parm *)en);
+    if (audio_out_effect->eq && audio_out_effect->async) {
+        audio_eq_async_data_clear(audio_out_effect->eq);
+    }
+    return 0;
+}
+
+void audio_out_effect_close(void)
+{
+    if (!audio_out_effect) {
+        return ;
+    }
+    audio_out_eq_drc_free(audio_out_effect);
+    audio_out_effect = NULL;
+}
+
+
+int audio_out_effect_open(void *priv, u16 sample_rate)
+{
+    audio_out_effect_close();
+
+    u8 ch_num;
+#if TCFG_APP_FM_EMITTER_EN
+    ch_num = 2;
+#else
+    u8 dac_connect_mode = audio_dac_get_channel(&dac_hdl);
+    if (dac_connect_mode == DAC_OUTPUT_LR) {
+        ch_num =  2;
     } else {
-        //音效切换测试
-        audio_surround_parm_update(p, cnt_type, NULL);
+        ch_num =  1;
     }
-    printf("cnt_type 0x%x\n", cnt_type);
-    if (++cnt_type > EFFECT_OFF) {
-        cnt_type = EFFECT_3D_PANORAMA;
-    }
+#endif//TCFG_APP_FM_EMITTER_EN
+
+    audio_out_effect = audio_out_eq_drc_setup(priv, (eq_output_cb)mix_output_handler, sample_rate, ch_num, 1, 0);
+    return 0;
 }
-#endif
 
-
-/*----------------------------------------------------------------------------*/
-/**@brief    虚拟低音参数更新例子
-   @param
-   @return
-   @note
-*/
-/*----------------------------------------------------------------------------*/
-
-void vbass_udate_parm_test(void *p)
+int audio_out_eq_spec_set_gain(u8 idx, int gain)
 {
-    if (!p) {
-        return;
+    if (!audio_out_effect) {
+        return -1;
     }
-#if AUDIO_VBASS_CONFIG
-    vbass_hdl *vbass = p;
-    //
-#if 0
-    //虚拟低音增益调节例子
-    static  u32 test_level  = 4096;
-    if (vbass) {
-        vbass_update_parm def_parm = {0};
-        def_parm.bass_f = 300;
-        test_level += 100;
-        if (test_level > 16384) {
-            test_level = 4096;
-        }
-        def_parm.level = test_level;
-        audio_vbass_parm_update(vbass, VBASS_UPDATE_PARM, &def_parm);
-    }
-#endif
-#if 0
-    //开关虚拟低音例子
-    static u8 en = 0;// 0关  1开
-    en = !en;
-    audio_vbass_parm_update(vbass, VBASS_SW, (void *)en);
-#endif
-#endif
+    audio_out_eq_set_gain(audio_out_effect, idx, gain);
+    return 0;
 }
+#endif//AUDIO_OUT_EFFECT_ENABLE
 
 /*----------------------------------------------------------------------------*/
 /**@brief    获取输出默认采样率
@@ -3869,36 +3481,8 @@ u32 audio_output_rate(int input_rate)
     return  app_audio_output_samplerate_select(input_rate, 1);
 }
 
-#if AUDIO_SURROUND_CONFIG
-/*
- *环绕音效开关控制
- * */
-void audio_surround_voice(struct a2dp_dec_hdl *dec)
-{
-    if (dec && dec->surround) {
-        surround_hdl *surround = dec->surround;
-        u8 en = dec->surround_eff;
-        if (en) {
-            if (const_surround_en & BIT(2)) {
-                surround_update_parm parm = {0};
-                parm.surround_type = EFFECT_3D_LRDRIFT2;//音效类型
-                parm.rotatestep    = 4;   //建议1~6,环绕速度
-                parm.damping = 40;//混响音量（0~70）,空间感
-                parm.feedback = 100;//干声音量(0~100),清晰度
-                parm.roomsize = 128;//无效参数
-                audio_surround_parm_update(surround, EFFECT_SUR2, &parm);
-            } else {
-                audio_surround_parm_update(surround, EFFECT_3D_ROTATES, NULL);
-            }
-        } else {
-            surround_update_parm parm = {0};
-            audio_surround_parm_update(surround, EFFECT_OFF2, &parm);//关音效
-        }
-    }
-}
-
 #if TCFG_USER_TWS_ENABLE
-
+#if AUDIO_SURROUND_CONFIG
 #define TWS_FUNC_ID_A2DP_EFF \
 	((int)(('A' + '2' + 'D' + 'P') << (2 * 8)) | \
 	 (int)(('E' + 'F' + 'F') << (1 * 8)) | \
@@ -3910,28 +3494,29 @@ void audio_surround_voice_ctrl()
 {
     int state = tws_api_get_tws_state();
     if (state & TWS_STA_SIBLING_CONNECTED) {
-        if (a2dp_dec && a2dp_dec->surround) {
-            if (!a2dp_dec->surround_eff) {
-                a2dp_dec->surround_eff =  1;
+        if (a2dp_dec && a2dp_dec->sur && a2dp_dec->sur->surround) {
+            if (!a2dp_dec->sur->surround_eff) {
+                a2dp_dec->sur->surround_eff =  1;
             } else {
-                a2dp_dec->surround_eff =  0;
+                a2dp_dec->sur->surround_eff =  0;
             }
-            int a2dp_eff = a2dp_dec->surround_eff;
+            int a2dp_eff = a2dp_dec->sur->surround_eff;
             tws_api_send_data_to_sibling((u8 *)&a2dp_eff, sizeof(int), TWS_FUNC_ID_A2DP_EFF);
         }
     }
 }
+
 /*
  *左右耳环绕效果同步回调
  * */
 static void tws_a2dp_eff_align(void *data, u16 len, bool rx)
 {
-    if (a2dp_dec && a2dp_dec->surround) {
+    if (a2dp_dec && a2dp_dec->sur && a2dp_dec->sur->surround) {
         int a2dp_eff;
         memcpy(&a2dp_eff, data, sizeof(int));
-        a2dp_dec->surround_eff = a2dp_eff;
-        a2dp_surround_eff = a2dp_eff;
-        audio_surround_voice(a2dp_dec);
+        a2dp_dec->sur->surround_eff = a2dp_eff;
+        a2dp_surround_set(a2dp_eff);
+        audio_surround_voice(a2dp_dec->sur, a2dp_dec->sur->surround_eff);
     }
 }
 
@@ -3939,7 +3524,6 @@ REGISTER_TWS_FUNC_STUB(a2dp_align_eff) = {
     .func_id = TWS_FUNC_ID_A2DP_EFF,
     .func    = tws_a2dp_eff_align,
 };
+#endif//AUDIO_SURROUND_CONFIG
 #endif /* TCFG_USER_TWS_ENABLE */
-
-#endif /* AUDIO_SURROUND_CONFIG */
 

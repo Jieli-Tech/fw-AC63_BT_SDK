@@ -379,6 +379,12 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
     audio_encoder_set_output_buffs(&esco_enc->encoder, esco_enc->output_frame,
                                    sizeof(esco_enc->output_frame), 1);
 
+    if (!esco_enc->encoder.enc_priv) {
+        log_e("encoder err, maybe coding(0x%x) disable \n", fmt.coding_type);
+        err = -EINVAL;
+        goto __err;
+    }
+
     audio_encoder_start(&esco_enc->encoder);
 
     printf("esco sample_rate: %d,mic_gain:%d\n", fmt.sample_rate, app_var.aec_mic_gain);
@@ -429,6 +435,18 @@ int esco_enc_open(u32 coding_type, u8 frame_len)
     clock_set_cur();
 
     return 0;
+
+__err:
+    audio_encoder_close(&esco_enc->encoder);
+
+    local_irq_disable();
+    free(esco_enc);
+    esco_enc = NULL;
+    local_irq_enable();
+
+    audio_encoder_task_close();
+
+    return err;
 }
 
 void esco_enc_close()

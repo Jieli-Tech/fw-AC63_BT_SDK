@@ -52,6 +52,7 @@ struct conn_param_t {
 // Minimum/default MTU
 
 #define ATT_CTRL_BLOCK_SIZE       (188)                    //note: fixed,libs use
+#define ATT_PACKET_HEAD_SIZE      (6)                      //note: fixed,libs use
 
 /*adv type*/
 enum {
@@ -61,6 +62,7 @@ enum {
     ADV_NONCONN_IND,     /*Non connectable undirected advertising*/
     ADV_DIRECT_IND_LOW,  /*Connectable low duty cycle directed advertising*/
 };
+
 
 /*adv channel*/
 #define  ADV_CHANNEL_37    BIT(0)
@@ -73,6 +75,16 @@ enum {
     SCAN_PASSIVE = 0,
     SCAN_ACTIVE,
 };
+
+/*advertising report,event type*/
+#define EVENT_ADV_IND                  ADV_IND
+#define EVENT_ADV_DIRECT_IND           ADV_DIRECT_IND
+#define EVENT_ADV_SCAN_IND             ADV_SCAN_IND
+#define EVENT_ADV_NONCONN_IND          ADV_NONCONN_IND
+#define EVENT_SCAN_RSP                 (4)
+
+#define EVENT_DEFAULT_REPORT_BITMAP    (0x1f)
+
 
 /*flags*/
 #define FLAGS_LIMITED_DISCOVERABLE_MODE    BIT(0)

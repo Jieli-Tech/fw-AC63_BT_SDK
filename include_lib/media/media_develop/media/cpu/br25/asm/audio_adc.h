@@ -82,6 +82,7 @@ struct adc_platform_data {
     u8 reserved: 3;
     u8 ladc_num;
     const struct ladc_port *ladc;
+    u8 dither_amplitude;
 };
 
 struct capless_low_pass {
@@ -165,6 +166,21 @@ int audio_adc_linein_set_gain(struct audio_adc_ch *ch, int gain);
 int audio_adc_set_buffs(struct audio_adc_ch *ch, s16 *bufs, u16 buf_size, u8 buf_num);
 int audio_adc_linein_start(struct audio_adc_ch *ch);
 int audio_adc_linein_close(struct audio_adc_ch *ch);
+
+/*
+*********************************************************************
+*                  Audio ADC Dither Amplitude
+* Description: 设置ADC Dither幅度的大小
+* Arguments  : dither_amplitude  ADC Dither 的幅度大小
+* Return	 : None.
+* Note(s)    : None.
+*********************************************************************
+*/
+#define ADC_DITHER_NEG_12dB  0  //ADC DITHER 幅度为-12db
+#define ADC_DITHER_NEG_18dB  1  //ADC DITHER 幅度为-18db
+#define ADC_DITHER_NEG_24dB  2  //ADC DITHER 幅度为-24db
+#define ADC_DITHER_NEG_30dB  3  //ADC DITHER 幅度为-30db
+void  audio_adc_set_dither_amplitude(u8 dither_amplitude);
 
 void audio_mic_0dB_en(bool en);
 

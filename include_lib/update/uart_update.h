@@ -8,6 +8,8 @@
 #define MSG_UART_UPDATE_START_RSP   0X3
 #define MSG_UART_UPDATE_READ_RSP    0x4
 
+#define MSG_UART_UPDATE_ALIVE_RSP   0x5
+
 #define PROTOCAL_SIZE       528
 #define SYNC_SIZE           6
 #define SYNC_MARK0          0xAA

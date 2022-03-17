@@ -113,7 +113,7 @@ local eq_tools_button_view = cfg:stButton("打开EQ工具",
                                 end
                             );
 
-local efftool_tools_button_view = cfg:stButton("打开音效配置工具（新EQ工具）",
+local efftool_tools_button_view = cfg:stButton("打开EQ工具",
                                 function ()
 		                            cfg:runProgNoWait({efftool, '--type', 'eq'});
                                 end
@@ -135,7 +135,7 @@ end
 table.insert(function_vbox_view_list, fw_edit_button_view);
 
 if eq_tool_button_show  == true then
-table.insert(function_vbox_view_list, eq_tools_button_view);
+--table.insert(function_vbox_view_list, eq_tools_button_view);
 end
 
 table.insert(function_vbox_view_list, efftool_tools_button_view);

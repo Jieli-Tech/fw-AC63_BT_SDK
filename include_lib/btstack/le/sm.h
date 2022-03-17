@@ -33,9 +33,17 @@ void sm_just_works_confirm(hci_con_handle_t con_handle);
 
 void sm_init(void);
 
+/*接口同时设置master 和 slave的配置*/
 void sm_set_io_capabilities(io_capability_t io_capability);
 
+/*接口只设置master配置*/
+void sm_set_master_io_capabilities(io_capability_t io_capability);
+
+/*接口同时设置master 和 slave的配置*/
 void sm_set_authentication_requirements(uint8_t auth_req);
+
+/*接口只设置master配置*/
+void sm_set_master_authentication_requirements(uint8_t auth_req);
 
 void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size);
 
@@ -52,4 +60,10 @@ void sm_set_master_request_pair(int enable);
 //指定链接发加密请求命令
 bool sm_api_request_pairing(hci_con_handle_t con_handle);
 
+//设置回连出现key missing后,流程重新发起加密
+void sm_set_master_pair_redo(int enable);
+
+//设置回连时，延时发起加密流程的时间，可用于兼容一些设备连接
+void sm_set_master_reconnect_enc_delay(u16 delay_ms);
+void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
 #endif

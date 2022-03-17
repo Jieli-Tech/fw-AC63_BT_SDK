@@ -66,9 +66,9 @@ static u8 search_ram_buffer[SEARCH_PROFILE_BUFSIZE] __attribute__((aligned(4)));
 //搜索类型
 #define SET_SCAN_TYPE       SCAN_ACTIVE
 //搜索 周期大小
-#define SET_SCAN_INTERVAL   48 //(unit:0.625ms)
+#define SET_SCAN_INTERVAL   40 //(unit:0.625ms)
 //搜索 窗口大小
-#define SET_SCAN_WINDOW     16 //(unit:0.625ms)
+#define SET_SCAN_WINDOW     8 //(unit:0.625ms)
 
 //连接周期
 #define SET_CONN_INTERVAL   24 //(unit:1.25ms)
@@ -905,7 +905,7 @@ void ble_sm_setup_init(io_capability_t io_type, u8 auth_req, uint8_t min_key_siz
 }
 
 
-#define TCFG_BLE_SECURITY_REQUEST        0
+#define AT_CLIENT_TCFG_BLE_SECURITY_REQUEST        0
 void ble_profile_init(void)
 {
     log_info("ble profile init\n");
@@ -914,9 +914,9 @@ void ble_profile_init(void)
     if (config_le_sm_support_enable) {
         le_device_db_init();
 #if PASSKEY_ENTER_ENABLE
-        ble_sm_setup_init(IO_CAPABILITY_DISPLAY_ONLY, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, TCFG_BLE_SECURITY_REQUEST);
+        ble_sm_setup_init(IO_CAPABILITY_DISPLAY_ONLY, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, AT_CLIENT_TCFG_BLE_SECURITY_REQUEST);
 #else
-        ble_sm_setup_init(IO_CAPABILITY_NO_INPUT_NO_OUTPUT, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, TCFG_BLE_SECURITY_REQUEST);
+        ble_sm_setup_init(IO_CAPABILITY_NO_INPUT_NO_OUTPUT, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, AT_CLIENT_TCFG_BLE_SECURITY_REQUEST);
 #endif
     }
 
@@ -1105,7 +1105,7 @@ int bt_ble_scan_enable(void *priv, u32 en)
 {
     ble_state_e next_state, cur_state;
 
-    if (!scan_ctrl_en) {
+    if (!scan_ctrl_en && en) {
         return 	APP_BLE_OPERATION_ERROR;
     }
 

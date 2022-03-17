@@ -58,7 +58,7 @@ extern const u8 *ble_get_mac_addr(void);
 int ble_get_mac(char *mac)
 {
     log_info("ble_get_mac");
-    le_controller_set_mac(mac);
+    le_controller_get_mac(mac);
     put_buf(mac, 6);
     return 0;
 }

@@ -112,7 +112,7 @@ int audio_dec_app_create_param_init(struct audio_dec_app_hdl *dec)
 /*----------------------------------------------------------------------------*/
 int audio_dec_file_app_create_param_init(struct audio_dec_file_app_hdl *file_dec)
 {
-    file_dec->format = decode_format_list;
+    file_dec->format = (struct audio_dec_format_hdl *)decode_format_list;
     return 0;
 }
 

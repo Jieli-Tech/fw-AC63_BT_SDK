@@ -132,6 +132,9 @@
 #define TCFG_CHARGE_ENABLE				    DISABLE_THIS_MOUDLE
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE//(不支持配置)
 #define TCFG_CHARGE_OFF_POWERON_NE			DISABLE//(不支持配置)
+#define TCFG_HANDSHAKE_ENABLE               DISABLE//是否支持lighting握手协议
+#define TCFG_HANDSHAKE_IO_DATA1             IO_PORTB_02//握手IO靠近lighting座子中间的
+#define TCFG_HANDSHAKE_IO_DATA2             IO_PORTB_07//握手IO在lighting座子边上的
 #define TCFG_CHARGE_FULL_V					CHARGE_FULL_V_4202
 #define TCFG_CHARGE_FULL_MA					CHARGE_FULL_mA_10
 #define TCFG_CHARGE_MA						CHARGE_mA_50

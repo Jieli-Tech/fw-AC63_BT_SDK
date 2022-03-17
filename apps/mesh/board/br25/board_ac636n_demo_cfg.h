@@ -148,6 +148,122 @@
 #define TCFG_ADKEY_VALUE9                   9
 
 //*********************************************************************************//
+//                                 Audio配置                                       //
+//*********************************************************************************//
+#define TCFG_AUDIO_ADC_ENABLE				DISABLE_THIS_MOUDLE
+//MIC只有一个声道，固定选择右声道
+#define TCFG_AUDIO_ADC_MIC_CHA				LADC_CH_MIC_R
+#define TCFG_AUDIO_ADC_LINE_CHA				LADC_LINE0_MASK
+/*MIC LDO电流档位设置：
+    0:0.625ua    1:1.25ua    2:1.875ua    3:2.5ua*/
+#define TCFG_AUDIO_ADC_LDO_SEL				2
+
+// LADC通道
+#define TCFG_AUDIO_ADC_LINE_CHA0			LADC_LINE1_MASK
+#define TCFG_AUDIO_ADC_LINE_CHA1			LADC_CH_LINE0_L
+
+#define TCFG_AUDIO_DAC_ENABLE				DISABLE_THIS_MOUDLE
+
+//支持Audio功能，才能使能DAC/ADC模块
+#ifdef CONFIG_LITE_AUDIO
+#define TCFG_AUDIO_ENABLE					DISABLE
+#if TCFG_AUDIO_ENABLE
+#undef TCFG_AUDIO_ADC_ENABLE
+#undef TCFG_AUDIO_DAC_ENABLE
+#define TCFG_AUDIO_ADC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_AUDIO_DAC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_DEC_PCM_ENABLE					ENABLE
+#define TCFG_DEC_G729_ENABLE				ENABLE
+#define TCFG_DEC_WTGV2_ENABLE               DISABLE
+#define TCFG_DEC_SBC_ENABLE				    DISABLE
+#define TCFG_DEC_OPUS_ENABLE                DISABLE
+#define TCFG_DEC_SPEEX_ENABLE         	    DISABLE
+#define TCFG_DEC_LC3_ENABLE        	    DISABLE
+#define TCFG_ENC_OPUS_ENABLE               	DISABLE
+#define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#define TCFG_ENC_ADPCM_ENABLE              	DISABLE
+#define TCFG_ENC_LC3_ENABLE              	DISABLE
+#define TCFG_ENC_SBC_ENABLE              	DISABLE
+#define TCFG_ENC_MSBC_ENABLE              	DISABLE
+#define TCFG_LINEIN_LR_CH					AUDIO_LIN0_LR
+#define TCFG_DEC_WAV_ENABLE					DISABLE
+#define TCFG_DEC_MIDI_ENABLE			    DISABLE//midi文件播放
+
+/* Mesh Audio Test */
+#define MESH_AUDIO_TEST						DISABLE
+
+//lc3 编码参数配置
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+#define LC3_CODING_SAMPLERATE  16000 //lc3 编码的采样率
+#define LC3_CODING_FRAME_LEN   50  //帧长度，只支持25，50，100
+#define LC3_CODING_CHANNEL     2  //lc3 的通道数
+#endif
+
+//enc 编码demo文件使能
+#define ENC_DEMO_EN						DISABLE
+
+#else
+#define TCFG_DEC_PCM_ENABLE					DISABLE
+#endif/*TCFG_AUDIO_ENABLE*/
+#endif/*CONFIG_LITE_AUDIO*/
+
+#define TCFG_AUDIO_DAC_LDO_SEL				1
+/*
+DACVDD电压设置(要根据具体的硬件接法来确定):
+    DACVDD_LDO_1_20V        DACVDD_LDO_1_30V        DACVDD_LDO_2_35V        DACVDD_LDO_2_50V
+    DACVDD_LDO_2_65V        DACVDD_LDO_2_80V        DACVDD_LDO_2_95V        DACVDD_LDO_3_10V*/
+#define TCFG_AUDIO_DAC_LDO_VOLT				DACVDD_LDO_2_70V
+/*预留接口，未使用*/
+#define TCFG_AUDIO_DAC_PA_PORT				NO_CONFIG_PORT
+/*
+DAC硬件上的连接方式,可选的配置：
+    DAC_OUTPUT_MONO_L               左声道
+    DAC_OUTPUT_MONO_R               右声道
+    DAC_OUTPUT_LR                   立体声
+    DAC_OUTPUT_MONO_LR_DIFF         单声道差分输出
+*/
+#define TCFG_AUDIO_DAC_CONNECT_MODE         DAC_OUTPUT_MONO_LR_DIFF
+
+/*
+解码后音频的输出方式:
+    AUDIO_OUTPUT_ORIG_CH            按原始声道输出
+    AUDIO_OUTPUT_STEREO             按立体声
+    AUDIO_OUTPUT_L_CH               只输出原始声道的左声道
+    AUDIO_OUTPUT_R_CH               只输出原始声道的右声道
+    AUDIO_OUTPUT_MONO_LR_CH         输出左右合成的单声道
+ */
+#define AUDIO_OUTPUT_MODE                   AUDIO_OUTPUT_STEREO
+
+#define AUDIO_OUTPUT_WAY_DAC        0
+#define AUDIO_OUTPUT_WAY_IIS        1
+#define AUDIO_OUTPUT_WAY_FM         2
+#define AUDIO_OUTPUT_WAY_HDMI       3
+#define AUDIO_OUTPUT_WAY_SPDIF      4
+#define AUDIO_OUTPUT_WAY_BT      	5	// bt emitter
+#define AUDIO_OUTPUT_WAY_DAC_IIS    6
+#define AUDIO_OUTPUT_WAY_DONGLE		7
+#define AUDIO_OUTPUT_WAY            AUDIO_OUTPUT_WAY_DAC
+
+/*
+ *  *系统音量类型选择
+ *   *软件数字音量是指纯软件对声音进行运算后得到的
+ *    *硬件数字音量是指dac内部数字模块对声音进行运算后输出
+ *     */
+#define VOL_TYPE_DIGITAL        0   //软件数字音量
+#define VOL_TYPE_ANALOG         1   //硬件模拟音量
+#define VOL_TYPE_AD             2   //联合音量(模拟数字混合调节)
+#define VOL_TYPE_DIGITAL_HW     3   //硬件数字音量
+#define SYS_VOL_TYPE            VOL_TYPE_ANALOG
+
+
+// 使能改宏，提示音音量使用music音量
+#define APP_AUDIO_STATE_WTONE_BY_MUSIC      (1)
+// 0:提示音不使用默认音量； 1:默认提示音音量值
+#define TONE_MODE_DEFAULE_VOLUME            (0)
+
+
+#define AUDIO_MIDI_CTRL_CONFIG    0 //midi电子琴接口使能 ,开这个宏要关掉低功耗使能
+//*********************************************************************************//
 //                                  充电仓配置                                     //
 //*********************************************************************************//
 #define TCFG_CHARGESTORE_ENABLE				DISABLE_THIS_MOUDLE       //是否支持智能充点仓

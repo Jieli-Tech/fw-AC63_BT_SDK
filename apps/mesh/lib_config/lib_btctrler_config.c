@@ -35,7 +35,7 @@ const int config_force_bt_pwr_tab_using_normal_level  = 0;
 const int CONFIG_BLE_SYNC_WORD_BIT = 30;
 const int CONFIG_LNA_CHECK_VAL = -60;
 const int CONFIG_DUT_POWER                  = 10;
-
+const int MESH_CERTIFICATION_ENABLE = 0;
 #if (CONFIG_BT_MODE != BT_NORMAL)
 const int config_btctler_hci_standard   = 1;
 #else
@@ -67,6 +67,7 @@ const int CONFIG_LMP_NAME_REQ_ENABLE  =  1;
 const int CONFIG_LMP_PASSKEY_ENABLE  =  1;
 const int CONFIG_LMP_MASTER_ESCO_ENABLE  =  1;
 const int CONFIG_WIFI_DETECT_ENABLE = 0;
+const int ESCO_FORWARD_ENABLE = 0;
 
 const int config_bt_function  =  0;
 
@@ -78,6 +79,9 @@ const int config_btctler_dual_a2dp  = 0;
 const int config_bredr_afh_user = 0;
 //bt PLL 温度跟随trim
 const int config_bt_temperature_pll_trim = 0;
+/*security check*/
+const int config_bt_security_vulnerability = 0;
+
 
 const int CONFIG_BTCTLER_QOS_ENABLE         = 1;
 
@@ -128,6 +132,9 @@ const int config_btctler_eir_version_info_len = 0;
 const int sniff_support_reset_anchor_point = 0;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 
 const int sniff_long_interval = (500 / 0.625);    //sniff状态下进入long interval的通信间隔(ms)
+
+const int config_rf_oob = 0;
+
 /*-----------------------------------------------------------*/
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)

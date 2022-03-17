@@ -83,10 +83,14 @@ MEMORY
 {
     psram(rwx)        : ORIGIN =  PSRAM_BEG , LENGTH = PSRAM_SIZE
 #if (USE_SDFILE_NEW)
+#ifndef CONFIG_LARGE_PROGRAM_ENABLE
 	code0(rx)    	  : ORIGIN =  0x1E00120,    LENGTH = CONFIG_FLASH_SIZE
-#else
+#else /* #ifdef CONFIG_LARGE_PROGRAM_ENABLE */
+	code0(rx)    	  : ORIGIN =  0x1000120,    LENGTH = CONFIG_FLASH_SIZE
+#endif /* #ifdef CONFIG_LARGE_PROGRAM_ENABLE */
+#else /* #if (USE_SDFILE_NEW) */
 	code0(rx)    	  : ORIGIN =  0x1E00020,    LENGTH = CONFIG_FLASH_SIZE
-#endif
+#endif /* #if (USE_SDFILE_NEW) */
 	ram0(rwx)         : ORIGIN =  RAM_BEGIN  , LENGTH = RAM_SIZE
     ram1(rwx)         : ORIGIN =  RAM1_BEGIN , LENGTH = RAM1_SIZE
 }
@@ -286,6 +290,7 @@ SECTIONS
 
         *(.flushinv_icache)
         *(.volatile_ram_code)
+        *(.chargebox_code)
         *(.os_critical_code)
         *(.chargebox_code)
 
@@ -296,6 +301,14 @@ SECTIONS
         *(.ui_ram)
 
         *(.fat_data_code)
+
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_code)
+		*(.lc3_codec_e_code)
+		*(.lc3_codec_c_const)
+		*(.lc3_codec_c_code)
+#endif
+
 #if  (TCFG_LED7_RUN_RAM)
         *(.gpio_ram)
         *(.LED_code)

@@ -240,6 +240,7 @@ static void mask_io_cfg()
 }
 
 
+extern void mesh_certification_api(u8 enable);
 extern void cfg_file_parse(u8 idx);
 void board_init()
 {
@@ -248,8 +249,7 @@ void board_init()
 	adc_init();
 	cfg_file_parse(0);
 	devices_init();
-
-	board_devices_init();
+    board_devices_init();
 
 	if(get_charge_online_flag()) {
 		power_set_mode(PWR_LDO15);
@@ -498,6 +498,8 @@ void board_power_init(void)
 
     power_init(&power_param);
 
+    gpio_longpress_pin0_reset_config(IO_PORTA_09, 0, 0);
+    gpio_shortpress_reset_config(0);//1--enable 0--disable
     //< close short key reset
     /* power_mclr(0); */
     //< close long key reset

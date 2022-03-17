@@ -240,34 +240,6 @@ CONFIG_CUSTOM_CFG3_TYPE = CONFIG_CUSTOM_CFG3_VALUE;
 #define CONFIG_EXIF_OPT		1
 #endif
 
-#ifndef CONFIG_ANCIF_ADDR
-#define CONFIG_ANCIF_ADDR	AUTO//0x7d000
-#endif
-
-#ifndef CONFIG_ANCIF_LEN
-#define CONFIG_ANCIF_LEN	0x80
-#endif
-
-#ifndef CONFIG_ANCIF_OPT
-#define CONFIG_ANCIF_OPT	1
-#endif
-
-#ifndef CONFIG_ANCIF1_ADDR
-#define CONFIG_ANCIF1_ADDR	AUTO//0x7d080
-#endif
-
-#ifndef CONFIG_ANCIF1_LEN
-#define CONFIG_ANCIF1_LEN	0x1f80
-#endif
-
-#ifndef CONFIG_ANCIF1_OPT
-#define CONFIG_ANCIF1_OPT	1
-#endif
-
-#ifndef CONFIG_ANCIF_FILE
-//#define CONFIG_ANCIF_FILE	anc_gains.bin
-#endif
-
 #ifndef CONIFG_BURNER_INFO_SIZE
 #define CONFIG_BURNER_INFO_SIZE		32
 #endif
@@ -309,6 +281,7 @@ PRCT_LEN = CONFIG_PRCT_LEN;
 PRCT_OPT = CONFIG_PRCT_OPT;
 
 //for volatile memory area cfg
+//VM大小默认为CONFIG_VM_LEAST_SIZE，如果代码空间不够可以适当改小，需要满足4*2*n; 改小可能会导致不支持测试盒蓝牙升级（不影响串口升级）
 VM_ADR = CONFIG_VM_ADDR;
 VM_LEN = CONFIG_VM_LEAST_SIZE;
 VM_OPT = CONFIG_VM_OPT;
@@ -335,30 +308,81 @@ CAT2(CONFIG_RESERVED_AREA2, FILE) = CONFIG_RESERVED_AREA2_FILE;
 
 #endif
 
-//ANC配置区，如果不想ANC配置因为代码大小变化而改变位置，从而失效，需要手动指定(flash末尾8K位置)
-//4Mbit:0x7E000 8Mbit:0xFE000 16Mbit:0x1FE000
-//加载了anc_gains.bin或者anc_coeff.bin，则表示使用文件里面的配置
-//ANC增益配置保留区
+#if TCFG_EQ_ONLINE_ENABLE || TCFG_MIC_EFFECT_ONLINE_ENABLE
+EFFECT_ADR = AUTO;
+EFFECT_LEN = 4K;
+EFFECT_OPT = 1;
+#endif
+
+/*
+ ****************************************************************************
+ *								ANC配置区
+ *Notes:
+ *(1)需要根据flash容量手动配置ANC配置区起始地址:
+ *	 4Mbit:0x7E000 	8Mbit:0xFE000 	16Mbit:0x1FE000
+ *(2)加载ANC增益/系数配置文件，则表示使用配置文件的增益/系数配置
+ *(3)ANC两个配置区是连续的，即第一个配置区起始地址加上自身长度，即为第二个配置
+ *	 区起始地址：CONFIG_ANCIF1_ADDR = CONFIG_ANCIF_ADDR + CONFIG_ANCIF_LEN
+ *****************************************************************************
+ */
 #if CONFIG_ANC_ENABLE
-#ifdef CONFIG_ANCIF_FILE
-ANCIF_FILE = CONFIG_ANCIF_FILE;
+
+/*******************用户配置区************************/
+//加载ANC增益配置文件使能
+#define CONFIG_ANCIF_GAINS_FILE_ENABLE		0
+//加载ANC系数配置文件使能
+#define CONFIG_ANCIF1_COEFF_FILE_ENABLE		0
+
+//ANC配置区起始地址配置(跟进芯片flash容量进行配置)
+//4Mbit:0x7E000 8Mbit:0xFE000 16Mbit:0x1FE000
+#ifndef CONFIG_ANCIF_ADDR
+#define CONFIG_ANCIF_ADDR	0xFE000
+#endif/*CONFIG_ANCIF_ADDR*/
+#ifndef CONFIG_ANCIF1_ADDR
+#define CONFIG_ANCIF1_ADDR	AUTO/*0xFE100*/
+#endif/*CONFIG_ANCIF1_ADDR*/
+
+//ANC配置区下载操作配置
+#ifndef CONFIG_ANCIF_OPT
+#define CONFIG_ANCIF_OPT	1
+#endif/*CONFIG_ANCIF_OPT*/
+#ifndef CONFIG_ANCIF1_OPT
+#define CONFIG_ANCIF1_OPT	1
+#endif/*CONFIG_ANCIF1_OPT*/
+/*******************用户配置区************************/
+
+
+/*******************非用户配置区**********************/
+//ANC配置区长度定义
+#define CONFIG_ANCIF_LEN	0x80
+#define CONFIG_ANCIF1_LEN	0xF80
+
+//ANC系数配置保留区0
+#if CONFIG_ANCIF_GAINS_FILE_ENABLE
+ANCIF_FILE = anc_gains.bin;
 #endif
 ANCIF_ADR = CONFIG_ANCIF_ADDR;
 ANCIF_LEN = CONFIG_ANCIF_LEN;
 ANCIF_OPT = CONFIG_ANCIF_OPT;
-//ANC系数配置保留区
-#ifdef CONIFG_ANCIF1_FILE
-ANCIF1_FILE = CONFIG_ANCIF1_FILE; //anc_coeff.bin;
+
+//ANC系数配置保留区1
+#if CONFIG_ANCIF1_COEFF_FILE_ENABLE
+ANCIF1_FILE = anc_coeff.bin;
 #endif
 ANCIF1_ADR = CONFIG_ANCIF1_ADDR;
 ANCIF1_LEN = CONFIG_ANCIF1_LEN;
 ANCIF1_OPT = CONFIG_ANCIF1_OPT;
-#endif
-
+/*******************非用户配置区**********************/
+#endif/*CONFIG_ANC_ENABLE*/
 
 
 [BURNER_CONFIG]
 SIZE = CONFIG_BURNER_INFO_SIZE;
+
+[TOOL_CONFIG]
+1TO2_MIN_VER = 2.26.1;//一拖二烧写器最低版本
+
+1TO8_MIN_VER = 3.1.8;//一拖八烧写器最低版本
 
 
 

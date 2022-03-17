@@ -238,7 +238,7 @@ int sin_tone_make(void *_maker, void *data, int len)
             if (win) {
                 /*hw_sin_value(win_sin_index, &win_sin_value, 0);*/
                 win_sin_value = __asm_sine((s64)win_sin_index, 2);
-#ifdef CONFIG_CPU_BR36
+#if ((defined CONFIG_CPU_BR36) || (defined CONFIG_CPU_BR28))
                 sin_value = ((s64)sin_value * (s64)win_sin_value) >> 44;
 #else
                 sin_value = ((s64)sin_value * (s64)win_sin_value) >> 34;
@@ -246,7 +246,7 @@ int sin_tone_make(void *_maker, void *data, int len)
                 win_sin_index += win_add_idx;
                 win_sin_index &= 0x1ffffff;
             } else {
-#ifdef CONFIG_CPU_BR36
+#if ((defined CONFIG_CPU_BR36) || (defined CONFIG_CPU_BR28))
                 sin_value = ((s64)volume * sin_value) >> 39;
 #else
                 sin_value = ((s64)volume * sin_value) >> 34;

@@ -97,7 +97,7 @@
 //*********************************************************************************//
 //                                 adkey 配置                                      //
 //*********************************************************************************//
-#define TCFG_ADKEY_ENABLE                   ENABLE_THIS_MOUDLE //是否使能AD按键
+#define TCFG_ADKEY_ENABLE                   DISABLE_THIS_MOUDLE //是否使能AD按键
 #define TCFG_ADKEY_PORT                     IO_PORTB_04         //AD按键端口(需要注意选择的IO口是否支持AD功能)
 /*AD通道选择，需要和AD按键的端口相对应:
     AD_CH_PA1    AD_CH_PA3    AD_CH_PA4    AD_CH_PA5
@@ -170,7 +170,7 @@
 //#define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15
 #define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15                    //电源模式设置，可选DCDC和LDO
 #define TCFG_LOWPOWER_BTOSC_DISABLE			0                            //低功耗模式下BTOSC是否保持
-#define TCFG_LOWPOWER_LOWPOWER_SEL			SLEEP_EN                     //SNIFF状态下芯片是否进入powerdown
+#define TCFG_LOWPOWER_LOWPOWER_SEL			0//SLEEP_EN                     //SNIFF状态下芯片是否进入powerdown
 /*强VDDIO等级配置,可选：
     VDDIOM_VOL_20V    VDDIOM_VOL_22V    VDDIOM_VOL_24V    VDDIOM_VOL_26V
     VDDIOM_VOL_30V    VDDIOM_VOL_30V    VDDIOM_VOL_32V    VDDIOM_VOL_36V*/

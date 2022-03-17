@@ -48,9 +48,9 @@
 /* #define log_info_hexdump  put_buf */
 /* #endif */
 
-static u8 *gatt_ram_buffer = 0;
+static u8 *gatt_ram_buffer;
 static u8 cbk_event_type;
-static gatt_ctrl_t *gatt_control_block = NULL;
+static gatt_ctrl_t *gatt_control_block;
 
 #define CLR_HANDLER_ROLE()      cbk_event_type  = 0
 #define SET_HANDLER_ROLE(a)     cbk_event_type  = (1<<a)
@@ -441,6 +441,7 @@ void __ble_comm_cbk_sm_packet_handler(uint8_t packet_type, uint16_t channel, uin
             switch (hci_event_packet_get_type(packet)) {
             case SM_EVENT_JUST_WORKS_REQUEST:
             case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+            case SM_EVENT_PASSKEY_INPUT_NUMBER:
             case SM_EVENT_PAIR_PROCESS: {
                 log_info("Event_Type:%02x,packet_address:%08x", hci_event_packet_get_type(packet), packet);
                 put_buf(packet, 16);
@@ -532,7 +533,8 @@ static void __ble_comm_cbk_packet_handler(uint8_t packet_type, uint16_t channel,
                     tmp_index = ble_comm_dev_get_idle_index(role);
                     if (tmp_index == INVAIL_INDEX) {
                         log_info("err_ext_connection:%d\n", role);
-                        ble_op_disconnect(tmp_handle);
+                        /* ble_op_disconnect(tmp_handle); */
+                        ble_op_disconnect_ext(tmp_handle, 0x13);
                         CLR_HANDLER_ROLE();
                     } else {
                         __comm_set_dev_handle_value(tmp_handle, role, cur_cid);
@@ -565,7 +567,8 @@ static void __ble_comm_cbk_packet_handler(uint8_t packet_type, uint16_t channel,
                     tmp_index = ble_comm_dev_get_idle_index(role);
                     if (tmp_index == INVAIL_INDEX) {
                         log_info("err_connection:%d\n", role);
-                        ble_op_disconnect(tmp_handle);
+                        /* ble_op_disconnect(tmp_handle); */
+                        ble_op_disconnect_ext(tmp_handle, 0x13);
                         CLR_HANDLER_ROLE();
                     } else {
                         __comm_set_dev_handle_value(tmp_handle, role, tmp_index);
@@ -716,7 +719,15 @@ void ble_profile_init(void)
         if (gatt_control_block->sm_config) {
             le_device_db_init();
             sm_init();
+
             sm_set_io_capabilities(gatt_control_block->sm_config->io_capabilities);
+
+            if (STACK_IS_SUPPORT_GATT_CLIENT()) {
+                if (gatt_control_block->sm_config->io_capabilities == IO_CAPABILITY_DISPLAY_ONLY) {
+                    sm_set_master_io_capabilities(IO_CAPABILITY_KEYBOARD_ONLY);
+                }
+            }
+
             sm_set_authentication_requirements(gatt_control_block->sm_config->authentication_req_flags);
             sm_set_encryption_key_size_range(gatt_control_block->sm_config->min_key_size, gatt_control_block->sm_config->max_key_size);
             sm_set_master_request_pair(gatt_control_block->sm_config->master_security_auto_req);
@@ -823,19 +834,25 @@ void ble_comm_module_enable(u8 en)
  *  \note
  */
 /*************************************************************************************************/
-int ble_comm_disconnect(u16 conn_handle)
+int ble_comm_disconnect_extend(u16 conn_handle, u8 reason)
 {
     if (conn_handle) {
         u8 role = ble_comm_dev_get_handle_role(conn_handle);
         if (BLE_ST_SEND_DISCONN != ble_comm_dev_get_handle_state(conn_handle, role)) {
             ble_comm_dev_set_handle_state(conn_handle, role, BLE_ST_SEND_DISCONN);
             log_info(">>>send disconnect= %04x\n", conn_handle);
-            ble_op_disconnect(conn_handle);
+            /* ble_op_disconnect(conn_handle); */
+            ble_op_disconnect_ext(conn_handle, reason);
         } else {
             log_info(">>>busy,wait disconnect= %04x\n", conn_handle);
         }
     }
     return GATT_OP_RET_SUCESS;
+}
+
+int ble_comm_disconnect(u16 conn_handle)
+{
+    return ble_comm_disconnect_extend(conn_handle, 0x13);
 }
 
 /*************************************************************************************************/

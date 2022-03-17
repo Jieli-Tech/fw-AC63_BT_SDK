@@ -12,7 +12,7 @@ struct __spinlock {
 
 typedef struct __spinlock spinlock_t;
 
-#if CPU_CORE_NUM > 1
+#if 0//CPU_CORE_NUM > 1
 
 
 #define preempt_disable() \
@@ -35,7 +35,7 @@ typedef struct __spinlock spinlock_t;
 #endif
 
 
-#if CPU_CORE_NUM > 1
+#if 0//CPU_CORE_NUM > 1
 
 #define spin_acquire(lock) 	\
 	do { \

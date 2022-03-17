@@ -5,8 +5,8 @@
 #include "clock_cfg.h"
 #include "media/includes.h"
 #include "asm/includes.h"
-#include "spectrum/spectrum_eq.h"
-#include "spectrum/spectrum_fft.h"
+#include "media/spectrum/spectrum_eq.h"
+#include "media/spectrum/spectrum_fft.h"
 
 
 /*----------------------------------------------------------------------------*/

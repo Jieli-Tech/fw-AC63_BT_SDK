@@ -281,6 +281,7 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_USER_BLE_ENABLE                      0   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
+#if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    0
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
@@ -288,6 +289,7 @@ DAC硬件上的连接方式,可选的配置：
 #define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    1
 #define USER_SUPPORT_PROFILE_PBAP   0
+#endif
 
 #if TCFG_USER_TWS_ENABLE
 #define TCFG_BD_NUM						          1   //连接设备个数配置

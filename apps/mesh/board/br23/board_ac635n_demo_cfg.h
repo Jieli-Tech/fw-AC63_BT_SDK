@@ -237,11 +237,33 @@
 #define TCFG_DEC_PCM_ENABLE					ENABLE
 #define TCFG_DEC_G729_ENABLE				ENABLE
 #define TCFG_DEC_WTGV2_ENABLE               DISABLE
+#define TCFG_DEC_SBC_ENABLE				    DISABLE
+#define TCFG_DEC_OPUS_ENABLE                DISABLE
+#define TCFG_DEC_SPEEX_ENABLE         	    DISABLE
+#define TCFG_DEC_LC3_ENABLE         	    DISABLE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#define TCFG_ENC_ADPCM_ENABLE              	DISABLE
+#define TCFG_ENC_LC3_ENABLE              	DISABLE
+#define TCFG_ENC_SBC_ENABLE              	DISABLE
+#define TCFG_ENC_MSBC_ENABLE              	DISABLE
 #define TCFG_LINEIN_LR_CH					AUDIO_LIN0_LR
 #define TCFG_DEC_WAV_ENABLE					DISABLE
 #define TCFG_DEC_MIDI_ENABLE			    DISABLE//midi文件播放
+
+/* Mesh Audio Test */
+#define MESH_AUDIO_TEST						DISABLE
+
+//lc3 编码参数配置
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+#define LC3_CODING_SAMPLERATE  16000 //lc3 编码的采样率
+#define LC3_CODING_FRAME_LEN   50  //帧长度，只支持25，50，100
+#define LC3_CODING_CHANNEL     2  //lc3 的通道数
+#endif
+
+//enc 编码demo文件使能
+#define ENC_DEMO_EN						DISABLE
+
 #else
 #define TCFG_DEC_PCM_ENABLE					DISABLE
 #endif/*TCFG_AUDIO_ENABLE*/
@@ -294,6 +316,12 @@ DAC硬件上的连接方式,可选的配置：
 #define VOL_TYPE_AD             2   //联合音量(模拟数字混合调节)
 #define VOL_TYPE_DIGITAL_HW     3   //硬件数字音量
 #define SYS_VOL_TYPE            VOL_TYPE_ANALOG
+
+
+// 使能改宏，提示音音量使用music音量
+#define APP_AUDIO_STATE_WTONE_BY_MUSIC      (1)
+// 0:提示音不使用默认音量； 1:默认提示音音量值
+#define TONE_MODE_DEFAULE_VOLUME            (0)
 
 
 #define AUDIO_MIDI_CTRL_CONFIG    0 //midi电子琴接口使能 ,开这个宏要关掉低功耗使能

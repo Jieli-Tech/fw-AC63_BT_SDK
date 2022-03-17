@@ -164,6 +164,12 @@
 #define USB_EP0_IGNORE            4
 #define USB_EP0_STAGE_NAK         5
 
+///USB suspend_resume各阶段状态
+#define USB_READY               0
+#define USB_SUSPEND             1
+#define USB_RESUME_WAIT         2
+#define USB_RESUME_OK           3
+
 /*            common api            */
 u32 get_jiffies();
 u32 usb_host_timeout(u32 ot);
@@ -180,6 +186,7 @@ u32 usb_g_iso_write(const usb_dev usb_id, u32 ep, const u8 *ptr, u32 len);
 void usb_slave_init(const usb_dev usb_id);
 void usb_phy_resume(const usb_dev usb_id);
 void usb_phy_suspend(const usb_dev usb_id);
+u32  usb_get_suspend_resume_status(const usb_dev usb_id);//返回0:失败   返回1:成功
 
 /*            host api            */
 

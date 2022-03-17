@@ -48,7 +48,7 @@
 
 #define TCFG_AEC_SIMPLEX				0  //通话单工模式配置
 #define TCFG_ESCO_PLC					1  //通话丢包修复
-
+#define TCFG_DIG_PHASE_INVERTER_EN		1  //数字反相器，用来矫正DAC的输出相位
 
 #define MAX_ANA_VOL             (10)	//系统最大模拟音量
 #define MAX_COM_VOL             (16)    // 具体数值应小于联合音量等级的数组大小 (combined_vol_list)
@@ -110,6 +110,7 @@ void app_audio_set_digital_volume(s16 volume);
 void app_set_sys_vol(s16 vol_l, s16  vol_r);
 void app_set_max_vol(s16 vol);
 void audio_combined_vol_init(u8 cfg_en);
+void audio_volume_list_init(u8 cfg_en);
 
 u32 phone_call_eq_open();
 int eq_mode_sw();
@@ -125,5 +126,6 @@ void mic_trim_run();
 /*打印audio模块的数字模拟增益：DAC/ADC*/
 void audio_gain_dump();
 
+void audio_adda_dump(void); //打印所有的dac,adc寄存器
 
 #endif/*_APP_AUDIO_H_*/

@@ -26,14 +26,16 @@ do
     bank_files=$bank_files"bank$i.bin 0x0 "
 done
 echo $bank_files
-lz4_packet -dict text.bin -input common.bin 0 $bank_files -o bank.bin
+lz4_packet -dict text.bin -input common.bin 0 aec.bin 0 aac.bin 0 $bank_files -o bank.bin
 
 ${OBJDUMP} -section-headers -address-mask=0x1ffffff $1.elf
 ${OBJSIZEDUMP} -lite -skip-zero -enable-dbg-info $1.elf | sort -k 1 > symbol_tbl.txt
 
 cat text.bin data.bin data_code.bin bank.bin > app.bin
 
-files="app.bin ${CPU}loader.* uboot*  ota*.bin p11_code.bin isd_config.ini"
+/opt/utils/strip-ini -i isd_config.ini -o isd_config.ini
+
+files="app.bin ${CPU}loader.* uboot*  ota*.bin p11_code.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
 
 NICKNAME="${CPU}_sdk"
 

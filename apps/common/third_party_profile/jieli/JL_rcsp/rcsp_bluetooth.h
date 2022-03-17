@@ -20,6 +20,7 @@ bool rtc_msg_deal(u32 param);
 
 void rcsp_exit(void);
 u8 rcsp_get_asr_status(void);
+u8 get_rcsp_support_new_reconn_flag(void);
 
 // enum {
 // RCSP_BLE,
@@ -53,6 +54,7 @@ struct JL_AI_VAR {
     u16 ffr_time;
     u16 rcsp_timer_hdl;
     volatile u8 wait_asr_end;
+    u8 new_reconn_flag;            //是否支持新的回连方式(进行地址修改)
 };
 
 struct _SPEECH_OVER_DEAL {

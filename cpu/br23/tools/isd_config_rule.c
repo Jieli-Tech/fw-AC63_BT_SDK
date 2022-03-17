@@ -56,8 +56,12 @@
 #endif
 
 #ifndef CONFIG_ENTRY_ADDRESS
+#ifndef CONFIG_LARGE_PROGRAM_ENABLE
 #define CONFIG_ENTRY_ADDRESS                    0x1e00120             //程序入口地址，一般不需要修改(跟张恺讨论过把RESERVED_OPT=0合并到一个配置项)
-#endif
+#else /* #ifdef CONFIG_LARGE_PROGRAM_ENABLE */
+#define CONFIG_ENTRY_ADDRESS                    0x1000120             //程序入口地址，一般不需要修改(跟张恺讨论过把RESERVED_OPT=0合并到一个配置项)
+#endif /* #ifdef CONFIG_LARGE_PROGRAM_ENABLE */
+#endif /* #ifndef CONFIG_ENTRY_ADDRESS */
 
 
 #ifndef CONFIG_SDK_TYPE
@@ -220,7 +224,8 @@ GENERATE_CONFIG_ITEM(EX_SYS_CONFIG_ITEM_KEY_3, EX_SYS_CONFIG_ITEM_VALUE_3);
 #endif
 #endif
 
-EOFFSET = 0; // br23特有配置，是否需要4k*n偏移，默认强制不作任何偏移
+EOFFSET = 0; //flash容量超256kbyte 特有配置，是否需要4k*n偏移，默认强制不作任何偏移
+BT_OFFSET = 0;
 //#############################################################################################################################################
 
 #ifndef CONFIG_VM_ADDR
@@ -348,9 +353,23 @@ PRCT_LEN = CONFIG_PRCT_LEN;
 PRCT_OPT = CONFIG_PRCT_OPT;
 
 //for volatile memory area cfg
+//VM大小默认为CONFIG_VM_LEAST_SIZE，如果代码空间不够可以适当改小，需要满足4*2*n; 改小可能会导致不支持测试盒蓝牙升级（不影响串口升级）
 VM_ADR = CONFIG_VM_ADDR;
 VM_LEN = CONFIG_VM_LEAST_SIZE;
 VM_OPT = CONFIG_VM_OPT;
+
+#if TCFG_VIRFAT_INSERT_FLASH_ENABLE
+FATFSI_FILE = new_res.bin;
+FATFSI_ADR = AUTO;
+FATFSI_LEN = TCFG_VIRFAT_INSERT_FLASH_SIZE;
+FATFSI_OPT = 1;
+#endif
+
+#if TCFG_SFC_VM
+UIVM_ADR = AUTO;
+UIVM_LEN = TCFG_SFC_VM_SIZE;
+UIVM_OPT = 1;
+#endif
 
 #ifdef CONFIG_RESERVED_AREA1
 CAT2(CONFIG_RESERVED_AREA1, ADR) = CONFIG_RESERVED_AREA1_ADDR;
@@ -373,6 +392,12 @@ CAT2(CONFIG_RESERVED_AREA2, FILE) = CONFIG_RESERVED_AREA2_FILE;
 #endif
 
 #endif
+#if TCFG_EQ_ONLINE_ENABLE || TCFG_MIC_EFFECT_ONLINE_ENABLE
+EFFECT_ADR = AUTO;
+EFFECT_LEN = 4K;
+EFFECT_OPT = 1;
+#endif
+
 
 //ANC配置区，如果不想ANC配置因为代码大小变化而改变位置，从而失效，需要手动指定(flash末尾8K位置)
 //4Mbit:0x7E000 8Mbit:0xFE000 16Mbit:0x1FE000
@@ -399,6 +424,9 @@ ANCIF1_OPT = CONFIG_ANCIF1_OPT;
 [BURNER_CONFIG]
 SIZE = CONFIG_BURNER_INFO_SIZE;
 
+[TOOL_CONFIG]
+1TO2_MIN_VER = 2.26.1;//一拖二烧写器最低版本
 
+1TO8_MIN_VER = 3.1.8;//一拖八烧写器最低版本
 
 

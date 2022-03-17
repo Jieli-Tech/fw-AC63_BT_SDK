@@ -2,6 +2,12 @@
 # make 编译并下载
 # make VERBOSE=1 显示编译详细过程
 # make clean 清除编译临时文件
+# 注意： Linux 下编译方式：
+# 1. 从 http://pkgman.jieliapp.com/doc/all 处找到下载链接
+# 2. 下载后，解压到 /opt/jieli 目录下，保证
+#   /opt/jieli/common/bin/clang 存在（注意目录层次）
+# 3. 确认 ulimit -n 的结果足够大（建议大于8096），否则链接可能会因为打开文件太多而失败
+#   可以通过 ulimit -n 8096 来设置一个较大的值
 
 # 工具路径设置
 ifeq ($(OS), Windows_NT)
@@ -16,8 +22,10 @@ RM    := rm -rf
 
 SYS_LIB_DIR := C:/JL/pi32/q32s-lib
 SYS_INC_DIR := C:/JL/pi32/q32s-include
+EXT_CFLAGS  := # Windows 下不需要 -D__SHELL__
 
 ## 后处理脚本
+FIXBAT          := ..\..\..\..\tools\utils\fixbat.exe # 用于处理 utf8->gbk 编码问题
 POST_SCRIPT     := ..\..\..\..\cpu\bd29\tools\download.bat
 RUN_POST_SCRIPT := $(POST_SCRIPT)
 else
@@ -32,8 +40,10 @@ RM    := rm -rf
 
 SYS_LIB_DIR := $(TOOL_DIR)/../lib
 SYS_INC_DIR := $(TOOL_DIR)/../include
+EXT_CFLAGS  := -D__SHELL__ # Linux 下需要这个保证正确处理 download.c
 
 ## 后处理脚本
+FIXBAT          := touch # Linux下不需要处理 bat 编码问题
 POST_SCRIPT     := ../../../../cpu/bd29/tools/download.sh
 RUN_POST_SCRIPT := bash $(POST_SCRIPT)
 endif
@@ -70,6 +80,8 @@ CFLAGS := \
 	-Wundef \
 	-fprefer-gnu-section \
 	-Wframe-larger-than=256 \
+	-Wreturn-type \
+	-Wimplicit-function-declaration \
 	-fms-extensions \
 
 
@@ -110,6 +122,8 @@ DEFINES := \
 	-DUSB_PC_NO_APP_MODE \
 	-D__LD__ \
 
+
+DEFINES += $(EXT_CFLAGS) # 额外的一些定义
 
 # 头文件搜索路径
 INCLUDES := \
@@ -154,10 +168,11 @@ INCLUDES := \
 
 # 需要编译的 .c 文件
 c_SRC_FILES := \
+	../../../../apps/common/bt_common/bt_test_api.c \
 	../../../../apps/common/debug/debug.c \
-	../../../../apps/common/key/adkey.c \
-	../../../../apps/common/key/iokey.c \
-	../../../../apps/common/key/key_driver.c \
+	../../../../apps/common/device/key/adkey.c \
+	../../../../apps/common/device/key/iokey.c \
+	../../../../apps/common/device/key/key_driver.c \
 	../../../../apps/common/third_party_profile/common/custom_cfg.c \
 	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.c \
 	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_ch_loader_download.c \
@@ -209,6 +224,7 @@ c_SRC_FILES := \
 	../../../../apps/mesh/examples/AliGenie_fan.c \
 	../../../../apps/mesh/examples/AliGenie_light.c \
 	../../../../apps/mesh/examples/AliGenie_socket.c \
+	../../../../apps/mesh/examples/TUYA_light.c \
 	../../../../apps/mesh/examples/generic_onoff_client.c \
 	../../../../apps/mesh/examples/generic_onoff_server.c \
 	../../../../apps/mesh/examples/light_lightness_server.c \
@@ -227,6 +243,7 @@ c_SRC_FILES := \
 	../../../../cpu/bd29/app_timer.c \
 	../../../../cpu/bd29/charge.c \
 	../../../../cpu/bd29/chargestore.c \
+	../../../../cpu/bd29/handshake_timer.c \
 	../../../../cpu/bd29/iic_eeprom_test.c \
 	../../../../cpu/bd29/iic_hw.c \
 	../../../../cpu/bd29/iic_slave_test.c \
@@ -311,50 +328,63 @@ else
 QUITE := @
 endif
 
+# 一些旧的 make 不支持 file 函数，需要 make 的时候指定 LINK_AT=0 make
+LINK_AT ?= 1
+
 .PHONY: all clean pre_build
 
 all: pre_build $(OUT_ELF)
-	@echo +POST-BUILD
+	$(info +POST-BUILD)
 	$(QUITE) $(RUN_POST_SCRIPT) sdk
 
 pre_build:
-	@echo +PRE-BUILD
+	$(info +PRE-BUILD)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/bd29/sdk_used_list.c -o ../../../../cpu/bd29/sdk_used_list.used
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/bd29/sdk_ld.c -o ../../../../cpu/bd29/sdk.ld
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/bd29/tools/download.c -o $(POST_SCRIPT)
-	$(QUITE) ..\..\..\..\tools\utils\fixbat.exe $(POST_SCRIPT)
+	$(QUITE) $(FIXBAT) $(POST_SCRIPT)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/bd29/tools/isd_config_rule.c -o ../../../../cpu/bd29/tools/isd_config.ini
 
 clean:
 	$(QUITE) $(RM) $(OUT_ELF)
-	$(QUITE) $(RM) $(OBJS)
-	$(QUITE) $(RM) $(DEP_FILES)
+	$(QUITE) $(RM) $(BUILD_DIR)
 
+
+
+ifeq ($(LINK_AT), 1)
 $(OUT_ELF): $(OBJS)
-	@echo +LINK $@
+	$(info +LINK $@)
+	$(shell $(MKDIR) $(@D))
 	$(file >$(OBJ_FILE), $(OBJS))
 	$(QUITE) $(LD) -o $(OUT_ELF) @$(OBJ_FILE) $(LFLAGS) $(LIBPATHS) $(LIBS)
+else
+$(OUT_ELF): $(OBJS)
+	$(info +LINK $@)
+	$(shell $(MKDIR) $(@D))
+	$(QUITE) $(LD) -o $(OUT_ELF) $(OBJS) $(LFLAGS) $(LIBPATHS) $(LIBS)
+endif
+
 
 $(BUILD_DIR)/%.c.o : $(ROOT_PREFIX)/%.c
-	@echo +CC $<
+	$(info +CC $<)
 	@$(MKDIR) $(@D)
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.S.o : $(ROOT_PREFIX)/%.S
-	@echo +AS $<
+	$(info +AS $<)
 	@$(MKDIR) $(@D)
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.s.o : $(ROOT_PREFIX)/%.s
-	@echo +AS $<
+	$(info +AS $<)
 	@$(MKDIR) $(@D)
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cpp.o : $(ROOT_PREFIX)/%.cpp
-	@echo +CXX $<
+	$(info +CXX $<)
 	@$(MKDIR) $(@D)
 	@$(CXX) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@

@@ -5,6 +5,8 @@
 		. = ALIGN(4);
         *(.dns_16k_data)
         *(.dns_8k_data)
+		*(.jlsp_const)
+		*(.jlsp_code)
         /*
 		*(.aec_code)
 		*(.aec_const)
@@ -218,6 +220,10 @@
 		*(.limiter_const)
 		*(.bt_limiter_const)
 		*(.bt_limiter_code)
+       	*(.drc_const)
+		*(.drc_code)
+		*(.drc_sparse_code)
+		*(.drc_sparse_const)
 	    . = ALIGN(4);
 		*(.sur_cal_const)
 		*(.sur_cal_code)
@@ -227,6 +233,14 @@
 	    . = ALIGN(4);
         *(.lc3_decoder_code)
         *(.lc3_decoder_const)
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*( .lc3_codec_c_sparse_code)
+		*(.lc3_codec_d_code)
+        	/* *(.lc3_codec_c_const) */
+		/* *(.lc3_codec_c_code) */
+#endif
+
+
         *(.lf_audioplc_sparse_code)
         *(.lf_audioplc_code)
         *(.lf_audioplc_const)
@@ -235,6 +249,9 @@
 	    *(.opus_code)
 	    *(.opus_encoder_code)
 	    *(.speex_encoder_code)
+	    *(.resample_fastcal_sparse_code)
+            *(.resample_fastcal_code)
+            *(.resample_fastcal_const)
 	    . = ALIGN(4);
 
     	media_code_end = .;

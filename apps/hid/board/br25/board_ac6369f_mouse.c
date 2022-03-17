@@ -467,34 +467,11 @@ static void keep_set_io_input(int io_sel,u8 pull_up_en,u8 pull_down_en)
 extern void dac_power_off(void);
 void board_set_soft_poweroff(void)
 {
-    u32 porta_value = 0xffff;
-    u32 portb_value = 0xfffe;
-    u32 portc_value = 0xffff;
-
 	if(TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15){
 		power_set_mode(PWR_LDO15);
 	}
 
 	close_gpio();
-
-    gpio_dir(GPIOA, 0, 16, porta_value, GPIO_OR);
-    gpio_set_pu(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_set_pd(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_die(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_dieh(GPIOA, 0, 16, ~portc_value, GPIO_AND);
-
-    //保留长按Reset Pin - PB1
-    gpio_dir(GPIOB, 1, 15, portb_value, GPIO_OR);
-    gpio_set_pu(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_set_pd(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_die(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_dieh(GPIOB, 0, 16, ~portc_value, GPIO_AND);
-
-    gpio_dir(GPIOC, 0, 16, portc_value, GPIO_OR);
-    gpio_set_pu(GPIOC, 0, 16, ~portc_value, GPIO_AND);
-    gpio_set_pd(GPIOC, 0, 16, ~portc_value, GPIO_AND);
-    gpio_die(GPIOC, 0, 16, ~portc_value, GPIO_AND);
-    gpio_dieh(GPIOC, 0, 16, ~portc_value, GPIO_AND);
 
     gpio_set_pull_up(IO_PORT_DP, 0);
     gpio_set_pull_down(IO_PORT_DP, 0);

@@ -78,6 +78,13 @@ int os_task_create(void (*task)(void *p_arg),
                    int qsize,
                    const char *name);
 
+int os_task_create_affinity_core(void (*task)(void *p_arg),
+                                 void *p_arg,
+                                 u8 prio,
+                                 u32 stksize,
+                                 int qsize,
+                                 const char *name,
+                                 u8 core);
 
 /* --------------------------------------------------------------------------*/
 /**
@@ -422,6 +429,10 @@ int os_q_valid(OS_QUEUE *pevent);
 int task_queue_post_event(const char *name, void *data, int len);
 
 void *os_task_get_handle(const char *name);
+
+void os_suspend_other_core(void);
+
+void os_resume_other_core(void);
 
 void os_system_info_output(void);
 

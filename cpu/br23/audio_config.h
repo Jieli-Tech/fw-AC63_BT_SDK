@@ -66,6 +66,7 @@
 #endif
 
 #define TCFG_ESCO_PLC				1  //通话丢包修复
+#define TCFG_DIG_PHASE_INVERTER_EN	1  //数字反相器，用来矫正DAC的输出相位
 
 #define TCFG_ESCO_LIMITER			0  	//通话近端限幅器
 #define TCFG_ESCO_NOISEGATE			0  	//通话近端底噪抑制
@@ -160,6 +161,7 @@ s8 app_audio_get_volume(u8 state);
 void app_audio_set_volume(u8 state, s8 volume, u8 fade);
 void app_audio_volume_up(u8 value);
 void app_audio_volume_down(u8 value);
+void app_audio_volume_set(u8 value);
 void app_audio_state_switch(u8 state, s16 max_volume);
 void app_audio_mute(u8 value);
 s16 app_audio_get_max_volume(void);
@@ -191,4 +193,6 @@ int mic_test_stop();
 void dac_power_on(void);
 void dac_power_off(void);
 
+void audio_adda_dump(void); //打印所有的dac,adc寄存器
+void audio_adda_gain_dump(void);//打印所有adc,dac的增益
 #endif/*_AUDIO_CONFIG_H_*/

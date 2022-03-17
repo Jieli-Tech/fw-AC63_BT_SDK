@@ -28,7 +28,7 @@
 #define CONFIG_APP_AT_COM                 0 //AT com HEX格式命令
 #define CONFIG_APP_AT_CHAR_COM            0 //AT com 字符串格式命令
 #define CONFIG_APP_IDLE                   0 //空闲任务
-#define CONFIG_APP_REMOTE_24G_C           0 //基于BLE的2.4g遥控主机,板级只需要开BLE
+#define CONFIG_APP_CONN_24G               0 //基于BLE的2.4g,板级只需要开BLE
 // #define LL_SYNC_EN                        CONFIG_APP_LL_SYNC //
 // #define TUYA_DEMO_EN                      CONFIG_APP_TUYA
 
@@ -41,31 +41,38 @@
 //蓝牙BLE配置
 #define CONFIG_BT_GATT_COMMON_ENABLE       1 //配置使用gatt公共模块
 #define CONFIG_BT_SM_SUPPORT_ENABLE        0 //配置是否支持加密
-#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数 (app not support)
+#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数 (app not support,应用不支持使能)
 #define CONFIG_BT_GATT_SERVER_NUM          1 //配置从机server个数
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //配置连接个数
 
 #elif CONFIG_APP_DONGLE
+/*默认做搜索设备匹配名字再发起连接 inquery + page*/
 #define EDR_EMITTER_EN                     0 //蓝牙(edr主机)
+
+#if EDR_EMITTER_EN
+/*不做搜索匹配 + 连接，只开放可连接，等待对方连接*/
+#define EDR_EMITTER_PAGESCAN_ONLY          0 /**/
+#endif
 
 #define CONFIG_BT_GATT_COMMON_ENABLE       1
 #define CONFIG_BT_SM_SUPPORT_ENABLE        1 //
-#define CONFIG_BT_GATT_CLIENT_NUM          1 //
-#define CONFIG_BT_GATT_SERVER_NUM          0 //(app not support)
+#define CONFIG_BT_GATT_CLIENT_NUM          1 //设置主机个数(dongle可连接蓝牙设备的个数,max is 2)
+#define CONFIG_BT_COMPOSITE_EQUIPMENT      0
+#define CONFIG_BT_GATT_SERVER_NUM          0 //(app not support,应用不支持使能)
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //
 
 #elif CONFIG_APP_CENTRAL
 #define CONFIG_BT_GATT_COMMON_ENABLE       1
 #define CONFIG_BT_SM_SUPPORT_ENABLE        0 //
 #define CONFIG_BT_GATT_CLIENT_NUM          1 //
-#define CONFIG_BT_GATT_SERVER_NUM          0 //(app not support)
+#define CONFIG_BT_GATT_SERVER_NUM          0 //(app not support,应用不支持使能)
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //
 
 #elif CONFIG_APP_MULTI
 #define CONFIG_BT_GATT_COMMON_ENABLE       1
 #define CONFIG_BT_SM_SUPPORT_ENABLE        0
-#define CONFIG_BT_GATT_CLIENT_NUM          1 //range(0~8)
-#define CONFIG_BT_GATT_SERVER_NUM          1 //range(0~8)
+#define CONFIG_BT_GATT_CLIENT_NUM          1 //range(0~7)
+#define CONFIG_BT_GATT_SERVER_NUM          1 //range(0~1)
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //range(0~8)
 
 //选择AT: 主机从机二选一
@@ -73,17 +80,17 @@
 #define TRANS_AT_COM                       1 //串口控制对接蓝牙双模透传
 #define TRANS_AT_CLIENT                    0 //串口控制对接蓝牙BLE主机透传
 
-#define CONFIG_BT_GATT_COMMON_ENABLE       0//(app not support)
-#define CONFIG_BT_SM_SUPPORT_ENABLE        0//(app not support)
-#define CONFIG_BT_GATT_CLIENT_NUM          1
-#define CONFIG_BT_GATT_SERVER_NUM          1
+#define CONFIG_BT_GATT_COMMON_ENABLE       0//(apps not support,应用不支持使能)
+#define CONFIG_BT_SM_SUPPORT_ENABLE        0//(apps not support,应用不支持使能)
+#define CONFIG_BT_GATT_CLIENT_NUM          1//max is 1
+#define CONFIG_BT_GATT_SERVER_NUM          1//max is 1
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM)
 
 #elif CONFIG_APP_AT_CHAR_COM
-#define CONFIG_BT_GATT_COMMON_ENABLE       0//(app not support)
-#define CONFIG_BT_SM_SUPPORT_ENABLE        0//(app not support)
-#define CONFIG_BT_GATT_CLIENT_NUM          1
-#define CONFIG_BT_GATT_SERVER_NUM          1
+#define CONFIG_BT_GATT_COMMON_ENABLE       0//(apps not support,应用不支持使能)
+#define CONFIG_BT_SM_SUPPORT_ENABLE        0//(apps not support,应用不支持使能)
+#define CONFIG_BT_GATT_CLIENT_NUM          1//max is 1
+#define CONFIG_BT_GATT_SERVER_NUM          1//max is 1
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM)
 
 #elif CONFIG_APP_TUYA
@@ -93,8 +100,8 @@
 //蓝牙配置
 #define CONFIG_BT_GATT_COMMON_ENABLE       1 //配置使用gatt公共模块
 #define CONFIG_BT_SM_SUPPORT_ENABLE        0 //配置是否支持加密
-#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数(app not support)
-#define CONFIG_BT_GATT_SERVER_NUM          1 //配置从机server个数
+#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数(app not support,应用不支持使能)
+#define CONFIG_BT_GATT_SERVER_NUM          1 //配置从机server个数,max is 1
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //配置连接个数
 
 #elif CONFIG_APP_LL_SYNC
@@ -104,18 +111,17 @@
 //蓝牙配置
 #define CONFIG_BT_GATT_COMMON_ENABLE       1 //配置使用gatt公共模块
 #define CONFIG_BT_SM_SUPPORT_ENABLE        0 //配置是否支持加密
-#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数(app not support)
-#define CONFIG_BT_GATT_SERVER_NUM          1 //配置从机server个数
+#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数(app not support,应用不支持使能)
+#define CONFIG_BT_GATT_SERVER_NUM          1 //配置从机server个数,max is 1
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //配置连接个数
 
-#elif CONFIG_APP_REMOTE_24G_C
-#define EDR_EMITTER_EN                     0 //蓝牙(edr主机)
+#elif CONFIG_APP_CONN_24G
 
-#define CONFIG_BT_GATT_COMMON_ENABLE       1
-#define CONFIG_BT_SM_SUPPORT_ENABLE        1 //
-#define CONFIG_BT_GATT_CLIENT_NUM          1 //
-#define CONFIG_BT_GATT_SERVER_NUM          0 //(app not support)
-#define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //
+#define CONFIG_BT_GATT_COMMON_ENABLE       1 //配置使用gatt公共模块
+#define CONFIG_BT_SM_SUPPORT_ENABLE        0 //(apps not support,应用不支持使能)
+#define CONFIG_BT_GATT_CLIENT_NUM          1 //配置主机client使能,max is 1
+#define CONFIG_BT_GATT_SERVER_NUM          0 //配置从机server使能,max is 1
+#define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM)
 
 #else
 #define CONFIG_BT_GATT_COMMON_ENABLE       0
@@ -143,8 +149,12 @@
 #define APP_PRIVATE_PROFILE_CFG
 
 #if (CONFIG_BT_MODE == BT_NORMAL)
-//enable dut mode,need disable sleep
+//enable dut mode,need disable sleep(TCFG_LOWPOWER_LOWPOWER_SEL = 0)
 #define TCFG_NORMAL_SET_DUT_MODE                  0
+#if TCFG_NORMAL_SET_DUT_MODE
+#undef  TCFG_LOWPOWER_LOWPOWER_SEL
+#define TCFG_LOWPOWER_LOWPOWER_SEL                0
+#endif
 
 #else
 
@@ -275,7 +285,7 @@
 //#define DEV_UPDATE_SUPPORT_JUMP           //目前只有br23\br25支持
 #endif
 
-#if (defined(CONFIG_CPU_BR23) || defined(CONFIG_CPU_BR25) || defined(CONFIG_CPU_BD29) || defined(CONFIG_CPU_BD19))
+#if (defined(CONFIG_CPU_BR23) || defined(CONFIG_CPU_BR25) || defined(CONFIG_CPU_BD29) || defined(CONFIG_CPU_BD19) || defined(CONFIG_CPU_BR30) || defined(CONFIG_CPU_BR34))
 #define USER_UART_UPDATE_ENABLE           0//用于客户开发上位机或者多MCU串口升级方案,请确保串口通信前已经退出powerdown,需要在对应的board添加初始化和唤醒口配置参考board_ac632n_demo.c
 
 #define UART_UPDATE_SLAVE	0

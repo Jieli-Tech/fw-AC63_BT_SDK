@@ -139,6 +139,21 @@ static const uint8_t trans_profile_data[] = {
     // 0x0045 CLIENT_CHARACTERISTIC_CONFIGURATION
     0x0a, 0x00, 0x0a, 0x01, 0x45, 0x00, 0x02, 0x29, 0x00, 0x00,
 
+    //////////////////////////////////////////////////////
+    //
+    // 0x0046 PRIMARY_SERVICE  1801
+    //
+    //////////////////////////////////////////////////////
+    0x0a, 0x00, 0x02, 0x00, 0x46, 0x00, 0x00, 0x28, 0x01, 0x18,
+
+    /* CHARACTERISTIC,  2a05, INDICATE, */
+    // 0x0047 CHARACTERISTIC 2a05 INDICATE
+    0x0d, 0x00, 0x02, 0x00, 0x47, 0x00, 0x03, 0x28, 0x20, 0x48, 0x00, 0x05, 0x2a,
+    // 0x0048 VALUE 2a05 INDICATE
+    0x08, 0x00, 0x20, 0x00, 0x48, 0x00, 0x05, 0x2a,
+    // 0x0049 CLIENT_CHARACTERISTIC_CONFIGURATION
+    0x0a, 0x00, 0x0a, 0x01, 0x49, 0x00, 0x02, 0x29, 0x00, 0x00,
+
 #if RCSP_BTMATE_EN
     //////////////////////////////////////////////////////
     //
@@ -184,9 +199,12 @@ static const uint8_t trans_profile_data[] = {
 #define ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE 0x0011
 #define ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE 0x0013
 
+
 #define ATT_CHARACTERISTIC_ae3b_01_VALUE_HANDLE 0x0042
 #define ATT_CHARACTERISTIC_ae3c_01_VALUE_HANDLE 0x0044
 #define ATT_CHARACTERISTIC_ae3c_01_CLIENT_CONFIGURATION_HANDLE 0x0045
+#define ATT_CHARACTERISTIC_2a05_01_VALUE_HANDLE 0x0048
+#define ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE 0x0049
 
 #endif
 

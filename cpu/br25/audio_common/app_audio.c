@@ -356,6 +356,14 @@ static int audio_combined_vol_set(u8 gain_l, u8 gain_r, u8 fade)
 
 #endif  // (SYS_VOL_TYPE == VOL_TYPE_AD)
 
+void audio_volume_list_init(u8 cfg_en)
+{
+#if (SYS_VOL_TYPE == VOL_TYPE_AD)
+    audio_combined_vol_init(cfg_en);
+#elif (SYS_VOL_TYPE == VOL_TYPE_DIGITAL_HW)
+    /* audio_hw_digital_vol_init(cfg_en); */
+#endif/*SYS_VOL_TYPE*/
+}
 
 void volume_up_down_direct(s8 value)
 {
@@ -1055,9 +1063,15 @@ void mic_capless_auto_adjust_exit()
 /*
  *return -1:非省电容模式
  *return -2:校准失败
+ *return -3:麦掉线（坏了或者没焊接）
  *return  0:默认值合法，不用校准
  *return  1:默认值非法，启动校准
  */
+#define MC_ERR_MODE			-1
+#define MC_ERR_TRIM_FAIL	-2
+#define MC_ERR_MIC_OFFLINE	-3
+#define MC_ERR_VALID		0
+#define MC_ERR_INVALID		1
 s8 mic_capless_auto_adjust(void)
 {
     u16 mic_bias_val = 0;
@@ -1097,6 +1111,28 @@ s8 mic_capless_auto_adjust(void)
         log_info("mic_bias_val:%d,idx:%d,rsel:%d\n", mic_bias_val, mic_bias_idx, mic_bias_tab[mic_bias_idx]);
     }
 #endif
+
+
+#if TCFG_MC_MIC_ONLINE_CHECK_EN
+    u8 tmp_rsel_idx = 1;
+    MIC_BIAS_RSEL(mic_bias_tab[tmp_rsel_idx]);
+    delay_2ms(25);//延时等待偏置电压稳定
+    u16 mic_bias_val_0 = adc_get_voltage(ADC_MIC_CH);
+    log_info("mic_bias_val:%d,idx:%d,rsel:%d\n", mic_bias_val_0, tmp_rsel_idx, mic_bias_tab[mic_bias_idx]);
+
+    tmp_rsel_idx = 16;
+    MIC_BIAS_RSEL(mic_bias_tab[tmp_rsel_idx]);
+    delay_2ms(25);//延时等待偏置电压稳定
+    u16 mic_bias_val_1 = adc_get_voltage(ADC_MIC_CH);
+    log_info("mic_bias_val:%d,idx:%d,rsel:%d\n", mic_bias_val_1, tmp_rsel_idx, mic_bias_tab[mic_bias_idx]);
+    u16 mic_bias_val_diff = __builtin_abs(mic_bias_val_0 - mic_bias_val_1);
+    log_info("mic_bias_val_diff:%d\n", mic_bias_val_diff);
+    if (mic_bias_val_diff < 500) {
+        printf("MIC_offline,Please check your layout!\n");
+        mic_capless_auto_adjust_exit();
+        return MC_ERR_MIC_OFFLINE;
+    }
+#endif/*TCFG_MC_MIC_ONLEIN_CHECK_EN*/
 
     while (1) {
         wdt_clear();
@@ -1288,6 +1324,10 @@ void _audio_dac_trim_hook(u8 pos)
             mic_capless_auto_adjust_init();
             os_time_dly(25);
             ret = mic_capless_auto_adjust();
+            if (ret == MC_ERR_MIC_OFFLINE) {
+                log_info("mic offline,return\n");
+                return;
+            }
             /*
              *预收敛条件：
              *1、开机检查发现mic的偏置非法，则校准回来，同时重新收敛,比如中途更换mic头的情况
@@ -1614,4 +1654,35 @@ int audio_output_sync_stop(void)
 }
 
 #endif
+
+void audio_adda_dump(void) //打印所有的dac,adc寄存器
+{
+    printf("DAC_VL0:%x", JL_AUDIO->DAC_VL0);
+    printf("DAC_TM0:%x", JL_AUDIO->DAC_TM0);
+    printf("DAC_DTB:%x", JL_AUDIO->DAC_DTB);
+    printf("DAC_CON:%x", JL_AUDIO->DAC_CON);
+    printf("ADC_CON:%x", JL_AUDIO->ADC_CON);
+    printf("DAC RES: DA0:0x%x DA1:0x%x DA2:0x%x DA3:0x%x DA7:0x%x,ADC RES:ADA0:0X%x ADA1:0X%x ADA2:0X%x  ADA3:0X%x\n", \
+           JL_ANA->DAA_CON0, JL_ANA->DAA_CON1, JL_ANA->DAA_CON2, JL_ANA->DAA_CON3,  JL_ANA->DAA_CON7, \
+           JL_ANA->ADA_CON0, JL_ANA->ADA_CON1, JL_ANA->ADA_CON2, JL_ANA->ADA_CON3);
+}
+
+void audio_adda_gain_dump(void)//打印所有adc,dac的增益
+{
+    u8 dac_again_l = JL_ANA->DAA_CON1 & 0x1F;
+    u8 dac_again_r = (JL_ANA->DAA_CON1 >> 5) & 0x1F;
+
+
+    u32 dac_dgain_l = JL_AUDIO->DAC_VL0 & 0xFFFF;
+    u32 dac_dgain_r = (JL_AUDIO->DAC_VL0 >> 16) & 0xFFFF;
+
+
+    u8 mic0_gain = JL_ANA->ADA_CON1 & 0x1F;
+    u8 mic0_db = (JL_ANA->ADA_CON1 >> 16) & 0x1; //0db还是6db
+    u8 linein_gain = (JL_ANA->ADA_CON1 >> 5) & 0xF;
+
+    printf("MIC_G:%d,MIC_0_6:%d, linein_gain:%d,DAC_AG:%d,%d,DAC_DG:%d,%d\n", mic0_gain, mic0_db, linein_gain, dac_again_l, dac_again_r, dac_dgain_l, dac_dgain_r);
+
+}
+
 

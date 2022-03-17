@@ -55,7 +55,6 @@ extern void rcsp_update_handle(void *buf, int len);
 extern u32 ex_cfg_fill_content_api(void);
 extern void update_result_set(u16 result);
 
-static u8 rcsp_update_flag = 0;
 static u8 rcsp_update_status;
 static u8 update_flag = 0;
 static u16 ble_discon_timeout;
@@ -143,7 +142,8 @@ void JL_rcsp_update_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
         break;
     case JL_OPCODE_SET_DEVICE_REBOOT:
         rcsp_printf("JL_OPCODE_SET_DEVICE_REBOOT\n");
-        if (support_dual_bank_update_en) {
+        //if (support_dual_bank_update_en)
+        {
             cpu_reset();
         }
         break;
@@ -268,7 +268,6 @@ static JL_ERR JL_controller_resp_get_dev_refresh_fw_status(u8 OpCode, u8 OpCode_
     u8 data[1];
 
     data[0] = result;	//0:sucess 1:fail;
-
     send_err = JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, data, sizeof(data));
 
     return send_err;
@@ -342,7 +341,22 @@ static void rcsp_update_private_param_fill(UPDATA_PARM *p)
 
 static void rcsp_update_before_jump_handle(int type)
 {
+#if CONFIG_UPDATE_JUMP_TO_MASK
+    y_printf(">>>[test]:latch reset update\n");
+    latch_reset();
+#if 0
+    update_close_hw("null");
+    ram_protect_close();
+    /* save_spi_port(); */
+    extern void __BT_UPDATA_JUMP();
+    y_printf("update jump to __BT_UPDATA ...\n");
+    /* clk_set("sys", 48 * 1000000L); */
+    //跳转到uboot加载完,30ms左右(200410_yzb)
+    __BT_UPDATA_JUMP();
+#endif
+#else
     cpu_reset();
+#endif
 }
 
 
@@ -495,6 +509,7 @@ void rcsp_update_jump_for_hid_device()
 }
 #endif
 
+static u8 rcsp_update_flag = 0;
 void set_rcsp_db_update_status(u8 value)
 {
     rcsp_update_flag = value;

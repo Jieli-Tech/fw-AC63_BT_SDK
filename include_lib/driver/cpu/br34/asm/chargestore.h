@@ -1,5 +1,5 @@
-#ifndef __BR22_CHARGESTORE_H__
-#define __BR22_CHARGESTORE_H__
+#ifndef __BR34_CHARGESTORE_H__
+#define __BR34_CHARGESTORE_H__
 
 enum {
     CMD_COMPLETE,
@@ -28,6 +28,21 @@ struct chargestore_platform_data {
     void (*write)(u8 *, u8);
 };
 
+struct chargestore_data_handler {
+    int (*data_cb)(u8 *buf, u8 len);
+};
+
+#define CHARGESTORE_HANDLE_REG(name, data_callback) \
+	const struct chargestore_data_handler chargestore_##name \
+		 SEC_USED(.chargestore_callback_txt) = {data_callback};
+
+extern struct chargestore_data_handler chargestore_handler_begin[];
+extern struct chargestore_data_handler chargestore_handler_end[];
+
+#define list_for_each_loop_chargestore(h) \
+	for (h=chargestore_handler_begin; h<chargestore_handler_end; h++)
+
+
 #define CHARGESTORE_PLATFORM_DATA_BEGIN(data) \
     static const struct chargestore_platform_data data = {
 
@@ -54,5 +69,6 @@ extern void chargestore_api_wait_complete(void);
 extern void chargestore_api_set_timeout(u16 timeout);
 extern void chargestore_api_stop(void);
 extern void chargestore_api_restart(void);
+extern u8 chargestore_api_crc8(u8 *ptr, u8 len);
 
 #endif

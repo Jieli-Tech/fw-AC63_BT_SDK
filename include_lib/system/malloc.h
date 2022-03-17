@@ -26,19 +26,6 @@ void memory_init(void);
 
 void mem_stats(void);
 
-size_t xPortGetFreeHeapSize(void);
-size_t xPortGetMinimumEverFreeHeapSize(void);
-size_t xPortGetPhysiceMemorySize(void);
-
-/*
- *  --Physic Memory
- */
-void *get_physic_address(u32 page);
-
-/*
- *  --Virtual Memory
- */
-void *vmem_get_phy_adr(void *vaddr);
 
 #ifdef __cplusplus
 }

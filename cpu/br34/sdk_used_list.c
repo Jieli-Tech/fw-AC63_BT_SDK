@@ -103,6 +103,13 @@ g726_decoder
 wtgv2_decoder
 #endif
 
+#if TCFG_DEC_SPEEX_ENABLE
+speex_decoder
+#endif
+
+#if TCFG_DEC_OPUS_ENABLE
+opus_decoder
+#endif
 
 #if TCFG_DEC_MIDI_ENABLE
 midi_decoder
@@ -130,6 +137,9 @@ sbc_encoder
 #endif
 
 
+#if TCFG_DEC_LC3_ENABLE
+lc3_decoder
+#endif
 
 #if TCFG_ENC_LC3_ENABLE
 lc3_encoder

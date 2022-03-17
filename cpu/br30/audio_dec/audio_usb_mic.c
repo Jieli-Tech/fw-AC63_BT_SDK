@@ -9,10 +9,20 @@
 /* #include "application/audio_echo_reverb.h" */
 /*usb mic的数据是否经过AEC,包括里面的ANS模块*/
 #define USB_MIC_AEC_EN				0
+/*AEC模块只能处理16k数据，如果经过aec，就需要对输出数据做变采样*/
+#define USB_MIC_SRC_ENABLE	1 //同步以及变采样使能
+
+
 #if USB_MIC_AEC_EN
 #include "aec_user.h"
 #endif/*USB_MIC_AEC_EN*/
 
+#if USB_MIC_SRC_ENABLE
+/* #ifdef CONFIG_MEDIA_DEVELOP_ENABLE */
+#include "audio_track.h"
+/* #endif */
+#include "Resample_api.h"
+#endif/*USB_MIC_SRC_ENABLE*/
 
 #if TCFG_PC_ENABLE
 
@@ -32,6 +42,22 @@
 
 extern struct audio_adc_hdl adc_hdl;
 extern u16 uac_get_mic_vol(const u8 usb_id);
+extern int usb_output_sample_rate();
+#if USB_MIC_SRC_ENABLE
+typedef struct {
+    u8 start;
+    u8 busy;
+    u16 in_sample_rate;
+    u32 *runbuf;
+    s16 output[320 * 3 + 16];
+    RS_STUCT_API *ops;
+    void *audio_track;
+    u8 input_ch;
+} usb_mic_sw_src_t;
+static usb_mic_sw_src_t *usb_mic_src = NULL;
+#endif/*USB_MIC_SRC_ENABLE*/
+
+
 
 struct _usb_mic_hdl {
     struct audio_adc_output_hdl adc_output;
@@ -136,16 +162,38 @@ int usb_audio_mic_write(void *data, u16 len)
 {
     int wlen = len;
     if (usb_mic_hdl) {
-        wlen = cbuf_write(&usb_mic_hdl->output_cbuf, data, len);
-#if 1
+        if (usb_mic_hdl->status == USB_MIC_STOP) {
+            return len;
+        }
+
+        int outlen = len;
+        s16 *obuf = data;
+
+#if USB_MIC_SRC_ENABLE
+        if (usb_mic_src && usb_mic_src->start) {
+            usb_mic_src->busy = 1;
+            /* #ifdef CONFIG_MEDIA_DEVELOP_ENABLE */
+            u32 sr = usb_output_sample_rate();
+            usb_mic_src->ops->set_sr(usb_mic_src->runbuf, sr);
+            /* #endif */
+            outlen = usb_mic_src->ops->run(usb_mic_src->runbuf, data, len >> 1, usb_mic_src->output);
+            usb_mic_src->busy = 0;
+            ASSERT(outlen <= (sizeof(usb_mic_src->output) >> 1));
+            //printf("16->48k:%d,%d,%d\n",len >> 1,outlen,sizeof(usb_mic_src->output));
+            obuf = usb_mic_src->output;
+            outlen = outlen << 1;
+        }
+#endif/*USB_MIC_SRC_ENABLE*/
+        wlen = cbuf_write(&usb_mic_hdl->output_cbuf, obuf, outlen);
+#if 0
         static u32 usb_mic_data_max = 0;
         if (usb_mic_data_max < usb_mic_hdl->output_cbuf.data_len) {
             usb_mic_data_max = usb_mic_hdl->output_cbuf.data_len;
             y_printf("usb_mic_max:%d", usb_mic_data_max);
         }
 #endif
-        if (wlen != len) {
-            r_printf("usb_mic write full:%d-%d\n", wlen, len);
+        if (wlen != outlen) {
+            r_printf("usb_mic write full:%d-%d\n", wlen, outlen);
         }
     }
     return wlen;
@@ -167,6 +215,15 @@ static void adc_output_to_cbuf(void *priv, s16 *data, int len)
     case ENCODE_SOURCE_LINE0_LR:
     case ENCODE_SOURCE_LINE1_LR:
     case ENCODE_SOURCE_LINE2_LR: {
+
+#if USB_MIC_SRC_ENABLE
+        /* #ifdef CONFIG_MEDIA_DEVELOP_ENABLE */
+        if (usb_mic_src && usb_mic_src->audio_track) {
+            audio_local_sample_track_in_period(usb_mic_src->audio_track, (len >> 1) / usb_mic_src->input_ch);
+        }
+        /* #endif */
+#endif/*USB_MIC_SRC_ENABLE*/
+
 #if USB_MIC_AEC_EN
         audio_aec_inbuf(data, len);
 #else
@@ -180,10 +237,7 @@ static void adc_output_to_cbuf(void *priv, s16 *data, int len)
         }
 #endif
 
-        int wlen = cbuf_write(&usb_mic_hdl->output_cbuf, data, len);
-        if (wlen != len) {
-            printf("wlen %d len %d\n", wlen, len);
-        }
+        usb_audio_mic_write(data, len);
 #endif
     }
     break;
@@ -192,32 +246,71 @@ static void adc_output_to_cbuf(void *priv, s16 *data, int len)
     }
 }
 
-#if USB_MIC_AEC_EN
-#include "Resample_api.h"
-static RS_STUCT_API *sw_src_api = NULL;
-static u8 *sw_src_buf = NULL;
-static s16 sw_src_output[320 * 3 + 16];
 
-u32 sw_src_need_buf;
-static int sw_src_init()
+
+#if USB_MIC_SRC_ENABLE
+static int sw_src_init(u32 in_sr, u32 out_sr)
 {
-    sw_src_api = get_rs16_context();
-    g_printf("sw_src_api:0x%x\n", sw_src_api);
-    ASSERT(sw_src_api);
-    sw_src_need_buf = sw_src_api->need_buf();
-    g_printf("sw_src_buf:%d\n", sw_src_need_buf);
-    sw_src_buf = malloc(sw_src_need_buf);
-    ASSERT(sw_src_buf);
+    usb_mic_src = zalloc(sizeof(usb_mic_sw_src_t));
+    ASSERT(usb_mic_src);
+    /* usb_mic_src->ops = get_rs16_context(); */
+    usb_mic_src->ops = get_rsfast_context();
+    g_printf("ops:0x%x\n", usb_mic_src->ops);
+    ASSERT(usb_mic_src->ops);
+    u32 need_buf = usb_mic_src->ops->need_buf();
+    g_printf("runbuf:%d\n", need_buf);
+    usb_mic_src->runbuf = malloc(need_buf);
+    ASSERT(usb_mic_src->runbuf);
     RS_PARA_STRUCT rs_para_obj;
     rs_para_obj.nch = 1;
 
-    rs_para_obj.new_insample = 16000;
-    rs_para_obj.new_outsample = 48000;
+    rs_para_obj.new_insample = in_sr;
+    rs_para_obj.new_outsample = out_sr;
     printf("sw src,in = %d,out = %d\n", rs_para_obj.new_insample, rs_para_obj.new_outsample);
-    sw_src_api->open(sw_src_buf, &rs_para_obj);
+    usb_mic_src->ops->open(usb_mic_src->runbuf, &rs_para_obj);
+
+    /* #ifdef CONFIG_MEDIA_DEVELOP_ENABLE */
+    usb_mic_src->input_ch = rs_para_obj.nch;
+    usb_mic_src->in_sample_rate = in_sr;
+    usb_mic_src->audio_track = audio_local_sample_track_open(usb_mic_src->input_ch, in_sr, 1000);
+    /* #endif */
+
+    usb_mic_src->start = 1;
     return 0;
 }
 
+static int sw_src_exit(void)
+{
+    if (usb_mic_src) {
+        usb_mic_src->start = 0;
+        while (usb_mic_src->busy) {
+            putchar('w');
+            os_time_dly(2);
+        }
+
+        /* #ifdef CONFIG_MEDIA_DEVELOP_ENABLE */
+        audio_local_sample_track_close(usb_mic_src->audio_track);
+        usb_mic_src->audio_track = NULL;
+        /* #endif */
+
+        local_irq_disable();
+        if (usb_mic_src->runbuf) {
+            free(usb_mic_src->runbuf);
+            usb_mic_src->runbuf = 0;
+        }
+        free(usb_mic_src);
+        usb_mic_src = NULL;
+        local_irq_enable();
+        printf("sw_src_exit\n");
+    }
+    printf("sw_src_exit ok\n");
+    return 0;
+}
+#endif/*USB_MIC_SRC_ENABLE*/
+
+
+
+#if USB_MIC_AEC_EN
 static int usb_mic_aec_output(s16 *data, u16 len)
 {
     //putchar('k');
@@ -230,15 +323,6 @@ static int usb_mic_aec_output(s16 *data, u16 len)
 
     int outlen = len;
     s16 *outdat = data;
-
-    if (sw_src_api && sw_src_buf) {
-        outlen = sw_src_api->run(sw_src_buf, data, len >> 1, sw_src_output);
-        ASSERT(outlen <= (sizeof(sw_src_output) >> 1));
-        //printf("16->48k:%d,%d,%d\n",len >> 1,outlen,sizeof(sw_src_output));
-        outlen = outlen << 1;
-        outdat = sw_src_output;
-    }
-
     /* if (aec_hdl->dump_packet) { */
     /*     aec_hdl->dump_packet--; */
     /*     //memset(outdat, 0, outlen); */
@@ -283,13 +367,18 @@ int usb_audio_mic_open(void *_info)
 
 
     usb_mic_hdl->drop_data = 2; //用来丢掉前几帧数据
+    u32 out_sample_rate = sample_rate;
 #if USB_MIC_AEC_EN
     sample_rate = 16000;
     printf("usb mic sr[aec]:%d\n", sample_rate);
     //audio_aec_init(sample_rate);
-    sw_src_init();
     audio_aec_open(sample_rate, ANS_EN, usb_mic_aec_output);
 #endif
+
+#if USB_MIC_SRC_ENABLE
+    sw_src_init(sample_rate, out_sample_rate);
+#endif /*USB_MIC_SRC_ENABLE*/
+
 
     cbuf_init(&usb_mic_hdl->output_cbuf, usb_mic_hdl->output_buf, PCM_ENC2USB_OUTBUF_LEN);
 
@@ -413,6 +502,10 @@ int usb_audio_mic_close(void *arg)
         }
 #endif
 #endif
+
+#if USB_MIC_SRC_ENABLE
+        sw_src_exit();
+#endif /*USB_MIC_SRC_ENABLE*/
         cbuf_clear(&usb_mic_hdl->output_cbuf);
         if (usb_mic_hdl) {
 
@@ -427,6 +520,63 @@ int usb_audio_mic_close(void *arg)
     printf("usb_audio_mic_close out\n");
 
     return 0;
+}
+
+int usb_mic_stream_sample_rate(void)
+{
+#if USB_MIC_SRC_ENABLE
+    /* #ifdef CONFIG_MEDIA_DEVELOP_ENABLE */
+    if (usb_mic_src && usb_mic_src->audio_track) {
+        int sr = audio_local_sample_track_rate(usb_mic_src->audio_track);
+        if ((sr < (usb_mic_src->in_sample_rate + 500)) && (sr > (usb_mic_src->in_sample_rate - 500))) {
+            return sr;
+        }
+        /* printf("uac audio_track reset \n"); */
+        local_irq_disable();
+        audio_local_sample_track_close(usb_mic_src->audio_track);
+        usb_mic_src->audio_track = audio_local_sample_track_open(USB_MIC_CH_NUM, usb_mic_src->in_sample_rate, 1000);
+        local_irq_enable();
+        return usb_mic_src->in_sample_rate;
+    }
+    /* #endif */
+#endif /*USB_MIC_SRC_ENABLE*/
+
+    return 0;
+}
+
+u32 usb_mic_stream_size()
+{
+    if (!usb_mic_hdl) {
+        return 0;
+    }
+    if (usb_mic_hdl->status == USB_MIC_START) {
+        if (usb_mic_hdl) {
+            return cbuf_get_data_size(&usb_mic_hdl->output_cbuf);
+        }
+    }
+
+    return 0;
+}
+
+u32 usb_mic_stream_length()
+{
+    return PCM_ENC2USB_OUTBUF_LEN;
+}
+
+int usb_output_sample_rate()
+{
+    int sample_rate = usb_mic_stream_sample_rate();
+    int buf_size = usb_mic_stream_size();
+
+    if (buf_size >= (usb_mic_stream_length() * 3 / 4)) {
+        sample_rate += (sample_rate * 5 / 10000);
+        /* putchar('+'); */
+    }
+    if (buf_size <= (usb_mic_stream_length() / 4)) {
+        sample_rate -= (sample_rate * 5 / 10000);
+        /* putchar('-'); */
+    }
+    return sample_rate;
 }
 
 #endif /* TCFG_APP_PC_EN */

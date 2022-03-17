@@ -153,11 +153,14 @@ static u8 alarm_update_all_time(void)
     if (closest > M_MAX_ALARM_NUMS) {
         set_alarm_ctrl(0);
     }
-    if ((alarm_tab[closest].en) && (closest != alarm_mask.alarm_active_index)) {   //最接近闹钟号跟记录的不一样，则要重设硬件寄存器，更新记录
+
+    if ((alarm_tab[closest].en)) {   //最接近闹钟号跟记录的不一样，则要重设硬件寄存器，更新记录
         rtc_ioctl(IOCTL_SET_ALARM, (u32)&alarm_tab[closest].time);
-        err = alarm_vm_write_mask(closest);
-        if (err) {
-            return 1;
+        if (closest != alarm_mask.alarm_active_index) {	//最接近闹钟号跟记录不一样，更新VM
+            err = alarm_vm_write_mask(closest);
+            if (err) {
+                return 1;
+            }
         }
     }
 

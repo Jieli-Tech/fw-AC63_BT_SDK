@@ -31,8 +31,10 @@
 #define DAC_OUTPUT_LR                      2    //立体声
 #define DAC_OUTPUT_MONO_LR_DIFF            3    //单声道差分输出
 
-#define DAC_DSM_6MHz                    0
-#define DAC_DSM_12MHz                   1
+#define DAC_DSM_DEFAULT                 0
+#define DAC_DSM_6MHz                    1
+#define DAC_DSM_12MHz                   2
+
 // #define DAC_OUTPUT_DUAL_LR_DIFF            6    //双声道差分
 // #define DAC_OUTPUT_FRONT_LR_REAR_L         7    //三声道单端输出 前L+前R+后L (不可设置vcmo公共端)
 // #define DAC_OUTPUT_FRONT_LR_REAR_R         8    //三声道单端输出 前L+前R+后R (可设置vcmo公共端)
@@ -67,6 +69,10 @@
 #define DA_SYNC_INPUT_BITS              20
 #define DA_SYNC_MAX_NUM                 (1 << DA_SYNC_INPUT_BITS)
 
+#define DIFF_OSC_CLK                    0   //差分晶振配置
+#define DIGITAL_SINGLE_CLK              1   //数字单端配置
+
+struct audio_dac_hdl;
 struct dac_platform_data {
     void (*analog_open_cb)(struct audio_dac_hdl *);
     void (*analog_close_cb)(struct audio_dac_hdl *);
@@ -78,6 +84,8 @@ struct dac_platform_data {
     u32 vcmo_en : 1;            //VCMO直推使能
     u32 dsm_clk : 1;
     u32 zero_cross_detect : 1;  //过零点检测使能
+    u32 light_close : 1;        //使能轻量级关闭，最低功耗保持dac开启
+    u32 dac_analog_clock_source : 1;          //dac 模拟时钟来源配置，选0为差分晶振，选1为数字单端配置
 };
 
 

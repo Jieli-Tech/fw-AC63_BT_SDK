@@ -218,12 +218,6 @@ int eartch_event_deal_init(void);
 
 #define __this 		(&_ctmu_key)
 
-#if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE
-static int lp_touch_key_online_debug_init(void);
-static int lp_touch_key_online_debug_send(u8 ch, u16 val);
-static int lp_touch_key_online_debug_key_event_handle(u8 ch_index, struct sys_event *event);
-#endif /* #if TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE */
-
 static volatile u8 is_lpkey_active = 0;
 
 //init io HZ
@@ -405,7 +399,7 @@ void lp_touch_key_init(const struct lp_touch_key_platform_data *config)
         M2P_CTMU_CH1_RES_SEND = 0;
 #endif
         u16 trim_value;
-        int ret = syscfg_read(LP_KEY_CH1_TRIM_VALUE, &trim_value, sizeof(trim_value));
+        int ret = syscfg_read(LP_KEY_EARTCH_TRIM_VALUE, &trim_value, sizeof(trim_value));
         __this->ch1_trim_flag = 0;
         __this->ch1_inear_ok = 0;
 
@@ -768,6 +762,7 @@ static int test[1000] = {0};
 u8 last_state = CTMU_P2M_CH1_OUT_EVENT;
 //extern void spp_printf(const char *format, ...);
 
+static int lp_touch_key_testbox_test_res_handle(u8 ctmu_event);
 void p33_ctmu_key_event_irq_handler()
 {
     static u32 cnt0 = 0;
@@ -787,6 +782,10 @@ void p33_ctmu_key_event_irq_handler()
         if (ret == true) {
             return;
         }
+    }
+
+    if (lp_touch_key_testbox_test_res_handle(ctmu_event)) {
+        return;
     }
 
     /*log_debug("ctmu msg: 0x%x", ctmu_event);*/
@@ -831,7 +830,7 @@ void p33_ctmu_key_event_irq_handler()
             if (__this->ch1_trim_flag++ > 20) {
                 __this->ch1_trim_flag = 0;
                 M2P_CTMU_CH1_RES_SEND = 0;
-                int ret = syscfg_write(LP_KEY_CH1_TRIM_VALUE, &(__this->ch1_trim_value), sizeof(__this->ch1_trim_value));
+                int ret = syscfg_write(LP_KEY_EARTCH_TRIM_VALUE, &(__this->ch1_trim_value), sizeof(__this->ch1_trim_value));
                 log_info("write ret = %d", ret);
                 if (ret > 0) {
                     M2P_CTMU_CH1_TRIM_VALUE_L = (__this->ch1_trim_value & 0xFF);
@@ -1418,4 +1417,487 @@ REGISTER_LP_TARGET(key_lp_target) = {
 #endif /* #if !TCFG_LP_TOUCH_KEY_ENABLE */
 
 
-#endif
+//======================================================//
+//              测试盒变化量测试命令接收                //
+//======================================================//
+#define LP_TOUCH_TEST_TIMEOUT_CONFIG 			8000 //ms
+#define LP_TOUCH_TEST_END_DELAY_COUNTER 		20
+
+extern int lp_touch_key_testbox_test_cmd_send(void *priv);
+
+enum LP_TOUCH_KEY_TESTBOX_CMD_TABLE {
+    LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_NONE = 0,
+    LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_ENTER = 'T',
+    LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY,
+    LP_TOUCH_KEY_TESTBOX_CMD_TEST_TIMEOUT_REPORT, //测试盒超时, 请求测试结果
+    LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_EXIT,
+};
+
+enum LP_TOUCH_KEY_TESTBOX_ERR_TABLE {
+    LP_TOUCH_KEY_TESTBOX_ERR_NONE = 'O', 			//79, 测试通过
+    LP_TOUCH_KEY_TESTBOX_ERR_DOUBLE_KEY_NOT_HIT, 	//80, 未检测到双击
+    LP_TOUCH_KEY_TESTBOX_ERR_DETLA, 				//81, 触摸变化量太小
+};
+
+typedef struct lp_touch_key_test_cmd {
+    u8 cmd;
+} LP_TOUCH_TESTBOX_CMD;
+
+
+struct lp_touch_key_test_report {
+    u8 result;
+    u16 res_max;
+    u16 res_min;
+    u16 res_delta;
+    u16 res_percent;
+    u8 fall_cnt;
+    u8 raise_cnt;
+};
+
+
+struct lp_touch_key_test_statis {
+    u16 last_value;
+    u16 probe_max;
+    u16 probe_min;
+    u16 res_max0;
+    u16 res_min0;
+    u16 res_max1;
+    u16 res_min1;
+    u16 end_cnt;
+    u8 double_key_hit;
+    u8 cur_status;
+    u8 fall_cnt;
+    u8 raise_cnt;
+};
+
+struct lp_touch_key_test_handle {
+    u8 cur_test_status;
+    struct lp_touch_key_test_statis statis;
+    u32 timeout_timer;
+};
+
+static struct lp_touch_key_test_handle testbox_test_handle = {0};
+
+static int lp_touch_key_testbox_reinit(u8 mode)
+{
+    if (mode) {
+        M2P_CTMU_MSG &= ~(CTMU_INIT_CH1_DEBUG);
+        M2P_CTMU_MSG |= CTMU_INIT_CH0_DEBUG;
+        M2P_CTMU_CH0_RES_SEND = 1;
+    } else {
+        M2P_CTMU_MSG &= ~(CTMU_INIT_CH0_DEBUG);
+        M2P_CTMU_MSG &= ~(CTMU_INIT_CH1_DEBUG);
+        M2P_CTMU_CH0_RES_SEND = 0;
+    }
+
+    if (__this->short_timer != 0xFFFF) {
+        usr_timer_del(__this->short_timer);
+        __this->short_timer = 0xFFFF;
+    }
+    if (__this->long_timer != 0xFFFF) {
+        usr_timer_del(__this->long_timer);
+        __this->long_timer = 0xFFFF;
+    }
+    __this->last_key = CTMU_KEY_NULL;
+    __this->ch_init = 0;
+
+    load_p11_bank_code2ram(1, 0);
+
+    //CTMU 初始化命令
+    lp_touch_key_send_cmd(CTMU_M2P_INIT);
+
+    return 0;
+}
+
+static void lp_touch_key_testbox_test_timeout_handle(void *priv)
+{
+    log_info("==== lp key test local timeout ====");
+    if ((testbox_test_handle.cur_test_status == LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_ENTER) ||
+        (testbox_test_handle.cur_test_status == LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY)) {
+        testbox_test_handle.timeout_timer = 0;
+        lp_touch_key_testbox_reinit(0);
+        testbox_test_handle.cur_test_status = LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_NONE;
+    }
+
+    return;
+}
+
+
+static int lp_touch_key_testbox_test_report(void)
+{
+    struct lp_touch_key_test_report report;
+    u16 detla0, detla1, target_delta;
+    u32 max, min;
+    if (testbox_test_handle.statis.double_key_hit) {
+        detla0 = testbox_test_handle.statis.res_max0 - testbox_test_handle.statis.res_min0;
+        detla1 = testbox_test_handle.statis.res_max1 - testbox_test_handle.statis.res_min1;
+        if (detla1 > detla0) {
+            report.res_max = testbox_test_handle.statis.res_max1;
+            report.res_min = testbox_test_handle.statis.res_min1;
+        } else {
+            report.res_max = testbox_test_handle.statis.res_max0;
+            report.res_min = testbox_test_handle.statis.res_min0;
+        }
+    } else {
+        report.res_max = testbox_test_handle.statis.probe_max;
+        report.res_min = testbox_test_handle.statis.probe_min;
+    }
+
+    report.res_delta = report.res_max - report.res_min;
+    max = report.res_max;
+    min = report.res_min;
+    if ((max && min) && (max > min)) {
+        report.res_percent = (max - min) * 100 / max;
+    } else {
+        log_info("max err");
+        report.res_percent = 0;
+    }
+    report.fall_cnt = testbox_test_handle.statis.fall_cnt;
+    report.raise_cnt = testbox_test_handle.statis.raise_cnt;
+    //
+    u8 index = __this->config->ch0.sensitivity;
+    target_delta = ch0_sensitivity_table[2].cfg2; //取工具生成的1级灵敏度, 标定过良好样机的30%, 小于30%, 确认为不良
+    if ((report.res_delta < 100) || ((report.res_delta) < target_delta)) {
+        report.result = LP_TOUCH_KEY_TESTBOX_ERR_DETLA;
+    } else if (testbox_test_handle.statis.double_key_hit == 0) {
+        report.result = LP_TOUCH_KEY_TESTBOX_ERR_DOUBLE_KEY_NOT_HIT;
+    } else {
+        report.result = LP_TOUCH_KEY_TESTBOX_ERR_NONE;
+    }
+    lp_touch_key_testbox_test_cmd_send(&report);
+
+    return 0;
+}
+
+static void lp_touch_key_testbox_test_res_statis(u16 value)
+{
+    if (testbox_test_handle.statis.probe_max == 0) {
+        testbox_test_handle.statis.probe_max = value;
+        testbox_test_handle.statis.probe_min = value;
+    } else {
+        testbox_test_handle.statis.probe_min = MIN(value, testbox_test_handle.statis.probe_min);
+        testbox_test_handle.statis.probe_max = MAX(value, testbox_test_handle.statis.probe_max);
+    }
+
+    if (testbox_test_handle.statis.cur_status == 'L') {
+        if (testbox_test_handle.statis.fall_cnt == 1) {
+            if (testbox_test_handle.statis.res_min0 == 0) {
+                testbox_test_handle.statis.res_min0 = value;
+            } else {
+                testbox_test_handle.statis.res_min0 = MIN(value, testbox_test_handle.statis.res_min0);
+            }
+        } else if (testbox_test_handle.statis.fall_cnt == 2) {
+            if (testbox_test_handle.statis.res_min1 == 0) {
+                testbox_test_handle.statis.res_min1 = value;
+            } else {
+                testbox_test_handle.statis.res_min1 = MIN(value, testbox_test_handle.statis.res_min1);
+            }
+        }
+    } else if (testbox_test_handle.statis.cur_status == 'H') {
+        if (testbox_test_handle.statis.raise_cnt == 1) {
+            if (testbox_test_handle.statis.res_max0 == 0) {
+                testbox_test_handle.statis.res_max0 = value;
+            } else {
+                testbox_test_handle.statis.res_max0 = MAX(value, testbox_test_handle.statis.res_max0);
+            }
+        } else if (testbox_test_handle.statis.fall_cnt == 2) {
+            testbox_test_handle.statis.end_cnt++;
+            if (testbox_test_handle.statis.end_cnt == LP_TOUCH_TEST_END_DELAY_COUNTER) {
+                testbox_test_handle.statis.double_key_hit = 1;
+                lp_touch_key_testbox_test_report();
+            }
+
+            if (testbox_test_handle.statis.end_cnt > LP_TOUCH_TEST_END_DELAY_COUNTER) {
+                return;
+            }
+
+            if (testbox_test_handle.statis.res_max1 == 0) {
+                testbox_test_handle.statis.res_max1 = value;
+            } else {
+                testbox_test_handle.statis.res_max1 = MAX(value, testbox_test_handle.statis.res_max1);
+            }
+        }
+    }
+}
+
+static int lp_touch_key_testbox_test_res_handle(u8 ctmu_event)
+{
+    u16 res = 0;
+
+    putchar('+');
+
+    if (testbox_test_handle.cur_test_status == LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_NONE) {
+        return 0;
+    }
+    if (testbox_test_handle.cur_test_status != LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY) {
+        return 1;
+    }
+    switch (ctmu_event) {
+    case CTMU_P2M_CH0_FALLING_EVENT:
+        testbox_test_handle.statis.fall_cnt++;
+        testbox_test_handle.statis.cur_status = 'L';
+        log_info("Key Down");
+        break;
+    case CTMU_P2M_CH0_RAISING_EVENT:
+        testbox_test_handle.statis.raise_cnt++;
+        testbox_test_handle.statis.cur_status = 'H';
+        log_info("Key Up");
+        break;
+    case CTMU_P2M_CH0_DEBUG_EVENT:
+        res = ((P2M_CTMU_CH0_H_RES << 8) | (P2M_CTMU_CH0_L_RES));
+        lp_touch_key_testbox_test_res_statis(res);
+        break;
+    default:
+        break;
+    }
+
+    return 1;
+}
+
+/* ---------------------------------------------------------------------------- */
+/**
+ * @brief 蓝牙lmp提供该接口, 用于给测试盒发送测试结果
+ *
+ * @param priv
+ *
+ * @return
+ */
+/* ---------------------------------------------------------------------------- */
+
+static void lp_touch_key_testbox_test_report_get(void *priv);
+
+__attribute__((weak))
+int lp_touch_key_testbox_test_cmd_send(void *priv)
+{
+    //lp_touch_key_testbox_test_report_get(priv);
+
+    return 0;
+}
+
+/* ---------------------------------------------------------------------------- */
+/**
+ * @brief 蓝牙lmp层回调函数, 用于接收测试盒
+ *
+ * @param priv
+ *
+ * @return
+ */
+/* ---------------------------------------------------------------------------- */
+int lp_touch_key_receive_cmd_from_testbox(void *priv)
+{
+    LP_TOUCH_TESTBOX_CMD *test_cmd = (LP_TOUCH_TESTBOX_CMD *)priv;
+    if (__this->init == 0) {
+        return 0;
+    }
+
+    switch (test_cmd->cmd) {
+    case LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_ENTER:
+        if (testbox_test_handle.cur_test_status == LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_NONE) {
+            lp_touch_key_testbox_reinit(1);
+            testbox_test_handle.cur_test_status = LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_ENTER;
+        }
+        break;
+    case LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY:
+        if ((testbox_test_handle.cur_test_status == LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_ENTER) ||
+            (testbox_test_handle.cur_test_status == LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY)) {
+            local_irq_disable();
+            memset((u8 *)(&(testbox_test_handle.statis)), 0, sizeof(testbox_test_handle.statis));
+            testbox_test_handle.cur_test_status = LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY;
+            if (testbox_test_handle.timeout_timer) {
+                sys_timer_modify(testbox_test_handle.timeout_timer, LP_TOUCH_TEST_TIMEOUT_CONFIG);
+            } else {
+                testbox_test_handle.timeout_timer = sys_timeout_add(NULL, lp_touch_key_testbox_test_timeout_handle, LP_TOUCH_TEST_TIMEOUT_CONFIG);
+            }
+            local_irq_enable();
+        }
+        break;
+#if 0
+    case LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY_RETRY:
+        if (testbox_test_handle.cur_test_status == LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY) {
+            local_irq_disable();
+            memset((u8 *)(&(testbox_test_handle.statis)), 0, sizeof(testbox_test_handle.statis));
+            if (testbox_test_handle.timeout_timer) {
+                sys_timer_modify(testbox_test_handle.timeout_timer, LP_TOUCH_TEST_TIMEOUT_CONFIG);
+            } else {
+                testbox_test_handle.timeout_timer = sys_timeout_add(NULL, lp_touch_key_testbox_test_timeout_handle, LP_TOUCH_TEST_TIMEOUT_CONFIG);
+            }
+            local_irq_enable();
+        }
+        break;
+#endif /* #if 0 */
+    case LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_EXIT:
+        if ((testbox_test_handle.cur_test_status == LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_ENTER) ||
+            (testbox_test_handle.cur_test_status == LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY)) {
+            lp_touch_key_testbox_reinit(0);
+            testbox_test_handle.cur_test_status = LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_NONE;
+            if (testbox_test_handle.timeout_timer) {
+                sys_timeout_del(testbox_test_handle.timeout_timer);
+                testbox_test_handle.timeout_timer = 0;
+            }
+        }
+        break;
+    case LP_TOUCH_KEY_TESTBOX_CMD_TEST_TIMEOUT_REPORT:
+        if (testbox_test_handle.cur_test_status == LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY) {
+            testbox_test_handle.cur_test_status = LP_TOUCH_KEY_TESTBOX_CMD_TEST_TIMEOUT_REPORT;
+            lp_touch_key_testbox_test_report();
+            testbox_test_handle.cur_test_status = LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY;
+        }
+        break;
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+/* ---------------------------------------------------------------------------- */
+/**
+ * @brief 模拟测试盒流程
+ */
+/* ---------------------------------------------------------------------------- */
+#if 0// for test
+#define LP_TEST_TASK_NAME 			"lp_test"
+static u16 timeout_id = 0;
+static u8 retry_cnt = 0;
+
+enum TESTBOX_LOCAL_CMD {
+    TESTBOX_LOCAL_CMD_REPORT,
+    TESTBOX_LOCAL_CMD_TEST_END,
+};
+
+static void lp_touch_key_testbox_test_report_get(void *priv)
+{
+    LP_TOUCH_TESTBOX_CMD test_cmd;
+    if (priv == NULL) {
+        return;
+    }
+
+    struct lp_touch_key_test_report *info = (struct lp_touch_key_test_report *)priv;
+
+    os_taskq_post_msg(LP_TEST_TASK_NAME, 8,
+                      TESTBOX_LOCAL_CMD_REPORT,
+                      info->result,
+                      info->res_max,
+                      info->res_min,
+                      info->res_delta,
+                      info->res_percent,
+                      info->fall_cnt,
+                      info->raise_cnt);
+}
+
+static void lp_touch_key_testbox_timeout(void *priv)
+{
+    LP_TOUCH_TESTBOX_CMD test_cmd;
+
+    log_info("===== Touch Key Test Timeout =====");
+    //查询测试结果:
+    test_cmd.cmd = LP_TOUCH_KEY_TESTBOX_CMD_TEST_TIMEOUT_REPORT;
+    lp_touch_key_receive_cmd_from_testbox(&test_cmd);
+}
+
+static void lp_touch_key_testbox_testmode(void *priv)
+{
+    LP_TOUCH_TESTBOX_CMD test_cmd;
+    test_cmd.cmd = LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY;
+    lp_touch_key_receive_cmd_from_testbox(&test_cmd);
+    log_info("===== Please Double Click =====");
+    timeout_id = sys_timeout_add(NULL, lp_touch_key_testbox_timeout, 4000);
+}
+
+static void lp_touch_key_testbox_enter(void)
+{
+    LP_TOUCH_TESTBOX_CMD test_cmd;
+    test_cmd.cmd = LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_ENTER;
+    log_info("===== Touch Key Test Enter =====");
+    lp_touch_key_receive_cmd_from_testbox(&test_cmd);
+    sys_timeout_add(NULL, lp_touch_key_testbox_testmode, 200);
+}
+
+static void testbox_report(void *priv)
+{
+    u32 *info = (u32 *)priv;
+    LP_TOUCH_TESTBOX_CMD test_cmd;
+
+    if (timeout_id) {
+        sys_timeout_del(timeout_id);
+        timeout_id = 0;
+    }
+
+    struct lp_touch_key_test_report report;
+    report.result 		= info[0];
+    report.res_max 		= info[1];
+    report.res_min 		= info[2];
+    report.res_delta 	= info[3];
+    report.res_percent 	= info[4];
+    report.fall_cnt 	= info[5];
+    report.raise_cnt 	= info[6];
+
+    log_info("===== Touch Key Test Report =====");
+    log_info("info->result  = %d", report.result);
+    log_info("info->res_max = %d", report.res_max);
+    log_info("info->res_min = %d", report.res_min);
+    log_info("info->res_delta   = %d", report.res_delta);
+    log_info("info->res_percent = %d", report.res_percent);
+    log_info("info->fall_cnt  = %d", report.fall_cnt);
+    log_info("info->raise_cnt = %d", report.raise_cnt);
+
+    if (report.result == LP_TOUCH_KEY_TESTBOX_ERR_NONE) {
+        log_info("LP Key Test OK");
+    } else if (report.result == LP_TOUCH_KEY_TESTBOX_ERR_DOUBLE_KEY_NOT_HIT) {
+        log_info("Double Key Not Hit");
+    } else if (report.result == LP_TOUCH_KEY_TESTBOX_ERR_DETLA) {
+        log_info("Touch Delta Less");
+    }
+
+    if ((report.result != LP_TOUCH_KEY_TESTBOX_ERR_NONE) && (retry_cnt < 2)) {
+        log_info("test err, retry_cnt = %d, try again", retry_cnt);
+        test_cmd.cmd = LP_TOUCH_KEY_TESTBOX_CMD_TEST_KEY;
+        lp_touch_key_receive_cmd_from_testbox(&test_cmd);
+        log_info("===== Please Double Click =====");
+        timeout_id = sys_timeout_add(NULL, lp_touch_key_testbox_timeout, 4000);
+        retry_cnt++;
+    } else {
+        log_info("===== Touch Key Test End =====");
+        retry_cnt = 0;
+        test_cmd.cmd = LP_TOUCH_KEY_TESTBOX_CMD_TESTMODE_EXIT;
+        lp_touch_key_receive_cmd_from_testbox(&test_cmd);
+        os_taskq_post_msg(LP_TEST_TASK_NAME, 1, TESTBOX_LOCAL_CMD_TEST_END);
+    }
+}
+
+static void touch_key_test(void *priv)
+{
+    int res = 0;
+    int msg[30];
+
+    log_info("==== Touch Key Test Task ====");
+
+    os_time_dly(1000);
+
+    lp_touch_key_testbox_enter();
+
+    while (1) {
+        res = os_taskq_pend(NULL, msg, ARRAY_SIZE(msg));
+        if (res == OS_TASKQ) {
+            switch (msg[1]) {
+            case TESTBOX_LOCAL_CMD_REPORT:
+                testbox_report(&(msg[2]));
+                break;
+            case TESTBOX_LOCAL_CMD_TEST_END:
+                os_time_dly(500);
+                lp_touch_key_testbox_enter();
+                break;
+            default:
+                break;
+            }
+        }
+    }
+}
+
+void lp_touch_key_testbox_test(void)
+{
+    os_task_create(touch_key_test, NULL, 1, 256, 256, LP_TEST_TASK_NAME);
+}
+#endif /* #if 0// for test */
+
+#endif /* #if (TCFG_LP_TOUCH_KEY_ENABLE || TCFG_LP_EARTCH_KEY_ENABLE) */

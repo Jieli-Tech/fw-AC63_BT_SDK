@@ -118,6 +118,53 @@ const struct adkey_platform_data adkey_data = {
 };
 #endif
 
+/************************** IO KEY ****************************/
+#if TCFG_IOKEY_ENABLE
+const struct iokey_port iokey_list[] = {
+	{
+		.connect_way = TCFG_IOKEY_POWER_CONNECT_WAY,          //IO按键的连接方式
+		.key_type.one_io.port = TCFG_IOKEY_POWER_ONE_PORT,    //IO按键对应的引脚
+		.key_value = 0,                                       //按键值
+	},
+
+	/* { */
+		/* .connect_way = TCFG_IOKEY_PREV_CONNECT_WAY, */
+		/* .key_type.one_io.port = TCFG_IOKEY_PREV_ONE_PORT, */
+		/* .key_value = 1, */
+	/* }, */
+
+	/* { */
+		/* .connect_way = TCFG_IOKEY_NEXT_CONNECT_WAY, */
+		/* .key_type.one_io.port = TCFG_IOKEY_NEXT_ONE_PORT, */
+		/* .key_value = 2, */
+	/* }, */
+};
+const struct iokey_platform_data iokey_data = {
+	.enable = TCFG_IOKEY_ENABLE,                              //是否使能IO按键
+	.num = ARRAY_SIZE(iokey_list),                            //IO按键的个数
+	.port = iokey_list,                                       //IO按键参数表
+};
+
+#if MULT_KEY_ENABLE
+//组合按键消息映射表
+//配置注意事项:单个按键按键值需要按照顺序编号,如power:0, prev:1, next:2
+//bit_value = BIT(0) | BIT(1) 指按键值为0和按键值为1的两个按键被同时按下,
+//remap_value = 3指当这两个按键被同时按下后重新映射的按键值;
+const struct key_remap iokey_remap_table[] = {
+	{.bit_value = BIT(0) | BIT(1), .remap_value = 3},
+	{.bit_value = BIT(0) | BIT(2), .remap_value = 4},
+	{.bit_value = BIT(1) | BIT(2), .remap_value = 5},
+};
+
+const struct key_remap_data iokey_remap_data = {
+	.remap_num = ARRAY_SIZE(iokey_remap_table),
+	.table = iokey_remap_table,
+};
+#endif
+
+#endif
+
+
 /************************** otg data****************************/
 #if TCFG_OTG_MODE
 struct otg_dev_data otg_data = {
@@ -146,6 +193,34 @@ void debug_uart_init(const struct uart_platform_data *data)
 #endif
 }
 
+/*其他封装板级，移该函数*/
+u8 get_power_on_status(void)
+{
+#if TCFG_IOKEY_ENABLE
+    struct iokey_port *power_io_list = NULL;
+    power_io_list = iokey_data.port;
+
+    if (iokey_data.enable) {
+        if (gpio_read(power_io_list->key_type.one_io.port) == power_io_list->connect_way){
+            return 1;
+        }
+    }
+#endif
+
+#if TCFG_ADKEY_ENABLE
+    if (adkey_data.enable) {
+        return 1;
+    }
+#endif
+
+#if TCFG_LP_TOUCH_KEY_ENABLE
+    return lp_touch_key_power_on_status();
+#endif
+
+    return 0;
+}
+
+
 static void board_devices_init(void)
 {
 #if TCFG_PWMLED_ENABLE
@@ -171,6 +246,12 @@ void board_init()
 
 #if TCFG_CHARGE_ENABLE
     charge_api_init((void *)&charge_data);
+#if TCFG_HANDSHAKE_ENABLE
+    if(get_charge_online_flag()){
+        handshake_app_start(0, NULL);
+    }
+#endif
+
 #else
 	/*close FAST CHARGE */
 	CHARGE_EN(0);
@@ -195,7 +276,7 @@ struct dac_platform_data dac_data = {
 #if ((TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR) || (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_DUAL_LR_DIFF))
     .vcmo_en        = 0,                                         //四声道与双声道差分关闭VCOMO
 #else
-    .vcmo_en        = 1,                                         //是否打开VCOMO
+    .vcmo_en        = 0,                                         //是否打开VCOMO
 #endif
     .output         = TCFG_AUDIO_DAC_CONNECT_MODE,               //DAC输出配置，和具体硬件连接有关，需根据硬件来设置
     .ldo_isel       = 3,
@@ -250,7 +331,12 @@ struct port_wakeup port0 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
+#if TCFG_ADKEY_ENABLE
 	.iomap              = TCFG_ADKEY_PORT,                   //唤醒口选择
+#endif
+#if TCFG_IOKEY_ENABLE
+	.iomap              = TCFG_IOKEY_POWER_ONE_PORT,                   //唤醒口选择
+#endif
     .filter_enable      = ENABLE,
 };
 
@@ -263,7 +349,7 @@ const struct charge_wakeup charge_wkup = {
 };
 
 const struct wakeup_param wk_param = {
-#if TCFG_ADKEY_ENABLE
+#if TCFG_ADKEY_ENABLE || TCFG_IOKEY_ENABLE
 	.port[1] = &port0,
 #endif
 	.sub = &sub_wkup,
@@ -295,22 +381,29 @@ static void port_protect(u16 *port_group, u32 port_num)
 }
 
 /*进软关机之前默认将IO口都设置成高阻状态，需要保留原来状态的请修改该函数*/
-static void close_gpio(void)
+static void close_gpio(u8 is_softoff)
 {
     u16 port_group[] = {
-        [PORTA_GROUP] = 0xffff,
+        [PORTA_GROUP] = 0xffff & ~(BIT(13)|BIT(14)),
         [PORTB_GROUP] = 0xffff,
         [PORTC_GROUP] = 0xffff,
     };
 
 #if TCFG_IOKEY_ENABLE
 	port_protect(port_group, TCFG_IOKEY_POWER_ONE_PORT);
-    port_protect(port_group, TCFG_IOKEY_PREV_ONE_PORT);
-    port_protect(port_group, TCFG_IOKEY_NEXT_ONE_PORT);
+    /* port_protect(port_group, TCFG_IOKEY_PREV_ONE_PORT); */
+    /* port_protect(port_group, TCFG_IOKEY_NEXT_ONE_PORT); */
 #endif /* TCFG_IOKEY_ENABLE */
 
 #if TCFG_ADKEY_ENABLE
     port_protect(port_group,TCFG_ADKEY_PORT);
+#endif
+
+#if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
+    if (is_softoff == 0) {
+        port_protect(port_group, TCFG_HANDSHAKE_IO_DATA1);
+        port_protect(port_group, TCFG_HANDSHAKE_IO_DATA2);
+    }
 #endif
 
     //< close gpio
@@ -345,8 +438,28 @@ extern void dac_power_off(void);
 void board_set_soft_poweroff(void)
 {
     u32 porta_value = 0xffff;
-    u32 portb_value = 0xfffe;
+    u32 portb_value = 0xffff & ~(BIT(1));
     u32 portc_value = 0xffff;
+	u32 portd_value = 0xffff;
+
+	u32 spi_get_port(void);
+	u8 port = spi_get_port();
+	u8 mode = (JL_SFC->CON >> 8) & 0xf;
+
+	if(port == 0){
+	  portd_value &= ~(BIT(4)|BIT(3)|BIT(0)|BIT(1)|BIT(2));
+	  if((mode == 0b0101)||(mode == 0b0111)){
+	    portb_value &= ~(BIT(7));
+	    portd_value &= ~(BIT(5));
+	  }
+	}else{
+	  porta_value &= ~(BIT(13)|BIT(14));
+	  portd_value &= ~(BIT(4)|BIT(0)|BIT(1));
+	  if((mode == 0b0101)||(mode == 0b0111)){
+	    porta_value &= ~(BIT(15));
+	    portd_value &= ~(BIT(5));
+	  }
+	}
 
 	if(TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15){
 		power_set_mode(PWR_LDO15);
@@ -356,13 +469,13 @@ void board_set_soft_poweroff(void)
     gpio_set_pu(GPIOA, 0, 16, ~porta_value, GPIO_AND);
     gpio_set_pd(GPIOA, 0, 16, ~porta_value, GPIO_AND);
     gpio_die(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_dieh(GPIOA, 0, 16, ~porta_value, GPIO_AND);
+    gpio_dieh(GPIOA, 0, 16, ~portc_value, GPIO_AND);
 
     //保留长按Reset Pin - PB1
-    gpio_dir(GPIOB, 1, 15, portb_value, GPIO_OR);
-    gpio_set_pu(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_set_pd(GPIOB, 1, 15, ~portb_value, GPIO_AND);
-    gpio_die(GPIOB, 1, 15, ~portb_value, GPIO_AND);
+    gpio_dir(GPIOB, 0, 16, portb_value, GPIO_OR);
+    gpio_set_pu(GPIOB, 0, 16, ~portb_value, GPIO_AND);
+    gpio_set_pd(GPIOB, 0, 16, ~portb_value, GPIO_AND);
+    gpio_die(GPIOB, 0, 16, ~portb_value, GPIO_AND);
     gpio_dieh(GPIOB, 0, 16, ~portb_value, GPIO_AND);
 
     gpio_dir(GPIOC, 0, 16, portc_value, GPIO_OR);
@@ -370,6 +483,12 @@ void board_set_soft_poweroff(void)
     gpio_set_pd(GPIOC, 0, 16, ~portc_value, GPIO_AND);
     gpio_die(GPIOC, 0, 16, ~portc_value, GPIO_AND);
     gpio_dieh(GPIOC, 0, 16, ~portc_value, GPIO_AND);
+
+    gpio_dir(GPIOD, 0, 16, portd_value, GPIO_OR);
+    gpio_set_pu(GPIOD, 0, 16, ~portd_value, GPIO_AND);
+    gpio_set_pd(GPIOD, 0, 16, ~portd_value, GPIO_AND);
+    gpio_die(GPIOD, 0, 16, ~portd_value, GPIO_AND);
+    gpio_dieh(GPIOD, 0, 16, ~portd_value, GPIO_AND);
 
     gpio_set_pull_up(IO_PORT_DP, 0);
     gpio_set_pull_down(IO_PORT_DP, 0);
@@ -419,7 +538,7 @@ void sleep_enter_callback(u8  step)
 		}
     } else {
 
-		close_gpio();
+		close_gpio(0);
 
 		gpio_set_pull_up(IO_PORTA_03, 0);
         gpio_set_pull_down(IO_PORTA_03, 0);
@@ -444,6 +563,9 @@ void board_power_init(void)
     log_info("Power init : %s", __FILE__);
 
     power_init(&power_param);
+
+    gpio_longpress_pin0_reset_config(IO_PORTB_01, 0, 0);
+    gpio_shortpress_reset_config(0);//1--enable 0--disable
 
     /*sdpg_config(1);*/
 

@@ -162,6 +162,19 @@ static void multi_key_event_handler(struct sys_event *event)
             return;
         }
 
+        if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE0) {
+
+#if TCFG_USER_BLE_ENABLE
+#if CONFIG_BT_GATT_CLIENT_NUM
+            multi_client_clear_pair();
+#endif
+#if CONFIG_BT_GATT_SERVER_NUM
+            multi_server_clear_pair();
+#endif
+#endif
+        }
+
+
         if (event_type == KEY_EVENT_DOUBLE_CLICK && key_value == TCFG_ADKEY_VALUE0) {
 #if TCFG_USER_EDR_ENABLE
             //for test

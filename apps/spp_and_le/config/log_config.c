@@ -200,11 +200,11 @@ const char log_tag_const_d_EDR_EM AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_w_EDR_EM AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_e_EDR_EM AT(.LOG_TAG_CONST) = 1;
 
-const char log_tag_const_v_REMOTE_C AT(.LOG_TAG_CONST) = 0;
-const char log_tag_const_i_REMOTE_C AT(.LOG_TAG_CONST) = 1;
-const char log_tag_const_d_REMOTE_C AT(.LOG_TAG_CONST) = 1;
-const char log_tag_const_w_REMOTE_C AT(.LOG_TAG_CONST) = 1;
-const char log_tag_const_e_REMOTE_C AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_v_CONN_24G AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_i_CONN_24G AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_d_CONN_24G AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_w_CONN_24G AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_e_CONN_24G AT(.LOG_TAG_CONST) = 1;
 
 /* const char log_tag_const_v_ AT(.LOG_TAG_CONST) = 0; */
 /* const char log_tag_const_i_ AT(.LOG_TAG_CONST) = 1; */

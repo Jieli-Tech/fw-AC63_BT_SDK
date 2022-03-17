@@ -124,6 +124,11 @@ enum clk_mode {
     CLOCK_MODE_USR,
 };
 
+typedef enum {
+    ALINK_CLOCK_12M288K,  //160M div 13, 48k采样率类型
+    ALINK_CLOCK_11M2896K, //192M div 17, 44.1k采样率类型
+} ALINK_INPUT_CLK_TYPE;
+
 //clk : SYS_48M / SYS_24M
 void sys_clk_set(enum sys_clk clk);
 
@@ -136,6 +141,12 @@ void clk_set_default_osc_cap();
 u32 clk_get_osc_cap();
 
 void clk_init_osc_cap(u8 sel_l, u8 sel_r);
+
+void audio_link_clock_sel(ALINK_INPUT_CLK_TYPE type);	//配置ALINK主时钟
+
+void clock_set_pll_target_frequency(u32 freq);	//配置PLL_TARGET_FREQUENCY
+
+u32 clock_get_pll_target_frequency();			//获取PLL_TARGET_FREQUENCY
 
 /* ***************************************************************************/
 /**

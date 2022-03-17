@@ -204,6 +204,10 @@
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE
 //是否支持拔出充电自动开机功能
 #define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
+//是否支持lighting握手协议
+#define TCFG_HANDSHAKE_ENABLE               DISABLE
+#define TCFG_HANDSHAKE_IO_DATA1             IO_PORTB_02//握手IO靠近lighting座子中间的
+#define TCFG_HANDSHAKE_IO_DATA2             IO_PORTB_07//握手IO在lighting座子边上的
 /*
 充电截止电压可选配置：
     CHARGE_FULL_V_3962  CHARGE_FULL_V_4002  CHARGE_FULL_V_4044  CHARGE_FULL_V_4086

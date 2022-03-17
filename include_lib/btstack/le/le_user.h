@@ -24,9 +24,13 @@ extern "C" {
 #define SM_EVENT_NUMERIC_COMPARISON_REQUEST                0xD6
 
 #define SM_EVENT_JUST_WORKS_REQUEST                        0xD0
+#define SM_EVENT_JUST_WORKS_CANCEL                         0xD1
 #define SM_EVENT_PASSKEY_DISPLAY_NUMBER                    0xD2
+#define SM_EVENT_PASSKEY_DISPLAY_CANCEL                    0xD3
+#define SM_EVENT_PASSKEY_INPUT_NUMBER                      0xD4
+#define SM_EVENT_PASSKEY_INPUT_CANCEL                      0xD5
 #define SM_EVENT_PAIR_PROCESS                              0xDF
-//sub
+//0xdf 's sub
 #define SM_EVENT_PAIR_SUB_RECONNECT_START                        0x01
 #define SM_EVENT_PAIR_SUB_PIN_KEY_MISS                           0x02
 #define SM_EVENT_PAIR_SUB_PAIR_FAIL                              0x03
@@ -48,7 +52,7 @@ extern "C" {
 #define GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT        0xA6
 // #define GATT_EVENT_SERVICE_QUERY_RESULT                          0xA1
 // #define GATT_EVENT_CHARACTERISTIC_QUERY_RESULT                   0xA2
-// #define GATT_EVENT_QUERY_COMPLETE                                0xA0
+#define GATT_EVENT_QUERY_COMPLETE                                0xA0
 #define GAP_EVENT_ADVERTISING_REPORT                             0xE2
 
 // Authentication requirement flags

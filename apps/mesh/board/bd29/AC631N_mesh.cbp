@@ -23,6 +23,8 @@
 <Add option="-Wundef" />
 <Add option="-fprefer-gnu-section" />
 <Add option="-Wframe-larger-than=256" />
+<Add option="-Wreturn-type" />
+<Add option="-Wimplicit-function-declaration" />
 <Add option="-fms-extensions" />
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
@@ -129,13 +131,14 @@
 </ExtraCommands>
 </Target>
 </Build>
+<Unit filename="../../../../apps/common/bt_common/bt_test_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/config/include/bt_profile_cfg.h" />
 <Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/key/adkey.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/key/iokey.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/key/key_driver.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/include/bt_common.h" />
 <Unit filename="../../../../apps/common/include/update_tws.h" />
-<Unit filename="../../../../apps/common/key/adkey.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/key/iokey.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/key/key_driver.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.c"><Option compilerVer="CC"/></Unit>
@@ -234,9 +237,11 @@
 <Unit filename="../../../../apps/mesh/examples/AliGenie_fan.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/AliGenie_light.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/AliGenie_socket.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/mesh/examples/TUYA_light.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/generic_onoff_client.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/generic_onoff_server.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/light_lightness_server.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/mesh/examples/sha256.h" />
 <Unit filename="../../../../apps/mesh/examples/vendor_client.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/examples/vendor_server.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/mesh/include/app_action.h" />
@@ -256,6 +261,7 @@
 <Unit filename="../../../../cpu/bd29/app_timer.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd29/charge.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd29/chargestore.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../cpu/bd29/handshake_timer.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd29/iic_eeprom_test.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd29/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd29/iic_slave_test.c"><Option compilerVer="CC"/></Unit>
@@ -331,6 +337,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/uart.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/uart_dev.h" />
 <Unit filename="../../../../include_lib/driver/cpu/bd29/asm/wdt.h" />
+<Unit filename="../../../../include_lib/driver/device/chargebox.h" />
 <Unit filename="../../../../include_lib/driver/device/sdio_host_init.h" />
 <Unit filename="../../../../include_lib/driver/device/spiflash.h" />
 <Unit filename="../../../../include_lib/driver/device/uart.h" />
@@ -338,17 +345,6 @@
 <Unit filename="../../../../include_lib/system/app_msg.h" />
 <Unit filename="../../../../include_lib/system/bank_switch.h" />
 <Unit filename="../../../../include_lib/system/config/config_transport.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/Crypto_hash.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/aes_cmac.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/bigint.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/bigint_impl.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/crypto.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/ecdh.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/endian.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/hmac.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/micro-ecc/uECC_new.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/rijndael.h" />
-<Unit filename="../../../../include_lib/system/crypto_toolbox/sha256.h" />
 <Unit filename="../../../../include_lib/system/database.h" />
 <Unit filename="../../../../include_lib/system/debug.h" />
 <Unit filename="../../../../include_lib/system/device/adkey.h" />

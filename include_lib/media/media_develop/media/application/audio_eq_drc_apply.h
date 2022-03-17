@@ -97,5 +97,8 @@ void audio_eq_drc_close(struct audio_eq_drc *hdl);
 /*----------------------------------------------------------------------------*/
 int  audio_eq_drc_parm_update(struct  audio_eq_drc  *hdl,  u32 cmd, void  *parm);
 
-
+/*
+ *非数据流方式，eq、drc的run处理接口
+ * */
+int audio_eq_drc_run(struct audio_eq_drc *hdl, s16 *data, u16 len);
 #endif

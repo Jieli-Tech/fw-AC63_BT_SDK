@@ -14,15 +14,19 @@ struct dev_node;
 struct device;
 
 
+/**@struct  device_operations
+  * @brief  device_operations结构体 \n
+  * otg设备执行哪种类型的操作
+  */
 struct device_operations {
-    bool (*online)(const struct dev_node *node);
-    int (*init)(const struct dev_node *node, void *);
-    int (*open)(const char *name, struct device **device, void *arg);
-    int (*read)(struct device *device, void *buf, u32 len, u32);
-    int (*write)(struct device *device, void *buf, u32 len, u32);
-    int (*seek)(struct device *device, u32 offset, int orig);
-    int (*ioctl)(struct device *device, u32 cmd, u32 arg);
-    int (*close)(struct device *device);
+    bool (*online)(const struct dev_node *node); ///<设备在线状态查询
+    int (*init)(const struct dev_node *node, void *); ///<设备初始化
+    int (*open)(const char *name, struct device **device, void *arg); ///<设备开启
+    int (*read)(struct device *device, void *buf, u32 len, u32); ///<读操作
+    int (*write)(struct device *device, void *buf, u32 len, u32); ///<写操作
+    int (*seek)(struct device *device, u32 offset, int orig); ///<设备搜索
+    int (*ioctl)(struct device *device, u32 cmd, u32 arg); ///<I/O控制
+    int (*close)(struct device *device); ///<设备关闭
 };
 
 struct dev_node {

@@ -54,6 +54,7 @@ typedef struct {
     u8 bonding_flag;       //连接过后会绑定，默认快连，不搜索设备
     u8 compare_data_len;   //匹配信息长度
     const u8 *compare_data;//匹配信息，若是地址内容,由高到低位
+    u8 filter_pdu_bitmap;     /*过滤指定的pdu包,不做匹配操作; bit map,event type*/
 } client_match_cfg_t;
 
 

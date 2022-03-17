@@ -61,7 +61,10 @@
 #define log_info_hexdump(...)
 #endif
 
+static u8 remote_ble_addr[7] = {0};
 static void hid_timer_mouse_handler(void);
+extern get_cur_bt_idx();
+extern u8 get_key_timeout_flag();
 
 #define EIR_TAG_STRING   0xd6, 0x05, 0x08, 0x00, 'J', 'L', 'A', 'I', 'S', 'D','K'
 static const char user_tag_string[] = {EIR_TAG_STRING};
@@ -70,10 +73,12 @@ static const char user_tag_string[] = {EIR_TAG_STRING};
 
 //ATT发送的包长,    note: 23 <=need >= MTU
 #define ATT_LOCAL_MTU_SIZE        (64)
+
+//ATT缓存的buffer支持缓存数据包个数
+#define ATT_PACKET_NUMS_MAX       (2)
+
 //ATT缓存的buffer大小,  note: need >= 23,可修改
-#define ATT_SEND_CBUF_SIZE        (256)
-// 广播周期 (unit:0.625ms)
-#define ADV_INTERVAL_MIN          (160 * 5)//
+#define ATT_SEND_CBUF_SIZE        (ATT_PACKET_NUMS_MAX * (ATT_PACKET_HEAD_SIZE + ATT_LOCAL_MTU_SIZE))
 
 static volatile hci_con_handle_t hogp_con_handle;
 int ble_hid_timer_handle = 0;
@@ -83,8 +88,8 @@ static uint8_t hogp_connection_update_enable = 1;
 
 //连接参数表,按顺序优先请求,主机接受了就中止
 static const struct conn_update_param_t Peripheral_Preferred_Connection_Parameters[] = {
-    {6, 9,  100, 600}, //android
-    {12, 12, 30, 400}, //ios
+    {6, 9,  100, 300}, //android
+    {12, 12, 30, 300}, //ios
 };
 //共可用的参数组数
 #define CONN_PARAM_TABLE_CNT      (sizeof(Peripheral_Preferred_Connection_Parameters)/sizeof(struct conn_update_param_t))
@@ -95,23 +100,31 @@ static u8 hogp_scan_rsp_data[ADV_RSP_PACKET_MAX];//max is 31
 static u8 first_pair_flag;     //第一次配对标记
 static u8 is_hogp_active = 0;  //不可进入sleep状态
 static adv_cfg_t hogp_server_adv_config;
-//--------------------------------------------
-//配置有配对绑定时,先定向广播快连,再普通广播;否则只作普通广播
-//定向广播只带对方的地址,不带adv和rsp包
-#define PAIR_DIRECT_ADV_EN             1  //是否上电使用定向广播，优先绑定回连
+
+/*--------------------------------------------*/
+//普通未连接广播周期 (unit:0.625ms)
+#define ADV_INTERVAL_MIN                (160 * 5)
+
+/*------------------------------
+配置有配对绑定时,先回连广播快连,再普通广播;否则只作普通广播
+定向广播只带对方的地址,不带adv和rsp包
+*/
+#define PAIR_RECONNECT_ADV_EN               1 /*是否上电使用定向广播，优先绑定回连*/
 
 //可选两种定向广播类型,
 //ADV_DIRECT_IND       (1.28s超时,interval 固定2ms)
 //ADV_DIRECT_IND_LOW   (interval 和 channel 跟普通广播设置一样)
-static u8 pair_direct_adv_type = ADV_DIRECT_IND;
+//ADV_IND              (无定向广播:interval 和 channel 跟普通广播设置一样)
+static u8 pair_reconnect_adv_type = ADV_DIRECT_IND;
 
-//ADV_DIRECT_IND_LOW,定义interval 和 超时切换广播
-#define PAIR_DIRECT_LOW_ADV_TIME       (5000) //ADV_DIRECT_IND_LOW,低频率定向广播时间,5s
-#define PAIR_DIRECT_LOW_ADV_INTERVAL   (0x30) //ADV_DIRECT_IND_LOW,interval
+//等待回连状态下的广播周期 (unit:0.625ms)
+#define PAIR_RECONNECT_ADV_INTERVAL     (20) /*>=32,  ADV_IND,ADV_DIRECT_IND_LOW,interval*/
+static  u32 pair_reconnect_adv_timeout = 5000;/*回连广播持续时间,ms*/
 
-static u8 le_adv_channel_sel = ADV_CHANNEL_ALL;
+//广播通道设置置
+static  u8 le_adv_channel_sel = ADV_CHANNEL_ALL;
+
 //--------------------------------------------
-
 #define BLE_VM_HEAD_TAG           (0xB35C)
 #define BLE_VM_TAIL_TAG           (0x5CB3)
 struct pair_info_t {
@@ -160,6 +173,7 @@ static const u8 hid_information[] = {0x01, 0x01, 0x00, 0x03};
 
 static  u8 *report_map; //描述符
 static  u16 report_map_size;//描述符大小
+static u16 hogp_adv_timeout_number = 0;
 #define HID_REPORT_MAP_DATA    report_map
 #define HID_REPORT_MAP_SIZE    report_map_size
 
@@ -178,6 +192,12 @@ static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t 
 static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_param);
 static void hogp_adv_config_set(void);
 //------------------------------------------------------
+
+static u8 multi_dev_adv_flag = 0; /*多地址设备切换广播*/
+void set_multi_devices_adv_flag(u8 adv_flag)
+{
+    multi_dev_adv_flag = adv_flag;
+}
 
 //输入passkey 加密
 #define PASSKEY_ENABLE                     0
@@ -287,12 +307,9 @@ static void __ble_state_to_user(u8 state, u8 reason)
 static void __hogp_send_connetion_update_deal(u16 conn_handle)
 {
     if (hogp_connection_update_enable) {
-#if CONFIG_APP_REMOTE_24G_S
-#else
         if (0 == ble_gatt_server_connetion_update_request(conn_handle, Peripheral_Preferred_Connection_Parameters, CONN_PARAM_TABLE_CNT)) {
             hogp_connection_update_enable = 0;
         }
-#endif
     }
 }
 
@@ -314,7 +331,11 @@ static void __hogp_conn_pair_vm_do(struct pair_info_t *info, u8 rw_flag)
 
     log_info("-hogp_pair_info vm_do:%d\n", rw_flag);
     if (rw_flag == 0) {
-        ret = syscfg_read(CFG_BLE_BONDING_REMOTE_INFO, (u8 *)info, vm_len);
+        if (multi_dev_adv_flag) {
+            ret = syscfg_read(CFG_BLE_BONDING_REMOTE_INFO + get_cur_bt_idx(), (u8 *)info, vm_len);
+        } else {
+            ret = syscfg_read(CFG_BLE_BONDING_REMOTE_INFO, (u8 *)info, vm_len);
+        }
         if (vm_len != ret) {
             log_info("-null--\n");
             memset(info, 0, vm_len);
@@ -329,7 +350,11 @@ static void __hogp_conn_pair_vm_do(struct pair_info_t *info, u8 rw_flag)
             info->tail_tag = BLE_VM_TAIL_TAG;
         }
     } else {
-        syscfg_write(CFG_BLE_BONDING_REMOTE_INFO, (u8 *)info, vm_len);
+        if (multi_dev_adv_flag) {
+            syscfg_write(CFG_BLE_BONDING_REMOTE_INFO + get_cur_bt_idx(), (u8 *)info, vm_len);
+        } else {
+            syscfg_write(CFG_BLE_BONDING_REMOTE_INFO, (u8 *)info, vm_len);
+        }
     }
     log_info_hexdump(info, vm_len);
 }
@@ -349,7 +374,7 @@ static const u16 change_handle_table[2] = {ATT_CHARACTERISTIC_2a4b_01_VALUE_HAND
 static void __check_report_map_change(void)
 {
 #if 0 //部分手机不支持
-    if (hid_report_change && first_pair_flag && att_get_ccc_config(ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE)) {
+    if (hid_report_change && first_pair_flag && ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE)) {
         log_info("###send services changed\n");
         ble_comm_att_send_data(hogp_con_handle, ATT_CHARACTERISTIC_2a05_01_VALUE_HANDLE, change_handle_table, 4, ATT_OP_INDICATE);
         hid_report_change = 0;
@@ -419,6 +444,19 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
     /* log_info("event: %02x,size= %d\n",event,size); */
 
     switch (event) {
+
+    case GATT_COMM_EVENT_CAN_SEND_NOW:
+#if TEST_AUDIO_DATA_UPLOAD
+        hogp_test_send_audio_data(0);
+#endif
+        break;
+
+    case GATT_COMM_EVENT_SERVER_INDICATION_COMPLETE:
+        log_info("INDICATION_COMPLETE:con_handle= %04x,att_handle= %04x\n", \
+                 little_endian_read_16(packet, 0), little_endian_read_16(packet, 2));
+        break;
+
+
     case GATT_COMM_EVENT_CONNECTION_COMPLETE:
         hogp_con_handle = little_endian_read_16(packet, 0);
         first_pair_flag = 0;
@@ -497,11 +535,7 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
         }
         break;
 
-    case GATT_COMM_EVENT_CAN_SEND_NOW:
-#if TEST_AUDIO_DATA_UPLOAD
-        hogp_test_send_audio_data(0);
-#endif
-        break;
+
 
     case GATT_COMM_EVENT_DIRECT_ADV_TIMEOUT:
         log_info("DIRECT_ADV_TIMEOUT\n");
@@ -858,8 +892,8 @@ static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t 
  *  \note
  */
 /*************************************************************************************************/
-static u8  adv_name_ok = 0;//name 优先存放在ADV包
-static int hogp_make_set_adv_data(void)
+static u8  adv_name_ok;   //name 优先存放在ADV包
+static int hogp_make_set_adv_data(u8 adv_reconnect)
 {
     u8 offset = 0;
     u8 *buf = hogp_adv_data;
@@ -868,14 +902,16 @@ static int hogp_make_set_adv_data(void)
     offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, HID_UUID_16, 2);
     offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_APPEARANCE_DATA, Appearance, 2);
 
-    char *gap_name = ble_comm_get_gap_name();
-    u8 name_len = strlen(gap_name);
-    u8 vaild_len = ADV_RSP_PACKET_MAX - (offset + 2);
-    if (name_len < vaild_len) {
-        offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME, (void *)gap_name, name_len);
-        adv_name_ok = 1;
-    } else {
-        adv_name_ok = 0;
+    if (!adv_reconnect) {/*回连广播默认不填入名字*/
+        char *gap_name = ble_comm_get_gap_name();
+        u8 name_len = strlen(gap_name);
+        u8 vaild_len = ADV_RSP_PACKET_MAX - (offset + 2);
+        if (name_len < vaild_len) {
+            offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME, (void *)gap_name, name_len);
+            adv_name_ok = 1;
+        } else {
+            adv_name_ok = 0;
+        }
     }
 
     if (offset > ADV_RSP_PACKET_MAX) {
@@ -900,7 +936,7 @@ static int hogp_make_set_adv_data(void)
  *  \note
  */
 /*************************************************************************************************/
-static int hogp_make_set_rsp_data(void)
+static int hogp_make_set_rsp_data(u8 adv_reconnect)
 {
     u8 offset = 0;
     u8 *buf = hogp_scan_rsp_data;
@@ -910,14 +946,16 @@ static int hogp_make_set_rsp_data(void)
     offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA, (void *)user_tag_string, tag_len);
 #endif
 
-    if (!adv_name_ok) {
-        char *gap_name = ble_comm_get_gap_name();
-        u8 name_len = strlen(gap_name);
-        u8 vaild_len = ADV_RSP_PACKET_MAX - (offset + 2);
-        if (name_len > vaild_len) {
-            name_len = vaild_len;
+    if (!adv_reconnect) {/*回连广播默认不填入名字*/
+        if (!adv_name_ok) {
+            char *gap_name = ble_comm_get_gap_name();
+            u8 name_len = strlen(gap_name);
+            u8 vaild_len = ADV_RSP_PACKET_MAX - (offset + 2);
+            if (name_len > vaild_len) {
+                name_len = vaild_len;
+            }
+            offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME, (void *)gap_name, name_len);
         }
-        offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME, (void *)gap_name, name_len);
     }
 
     if (offset > ADV_RSP_PACKET_MAX) {
@@ -946,17 +984,22 @@ static int hogp_make_set_rsp_data(void)
 void modify_ble_name(const char *name)
 {
     log_info(">>>modify_ble_name:%s\n", name);
-    ble_comm_set_config_name(bt_get_local_name(), 0);
+    ble_comm_set_config_name(bt_get_local_name(), 1);
 }
 
-static void __hogp_direct_low_timeout_handle(void)
+static void __hogp_reconnect_low_timeout_handle(void)
 {
     if (0 == hogp_con_handle && ble_gatt_server_get_work_state() == BLE_ST_ADV) {
-        log_info("ADV_DIRECT_IND_LOW timeout!!!\n");
+        log_info("ADV_RECONNECT timeout!!!\n");
         ble_gatt_server_adv_enable(0);
         hogp_pair_info.direct_adv_cnt = 0;
         hogp_adv_config_set();
         ble_gatt_server_adv_enable(1);
+    } else {
+        /*其他情况，要取消定向广播*/
+        log_info("Set Switch to ADV_IND Config\n");
+        hogp_pair_info.direct_adv_cnt = 0;
+        hogp_adv_config_set();
     }
 }
 
@@ -968,28 +1011,34 @@ static void __hogp_direct_low_timeout_handle(void)
  *
  *  \return
  *
- *  \note
+ *  \note  回连可默认用无定向广播，兼容某些主机不支持定向广播连接
  */
 /*************************************************************************************************/
 static void hogp_adv_config_set(void)
 {
     int ret = 0;
-    ret |= hogp_make_set_adv_data();
-    ret |= hogp_make_set_rsp_data();
+    int adv_reconnect_flag = 0;
 
     hogp_server_adv_config.adv_interval = ADV_INTERVAL_MIN;
     hogp_server_adv_config.adv_auto_do = 1;
     hogp_server_adv_config.adv_channel = le_adv_channel_sel;
 
-    if (PAIR_DIRECT_ADV_EN && hogp_pair_info.pair_flag && hogp_pair_info.direct_adv_cnt) {
-        hogp_server_adv_config.adv_type = pair_direct_adv_type;
+    if (PAIR_RECONNECT_ADV_EN && hogp_pair_info.pair_flag && hogp_pair_info.direct_adv_cnt) {
+        hogp_server_adv_config.adv_type = pair_reconnect_adv_type;
         memcpy(hogp_server_adv_config.direct_address_info, hogp_pair_info.peer_address_info, 7);
-        if (pair_direct_adv_type == ADV_DIRECT_IND_LOW) {
-            hogp_server_adv_config.adv_interval = PAIR_DIRECT_LOW_ADV_INTERVAL;
-            sys_timeout_add(0, __hogp_direct_low_timeout_handle, PAIR_DIRECT_LOW_ADV_TIME);
+        if (pair_reconnect_adv_type != ADV_DIRECT_IND) {
+            hogp_server_adv_config.adv_interval = PAIR_RECONNECT_ADV_INTERVAL;
+            if (pair_reconnect_adv_timeout) {
+                if (hogp_adv_timeout_number) {
+                    sys_timeout_del(hogp_adv_timeout_number);
+                    hogp_adv_timeout_number = 0;
+                }
+                hogp_adv_timeout_number = sys_timeout_add(0, __hogp_reconnect_low_timeout_handle, pair_reconnect_adv_timeout);
+            }
         }
-        log_info("===DIRECT_ADV address:");
+        log_info("RECONNECT_ADV1= %02x, address:", pair_reconnect_adv_type);
         put_buf(hogp_server_adv_config.direct_address_info, 7);
+        adv_reconnect_flag = 1;
     } else {
         hogp_server_adv_config.adv_type = ADV_IND;
         memset(hogp_server_adv_config.direct_address_info, 0, 7);
@@ -997,13 +1046,75 @@ static void hogp_adv_config_set(void)
 
     log_info("adv_type:%d,channel=%02x\n", hogp_server_adv_config.adv_type, hogp_server_adv_config.adv_channel);
 
+    ret |= hogp_make_set_adv_data(adv_reconnect_flag);
+    ret |= hogp_make_set_rsp_data(adv_reconnect_flag);
+
+    if (ret) {
+        log_info("adv_setup_init fail!!!\n");
+        return;
+    }
+    ble_gatt_server_set_adv_config(&hogp_server_adv_config);
+
+}
+
+/*************************************************************************************************/
+/*!
+ *  \brief   定向广播参数设置
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note  回连可默认用无定向广播，兼容某些主机不支持定向广播连接
+ */
+/*************************************************************************************************/
+void hogp_reconnect_adv_config_set(u8 adv_type, u32 adv_timeout)
+{
+    int ret = 0;
+    int adv_reconnect_flag = 0;
+
+    hogp_server_adv_config.adv_interval = PAIR_RECONNECT_ADV_INTERVAL;
+    hogp_server_adv_config.adv_auto_do = 1;
+    hogp_server_adv_config.adv_channel = ADV_CHANNEL_ALL;
+
+    __hogp_conn_pair_vm_do(&hogp_pair_info, 0);
+
+    if (hogp_pair_info.pair_flag) {
+        adv_reconnect_flag = 1; /*已配对*/
+        hogp_server_adv_config.adv_type = adv_type;
+    } else {
+        hogp_server_adv_config.adv_type = ADV_IND;/*强制切换可发现广播*/
+    }
+
+    /* if (PAIR_RECONNECT_ADV_EN && hogp_pair_info.pair_flag && hogp_pair_info.direct_adv_cnt) { */
+    memcpy(hogp_server_adv_config.direct_address_info, &hogp_pair_info.peer_address_info, 7);
+    log_info("RECONNECT_ADV2= %02x, address:", adv_type);
+    put_buf(hogp_server_adv_config.direct_address_info, 7);
+
+    if (adv_type == ADV_DIRECT_IND) {
+        hogp_pair_info.direct_adv_cnt = (adv_timeout + 1279) / 1280; /*定向次数*/
+    } else {
+        if (adv_timeout) {
+            /*设置超时切换到无定向广播*/
+            if (hogp_adv_timeout_number) {
+                sys_timeout_del(hogp_adv_timeout_number);
+                hogp_adv_timeout_number = 0;
+            }
+            hogp_adv_timeout_number = sys_timeout_add(0, __hogp_reconnect_low_timeout_handle, adv_timeout);
+        }
+    }
+
+    log_info("adv_type:%d,channel=%02x\n", hogp_server_adv_config.adv_type, hogp_server_adv_config.adv_channel);
+
+    ret |= hogp_make_set_adv_data(adv_reconnect_flag);
+    ret |= hogp_make_set_rsp_data(adv_reconnect_flag);
+
     if (ret) {
         log_info("adv_setup_init fail!!!\n");
         return;
     }
     ble_gatt_server_set_adv_config(&hogp_server_adv_config);
 }
-
 
 /*************************************************************************************************/
 /*!
@@ -1241,20 +1352,24 @@ void le_hogp_regiest_get_battery(u8(*get_battery_cbk)(void))
 
 /*************************************************************************************************/
 /*!
- *  \brief      配置定向广播使用的类型
+ *  \brief      配置回连广播使用的参数
  *
- *  \param      [in] ADV_DIRECT_IND or ADV_DIRECT_IND_LOW
+ *  \param     type [in] ADV_DIRECT_IND, ADV_DIRECT_IND_LOW,ADV_IND
  *
- *  ADV_DIRECT_IND       (1.28s超时,interval 固定2ms)
- *  ADV_DIRECT_IND_LOW   (interval 和 channel 跟普通广播设置一样)
+ *  ADV_DIRECT_IND       (密集定向广播:1.28s超时,interval 固定2ms)
+ *  ADV_DIRECT_IND_LOW   (定向广播:interval 和 channel 跟普通广播设置一样)
+ *  ADV_IND              (无定向广播:interval 和 channel 跟普通广播设置一样)
+ *  \param     adv_timeout [in]
+
  *  \return
  *
  *  \note
  */
 /*************************************************************************************************/
-void le_hogp_set_direct_adv_type(u8 type)
+void le_hogp_set_reconnect_adv_cfg(u8 adv_type, u32 adv_timeout)
 {
-    pair_direct_adv_type = type;
+    pair_reconnect_adv_type = adv_type;
+    pair_reconnect_adv_timeout = adv_timeout;
 }
 
 
@@ -1504,6 +1619,11 @@ void ble_server_send_test_key_num(u8 key_num)
             log_info("-not conn testbox\n");
         }
     }
+}
+
+void call_hogp_adv_config_set()
+{
+    return hogp_adv_config_set();
 }
 
 #endif

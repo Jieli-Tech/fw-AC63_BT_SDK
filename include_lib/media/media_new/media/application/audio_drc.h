@@ -10,7 +10,7 @@ struct audio_drc_filter_info {
     struct drc_ch *R_pch;       //右声道系数
 };
 
-#ifdef EQ_CORE_V1
+#if (defined(EQ_CORE_V1)|| defined(EQ_CORE_V2))
 typedef int (*audio_drc_filter_cb)(void *drc, struct audio_drc_filter_info *info);
 #else
 typedef int (*audio_drc_filter_cb)(struct audio_drc_filter_info *info);
@@ -24,7 +24,7 @@ struct audio_drc_param {
     u32 reserved : 21;
     audio_drc_filter_cb cb;     //系数更新的回调函数，用户赋值
     u8 drc_name;                //在线调试是，根据drc_name区分更新系数,一般写0
-#ifdef EQ_CORE_V1
+#if (defined(EQ_CORE_V1)|| defined(EQ_CORE_V2))
     u8 out_32bit;               //是否支持32bit 的输入数据处理  1:使能  0：不使能
     u32 sr;                     //数据采样率
 #endif
@@ -131,7 +131,8 @@ struct audio_drc *audio_dec_drc_open(struct audio_drc_param *parm);
 void audio_dec_drc_close(struct audio_drc *drc);
 
 
-#ifndef EQ_CORE_V1
+#if (defined(EQ_CORE_V1)|| defined(EQ_CORE_V2))
+#else
 void drc_app_run_check(struct audio_drc *drc);
 int drc_get_filter_info(struct audio_drc_filter_info *info);
 #endif

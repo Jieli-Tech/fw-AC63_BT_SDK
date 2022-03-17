@@ -462,7 +462,7 @@ int uac_get_spk_vol();
 u32 uac_audio_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
 void uac_audio_disable(const usb_dev usb_id);
 const u8 *uac_get_string(u32 id);
-u32 uac_register(const usb_dev usb_id);
+u32 uac_register(const usb_dev usb_id, const u32 class);
 void uac_release(const usb_dev usb_id);
 #ifdef __cplusplus
 }

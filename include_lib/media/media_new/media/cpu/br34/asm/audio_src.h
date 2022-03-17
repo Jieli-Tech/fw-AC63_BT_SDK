@@ -97,6 +97,7 @@ int audio_src_base_stop(struct audio_src_base_handle *src);
 
 void audio_src_base_close(struct audio_src_base_handle *src);
 
+int audio_src_is_running(struct audio_src_base_handle *src);
 
 // *INDENT-OFF*
 struct audio_src_handle {
@@ -107,6 +108,7 @@ struct audio_src_handle {
     u8 *remain_addr;
     int remain_len;
     u8 output_malloc;
+    u8 check_hw_running;
 };
 // *INDENT-ON*
 
@@ -126,5 +128,8 @@ int audio_hw_src_set_output_buffer(struct audio_src_handle *src, void *addr, int
 int audio_hw_src_stop(struct audio_src_handle *src);
 
 void audio_hw_src_close(struct audio_src_handle *src);
+
+// 检测到硬件正在运行时不等待其完成，直接返回
+int audio_hw_src_set_check_running(struct audio_src_handle *src, u8 check_hw_running);
 
 #endif

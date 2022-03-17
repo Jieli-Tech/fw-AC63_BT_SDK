@@ -2,6 +2,13 @@
 		. = ALIGN(4);
         media_text_start = .;
 
+		. = ALIGN(4);
+        *(.dns_16k_data)
+        *(.dns_8k_data)
+		*(.jlsp_const)
+		*(.jlsp_code)
+		*(.speex_code)
+		*(.opus_code)
         /*
 		*(.aec_code)
 		*(.aec_const)
@@ -46,6 +53,9 @@
 		*(.bt_audioplc_code)
 		*(.bt_audioplc_sparse_code)
 		*(.bt_audioplc_const)
+		*(.lf_audioplc_code)
+		*(.lf_audioplc_sparse_code)
+		*(.lf_audioplc_const)
 		*(.dms_sparse_code)
 
 		. = ALIGN(4);
@@ -98,6 +108,16 @@
         *(.lc3_decoder_code)
         *(.lc3_decoder_const)
         /**(.bfilt_code)*/
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_code)
+		*(.lc3_codec_e_code)
+		*(.lc3_codec_c_const)
+		*(.lc3_codec_c_code)
+                *( .lc3_codec_c_sparse_code)
+		*(.lc3_codec_d_code)
+		/* *(.lc3_codec_c_const) */
+		/* *(.lc3_codec_c_code) */
+#endif
         *(.sbc_encoder_code)
 
 
@@ -217,6 +237,10 @@
 		*(.limiter_const)
 		*(.bt_limiter_const)
 		*(.bt_limiter_code)
+        *(.drc_const)
+		*(.drc_code)
+		*(.drc_sparse_code)
+		*(.drc_sparse_const)
 	. = ALIGN(4);
 		*(.sur_cal_const)
 		*(.sur_cal_code)
@@ -225,6 +249,10 @@
 	*(.lib_pitchshift_const)
 	. = ALIGN(4);
 
+	    *(.resample_fastcal_sparse_code)
+            *(.resample_fastcal_code)
+            *(.resample_fastcal_const)
+	    . = ALIGN(4);
 
     	media_code_end = .;
 		. = ALIGN(4);

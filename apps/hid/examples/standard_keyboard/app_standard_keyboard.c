@@ -39,6 +39,7 @@
 #include "gpio.h"
 #include "app_comm_bt.h"
 #include "usb/device/hid.h"
+#include "gatt_common/le_gatt_common.h"
 #if(CONFIG_APP_STANDARD_KEYBOARD)
 
 #define LOG_TAG_CONST       STD_KEYB
@@ -50,6 +51,7 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+#define SUPPORT_RECONN_ADV_OR_DIRECT        0    //0:ADV回连接 1:DIRECT回连接
 #define SUPPORT_KEYBOARD_NO_CONFLICT        0    //无冲按键支持
 #define SUPPORT_USER_PASSKEY                0
 #define CAP_LED_ON_VALUE                    1
@@ -73,6 +75,9 @@ typedef enum {
 
 static u16 g_auto_shutdown_timer = 0;
 static volatile u8 cur_bt_idx = 0;
+static volatile u8 paired_flag  = 0;
+static reconnect_flag = 0;
+static vm_address_change_flag = 0;
 static edr_operation_t edr_operation = EDR_OPERATION_NULL;
 static u8 key_pass_enter  = 0;
 static u8 remote_addr[6] = {0};
@@ -98,7 +103,12 @@ extern void lmp_sniff_t_slot_attemp_reset(u16 slot, u16 attemp);
 extern const int sniff_support_reset_anchor_point;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 void usb_hid_register_state_callback(void *callback);
 static void stdkb_usb_state_callback(u8 state);
-
+/* extern void hogp_direct_adv_config_set(u8 type); */
+extern void hogp_reconnect_adv_config_set(u8 adv_type, u32 adv_timeout);
+static key_timeout_flag = 0;
+extern void set_multi_devices_adv_flag(u8 adv_flag);
+u8 get_key_timeout_flag();
+static void set_key_timeout_flag(u8 kt_flag);
 
 #define KEYBOARD_ENTER_PAIR0    0x0
 #define KEYBOARD_ENTER_PAIR1    0x1
@@ -173,6 +183,18 @@ const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用�
     {0,                     _KEY_GRAVE, _KEY_F1,       _KEY_F2, _KEY_5,  _KEY_6,  _KEY_EQUAL,      _KEY_F8,   _KEY_MINUS,         0,                _KEY_F9,       _KEY_DELETE},
     {_KEY_F5,               _KEY_1,   _KEY_2,        _KEY_3,  _KEY_4,  _KEY_7,  _KEY_8,          _KEY_9,    _KEY_0,          _KEY_F12,             _KEY_F10},
 };
+//bd19+ad15键值对应----打开之后需要将fn_remap_key中的F3和F7 col设置为2 && 同时将matrix_keyboard.h中的COL_MAX 设置为16
+/* const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用来标识是否特殊键 */
+/* //  0                        1         2           3        4       5         6                7              8               9                    10              11         12        13    14  15                            16 */
+/*     {0,                    _KEY_Q,   _KEY_W,       _KEY_E,  _KEY_R,  _KEY_U,  _KEY_I,          _KEY_O,        _KEY_P,         0,                    0,             0,         0,        0,    0,   0       },      //0 */
+/*     {0,                    _KEY_TAB, _KEY_CAPSLOCK, _KEY_F3, _KEY_T,  _KEY_Y,  _KEY_RIGHTBRACE, _KEY_F7,       _KEY_LEFTBRACE, S_KEY(_KEY_MOD_LCTRL), _KEY_BACKSPACE, 0,         0,        S_KEY(_KEY_MOD_LALT), 0, S_KEY(_KEY_MOD_LSHIFT)},  //1 */
+/*     {0,                    _KEY_A,   _KEY_S,       _KEY_D,  _KEY_F,  _KEY_J,  _KEY_K, _KEY_L,  _KEY_SEMICOLON, _KEY_LEFTCTRL,  _KEY_BACKSLASH,       0,             0,         0,        0,   S_KEY(_KEY_MOD_RSHIFT), 0}, */
+/*     {0,                    _KEY_ESC, 0,            _KEY_F4, _KEY_G,  _KEY_H,  _KEY_F6,         0,             _KEY_APOSTROPHE, _KEY_LEFTMETA, 0,     _KEY_SPACE, 0, 0, _KEY_UP,  0             }, */
+/*     {S_KEY(_KEY_MOD_RALT), _KEY_Z,   _KEY_X,       _KEY_C,  _KEY_V,  _KEY_M,  _KEY_COMMA,      _KEY_DOT,      0,              0,                    _KEY_ENTER,    _KEY_F11,  0 }, */
+/*     {0,                    0,        0,            0,       _KEY_B,  _KEY_N,  0,               0,             _KEY_SLASH,     _KEY_RIGHTMETA,       0,             _KEY_DOWN, _KEY_RIGHT, 0,   _KEY_LEFT}, */
+/*     {0,                    _KEY_GRAVE, _KEY_F1,     _KEY_F2, _KEY_5,  _KEY_6,  _KEY_EQUAL,      _KEY_F8,       _KEY_MINUS,     0,                    _KEY_F9,       _KEY_DELETE}, */
+/*     {_KEY_F5,              _KEY_1,   _KEY_2,       _KEY_3,  _KEY_4,  _KEY_7,  _KEY_8,          _KEY_9,        _KEY_0,         _KEY_F12,             _KEY_F10}, */
+/* }; */
 
 /*
 const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用来标识是否为特殊键
@@ -370,7 +392,7 @@ static void kb_24g_mode_set(u8 code_id)
 #define SNIFF_MIN_INTERVALSLOT        48
 #define SNIFF_ATTEMPT_SLOT            2
 #define SNIFF_TIMEOUT_SLOT            1
-#define SNIFF_CHECK_TIMER_PERIOD      100
+#define SNIFF_CHECK_TIMER_PERIOD      1000
 
 
 //默认配置
@@ -411,7 +433,6 @@ static const ble_init_cfg_t hidkey_ble_config = {
     .report_map = kb_hid_report_map,
     .report_map_size = sizeof(kb_hid_report_map),
 };
-
 
 //==========================================================
 
@@ -534,6 +555,28 @@ static void edr_set_enable(u8 en)
     }
 }
 
+void set_edr_reconnect_flag(u8 recon_flag)
+{
+    reconnect_flag = recon_flag;
+}
+
+u8 get_edr_reconnect_flag()
+{
+    return reconnect_flag;
+}
+void edr_reconnect()
+{
+    if (get_curr_channel_state()) {
+        log_info("no reconn have channel state");
+        edr_operation = EDR_OPERATION_RECONN;
+    } else {
+        log_info("reconnect edr at once... %d \n", cur_bt_idx);
+        put_buf(remote_addr, 6);
+        set_edr_reconnect_flag(0);
+        user_send_cmd_prepare(USER_CTRL_START_CONNEC_VIA_ADDR, 6, remote_addr);
+    }
+}
+
 static void ble_reset_addr(u8 *new_addr)
 {
 #if TCFG_USER_BLE_ENABLE
@@ -541,14 +584,39 @@ static void ble_reset_addr(u8 *new_addr)
     log_info("new ble address:");
     put_buf(new_addr, 6);
     le_controller_set_mac((void *)new_addr);
+    if (get_key_timeout_flag()) {
+        call_hogp_adv_config_set();
+        set_key_timeout_flag(0);
+    } else {
+#if SUPPORT_RECONN_ADV_OR_DIRECT
+        hogp_reconnect_adv_config_set(ADV_DIRECT_IND, 5000);
+#else
+        hogp_reconnect_adv_config_set(ADV_IND, 5000);
+#endif
+    }
     ble_module_enable(1);
 #endif
 }
 
 static u8 keyboard_report[8] = {0};
+
+u8 get_cur_bt_idx()
+{
+    return cur_bt_idx ;
+}
+u8 get_key_timeout_flag()
+{
+    return key_timeout_flag ;
+}
+static void set_key_timeout_flag(u8 kt_flag)
+{
+    key_timeout_flag = kt_flag ;
+}
+
 static void user_key_deal(u16 user_key, u8 timeout)
 {
     int ret = 0;
+    int switch_flag = 0;
     u8 tmp_ble_addr[6];
     u8 zero_addr[6] = {0};
     u8 vm_hid_mode = HID_MODE_NULL;
@@ -576,11 +644,16 @@ static void user_key_deal(u16 user_key, u8 timeout)
     case KEYBOARD_ENTER_PAIR1:
     case KEYBOARD_ENTER_PAIR2:
     case KEYBOARD_ENTER_PAIR3:
+#if TCFG_USER_BLE_ENABLE
+        ble_state_e state = ble_gatt_server_get_work_state();
+#endif
         log_info("user_event:0x%x\n", user_event);
+        user_send_cmd_prepare(USER_CTRL_PAGE_CANCEL, 0, NULL);//开启page之前关闭page
         syscfg_read(CFG_CUR_BT_IDX, &cur_bt_idx, 1);
         if ((cur_bt_idx == user_event) && !timeout) {
 #if TCFG_USER_EDR_ENABLE
             if (edr_hid_is_connected()) {                   //短按且HID连接不响应按键
+                printf("is_connect_so_to_return");
                 return;
             }
 #endif
@@ -597,6 +670,7 @@ static void user_key_deal(u16 user_key, u8 timeout)
 #if TCFG_USER_EDR_ENABLE
         case HID_MODE_EDR:
             if (edr_hid_is_connected()) {
+                switch_flag = 1;//确定是断链切换还是非短链切换
                 user_send_cmd_prepare(USER_CTRL_DISCONNECTION_HCI, 0, NULL);
             }
             break;
@@ -605,6 +679,8 @@ static void user_key_deal(u16 user_key, u8 timeout)
         case HID_MODE_BLE:
         case HID_MODE_BLE_24G:
             if (ble_hid_is_connected()) {
+                //安卓手机在update instant区间内发送disconnect命令不响应,提前设置timeout
+                ll_vendor_change_local_supervision_timeout(ble_hid_is_connected(), 500);
                 ble_module_enable(0);
                 kb_24g_mode_set(0);
             }
@@ -627,6 +703,7 @@ static void user_key_deal(u16 user_key, u8 timeout)
                 delete_link_key(remote_addr, get_remote_dev_info_index());
                 syscfg_write(CFG_EDR_ADDRESS_BEGIN + cur_bt_idx, zero_addr, 6); //清空EDR回连地址
             }
+            vm_address_change_flag = 0;//清除配对信息允许覆盖vm
             edr_set_enable(1);
             if (get_curr_channel_state()) {
                 /* log_info("edr operation pagscan...\n"); */
@@ -636,8 +713,13 @@ static void user_key_deal(u16 user_key, u8 timeout)
 #if TCFG_USER_BLE_ENABLE
             get_random_number(tmp_ble_addr, 6);                             //重新生成BLE地址
             syscfg_write(CFG_BLE_ADDRESS_BEGIN + cur_bt_idx, tmp_ble_addr, 6);
+            vm_hid_mode = HID_MODE_NULL;
+            syscfg_write(CFG_HID_MODE_BEGIN + cur_bt_idx, &vm_hid_mode, 1);
+            set_key_timeout_flag(1);
+            if (state != BLE_ST_IDLE && state != BLE_ST_DISCONN && state != BLE_ST_INIT_OK) {
+                ble_gatt_server_adv_enable(0);
+            }
             ble_reset_addr(tmp_ble_addr);
-            ble_module_enable(1);
 #endif
             return;
         }
@@ -646,19 +728,20 @@ static void user_key_deal(u16 user_key, u8 timeout)
         log_info("ret = %d vm_hid_mode:%d\n", ret, vm_hid_mode);
 
 #if  TCFG_USER_EDR_ENABLE
+        user_send_cmd_prepare(USER_CTRL_PAGE_CANCEL, 0, NULL);//开启page之前关闭page
         if ((ret == 1) && (vm_hid_mode == HID_MODE_EDR)) {
             //last conn is edr
-            /* log_info("last connected is eder ....\n"); */
+            log_info("last connected is edr .... :%d\n", switch_flag);
             edr_set_enable(1);
             ret = syscfg_read(CFG_EDR_ADDRESS_BEGIN + cur_bt_idx, remote_addr, 6);
             if ((ret == 6) && memcmp(zero_addr, remote_addr, 6)) {              //read remote addr error
-                /* log_info("remote_addr:0x%x:"); */
+                log_info("remote_addr:0x%x:");
                 put_buf(remote_addr, 6);
-                if (get_curr_channel_state()) {
-                    edr_operation = EDR_OPERATION_RECONN;
+                if (switch_flag == 1) {
+                    set_edr_reconnect_flag(1);//断链切换使用
                 } else {
-                    /* log_info("reconnect edr at once...\n"); */
-                    user_send_cmd_prepare(USER_CTRL_START_CONNEC_VIA_ADDR, 6, remote_addr);
+                    edr_reconnect();//非短链切换使用(避免切换别的通道不连接切换回来不回连)
+                    set_edr_reconnect_flag(0);
                 }
             }
             return;
@@ -673,6 +756,9 @@ static void user_key_deal(u16 user_key, u8 timeout)
                 get_random_number(tmp_ble_addr, 6);
                 syscfg_write(CFG_BLE_ADDRESS_BEGIN + cur_bt_idx, tmp_ble_addr, 6);
             }
+            if (state != BLE_ST_IDLE && state != BLE_ST_DISCONN && state != BLE_ST_INIT_OK) {
+                ble_gatt_server_adv_enable(0);
+            }
             ble_reset_addr(tmp_ble_addr);
             return;
         } else if ((ret == 1) && (vm_hid_mode == HID_MODE_BLE_24G)) {
@@ -681,6 +767,9 @@ static void user_key_deal(u16 user_key, u8 timeout)
             if (syscfg_read(CFG_BLE_ADDRESS_BEGIN + cur_bt_idx, tmp_ble_addr, 6) != 6) {       //read current index ble address error
                 get_random_number(tmp_ble_addr, 6);
                 syscfg_write(CFG_BLE_ADDRESS_BEGIN + cur_bt_idx, tmp_ble_addr, 6);
+            }
+            if (state != BLE_ST_IDLE && state != BLE_ST_DISCONN && state != BLE_ST_INIT_OK) {
+                ble_gatt_server_adv_enable(0);
             }
             ble_reset_addr(tmp_ble_addr);
             return;
@@ -703,7 +792,7 @@ static void user_key_deal(u16 user_key, u8 timeout)
             get_random_number(tmp_ble_addr, 6);
             syscfg_write(CFG_BLE_ADDRESS_BEGIN + cur_bt_idx, tmp_ble_addr, 6);
         }
-        if (cur_bt_idx == 0x3) {
+        if (cur_bt_idx == 0x4) {
 
             r_printf("24G_mode_set\n");
             kb_24g_mode_set(CFG_RF_24G_CODE_ID);
@@ -712,6 +801,7 @@ static void user_key_deal(u16 user_key, u8 timeout)
             r_printf("24G_mode_reset\n");
             kb_24g_mode_set(0);
         }
+        set_key_timeout_flag(1);
         ble_reset_addr(tmp_ble_addr);
 #endif
         break;
@@ -1013,6 +1103,14 @@ static void stdkb_auto_shutdown_disable(void)
 static void stdkb_set_soft_poweroff(void)
 {
     log_info("%s\n", __FUNCTION__);
+
+    led_on_off(LED_CLOSE, 0);//关闭led闪烁定时器
+    if (bt_close_pair_handler) {
+        sys_timeout_del(bt_close_pair_handler);//关闭配对定时器
+        bt_close_pair_handler = 0;
+    }
+
+    EX_MCU_ENTER_POWEROFF();//通知从机进入poweroff
     is_stdkb_active = 1;
 
 #if TCFG_USER_BLE_ENABLE
@@ -1051,7 +1149,9 @@ static void stdkb_app_start()
     usb_hid_set_repport_map(kb_hid_report_map, sizeof(kb_hid_report_map));
     usb_start();
 #endif
-
+#if(TCFG_USER_BLE_ENABLE)
+    set_multi_devices_adv_flag(1);
+#endif
     //有蓝牙
 #if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
     u32 sys_clk =  clk_get("sys");
@@ -1257,7 +1357,14 @@ static int stdkb_bt_hci_event_handler(struct bt_event *bt)
     log_info("----%s reason %x %x", __FUNCTION__, bt->event, bt->value);
 
 #if TCFG_USER_EDR_ENABLE
-    bt_comm_edr_hci_event_handler(bt);
+    //键盘过滤掉app_common.c中的error_code_connection_timeout
+    if (bt->event == HCI_EVENT_CONNECTION_COMPLETE && bt->value == ERROR_CODE_CONNECTION_TIMEOUT) {
+        if (!edr_hid_is_connected()) {
+            edr_reconnect();
+        }
+    } else {
+        bt_comm_edr_hci_event_handler(bt);
+    }
 #endif
 
 #if TCFG_USER_BLE_ENABLE
@@ -1270,22 +1377,39 @@ static int stdkb_bt_hci_event_handler(struct bt_event *bt)
         key_pass_enter = 1;
         ///<可以开始输入6位passkey
         break;
-
     case HCI_EVENT_VENDOR_NO_RECONN_ADDR :
         log_info("HCI_EVENT_VENDOR_NO_RECONN_ADDR \n");
         stdkb_bt_hci_event_disconnect(bt) ;
         break;
 
+    case HCI_EVENT_DISCONNECTION_COMPLETE :
+        log_info("HCI_EVENT_DISCONNECTION_COMPLETE \n");
+        if (get_edr_reconnect_flag()) {
+            edr_reconnect();
+            set_edr_reconnect_flag(0);
+        }
+        break;
+
     case BTSTACK_EVENT_HCI_CONNECTIONS_DELETE:
+        log_info(" BTSTACK_EVENT_HCI_CONNECTIONS_DELETE \n");
+        if (bt->value == ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION) {
+            vm_address_change_flag = 0;//手机主动断开此链路允许覆盖vm地址
+        }
+        break;
+
     case HCI_EVENT_CONNECTION_COMPLETE:
         log_info(" HCI_EVENT_CONNECTION_COMPLETE \n");
         /* led_on_off(LED_CLOSE,0);  */
+        if (bt->value == ERROR_CODE_PAGE_TIMEOUT) {
+            vm_address_change_flag = 0;//page超时允许vm覆盖
+        }
         is_stdkb_active = 0;
         if (bt_close_pair_handler) {
             led_on_off(LED_CLOSE, 0);
             sys_timeout_del(bt_close_pair_handler);
             bt_close_pair_handler = 0;
         }
+        break;
 
     default:
         break;
@@ -1372,9 +1496,16 @@ static void stdkb_keyboard_mode_init(u8 hid_mode)
     if (hid_mode & HID_MODE_EDR) {
         log_info("HID EDR MODE INIT\n");
         user_hid_enable(1);
-        if (!bt_connect_phone_back_start()) {
-            bt_wait_phone_connect_control(1);
+        //读取对应通道是否存在地址
+        syscfg_read(CFG_CUR_BT_IDX, &cur_bt_idx, 1);
+        if (syscfg_read(CFG_EDR_ADDRESS_BEGIN + cur_bt_idx, remote_addr, 6) == 6) {
+            edr_reconnect();
+        } else {
+            if (!bt_connect_phone_back_start()) {
+                bt_wait_phone_connect_control(1);
+            }
         }
+
     }
 #endif
 
@@ -1407,6 +1538,7 @@ static void stdkb_keyboard_mode_init(u8 hid_mode)
 
 static int stdkb_bt_connction_status_event_handler(struct bt_event *bt)
 {
+    int ret = 0;
     log_info("----%s %d", __FUNCTION__, bt->event);
 
 
@@ -1420,6 +1552,9 @@ static int stdkb_bt_connction_status_event_handler(struct bt_event *bt)
         if (usb_connect_ok != 1) {
             btstack_init_ok = 1;
 #if TCFG_USER_BLE_ENABLE
+#if !SUPPORT_RECONN_ADV_OR_DIRECT
+            le_hogp_set_reconnect_adv_cfg(ADV_IND, 5000);//第一次上电使用无定向回连
+#endif
             btstack_ble_start_after_init(0);
 #endif
 
@@ -1431,14 +1566,28 @@ static int stdkb_bt_connction_status_event_handler(struct bt_event *bt)
         }
         break;
 
-    case BT_STATUS_SECOND_CONNECTED:
+    case BT_STATUS_SECOND_CONNECTED://这个通道暂时未用,加入需考虑这里
     case BT_STATUS_FIRST_CONNECTED:
         log_info("BT_STATUS_CONNECTED: bt_idx:%d\n", cur_bt_idx);
         bt_hid_mode = HID_MODE_EDR;
         syscfg_write(CFG_HID_MODE_BEGIN + cur_bt_idx, &bt_hid_mode, 1);         //保存当前HID模式
+#if TCFG_USER_EDR_ENABLE
+        //to judge remote_addr == bt->args ?
+        ret = syscfg_read(CFG_EDR_ADDRESS_BEGIN + cur_bt_idx, remote_addr, 6);
+        if ((memcmp(remote_addr, bt->args, 6) != 0) && (ret == 6) && vm_address_change_flag == 1) {
+            log_info("address is not match!!");
+            user_send_cmd_prepare(USER_CTRL_DISCONNECTION_HCI, 0, NULL);
+            set_edr_reconnect_flag(1);//当前通道重新page
+            ret = 6;//避免覆盖vm
+        }
 
-        put_buf(bt->args, 6);
-        syscfg_write(CFG_EDR_ADDRESS_BEGIN + cur_bt_idx, bt->args, 6);
+        log_info("vm_address_change_flag: %d", vm_address_change_flag);
+        if ((ret != 6) || vm_address_change_flag == 0) {
+            put_buf(bt->args, 6);
+            syscfg_write(CFG_EDR_ADDRESS_BEGIN + cur_bt_idx, bt->args, 6);
+        }
+        vm_address_change_flag = 1;
+#endif
 #if TCFG_USER_BLE_ENABLE
         //close ble
         ble_module_enable(0);
@@ -1494,13 +1643,17 @@ static int stdkb_bt_common_event_handler(struct bt_event *bt)
     return 0;
 }
 
+#define DEVICE_EVENT_FROM_CON		(('C' << 24) | ('O' << 16) | ('N' << 8) | '\0')
 static int stdkb_event_handler(struct application *app, struct sys_event *event)
 {
     u8 i = 0;
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //重置无操作定时计数
     if (event->type != SYS_DEVICE_EVENT || DEVICE_EVENT_FROM_POWER != event->arg) { //过滤电源消息
-        sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+        //过滤掉sniff_enable or sniff_disable带来电源消息
+        if (!(event->type == SYS_BT_EVENT && event->arg == DEVICE_EVENT_FROM_CON)) {
+            sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+        }
     }
 #endif
 

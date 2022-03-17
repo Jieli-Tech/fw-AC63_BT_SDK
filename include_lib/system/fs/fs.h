@@ -108,6 +108,7 @@ struct vfs_partition {
     u32 clust_size;
     u32 total_size;
     u8 fs_attr;
+    u8 fs_type;
     char dir[VFS_PART_DIR_MAX];
     void *private_data;
 };
@@ -203,7 +204,7 @@ struct vfs_operations {
     int (*fget_attr)(FILE *, int *attr);
     int (*fset_attr)(FILE *, int attr);
     int (*fget_attrs)(FILE *, struct vfs_attr *);
-    int (*fmove)(FILE *file, const char *path_dst, FILE *, int clr_attr);
+    int (*fmove)(FILE *file, const char *path_dst, FILE *, int clr_attr, int path_len);
     int (*ioctl)(void *, int cmd, int arg);
 };
 
@@ -621,7 +622,7 @@ struct vfs_partition *fget_partition(const char *path);//获得分区part
 /* ----------------------------------------------------------------------------*/
 int fset_vol(const char *path, const char *name);//设置卷标
 
-int fmove(FILE *file, const char *path_dst, FILE **newFile, int clr_attr);//暂不支持
+int fmove(FILE *file, const char *path_dst, FILE **newFile, int clr_attr, int path_len);
 
 int fcheck(FILE *file);//暂不支持
 
@@ -881,7 +882,7 @@ void ff_set_FileInDir_enable(u8 enable); // 优化文件打开速度，如果不
 /**
  * @brief 设置目录项基点信息（用于加速）
  *
- * @param buf 存储基点buf (长度 10 * n)
+ * @param buf 存储基点buf (长度 12 * n)
  * @param n 基点数目
  * @note 1.加速序号选择文件，明显效果体现在上一曲加速
  *       2.注意buf使用

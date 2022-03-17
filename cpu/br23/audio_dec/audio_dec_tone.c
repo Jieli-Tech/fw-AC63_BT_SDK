@@ -217,6 +217,11 @@ static int tone_dec_list_event_handler(struct tone_dec_list_handle *dec_list, u8
         log_i("evt_handler null\n");
         return false;
     }
+
+    if (strcmp(os_current_task(), dec_list->evt_owner) == 0) {
+        dec_list->evt_handler(dec_list->evt_priv, end_flag);
+        return true;
+    }
     argv[0] = (int)dec_list->evt_handler;
     argv[1] = 2;
     argv[2] = (int)dec_list->evt_priv;

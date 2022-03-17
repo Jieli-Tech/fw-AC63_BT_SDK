@@ -35,6 +35,8 @@ int tws_api_local_media_trans_bulk_push(u8 *buf, int len);
 
 int tws_api_local_media_push_with_sequence(u8 *buf, int len, u16 seqn);
 
+int tws_api_local_media_push_with_timestamp(u8 *buf, int len, u32 timestamp);
+
 int tws_api_local_media_trans_open(u16 buf_size);
 
 int tws_api_local_media_dec_start(u8 *arg, u8 len);

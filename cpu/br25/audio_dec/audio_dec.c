@@ -21,6 +21,7 @@
 #include "application/audio_dig_vol.h"
 #include "audio_dongle_codec.h"
 #include "audio_spectrum.h"
+#include "audio_utils.h"
 
 #ifndef CONFIG_LITE_AUDIO
 #include "aec_user.h"
@@ -113,6 +114,29 @@ void mix_out_eq_drc_close(struct audio_eq_drc *eq_drc);
 extern spectrum_fft_hdl *spec_hdl;
 #endif
 //////////////////////////////////////////////////////////////////////////////
+struct _audio_phase_inver_hdl {
+    struct audio_stream_entry entry;	// 音频流入口
+} audio_phase_inver_hdl;
+
+static void audio_phase_inver_output_data_process_len(struct audio_stream_entry *entry,  int len)
+{
+}
+
+static int audio_phase_inver_data_handler(struct audio_stream_entry *entry,
+        struct audio_data_frame *in,
+        struct audio_data_frame *out)
+{
+    struct _audio_phase_inver_hdl *hdl = container_of(entry, struct _audio_phase_inver_hdl, entry);
+    out->data = in->data;
+    out->data_len = in->data_len;
+    if (in->data_len - in->offset > 0) {
+        digital_phase_inverter_s16(in->data + in->offset / 2, in->data_len - in->offset);
+    }
+    return in->data_len;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 /*----------------------------------------------------------------------------*/
 /**@brief   获取dac能量值
    @param
@@ -683,6 +707,12 @@ int audio_dec_init()
         entries[entry_cnt++] = &mix_eq_drc->entry;
     }
 #endif
+
+#if TCFG_DIG_PHASE_INVERTER_EN
+    audio_phase_inver_hdl.entry.data_process_len = audio_phase_inver_output_data_process_len;
+    audio_phase_inver_hdl.entry.data_handler = audio_phase_inver_data_handler;
+    entries[entry_cnt++] = &(audio_phase_inver_hdl.entry);
+#endif/*TCFG_DIG_PHASE_INVERTER_EN*/
 
 #if AUDIO_SPECTRUM_CONFIG
     if (spec_hdl) {

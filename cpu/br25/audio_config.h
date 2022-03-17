@@ -42,6 +42,7 @@
 #define TCFG_MC_BIAS_AUTO_ADJUST	MC_BIAS_ADJUST_DISABLE
 #define TCFG_MC_CONVERGE_TRACE		0	//省电容mic收敛值跟踪
 #endif/*TCFG_MIC_CAPLESS_ENABLE*/
+#define TCFG_MC_MIC_ONLINE_CHECK_EN	0	//省电容mic在线检测
 /*
  *省电容mic收敛步进限制
  *0:自适应步进调整, >0:收敛步进最大值
@@ -58,6 +59,7 @@
 #endif
 
 #define TCFG_ESCO_PLC				1	//通话丢包修复
+#define TCFG_DIG_PHASE_INVERTER_EN	1  //数字反相器，用来矫正DAC的输出相位
 
 #ifdef CONFIG_SOUNDBOX_FLASH_256K
 #define TCFG_ESCO_LIMITER			0  	//通话近端限幅器
@@ -183,6 +185,7 @@ void app_audio_volume_init(void);
 void app_audio_set_digital_volume(s16 volume);
 void dac_trim_hook(u8 pos);
 void audio_combined_vol_init(u8 cfg_en);
+void audio_volume_list_init(u8 cfg_en);
 
 
 void *app_audio_alloc_use_buff(int use_len);
@@ -204,4 +207,7 @@ int mic_test_stop();
 void dac_power_on(void);
 void dac_power_off(void);
 
+
+void audio_adda_dump(void); //打印所有的dac,adc寄存器
+void audio_adda_gain_dump(void);//打印所有adc,dac的增益
 #endif/*_AUDIO_CONFIG_H_*/

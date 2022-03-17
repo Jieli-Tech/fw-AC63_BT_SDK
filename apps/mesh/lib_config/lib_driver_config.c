@@ -26,6 +26,12 @@ const int  clock_sys_src_use_lrc_hw = 1; //当使用lrc时timer.c需要特殊设
 #else
 const int  clock_sys_src_use_lrc_hw = 0;
 #endif
+
+#ifdef TCFG_VAD_LOWPOWER_CLOCK
+const char config_vad_lowpower_clock = TCFG_VAD_LOWPOWER_CLOCK;
+#else
+const char config_vad_lowpower_clock = 0;
+#endif
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)
  */
@@ -133,6 +139,12 @@ const char log_tag_const_i_SYS_DAC AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
 const char log_tag_const_d_SYS_DAC AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
 const char log_tag_const_w_SYS_DAC AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
 const char log_tag_const_e_SYS_DAC AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
+
+const char log_tag_const_v_APP_DAC AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
+const char log_tag_const_i_APP_DAC AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
+const char log_tag_const_d_APP_DAC AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
+const char log_tag_const_w_APP_DAC AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
+const char log_tag_const_e_APP_DAC AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
 
 const char log_tag_const_v_FM AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
 const char log_tag_const_i_FM AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);

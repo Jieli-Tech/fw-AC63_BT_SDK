@@ -41,6 +41,8 @@ enum {
     EQ_ONLINE_CMD_PARAMETER_DRC,
     EQ_ONLINE_CMD_PARAMETER_CHANNEL,//通道切换
 
+    EQ_ONLINE_CMD_WRITE_FILE_SIZE = 0x20,  //准备写入文件
+    EQ_ONLINE_CMD_WRITE_FILE_CHANNEL = 0x21,
 
     EQ_ONLINE_CMD_SONG_EQ_SEG = 0x2001,
     EQ_ONLINE_CMD_CALL_EQ_SEG = 0x2002,
@@ -52,6 +54,7 @@ enum {
 
 
     EQ_ONLINE_CMD_SONG_DRC = 0x2101,
+    EQ_ONLINE_CMD_SONG_WDRC = 0x2102,
 //add xx here
 
     EQ_ONLINE_CMD_MAX,//最后一个
@@ -98,7 +101,7 @@ typedef struct {
 
 
 typedef struct {
-    struct drc_ch drc;    //drc系数地址
+    struct drc_ch_org drc;    //drc系数地址
 } DRC_CFG_PARAMETER;
 
 
@@ -140,6 +143,12 @@ typedef struct _eq_tool_cfg {
     u16 fun_type[2];     //模式下拥有哪些功能
 } eq_tool_cfg;           //调试工具支持的功能
 
+struct vm_save {
+    u8 *file;
+    u16 file_size;
+    u16 offset;
+    u8 vm;
+};
 typedef struct {
     u32 eq_type : 3;      //系数调试所处模式：在线模式、效果文件（离线）模式、默认系数表模式
     u32 *mode_updata;     //默认系数表切换更新标志
@@ -188,6 +197,7 @@ typedef struct {
 
     void *priv;
     int (*send_cmd)(void *priv, u32 id, u8 *packet, int size);//在线调试，命令应答
+    struct vm_save vs;
     u8 custom_mode_id;   //记录自定义eq系数表的数组所在下标号
 } EQ_CFG;
 
@@ -451,8 +461,13 @@ void eq_app_run_check(struct audio_eq *eq);
 
 #if 0
 static const struct eq_seg_info your_audio_out_eq_tab[] = {
+#ifdef EQ_CORE_V1
+    {0, EQ_IIR_TYPE_BAND_PASS, 125,   0, 0.7f)},
+    {1, EQ_IIR_TYPE_BAND_PASS, 12000, 0, 0.3f)},
+#else
     {0, EQ_IIR_TYPE_BAND_PASS, 125,   0 << 20, (int)(0.7f * (1 << 24))},
     {1, EQ_IIR_TYPE_BAND_PASS, 12000, 0 << 20, (int)(0.3f * (1 << 24))},
+#endif
 };
 float your_eq_coeff_tab[2][5];
 /*----------------------------------------------------------------------------*/

@@ -34,6 +34,12 @@ const int  clock_sys_src_use_lrc_hw = 1; //当使用lrc时timer.c需要特殊设
 #else
 const int  clock_sys_src_use_lrc_hw = 0;
 #endif
+
+#ifdef TCFG_VAD_LOWPOWER_CLOCK
+const char config_vad_lowpower_clock = TCFG_VAD_LOWPOWER_CLOCK;
+#else
+const char config_vad_lowpower_clock = 0;
+#endif
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)
  */

@@ -5,7 +5,7 @@
 #include "generic/list.h"
 
 #define MIXER_EXT_MAX_NUM		4	// 扩展输出最大通道
-
+#define PCM_0dB_VALUE           16384
 enum {
     MIXER_EVENT_CH_OPEN,
     MIXER_EVENT_CH_CLOSE,
@@ -47,6 +47,17 @@ struct audio_mixer {
     volatile u8 point_len;
 };
 
+struct audio_pcm_edit {
+    u8  hide : 1;
+    u8  highlight : 1;
+    u8  state;
+    u8  ch_num;
+    u8  fade_chs;
+    s16 fade_step;
+    s16 fade_volume;
+    s16 volume;
+};
+
 struct audio_mixer_ch {
     u8 start;
     u8 pause;
@@ -74,6 +85,7 @@ struct audio_mixer_ch {
     void (*lose_callback)(void *lose_priv, int lose_len);
     void *resume_data;
     void (*resume_callback)(void *);
+    struct audio_pcm_edit *editor;
 };
 
 
@@ -139,6 +151,8 @@ u32 audio_mixer_get_input_position(struct audio_mixer *mixer);
 int audio_mixer_get_start_ch_num(struct audio_mixer *mixer);
 
 void audio_mixer_set_mode(struct audio_mixer *mixer, u8 point_len, u8 bit_mode_en);
+
+int audio_mixer_ch_sound_highlight(struct audio_mixer_ch *ch, int hide_volume, int fade_frames, u8 data_channels);
 
 
 

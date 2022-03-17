@@ -25,6 +25,7 @@ int app_power_event_handler(struct device_event *dev, void (*set_soft_poweroff_c
 void check_power_on_voltage(void);
 u16 get_vbat_level(void);
 u8 get_vbat_percent(void);
+u16 get_vbat_value(void);
 void vbat_check_init(void);
 void vbat_timer_update(u32 msec);
 void vbat_timer_delete(void);

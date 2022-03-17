@@ -38,6 +38,10 @@
 #define LOG_ERROR_ENABLE
 #include "system/debug.h"
 
+#if (JL_SMART_BOX_EXTRA_FLASH_OPT)
+#include "smartbox_extra_flash_opt.h"
+#endif
+
 #define LOADER_NAME		"LOADER.BIN"
 #define DEVICE_UPDATE_KEY_ERR  BIT(30)
 #define DEVICE_FIRST_START     BIT(31)
@@ -51,6 +55,11 @@ extern void ram_protect_close(void);
 extern void hwi_all_close(void);
 extern void wifi_det_close();
 
+__attribute__((weak))
+void wifi_det_close()
+{
+    printf("tmp weak func wifi_det_close\n");
+}
 extern void *dev_update_get_parm(int type);
 extern u8 get_ota_status();
 extern int get_nor_update_param(void *buf);
@@ -108,6 +117,24 @@ void update_result_set(u16 result)
         p->parm_result = result;
         p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);
     }
+#if (RCSP_UPDATE_EN && SMART_BOX_EN && JL_SMART_BOX_EXTRA_FLASH_OPT)
+    if (UPDATA_SUCC == result) {
+        smartbox_eflash_update_flag_set(0);
+        smartbox_eflash_flag_set(0);
+        extern void set_update_ex_flash_flag(u8 update_flag);
+        set_update_ex_flash_flag(0);
+    }
+#endif
+}
+
+bool vm_need_recover(void)
+{
+    return ((g_updata_flag & 0xffff) == UPDATA_SUCC) ? true : false;
+}
+
+void update_clear_result()
+{
+    g_updata_flag = 0;
 }
 
 bool update_success_boot_check(void)
@@ -164,6 +191,15 @@ __retry:
     }
 #endif
 }
+#ifdef UPDATE_VOICE_REMIND
+void update_tone_event_clear()
+{
+    struct sys_event e = {0};
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_TONE;
+    sys_event_clear(&e);
+}
+#endif
 
 int update_result_deal()
 {
@@ -196,6 +232,7 @@ int update_result_deal()
 #endif
     }
 
+    int voice_max_cnt = 5;
     while (1) {
         wdt_clear();
         key_voice_cnt++;
@@ -206,14 +243,17 @@ int update_result_deal()
             tone_play(TONE_SIN_NORMAL, 1);
             os_time_dly(25);
             puts(">>>>>>>>>>>\n");
+            update_tone_event_clear();
         } else {
+            voice_max_cnt = 20; //区分下升级失败提示音
             log_info("!!!!!!!!!!!!!!!updata waring !!!!!!!!!!!=0x%x\n", result);
-            app_audio_set_volume(APP_AUDIO_STATE_WTONE, get_max_sys_vol() / 2, 1);
+            app_audio_set_volume(APP_AUDIO_STATE_WTONE, get_max_sys_vol(), 1);
             tone_play(TONE_SIN_NORMAL, 1);
-            os_time_dly(25);
+            os_time_dly(10);
+            update_tone_event_clear();
         }
 #endif
-        if (key_voice_cnt > 5) {
+        if (key_voice_cnt > voice_max_cnt) {
             key_voice_cnt = 0;
             puts("enter_sys_soft_poweroff\n");
             break;
@@ -235,7 +275,7 @@ void update_close_hw(void *filter_name)
 {
     const struct update_target *p;
     list_for_each_update_target(p) {
-        if (memcmp(filter_name, p->name, strlen(filter_name) != 0)) {
+        if (memcmp(filter_name, p->name, strlen(filter_name)) != 0) {
             printf("close Hw Name : %s\n", p->name);
             p->driver_close();
         }
@@ -251,7 +291,10 @@ static void update_before_jump_common_handle(UPDATA_TYPE up_type)
     audio_anc_hw_close();
 #endif
 
+#if (CPU_CORE_NUM == 1)         //双核在跳转前关中断lock_set后会和maskrom 初始化中断冲突导致ilock err
     local_irq_disable();
+#endif
+
     hwi_all_close();
 
 #ifdef CONFIG_SUPPORT_WIFI_DETECT
@@ -289,6 +332,35 @@ void update_param_ext_fill(UPDATA_PARM *p, u8 ext_type, u8 *ext_data, u8 ext_len
     p->ext_arg_crc = CRC16((u8 *)p + sizeof(UPDATA_PARM), p->ext_arg_len);
 }
 
+u8 *update_param_ext_get(UPDATA_PARM *p, u8 ext_type)
+{
+    u8 info_len;
+    u8 ext_arg_len = p->ext_arg_len;
+    u8 *pExt_arg = (u8 *)p + sizeof(UPDATA_PARM);
+    /* r_printf(">>>[test]:ext_len = %d\n", p->ext_arg_len); */
+    /* put_buf(pExt_arg, p->ext_arg_len); */
+
+    if (p->ext_arg_crc != CRC16(pExt_arg, p->ext_arg_len)) {			//crc not match
+        return NULL;
+    }
+
+    while (1) {
+        info_len = *(pExt_arg + 1) + 2;
+        /* r_printf(">>>[test]:ext arg = %d, ext_type = %d, info_len = %d\n", *pExt_arg, ext_type, info_len); */
+        if (*pExt_arg == ext_type) {
+            return pExt_arg + 2;			//2Byte: type + len
+        }
+        if (ext_arg_len < info_len) {
+            break;
+        }
+        ext_arg_len -= info_len;
+        pExt_arg += info_len;		// + len
+    }
+
+    return NULL;							//not find ext_type
+}
+
+
 //fill common content \ private content \ crc16
 static void update_param_content_fill(int type, UPDATA_PARM *p, void (*priv_param_fill_hdl)(UPDATA_PARM *P))
 {
@@ -319,7 +391,8 @@ static void update_param_content_fill(int type, UPDATA_PARM *p, void (*priv_para
     }
 
 #ifdef CONFIG_CPU_BR23
-    if (type == BT_UPDATA || type == BLE_APP_UPDATA || type == SPP_APP_UPDATA || BLE_TEST_UPDATA) {     //D版芯片蓝牙相关的升级需要保存LDO_TRIM_RES
+#if TCFG_APP_BT_EN
+    if (type == BT_UPDATA || type == BLE_APP_UPDATA || type == SPP_APP_UPDATA || type == BLE_TEST_UPDATA) {     //D版芯片蓝牙相关的升级需要保存LDO_TRIM_RES
         ext_data = malloc(128);
         if (ext_data != NULL) {
             ext_len = get_ldo_trim_res(ext_data);
@@ -328,6 +401,17 @@ static void update_param_content_fill(int type, UPDATA_PARM *p, void (*priv_para
         }
     }
 #endif
+#endif
+
+    u8 ext_flag = 0;
+    ext_len = 1;
+#if CONFIG_UPDATE_JUMP_TO_MASK
+    ext_flag = 1;
+#endif
+    update_param_ext_fill(p, EXT_JUMP_FLAG, &ext_flag, ext_len);
+    /* u8 *flag = update_param_ext_get(p, EXT_JUMP_FLAG); */
+    /* r_printf(">>>[test]:flag = %d\n", flag[0]); */
+
 
     p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);	//2 : crc_val
 }
@@ -348,20 +432,29 @@ void update_mode_api_v2(UPDATA_TYPE type, void (*priv_param_fill_hdl)(UPDATA_PAR
         update_param_content_fill(type, p, priv_param_fill_hdl);
 
         if (succ_report.update_param_write_hdl) {
-            succ_report.update_param_write_hdl(succ_report.priv_param, p, update_param_len);
+            succ_report.update_param_write_hdl(succ_report.priv_param, (u8 *)p, update_param_len);
         }
 
 #ifdef UPDATE_LED_REMIND
         led_update_start();
 #endif
-        update_before_jump_common_handle(type);
 
         update_param_ram_set((u8 *)p, update_param_len);
+
+#if CPU_CORE_NUM > 1            //双核需要把CPU1关掉
+        printf("Before Suspend Current Cpu ID:%d Cpu In Irq?:%d\n", current_cpu_id(),  cpu_in_irq());
+        if (current_cpu_id() == 1) {
+            os_suspend_other_core();
+        }
+        ASSERT(current_cpu_id() == 0);          //确保跳转前CPU1已经停止运行
+        cpu_suspend_other_core(0x55);
+        printf("After Suspend Current Cpu ID:%d\n", current_cpu_id());
+#endif
+        update_before_jump_common_handle(type);
 
         if (priv_update_jump_handle) {
             priv_update_jump_handle(type);
         }
-
         free(p);
     } else {
         ASSERT(p, "malloc update param err \n");
@@ -477,10 +570,11 @@ static void update_common_state_cbk(update_mode_info_t *info, u32 state, void *p
 }
 
 
-static void app_update_init(void)
+static int app_update_init(void)
 {
     update_module_init(update_common_state_cbk);
     testbox_update_init();
+    return 0;
 }
 
 __initcall(app_update_init);

@@ -151,23 +151,22 @@ SECTIONS
         BTCTLER_CL_CODE_SIZE = ABSOLUTE(. - BTCTLER_CL_CODE_START);
 
 
-#ifndef CONFIG_256K_FLASH
+        *(.classic_tws_const)
+        *(.classic_tws_code)
         *(.classic_tws_code.esco)
-#endif
 
         btctler_code_end = .;
 
     } > code0
 
+#ifndef CONFIG_MOVABLE_ENABLE
 	.common ALIGN(32):
-	{
-        btctler_ram_code_start = .;
-
-#ifdef CONFIG_256K_FLASH
-        *(.classic_tws_code.esco)
+#else
+    .text : ALIGN(4)
 #endif
-        *(.classic_tws_const)
-        *(.classic_tws_code)
+	{
+
+        btctler_ram_code_start = .;
 
 		. = ALIGN(4);
 
@@ -227,7 +226,13 @@ SECTIONS
 
 		. = ALIGN(4);
 
+#ifndef CONFIG_MOVABLE_ENABLE
     } > ram0
+#else
+    } > code0
+#endif
+
+
 
     /*代码统计 Code & RAM : 蓝牙协议栈*/
     BTCTLER_LE_RAM_TOTAL   = BTCTLER_LE_CONTROLLER_DATA_SIZE + BTCTLER_LE_CONTROLLER_BSS_SIZE;

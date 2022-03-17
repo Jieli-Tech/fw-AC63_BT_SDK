@@ -106,7 +106,10 @@ struct audio_dac_platform_data {
     struct audio_dac_codec_data codec;
 };
 #endif
+struct audio_dac_hdl;
 struct dac_platform_data {
+    void (*analog_open_cb)(struct audio_dac_hdl *);
+    void (*analog_close_cb)(struct audio_dac_hdl *);
     u32 output : 4;             //DAC输出模式
     u32 ldo_volt : 4;           //DACVDD_LDO电压档选择
     u32 ldo_isel : 4;           //LDO偏置电流选择档位, 0:5u, 1:10u, 2:15u, 3:20u, 4:25u, 5:30u, 6:35u, 7:40u

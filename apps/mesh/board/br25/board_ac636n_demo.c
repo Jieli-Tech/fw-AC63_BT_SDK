@@ -7,6 +7,9 @@
 #include "device/key_driver.h"
 #include "asm/power/p33.h"
 #include "asm/pwm_led.h"
+#ifdef CONFIG_LITE_AUDIO
+#include "media/includes.h"
+#endif/*CONFIG_LITE_AUDIO*/
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -199,6 +202,63 @@ enum {
     PORTB_GROUP,
     PORTC_GROUP,
 };
+
+/************************** DAC ****************************/
+#if TCFG_AUDIO_DAC_ENABLE
+struct dac_platform_data dac_data = {
+    .ldo_volt       = TCFG_AUDIO_DAC_LDO_VOLT,                   //DACVDD等级.需要根据具体硬件来设置（高低压）可选:1.2V/1.3V/2.35V/2.5V/2.65V/2.8V/2.95V/3.1V
+#if ((TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR) || (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_DUAL_LR_DIFF))
+    .vcmo_en        = 0,                                         //四声道与双声道差分关闭VCOMO
+#else
+    .vcmo_en        = 0,                                         //是否打开VCOMO
+#endif
+    .output         = TCFG_AUDIO_DAC_CONNECT_MODE,               //DAC输出配置，和具体硬件连接有关，需根据硬件来设置
+    .ldo_isel       = 3,
+    .ldo_fb_isel    = 2,
+    .lpf_isel       = 0x8,
+};
+#endif
+
+/************************** ADC ****************************/
+#if TCFG_AUDIO_ADC_ENABLE
+const struct ladc_port ladc_list[] = {
+	{// 0
+		.channel = TCFG_AUDIO_ADC_LINE_CHA0,
+	},
+	{// 1
+		.channel = TCFG_AUDIO_ADC_LINE_CHA1,
+	},
+	// total must < 4
+};
+struct adc_platform_data adc_data = {
+	.mic_channel    = TCFG_AUDIO_ADC_MIC_CHA,                   //MIC通道选择，对于693x，MIC只有一个通道，固定选择右声道
+/*MIC LDO电流档位设置：
+    0:0.625ua    1:1.25ua    2:1.875ua    3:2.5ua*/
+	.mic_ldo_isel   = TCFG_AUDIO_ADC_LDO_SEL,
+/*MIC 是否省隔直电容：
+    0: 不省电容  1: 省电容 */
+#if ((TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_FRONT_LR_REAR_LR) || (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_DUAL_LR_DIFF))
+	.mic_capless    = 0,//四声道与双声道差分使用，不省电容接法
+#else
+	.mic_capless    = 0,
+#endif
+/*MIC免电容方案需要设置，影响MIC的偏置电压
+    21:1.18K	20:1.42K 	19:1.55K 	18:1.99K 	17:2.2K 	16:2.4K 	15:2.6K		14:2.91K	13:3.05K 	12:3.5K 	11:3.73K
+	10:3.91K  	9:4.41K 	8:5.0K  	7:5.6K		6:6K		5:6.5K		4:7K		3:7.6K		2:8.0K		1:8.5K				*/
+    .mic_bias_res   = 16,
+/*MIC LDO电压档位设置,也会影响MIC的偏置电压
+    0:2.3v  1:2.5v  2:2.7v  3:3.0v */
+	.mic_ldo_vsel  = 2,
+/*MIC电容隔直模式使用内部mic偏置(PC7)*/
+	.mic_bias_inside = 1,
+/*保持内部mic偏置输出*/
+	.mic_bias_keep = 0,
+
+	// ladc 通道
+    .ladc_num = ARRAY_SIZE(ladc_list),
+    .ladc = ladc_list,
+};
+#endif
 
 static void port_protect(u16 *port_group, u32 port_num)
 {
@@ -417,6 +477,9 @@ void board_power_init(void)
     /* p33_and_1byte(P3_PR_PWR, ~BIT(3)); */
     //< close long key reset
     /* p33_and_1byte(P3_PINR_CON, 0); */
+
+    gpio_longpress_pin0_reset_config(IO_PORTB_01, 0, 0);
+    gpio_shortpress_reset_config(0);//1--enable 0--disable
 
     power_init(&power_param);
 

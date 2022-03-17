@@ -19,6 +19,7 @@
 #include "update_loader_download.h"
 #include "app_charge.h"
 #include "app_power_manage.h"
+#include "asm/charge.h"
 
 #if TCFG_KWS_VOICE_RECOGNITION_ENABLE
 #include "jl_kws/jl_kws_api.h"
@@ -36,26 +37,26 @@
 
 /*任务列表 */
 const struct task_info task_info_table[] = {
-    {"app_core",            1,     640,   128  },
-    {"sys_event",           7,     256,   0    },
-    {"btctrler",            4,     512,   256  },
-    {"btencry",             1,     512,   128  },
-    {"btstack",             3,     768,   256  },
-    {"systimer",		    7,	   128,   0		},
-    {"update",				1,	   320,   0		},
+    {"app_core",            1,     0,   640,   128  },
+    {"sys_event",           7,     0,   256,   0    },
+    {"btctrler",            4,     0,   512,   256  },
+    {"btencry",             1,     0,   512,   128  },
+    {"btstack",             3,     0,   768,   256  },
+    {"systimer",		    7,	   0,   128,   0    },
+    {"update",				1,	   0,   512,   0    },
 #if CONFIG_APP_GAMEBOX
-    {"gamebox",             3,     1024,   128  },
+    {"gamebox",             3,     0,   1024,   128 },
 #endif
 #if (RCSP_BTMATE_EN)
-    {"rcsp_task",		2,		640,	0},
+    {"rcsp_task",		    2,	   0,    640,	0   },
 #endif
 #if TCFG_AUDIO_ENABLE
-    {"audio_dec",           3,     768,   128  },
-    {"audio_enc",           4,     512,   128  },
-    {"aec",                 2,     768,   128  },
+    {"audio_dec",           3,     0,   768,   128  },
+    {"audio_enc",           4,     0,   512,   128  },
+    {"aec",                 2,     0,   768,   128  },
 #endif/*TCFG_AUDIO_ENABLE*/
 #if TCFG_KWS_VOICE_RECOGNITION_ENABLE
-    {"kws",                 2,     256,   64   },
+    {"kws",                 2,     0,   256,   64   },
 #endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE */
 
     {0, 0},
@@ -78,6 +79,36 @@ u8 get_charge_online_flag(void)
     return 0;
 }
 
+void clr_wdt(void);
+void check_power_on_key(void)
+{
+#if TCFG_POWER_ON_NEED_KEY
+
+    u32 delay_10ms_cnt = 0;
+    while (1) {
+        clr_wdt();
+        os_time_dly(1);
+
+        extern u8 get_power_on_status(void);
+        if (get_power_on_status()) {
+            log_info("+");
+            delay_10ms_cnt++;
+            if (delay_10ms_cnt > 70) {
+                /* extern void set_key_poweron_flag(u8 flag); */
+                /* set_key_poweron_flag(1); */
+                return;
+            }
+        } else {
+            log_info("-");
+            delay_10ms_cnt = 0;
+            log_info("enter softpoweroff\n");
+            power_set_soft_poweroff();
+        }
+    }
+#endif
+}
+
+
 void app_main()
 {
     struct intent it;
@@ -96,6 +127,10 @@ void app_main()
     } else {
         check_power_on_voltage();
     }
+
+#if TCFG_POWER_ON_NEED_KEY
+    check_power_on_key();
+#endif
 
 #if TCFG_AUDIO_ENABLE
     extern int audio_dec_init();
@@ -137,9 +172,6 @@ void app_main()
 #elif(CONFIG_APP_IDLE)
     it.name = "idle";
     it.action = ACTION_IDLE_MAIN;
-#elif(CONFIG_APP_REMOTE_24G_S)
-    it.name = "remote_24g";
-    it.action = ACTION_REMOTE_24G_MAIN;
 
 #else
     while (1) {
@@ -148,8 +180,13 @@ void app_main()
 #endif
 
     log_info("run app>>> %s", it.name);
+    log_info("%s,%s", __DATE__, __TIME__);
 
     start_app(&it);
+
+#if TCFG_CHARGE_ENABLE
+    set_charge_event_flag(1);
+#endif
 }
 
 /*

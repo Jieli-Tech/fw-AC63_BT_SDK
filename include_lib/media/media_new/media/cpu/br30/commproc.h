@@ -178,6 +178,27 @@ int aec_cfg_update(AEC_CONFIG *cfg);
 */
 int aec_reboot(u8 enablebit);
 
+/*
+*********************************************************************
+*                  			Audio CVP IOCTL
+* Description: CVP功能配置
+* Arguments  : cmd 		操作命令
+*		       value 	操作数
+*		       priv 	操作内存地址
+* Return	 : 0 成功 其他 失败
+* Note(s)    : (1)比如动态开关降噪NS模块:
+*				audio_cvp_ioctl(CVP_NS_SWITCH,1,NULL);	//降噪关
+*				audio_cvp_ioctl(CVP_NS_SWITCH,0,NULL);  //降噪开
+*********************************************************************
+*/
+enum {
+    CVP_AEC_SWITCH = 1,
+    CVP_NLP_SWITCH,
+    CVP_NS_SWITCH,
+    CVP_AGC_SWITCH,
+};
+int aec_ioctl(int cmd, int value, void *priv);
+
 int sms_tde_init(struct aec_s_attr *attr);
 int sms_tde_exit();
 int sms_tde_fill_in_data(u8 *dat, u16 len);

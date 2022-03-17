@@ -157,8 +157,14 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
             void ble_bqb_test_thread_init(void);
             ble_bqb_test_thread_init();
         } else {
+#if TCFG_NORMAL_SET_DUT_MODE
+            log_info("set dut mode\n");
+            extern void ble_standard_dut_test_init(void);
+            ble_standard_dut_test_init();
+#else
             extern void bt_ble_init(void);
             bt_ble_init();
+#endif
         }
         /* bt_ble_init(); */
         is_app_active = 0;

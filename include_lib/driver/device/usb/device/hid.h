@@ -1,3 +1,22 @@
+/**@file        hid.h
+  * @brief      hid驱动头文件（做从机）
+  * @details    结构体声明，功能函数声明
+  * @author     jieli
+  * @date       2021-9-1
+  * @version    V1.0
+  * @copyright  Copyright(c)2010-2021   珠海市杰理科技股份有限公司
+  *********************************************************
+  * @attention
+  * 硬件平台：AC632N
+  * SDK版本：AC632N_V1.0.0_SDK
+  * @修改日志：
+  * <table>
+  * <tr><th>Date        <th>Version     <th>Author      <th>Description
+  * <tr><td>2021-9-1    <td>1.0         <td>jieli       <td>创建初始版本
+  * </table>
+  *
+  *********************************************************
+  */
 #ifndef __USB_HID_H__
 #define __USB_HID_H__
 
@@ -125,10 +144,69 @@
 #define USB_AUDIO_PLAY          BIT(14)
 #define USB_AUDIO_PAUSE         BIT(15)
 
+/**@brief   USB hid描述符配置
+  * @param[in]  usb_id usb的id号
+  * @param[in]  *ptr 指向HID描述符
+  * @param[in]  *cur_itf_num 当前接口号
+  * @return HID描述符长度，单位Byte
+  * @par    示例：
+  * @code
+  * hid_desc_config(usb_id,ptr,cur_itf_num);
+  * @encode
+  */
 u32 hid_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
+u32 hid_second_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
+
+/**@brief   hid按键处理函数
+  * @param[in]  *usb_device usb_device_t定义的结构体指针
+  * @param[in]  hid_key hid按键信息
+  * @return 无
+  * @par    示例：
+  * @code
+  * hid_key_handler(usb_device,hidkey);
+  * @encode
+  */
 void hid_key_handler(struct usb_device_t *usb_device, u32 hid_key);
+
+/**@brief   hid按键处理函数,用于特殊发送一个包的场景(正常hidkey有两个包)
+  * @param[in]  *usb_device usb_device_t定义的结构体指针
+  * @param[in]  hid_key hid按键信息
+  * @return 无
+  * @par    示例：
+  * @code
+  * hid_key_handler_send_one_packet(usb_device,hidkey);
+  * @encode
+  */
+void hid_key_handler_send_one_packet(struct usb_device_t *usb_device, u32 hid_key);
+
+/**@brief   hid发送数据
+  * @param[in]  *p 数据指针，指向存放数据的地址
+  * @param[in]  len 发送的数据长度
+  * @return
+  * @par    示例：
+  * @code
+  * hid_send_data(p,len);
+  * @encode
+  */
 u32 hid_send_data(const void *p, u32 len);
 
+/**@brief   hid注册
+  * @param[in]  usb_id usb的id号
+  * @return 0
+  * @par    示例：
+  * @code
+  * hid_register(usb_id);
+  * @encode
+  */
 u32 hid_register(const usb_dev usb_id);
+
+/**@brief   hid释放（暂未使用）
+  * @param[in]  usb_id usb的id号
+  * @return 0
+  * @par    示例：
+  * @code
+  * hid_release(usb_id);
+  * @encode
+  */
 void hid_release(const usb_dev usb_id);
 #endif

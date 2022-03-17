@@ -164,6 +164,10 @@ void rcsp_app_common_key_event_handler(u8 key_event)
 }
 #endif
 
+u8 get_rcsp_support_new_reconn_flag(void)
+{
+    return __this->new_reconn_flag;
+}
 
 u8 get_rcsp_connect_status(void)
 {
@@ -371,6 +375,21 @@ static u32 JL_opcode_get_target_info(void *priv, u8 OpCode, u8 OpCode_SN, u8 *da
         t_buf[2] = (rx_max_mtu >> 8) & 0xFF;
         t_buf[3] = rx_max_mtu & 0xFF;
         offset += add_one_attr(buf, sizeof(buf), offset,  ATTR_TYPE_DEV_MAX_MTU, t_buf, 4);
+    }
+
+    if (mask & BIT(ATTR_TEYP_BLE_ADDR)) {
+        rcsp_printf(" ATTR_TEYP_BLE_ADDR\n");
+        extern void lib_make_ble_address(u8 * ble_address, u8 * edr_address);
+        extern const u8 *bt_get_mac_addr();
+        u8 taddr_buf[7];
+        taddr_buf[0] = 0;
+        lib_make_ble_address(taddr_buf + 1, (void *)bt_get_mac_addr());
+        for (u8 i = 0; i < (6 / 2); i++) {
+            taddr_buf[i + 1] ^= taddr_buf[7 - i - 1];
+            taddr_buf[7 - i - 1] ^= taddr_buf[i + 1];
+            taddr_buf[i + 1] ^= taddr_buf[7 - i - 1];
+        }
+        offset += add_one_attr(buf, sizeof(buf), offset,  ATTR_TEYP_BLE_ADDR, taddr_buf, sizeof(taddr_buf));
     }
 
     if (mask & BIT(ATTR_TYPE_MD5_GAME_SUPPORT)) {
@@ -803,6 +822,21 @@ static void JL_rcsp_open_bt_scan(u8 OpCode, u8 OpCode_SN, u8 *data, u16 len)
     JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, &result, sizeof(result));
 }
 
+static void rcsp_process_timer();
+static void JL_rcsp_resend_timer_opt(u8 flag, u32 usec)
+{
+    if (flag) {
+        if (0 == __this->rcsp_timer_hdl) {
+            __this->rcsp_timer_hdl = sys_timer_add(NULL, rcsp_process_timer, usec);
+        }
+    } else {
+        if (__this->rcsp_timer_hdl)	{
+            sys_timer_del(__this->rcsp_timer_hdl);
+            __this->rcsp_timer_hdl = 0;
+        }
+    }
+}
+
 //phone send cmd to firmware need respond
 static void JL_rcsp_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len)
 {
@@ -811,6 +845,7 @@ static void JL_rcsp_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
     switch (OpCode) {
     case JL_OPCODE_GET_TARGET_FEATURE:
         rcsp_printf("JL_OPCODE_GET_TARGET_INFO\n");
+        JL_rcsp_resend_timer_opt(1, 500);
         JL_opcode_get_target_info(priv, OpCode, OpCode_SN, data, len);
         break;
 
@@ -827,11 +862,15 @@ static void JL_rcsp_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
 
     case JL_OPCODE_SWITCH_DEVICE:
         __this->device_type = data[0];
-        rcsp_printf("device_type:%x\n", __this->device_type);
-        JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, NULL, 0);
+        if (len > 1) {          //新增一个Byte用于标识是否支持新的回连方式, 新版本APP会发多一个BYTE用于标识是否支持新的回连方式
+            __this->new_reconn_flag = data[1];
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, &__this->new_reconn_flag, 1);
+        } else {
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, NULL, 0);
+        }
 #if RCSP_UPDATE_EN
         if (get_jl_update_flag()) {
-#if CONFIG_HID_CASE_ENABLE
+#if 0//CONFIG_HID_CASE_ENABLE
             void rcsp_update_jump_for_hid_device();
             sys_timeout_add(NULL, rcsp_update_jump_for_hid_device, 200);
             /* os_time_dly(10);        //延时让回复命令发完 */
@@ -964,6 +1003,7 @@ static void JL_ble_status_callback(void *priv, ble_state_e status)
     case BLE_ST_CONNECT:
         break;
     case BLE_ST_SEND_DISCONN:
+        JL_rcsp_resend_timer_opt(0, 0);
         break;
     case BLE_ST_DISCONN:
 #if RCSP_UPDATE_EN
@@ -1062,6 +1102,7 @@ static void JL_spp_status_callback(u8 status)
     case SPP_USER_ST_NULL:
     case SPP_USER_ST_DISCONN:
         __this->JL_spp_status = 0;
+        JL_rcsp_resend_timer_opt(0, 0);
         break;
     case SPP_USER_ST_CONNECT:
         __this->JL_spp_status = 1;
@@ -1236,7 +1277,7 @@ void rcsp_init()
     JL_protocol_init(rcsp_buffer, size);
 
     os_sem_create(&rcsp_sem, 0);
-    __this->rcsp_timer_hdl = sys_timer_add(NULL, rcsp_process_timer, 2000);
+    /* __this->rcsp_timer_hdl = sys_timer_add(NULL, rcsp_process_timer, 500); */
     int err = task_create(rcsp_process_task, NULL, "rcsp_task");
 
     //default use ble , can switch spp anytime
@@ -1263,9 +1304,9 @@ void rcsp_exit(void)
     void rcsp_resume(void);
     rcsp_resume();
     rcsp_printf("####  rcsp_exit_cb\n");
-    if (__this->rcsp_timer_hdl) {
-        sys_timer_del(__this->rcsp_timer_hdl);
-    }
+    /* if (__this->rcsp_timer_hdl) { */
+    /*     sys_timer_del(__this->rcsp_timer_hdl); */
+    /* } */
     if (rcsp_buffer) {
         free(rcsp_buffer);
         rcsp_buffer = 0;

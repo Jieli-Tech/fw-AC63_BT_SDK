@@ -54,6 +54,7 @@ BT_CFG = {
     key_msg = {id = 606},
     lrc_cfg = {id = 607},
     ble_cfg = {id = 608},
+    aec_dns = {id = 612},
 };
 
 BIN_ONLY_CFG = {

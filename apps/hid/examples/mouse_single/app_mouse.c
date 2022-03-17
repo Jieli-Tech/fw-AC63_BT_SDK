@@ -59,6 +59,24 @@
 #define DOUBLE_KEY_HOLD_PAIR      (0 & CFG_RF_24G_CODE_ID)  //中键+右键 长按数秒,进入2.4G配对模式
 #define DOUBLE_KEY_HOLD_CNT       (4)  //长按中键计算次数 >= 4s
 
+/*配置发送周期和sniff周期匹配*/
+#define TEST_REPORT_DATA_PERIOD_MS (8)  //鼠标发数周期 >= 8ms
+#define EDR_SET_SNIFF_SLOTS       (TEST_REPORT_DATA_PERIOD_MS * 8 / 5)
+#define EDR_SET_TIMER_VALUE       (TEST_REPORT_DATA_PERIOD_MS)
+
+//for io deubg
+#define MO_IO_DEBUG_0(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT &= ~BIT(x);}
+#define MO_IO_DEBUG_1(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT |= BIT(x);}
+#define MO_IO_DEBUG_TOGGLE(i,x)  //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT ^= BIT(x);}
+
+
+
+/*
+   定时器模拟sensor发数使能
+   测试时关掉TCFG_OMSENSOR_ENABLE 和 TCFG_CODE_SWITCH_ENABLE
+ */
+#define TEST_MOUSE_SIMULATION_ENABLE     0
+
 static u8 switch_key_long_cnt = 0;
 static u8 double_key_long_cnt = 0;
 
@@ -71,8 +89,8 @@ void bt_check_exit_sniff();
 /* static const u8 bt_address_default[] = {0x11, 0x22, 0x33, 0x66, 0x77, 0x88}; */
 static void mouse_select_btmode(u8 mode);
 static void mouse_vm_deal(u8 rw_flag);
-
-
+static void app_optical_sensor_event_handler(struct sys_event *event);
+static void mouse_test_ctrl(void);
 extern int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type);
 
 #define WAIT_DISCONN_TIME_MS     (300)
@@ -193,8 +211,8 @@ static const u8 mouse_report_map[] = {
 #define SNIFF_MODE_TYPE               SNIFF_MODE_ANCHOR
 #define SNIFF_CNT_TIME                1/////<空闲?S之后进入sniff模式
 
-#define SNIFF_MAX_INTERVALSLOT        16
-#define SNIFF_MIN_INTERVALSLOT        16
+#define SNIFF_MAX_INTERVALSLOT        EDR_SET_SNIFF_SLOTS
+#define SNIFF_MIN_INTERVALSLOT        EDR_SET_SNIFF_SLOTS
 #define SNIFF_ATTEMPT_SLOT            2
 #define SNIFF_TIMEOUT_SLOT            1
 #define SNIFF_CHECK_TIMER_PERIOD      100
@@ -276,7 +294,13 @@ static void ble_mouse_timer_handler(void)
         ble_hid_data_send(2, &second_packet.data, sizeof(second_packet.data));
         memset(&second_packet.data, 0, sizeof(second_packet.data));
         sensor_send_flag = 1;
+        MO_IO_DEBUG_TOGGLE(B, 1);
     }
+
+#if TCFG_OMSENSOR_ENABLE
+    optical_mouse_sensor_read_motion_handler();
+#endif
+
 #endif
 }
 extern int edr_hid_is_connected(void);
@@ -314,10 +338,12 @@ static void edr_mouse_timer_handler(void)
 #if TCFG_USER_EDR_ENABLE
         bt_comm_edr_sniff_clean();
 #endif
+        MO_IO_DEBUG_TOGGLE(B, 1);
     }
 
+#if TCFG_OMSENSOR_ENABLE
     optical_mouse_sensor_read_motion_handler();
-
+#endif
 
 #endif
 }
@@ -704,7 +730,7 @@ static int mouse_bt_connction_status_event_handler(struct bt_event *bt)
 #endif
         } else {
 #if TCFG_USER_EDR_ENABLE
-            edr_hid_timer_handle = sys_s_hi_timer_add((void *)0, edr_mouse_timer_handler, 5);
+            edr_hid_timer_handle = sys_s_hi_timer_add((void *)0, edr_mouse_timer_handler, EDR_SET_TIMER_VALUE);
 #endif
         }
         break;
@@ -758,6 +784,15 @@ static void mouse_key_event_handler(struct sys_event *event)
 
     if (event->arg == (void *)DEVICE_EVENT_FROM_KEY) {
         log_info("key_value = %d.\tevent_type = %d.\n", event->u.key.value, event->u.key.event);
+
+#if TEST_MOUSE_SIMULATION_ENABLE
+        if (event->u.key.event == 1) {
+            mouse_test_ctrl();
+            return;
+        }
+        return;
+#endif
+
         event_type = event->u.key.event;
 
         first_packet.data[BUTTONS_IDX] = 0;
@@ -1018,6 +1053,83 @@ REGISTER_APPLICATION(app_mouse) = {
     .state  = APP_STA_DESTROY,
 };
 
+
+
+#if TEST_MOUSE_SIMULATION_ENABLE
+#if TCFG_OMSENSOR_ENABLE || TCFG_CODE_SWITCH_ENABLE
+#error "please disable this enable!!!!"
+#endif
+
+static char RF_dcnt = 0;
+static short int RF_dx = 20;
+static short int RF_dy = 20;
+
+typedef struct MOUSE_VARIABLE_T {
+    unsigned char button;
+    short int     sensor_x;
+    short int     sensor_y;
+    unsigned char sensor_cpi;
+    unsigned char wheel;
+} MOUSE_VARIABLE_T, *MOUSE_VARIABLE_P;
+
+static MOUSE_VARIABLE_T mouse_val;
+
+static void mouse_send_data_test(void)
+{
+    static int16_t deltaX, deltaY;
+    static uint8_t dcount = 100;
+
+    MO_IO_DEBUG_TOGGLE(B, 0);
+
+    dcount++;
+    if (dcount >= 100) {
+        dcount = 0;
+        if ((deltaX == 0) && (deltaY == 4)) {
+            deltaX = 4;
+            deltaY = 0;
+        } else if ((deltaX == 4) && (deltaY == 0)) {
+            deltaX = 0;
+            deltaY = -4;
+        } else if ((deltaX == 0) && (deltaY == -4)) {
+            deltaX = -4;
+            deltaY = 0;
+        } else if ((deltaX == -4) && (deltaY == 0)) {
+            deltaX = 0;
+            deltaY = 4;
+        } else {
+            deltaX = 4;
+            deltaY = 0;
+        }
+    }
+    /* putchar('('); */
+    //    log_info("(");
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg = "omsensor_axis";
+    e.u.axis.event = 0;
+    e.u.axis.x = deltaX;
+    e.u.axis.y = deltaY;
+    //sys_event_notify(&e); //线程调度最快只有10ms,回包率提不上去
+    app_optical_sensor_event_handler(&e);
+
+#if (TCFG_HID_AUTO_SHUTDOWN_TIME)
+    sys_timer_modify(g_auto_shutdown_timer, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+#endif
+}
+
+static void mouse_test_ctrl(void)
+{
+    static u16 loop = 0;
+    if (loop) {
+        sys_hi_timer_del(loop);
+        loop = 0;
+        is_hid_active = 0;
+    } else {
+        is_hid_active = 1;
+        loop = sys_s_hi_timer_add(NULL, mouse_send_data_test, EDR_SET_TIMER_VALUE);//提高定时器精度到
+    }
+}
+#endif
 
 #endif
 

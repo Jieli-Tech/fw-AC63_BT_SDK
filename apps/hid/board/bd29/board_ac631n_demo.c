@@ -195,6 +195,34 @@ void debug_uart_init(const struct uart_platform_data *data)
 #endif
 }
 
+/*其他封装板级，移该函数*/
+u8 get_power_on_status(void)
+{
+#if TCFG_IOKEY_ENABLE
+    struct iokey_port *power_io_list = NULL;
+    power_io_list = iokey_data.port;
+
+    if (iokey_data.enable) {
+        if (gpio_read(power_io_list->key_type.one_io.port) == power_io_list->connect_way){
+            return 1;
+        }
+    }
+#endif
+
+#if TCFG_ADKEY_ENABLE
+    if (adkey_data.enable) {
+        return 1;
+    }
+#endif
+
+#if TCFG_LP_TOUCH_KEY_ENABLE
+    return lp_touch_key_power_on_status();
+#endif
+
+    return 0;
+}
+
+
 static void board_devices_init(void)
 {
 #if TCFG_PWMLED_ENABLE
@@ -230,7 +258,18 @@ void board_init()
 
 	board_devices_init();
 
-	power_set_mode(TCFG_LOWPOWER_POWER_SEL);
+#if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
+    if(get_charge_online_flag()){
+        handshake_app_start(0, NULL);
+    }
+#endif
+
+    if(get_charge_online_flag()){
+        power_set_mode(PWR_LDO15);
+    } else {
+        power_set_mode(TCFG_LOWPOWER_POWER_SEL);
+    }
+
 }
 
 enum {
@@ -248,7 +287,7 @@ static void port_protect(u16 *port_group, u32 port_num)
 }
 
 /*进软关机之前默认将IO口都设置成高阻状态，需要保留原来状态的请修改该函数*/
-static void close_gpio(void)
+static void close_gpio(u8 is_softoff)
 {
     u16 port_group[] = {
         [PORTA_GROUP] = 0x1ff,
@@ -271,6 +310,13 @@ static void close_gpio(void)
     port_protect(port_group, IO_PORTA_01);
     port_protect(port_group, IO_PORTA_02);
 #endif /* TCFG_RTC_ALARM_ENABLE */
+
+#if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
+    if (is_softoff == 0) {
+        port_protect(port_group, TCFG_HANDSHAKE_IO_DATA1);
+        port_protect(port_group, TCFG_HANDSHAKE_IO_DATA2);
+    }
+#endif
 
     //< close gpio
     gpio_dir(GPIOA, 0, 9, port_group[PORTA_GROUP], GPIO_OR);
@@ -326,7 +372,15 @@ struct port_wakeup port0 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
-	.iomap              = TCFG_ADKEY_PORT,                   //唤醒口选择
+
+#if TCFG_ADKEY_ENABLE
+    .iomap              = TCFG_ADKEY_PORT,                   //唤醒口选择
+#endif
+
+#if TCFG_IOKEY_ENABLE
+    .iomap              = TCFG_IOKEY_POWER_ONE_PORT,                   //唤醒口选择
+#endif
+
     .filter_enable      = ENABLE,
 };
 
@@ -340,7 +394,7 @@ const struct charge_wakeup charge_wkup = {
 
 const struct wakeup_param wk_param = {
     .filter     = PORT_FLT_2ms,
-#if TCFG_ADKEY_ENABLE
+#if TCFG_ADKEY_ENABLE || TCFG_IOKEY_ENABLE
 	.port[1]    = &port0,
 #endif
 	.sub        = &sub_wkup,
@@ -355,7 +409,7 @@ extern void dac_power_off(void);
 void board_set_soft_poweroff(void)
 {
 #if 1
-    close_gpio();
+    close_gpio(1);
 #else
     u32 porta_value = 0xffff;
     u32 portb_value = 0xfffe;
@@ -405,7 +459,7 @@ void sleep_enter_callback(u8  step)
         /*dac_power_off();*/
     } else {
 #if 1
-        close_gpio();
+        close_gpio(0);
 #endif
     }
 }
@@ -420,10 +474,12 @@ void board_power_init(void)
 
     power_init(&power_param);
 
-    //< close short key reset
-    power_mclr(0);
-    //< close long key reset
-    power_pin_reset(0);
+    gpio_longpress_pin0_reset_config(IO_PORTB_01, 0, 0);
+    gpio_shortpress_reset_config(0);//1--enable 0--disable
+    /* //< close short key reset */
+    /* power_mclr(0); */
+    /* //< close long key reset */
+    /* power_pin_reset(0); */
 
     power_set_callback(TCFG_LOWPOWER_LOWPOWER_SEL, sleep_enter_callback, sleep_exit_callback, board_set_soft_poweroff);
 

@@ -208,6 +208,12 @@ int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 co
     audio_encoder_set_event_handler(&mic_enc->encoder, mic_enc_event_handler, 0);
     audio_encoder_set_output_buffs(&mic_enc->encoder, mic_enc->output_frame,
                                    sizeof(mic_enc->output_frame), 1);
+    if (!mic_enc->encoder.enc_priv) {
+        log_e("encoder err, maybe coding(0x%x) disable \n", fmt.coding_type);
+        err = -EINVAL;
+        goto __err;
+    }
+
     int start_err = audio_encoder_start(&mic_enc->encoder);
 
 #if MIC_USE_MIC_CHANNEL
@@ -232,6 +238,17 @@ int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 co
 
 
     return 0;
+__err:
+    audio_encoder_close(&mic_enc->encoder);
+
+    local_irq_disable();
+    free(mic_enc);
+    mic_enc = NULL;
+    local_irq_enable();
+
+    audio_encoder_task_close();
+
+    return err;
 }
 
 void testtt()

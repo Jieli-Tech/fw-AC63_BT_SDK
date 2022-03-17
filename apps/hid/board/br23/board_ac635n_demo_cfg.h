@@ -253,6 +253,21 @@
 #define TCFG_DEC_WTGV2_ENABLE               DISABLE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#define TCFG_ENC_LC3_ENABLE                 DISABLE
+#define TCFG_ENC_ADPCM_ENABLE               DISABLE
+#define TCFG_ENC_SBC_ENABLE                 DISABLE
+#define TCFG_ENC_MSBC_ENABLE                DISABLE
+
+//lc3 编码参数配置
+#if TCFG_ENC_LC3_ENABLE
+#define LC3_CODING_SAMPLERATE  16000 //lc3 编码的采样率
+#define LC3_CODING_FRAME_LEN   100  //帧长度，只支持25，50，100
+#define LC3_CODING_CHANNEL     2  //lc3 的通道数
+#endif
+
+//enc 编码 demo文件
+#define ENC_DEMO_EN                        DISABLE
+
 #define TCFG_LINEIN_LR_CH                   AUDIO_LIN0_LR
 #define TCFG_DEC_WAV_ENABLE					DISABLE
 #else
@@ -350,6 +365,10 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE
 //是否支持拔出充电自动开机功能
 #define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
+//是否支持lighting握手协议
+#define TCFG_HANDSHAKE_ENABLE               DISABLE
+#define TCFG_HANDSHAKE_IO_DATA1             IO_PORTB_02//握手IO靠近lighting座子中间的
+#define TCFG_HANDSHAKE_IO_DATA2             IO_PORTB_07//握手IO在lighting座子边上的
 /*
 充电截止电压可选配置：
     CHARGE_FULL_V_3869  CHARGE_FULL_V_3907  CHARGE_FULL_V_3946   CHARGE_FULL_V_3985

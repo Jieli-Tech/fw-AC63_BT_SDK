@@ -7,6 +7,7 @@
 
 #define CONFIG_BOARD_AC632N_DEMO
 // #define CONFIG_BOARD_AC6321A_DEMO
+// #define CONFIG_BOARD_AC6321A_STAND_KEYBOARD//AC6321A+AD15键盘项目,download.bat需要修改添加打包ex_mcu.bin
 // #define CONFIG_BOARD_AC6321A_MOUSE
 // #define CONFIG_BOARD_AC6323A_DEMO
 // #define CONFIG_BOARD_AC6328A_KEYFOB
@@ -18,6 +19,7 @@
 
 #include "board_ac632n_demo_cfg.h"
 #include "board_ac6321a_demo_cfg.h"
+#include "board_ac6321a_stand_keyboard_cfg.h"
 #include "board_ac6321a_mouse_cfg.h"
 #include "board_ac6323a_demo_cfg.h"
 #include "board_ac6328a_keyfob_cfg.h"

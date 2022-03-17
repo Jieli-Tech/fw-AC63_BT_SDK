@@ -77,7 +77,7 @@ static const char user_tag_string[] = {EIR_TAG_STRING};
 
 static u8 llsync_adv_data[ADV_RSP_PACKET_MAX];//max is 31
 static u8 llsync_scan_rsp_data[ADV_RSP_PACKET_MAX];//max is 31
-static u16 llsync_con_handle;
+static llsync_con_handle;
 static adv_cfg_t llsync_server_adv_config;
 //-------------------------------------------------------------------------------------
 static uint16_t llsync_att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
@@ -112,8 +112,8 @@ const gatt_server_cfg_t llsync_server_init_cfg = {
 
 static gatt_ctrl_t llsync_gatt_control_block = {
     //public
-    .mtu_size = ATT_LOCAL_MTU_SIZE,
-    .cbuffer_size = ATT_SEND_CBUF_SIZE,
+    .mtu_size = 517,
+    .cbuffer_size = 1024,
     .multi_dev_flag	= 0,
 
     //config
@@ -314,7 +314,7 @@ void llsync_adv_config_set(void)
 {
     int ret = 0;
 
-    llsync_server_adv_config.adv_interval = ADV_INTERVAL_MIN;
+    llsync_server_adv_config.adv_interval = 800;
     llsync_server_adv_config.adv_auto_do = 1;
     llsync_server_adv_config.adv_type = ADV_IND;
     llsync_server_adv_config.adv_channel = ADV_CHANNEL_ALL;

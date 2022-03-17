@@ -429,6 +429,29 @@ int user_hid_send_data(u8 *buf, u32 len)
 
 /*************************************************************************************************/
 /*!
+ *  \brief      hid timer handle
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+static u16 hid_read_sdp_timer_id;
+extern bool set_read_remote_pnp_info(bd_addr_t address);
+static void user_hid_timer_set_read_sdp(void *priv)
+{
+    bd_addr_t remote_address;
+    bt_comm_edr_get_remote_address(remote_address);
+    if (!hid_channel || set_read_remote_pnp_info(remote_address)) {
+        sys_timer_del(hid_read_sdp_timer_id);
+        hid_read_sdp_timer_id = 0;
+    }
+    y_printf("set read sdp\n");
+}
+/*************************************************************************************************/
+/*!
  *  \brief      hid event handle
  *
  *  \param      [in]
@@ -448,6 +471,13 @@ static void user_hid_msg_handler(u32 msg, u8 *packet, u32 packet_size)
         bt_send_busy = 0;
         log_info("hid connect ########################,%d,%d\n", hid_ctrl_channel, hid_channel);
         cbuf_init(&user_send_cbuf, hid_tmp_buffer, HID_TMP_BUFSIZE);
+
+#if EDR_EMITTER_EN && EDR_EMITTER_PAGESCAN_ONLY
+        if (!hid_read_sdp_timer_id) {
+            /*要延时获取信息*/
+            hid_read_sdp_timer_id = sys_timer_add(0, user_hid_timer_set_read_sdp, 100);
+        }
+#endif
     }
     break;
 

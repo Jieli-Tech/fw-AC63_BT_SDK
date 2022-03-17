@@ -9,6 +9,7 @@
 #include "system/event.h"
 #include "asm/efuse.h"
 #include "gpio.h"
+#include "asm/adc_api.h"
 
 #define LOG_TAG_CONST   CHARGE
 #define LOG_TAG         "[CHARGE]"
@@ -21,10 +22,12 @@
 typedef struct _CHARGE_VAR {
     struct charge_platform_data *data;
     volatile u8 charge_online_flag;
+    volatile u8 charge_event_flag;
     volatile u8 init_ok;
     volatile u8 detect_stop;
     volatile int ldo5v_timer;
     volatile int charge_timer;
+    volatile int cc_timer;      //涓流切恒流的sys timer
 } CHARGE_VAR;
 
 #define __this 	(&charge_var)
@@ -78,6 +81,10 @@ u8 get_charge_online_flag(void)
     return __this->charge_online_flag;
 }
 
+void set_charge_event_flag(u8 flag)
+{
+    __this->charge_event_flag = flag;
+}
 
 u8 get_ldo5v_online_hw(void)
 {
@@ -114,6 +121,18 @@ static void set_charge_wkup_source(u8 source)
     CHARGE_WKUP_PND_CLR();
 }
 
+/*检测是否满足进入恒流充电条件*/
+static void charge_cc_check(void *priv)
+{
+    log_info("%s\n", __func__);
+    if ((adc_get_voltage(AD_CH_VBAT) * 4 / 10) > CHARGE_CCVOL_V) {
+        /*满足进入恒流充电条件 设置恒流充电电流大小*/
+        set_charge_mA(__this->data->charge_mA);
+        usr_timer_del(__this->cc_timer);
+        __this->cc_timer = 0;
+    }
+}
+
 void charge_start(void)
 {
     log_info("%s\n", __func__);
@@ -124,6 +143,19 @@ void charge_start(void)
     }
 
     set_charge_wkup_source(CHARGE_FULL_33V);
+
+    /*进入恒流充电(VBAT > 3V)*/
+    if ((adc_get_voltage(AD_CH_VBAT) * 4 / 10) > CHARGE_CCVOL_V) {
+        /*设置恒流充电电流大小*/
+        set_charge_mA(__this->data->charge_mA);
+    } else {
+        /*设置涓流电流大小*/
+        CHARGE_mA_SEL(CHARGE_mA_20);
+        if (!__this->cc_timer) {
+            /*每1分钟检测一次是否具备进入恒流充电的条件*/
+            __this->cc_timer = usr_timer_add(NULL, charge_cc_check, 1000, 1);
+        }
+    }
 
     CHGBG_EN(1);
     CHARGE_EN(1);
@@ -148,6 +180,12 @@ void charge_close(void)
         usr_timer_del(__this->charge_timer);
         __this->charge_timer = 0;
     }
+
+    if (__this->cc_timer) {
+        usr_timer_del(__this->cc_timer);
+        __this->cc_timer = 0;
+    }
+
 }
 
 static void charge_full_detect(void *priv)
@@ -205,8 +243,12 @@ static void ldo5v_detect(void *priv)
             /* printf("ldo5V_IN\n"); */
             set_charge_online_flag(1);
             ldo5v_off_cnt = 0;
-            ldo5v_in_normal_cnt = 0;
             ldo5v_in_err_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
+            ldo5v_in_normal_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
             if ((charge_flag & BIT_LDO5V_IN) == 0) {
@@ -223,9 +265,13 @@ static void ldo5v_detect(void *priv)
         } else {
             /* printf("ldo5V_OFF\n"); */
             set_charge_online_flag(0);
-            ldo5v_off_cnt = 0;
             ldo5v_in_normal_cnt = 0;
             ldo5v_in_err_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
+            ldo5v_off_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;
             if ((charge_flag & BIT_LDO5V_OFF) == 0) {
@@ -244,6 +290,10 @@ static void ldo5v_detect(void *priv)
             set_charge_online_flag(1);
             ldo5v_off_cnt = 0;
             ldo5v_in_normal_cnt = 0;
+            //消息线程未准备好接收消息,继续扫描
+            if (__this->charge_event_flag == 0) {
+                return;
+            }
             ldo5v_in_err_cnt = 0;
             usr_timer_del(__this->ldo5v_timer);
             __this->ldo5v_timer = 0;

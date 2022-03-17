@@ -79,6 +79,13 @@ const int config_audio_drc_en = 1;
 const int config_audio_drc_en = 0;
 #endif
 
+const int LPC_JUST_FADE = 0; //播歌PLC仅淡入淡出配置, 0 - 补包运算(Ram 3660bytes, Code 1268bytes)，1 - 仅淡出淡入(Ram 688bytes, Code 500bytes)
+const char config_audio_mixer_ch_highlight_enable = 0; //混音器声音突出功能使能
+
+#ifdef SBC_CUSTOM_DECODER_BUF_SIZE
+const short config_sbc_decoder_buf_size = 512;
+#endif
+
 #if TCFG_MIC_EFFECT_ENABLE
 const int config_audio_dac_mix_enable = 1;
 #else
@@ -366,6 +373,12 @@ void audio_encoder_test_run_after(struct audio_encoder *enc, int err) {} ;
 #else
 // 接口实现示例
 #include "audio/demo/audio_encoder_test.c"
+#endif
+//数字音量节点 是否使用汇编优化 不支持的芯片需置0
+#if(CONFIG_CPU_BR18)
+const int const_config_digvol_use_round = 0;
+#else
+const int const_config_digvol_use_round = 1;
 #endif
 
 

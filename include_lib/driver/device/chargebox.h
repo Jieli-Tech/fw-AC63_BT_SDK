@@ -19,6 +19,7 @@ enum {
 enum {
     EAR_L,
     EAR_R,
+    EAR_MAX,
 };
 
 struct chargebox_platform_data {
@@ -68,12 +69,15 @@ enum {
 };
 
 struct _hs_hdl {
-    u32 port;
+    u32 port0;
+    u32 port1;
     void (*send_delay_us)(u8 us);
 };
+
 //handshake
 extern void handshake_ctrl_init(struct _hs_hdl *hs);
 extern void handshake_send_app(u8 cmd);
+extern u8 handshake_check_fast_charge(u32 ms);
 
 //app层使用的接口
 extern bool chargebox_api_write_read(u8 l_r, u8 *buf, u8 len, u8 timeout);

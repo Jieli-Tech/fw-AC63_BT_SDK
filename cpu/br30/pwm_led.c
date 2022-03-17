@@ -183,7 +183,8 @@ static void _led_pwm1_duty_set(u8 duty_prd, u8 duty0, u8 duty1, u8 duty2, u8 bre
 static void pwm_led_16slot_timer_free(void);
 static void pwm_led_one_io_mode_slot_timer_display(u8 display);
 static bool led_module_is_in_sniff_mode();
-
+static void _pwm_led_one_flash_display(u8 led_index, u16 led0_bright, u16 led1_bright,
+                                       u32 period, u32 start_light_time, u32 light_time);
 
 //=================================================================================//
 // P11_P2M_CLK_CON0[7 : 5]:
@@ -278,8 +279,8 @@ static void pwm_led_isr_func(void)
     }
 }
 
-//index = 0: 内部切IO中断;
-//index = 1: 外部注册中断;
+//index = 1: 内部切IO中断;
+//index = 0: 外部注册中断;
 static void _pwm_led_register_irq(void (*func)(void), u8 index)
 {
     LED_PWM_INT_DIS;
@@ -595,7 +596,19 @@ static void pwm_led_two_io_mode_display(u8 display)
         LED_PWM_ENABLE;
     }
     if (isr_mode) {
-        _pwm_led_display_mode(isr_mode);
+
+        switch (isr_mode) {
+        case PWM_LED1_FAST_FLASH:
+            _pwm_led_one_flash_display(1, CFG_LED0_LIGHT, CFG_LED1_LIGHT, CFG_DOUBLE_FAST_FLASH_FREQ, -1, -1);
+            break;
+        case PWM_LED1_SLOW_FLASH:
+            _pwm_led_one_flash_display(1, CFG_LED0_LIGHT, CFG_LED1_LIGHT, CFG_DOUBLE_SLOW_FLASH_FREQ, -1, -1);
+            break;
+        default:
+            _pwm_led_display_mode(isr_mode);
+            break;
+        }
+
         if (display != PWM_LED0_LED1_BREATHE) {
             _led_pwm1_duty_set(0xFF, 2, 0, 0, 0); //占满整个周期
         }
@@ -723,7 +736,19 @@ static void pwm_led_two_io_mode_display(u8 display)
         LED_PWM_ENABLE;
     }
     if (isr_mode) {
-        _pwm_led_display_mode(isr_mode);
+
+        switch (isr_mode) {
+        case PWM_LED1_FAST_FLASH:
+            _pwm_led_one_flash_display(1, CFG_LED0_LIGHT, CFG_LED1_LIGHT, CFG_DOUBLE_FAST_FLASH_FREQ, -1, -1);
+            break;
+        case PWM_LED1_SLOW_FLASH:
+            _pwm_led_one_flash_display(1, CFG_LED0_LIGHT, CFG_LED1_LIGHT, CFG_DOUBLE_SLOW_FLASH_FREQ, -1, -1);
+            break;
+        default:
+            _pwm_led_display_mode(isr_mode);
+            break;
+        }
+
         if (display != PWM_LED0_LED1_BREATHE) {
             _led_pwm1_duty_set(0xFF, 2, 0, 0, 0); //占满整个周期
         }
@@ -1165,7 +1190,7 @@ static void _led_pwm1_clk_set(u16 clk0_div)
 /**
  * @brief: 关 led 配置, 亮度也设置为0
  *
- * @param led_index: 0: led0, 1:led1, 3:led0 & led1
+ * @param led_index: 0: led0, 1:led1, 2:led0 & led1
  * @param led0_bright: 0 ~ 100
  * @param led1_bright: 0 ~ 100
  *
@@ -1182,7 +1207,7 @@ static void _pwm_led_off_display(void)
 
 /**
  * @brief: led 常亮显示设置
- * @param led_index: 0: led0, 1:led1, 3:led0 & led1
+ * @param led_index: 0: led0, 1:led1, 2:led0 & led1
  * @param led0_bright, LED0亮度: 0 ~ 500
  * @param led1_bright, LED1亮度: 0 ~ 500
  *
@@ -1302,7 +1327,7 @@ static void __pwm_led_flash_common_handle(u8 led_index, u16 led0_bright, u16 led
 
 /**
  * @brief: led 周期闪一次显示设置
- * @param  led_index: 0: led0, 1:led1, 3:led0 & led1(互闪)
+ * @param  led_index: 0: led0, 1:led1, 2:led0 & led1(互闪)
 		  	led0_bright: led0亮度(0 ~ 500),
 		  	led1_bright: led1亮度(0 ~ 500),
 		  	period: 闪灯周期(ms), 多少ms闪一下(100 ~ 20000), 100ms - 20S,
@@ -1358,7 +1383,7 @@ static void _pwm_led_one_flash_display(u8 led_index, u16 led0_bright, u16 led1_b
 
 /**
  * @brief: led 周期闪一次显示设置
- * @param  led_index: 0: led0, 1:led1, 3:led0 & led1(互闪)
+ * @param  led_index: 0: led0, 1:led1, 2:led0 & led1(互闪)
 		  	led0_bright: led0亮度,
 		  	led1_bright: led1亮度,
 		  	period: 闪灯周期(ms), 多少ms闪一下
@@ -1833,7 +1858,7 @@ void pwm_led_one_flash_display(u8 led_index, u16 led0_bright, u16 led1_bright,
 //=================================================================================//
 //@brief: 自定义设置单灯双闪状态
 //@input:
-// 		led_index: 0: led0, 1:led1, 3:led0 & led1(互闪)
+// 		led_index: 0: led0, 1:led1, 2:led0 & led1(互闪)
 // 		led0_bright: led0亮度,
 // 		led1_bright: led1亮度,
 // 		period: 闪灯周期(ms), 多少ms闪一下

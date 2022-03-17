@@ -46,9 +46,9 @@ static u8 search_ram_buffer[SEARCH_PROFILE_BUFSIZE] __attribute__((aligned(4)));
 //搜索类型
 #define SET_SCAN_TYPE       SCAN_ACTIVE
 //搜索 周期大小
-#define SET_SCAN_INTERVAL   512 //(unit:0.625ms)
+#define SET_SCAN_INTERVAL   40 //(unit:0.625ms)
 //搜索 窗口大小
-#define SET_SCAN_WINDOW     16 //(unit:0.625ms)
+#define SET_SCAN_WINDOW     8 //(unit:0.625ms)
 
 //连接周期
 #define SET_CONN_INTERVAL   24 //(unit:1.25ms)
@@ -910,25 +910,6 @@ struct ble_client_operation_t *ble_get_client_operation_table(void)
     return &client_operation;
 }
 
-
-
-
-//void ble_sm_setup_init(io_capability_t io_type, u8 auth_req, uint8_t min_key_size, u8 security_en)
-//{
-//    //setup SM: Display only
-//    sm_init();
-//    sm_set_io_capabilities(io_type);
-//    sm_set_authentication_requirements(auth_req);
-//    sm_set_encryption_key_size_range(min_key_size, 16);
-//    sm_set_request_security(security_en);
-//    sm_event_callback_set(&cbk_sm_packet_handler);
-//
-//    if (io_type == IO_CAPABILITY_DISPLAY_ONLY) {
-//        reset_PK_cb_register(reset_passkey_cb);
-//    }
-//}
-
-
 void ble_client_profile_init(void)
 {
     log_info("ble client_profile init\n");
@@ -938,22 +919,10 @@ void ble_client_profile_init(void)
         while (1);
     }
 
-    //    le_device_db_init();
-//    ble_stack_gatt_role(1);
-
-//#if PASSKEY_ENTER_ENABLE
-//    ble_sm_setup_init(IO_CAPABILITY_DISPLAY_ONLY, SM_AUTHREQ_MITM_PROTECTION, 7, TCFG_BLE_SECURITY_EN);
-//#else
-//    ble_sm_setup_init(IO_CAPABILITY_NO_INPUT_NO_OUTPUT, SM_AUTHREQ_BONDING, 7, TCFG_BLE_SECURITY_EN);
-//#endif
-
     /* setup ATT client */
     gatt_client_init();
     gatt_client_register_packet_handler(client_cbk_packet_handler);
 
-    // register for HCI events
-//    hci_event_callback_set(&cbk_packet_handler);
-//    le_l2cap_register_packet_handler(&cbk_packet_handler);
 }
 
 static void ble_client_module_enable(u8 en)
@@ -1050,7 +1019,7 @@ int bt_ble_scan_enable(void *priv, u32 en)
 {
     ble_state_e next_state, cur_state;
 
-    if (!scan_ctrl_en) {
+    if (!scan_ctrl_en && en) {
         return 	APP_BLE_OPERATION_ERROR;
     }
 

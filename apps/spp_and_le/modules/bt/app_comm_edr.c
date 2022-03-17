@@ -50,7 +50,13 @@ extern void transport_spp_init(void);
 
 #if TCFG_USER_EDR_ENABLE
 
+#if EDR_EMITTER_EN
+#define SNIFF_ENABLE                  0 //主机不主动请求sniff
+#else
 #define SNIFF_ENABLE                  1 //是否允许主动进入sniff
+#endif
+
+#define SUPPORT_USER_PASSKEY          0 //用户输入PINCODE
 
 //默认配置
 static const edr_sniff_par_t edr_default_sniff_param = {
@@ -68,8 +74,16 @@ static const edr_init_cfg_t edr_default_config = {
     .class_type = 0,
     .page_timeout = 8000,
     .super_timeout = 8000,
+    .passkey_enable = SUPPORT_USER_PASSKEY,
+
+#if SUPPORT_USER_PASSKEY
+    .io_capabilities = 0,//2
+    .authentication_req = 5,
+#else
     .io_capabilities = 3,
     .authentication_req = 2,
+#endif
+
     .oob_data = 0,
     .sniff_param = &edr_default_sniff_param,
 };
@@ -84,6 +98,7 @@ extern void user_spp_data_handler(u8 packet_type, u16 ch, u8 *packet, u16 size);
 static void sys_auto_sniff_controle(u8 enable, u8 *addr);
 extern void transport_spp_init(void);
 extern void bredr_set_dut_enble(u8 en, u8 phone);
+void lmp_set_sniff_disable(void);
 
 /*************************************************************************************************/
 /*!
@@ -132,6 +147,8 @@ void btstack_edr_start_before_init(const edr_init_cfg_t *cfg, int param)
     //authentication_requirements: 0:not protect  1 :protect
     __set_simple_pair_param(cfg->io_capabilities, cfg->oob_data, cfg->authentication_req);
 
+    __set_simple_pair_flag(!cfg->passkey_enable);
+
 #if (USER_SUPPORT_PROFILE_SPP==1)
     spp_data_deal_handle_register(user_spp_data_handler);
     transport_spp_flow_cfg();
@@ -171,13 +188,22 @@ void btstack_edr_start_after_init(int param)
 
 #if EDR_EMITTER_EN
     bt_emitter_init();
+#if(EDR_EMITTER_PAGESCAN_ONLY == 0)
     inquiry_result_handle_register(bt_emitter_search_result);
     bt_emitter_role_set(BT_EMITTER_EN);
 #else
     bt_wait_connect_active_enable(1);
 #endif
 
+#else
+    bt_wait_connect_active_enable(1);
+#endif
+
+#if SNIFF_ENABLE
     sys_auto_sniff_controle(1, NULL);
+#else
+    /* lmp_set_sniff_disable(); */
+#endif
 
 }
 
@@ -458,11 +484,16 @@ void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en)
 void bt_wait_connect_active_enable(u8 enable)
 {
 #if EDR_EMITTER_EN
+#if EDR_EMITTER_PAGESCAN_ONLY
+    bt_wait_phone_connect_control_ext(0, enable);
+#else
     if (enable) {
         bt_emitter_start_search_device();
     } else {
         bt_emitter_stop_search_device();
     }
+#endif
+
 #else
     bt_wait_phone_connect_control_ext(enable, enable);
 #endif
@@ -649,6 +680,33 @@ int bt_comm_edr_hci_event_handler(struct bt_event *bt)
     return 0;
 }
 
+/*************************************************************************************************/
+/*!
+ *  \brief      get remote address
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+void bt_comm_edr_get_remote_address(bd_addr_t address)
+{
+    memcpy(address, edr_remote_address, 6);
+}
+
+/*************************************************************************************************/
+/*!
+ *  \brief       edr_mode_enable
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
 
 //使能edr模块 开关
 void bt_comm_edr_mode_enable(u8 enable)

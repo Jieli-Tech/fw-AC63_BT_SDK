@@ -7,6 +7,7 @@
 #include "irq.h"
 #include "asm/power/p33.h"
 #include "asm/power_interface.h"
+#include "app_config.h"
 
 u32 adc_sample(u32 ch);
 static volatile u16 _adc_res;
@@ -347,13 +348,16 @@ u32 adc_sample(u32 ch)
 }
 
 
-#define     VBG_VBAT_SCAN_CNT    10000
+#define     VBG_VBAT_SCAN_CNT               10000
+#define     VBG_VBAT_SCAN_CNT_FOR_CHARGE    100
+
 void adc_scan(void *priv)
 {
     static u16 vbg_vbat_cnt = VBG_VBAT_SCAN_CNT;
     static u16 vbg_vbat_step = 0;
     static u16 old_adc_res;
     static u16 tmp_vbg_adc_value;
+    u16 vbg_vbat_cnt_max;
 
 //    printf("%s() %x\n",__func__,JL_ADC->CON);
     if (adc_queue[ADC_MAX_CH].ch != -1) {//occupy mode
@@ -369,7 +373,15 @@ void adc_scan(void *priv)
     /* }                                            */
 
     vbg_vbat_cnt ++;
-    if (vbg_vbat_cnt > VBG_VBAT_SCAN_CNT) {
+    vbg_vbat_cnt_max = VBG_VBAT_SCAN_CNT;
+
+#if TCFG_CHARGE_ENABLE
+    if (get_charge_online_flag()) {
+        vbg_vbat_cnt_max = VBG_VBAT_SCAN_CNT_FOR_CHARGE;
+    }
+#endif
+
+    if (vbg_vbat_cnt > vbg_vbat_cnt_max) {
         if (vbg_vbat_step == 0) {
             vbg_vbat_step = 1;
             old_adc_res = _adc_res;
@@ -540,6 +552,98 @@ void vddiom_trim()
         VDDIOM_VOL_SEL(VDDIOM_VOL_36V);
     }
 }
+void vddiom_trim_all_range()
+{
+    u32 vbg_value = 0;
+
+    adc_pmu_detect_en(1);
+    adc_sample(AD_CH_LDOREF);
+    for (int i = 0; i < 10; i++) {
+        while (!(JL_ADC->CON & BIT(7))) { //wait pending
+        }
+
+        vbg_value += JL_ADC->RES;
+        JL_ADC->CON |= BIT(6);
+    }
+
+    vbg_value /= 10;
+
+    u32 vbg_trim = get_vbg_trim();
+    u32 vbg_vol;
+
+    u32 tmp1 = vbg_trim & 0x1f;
+    vbg_vol = (vbg_trim & BIT(5)) ? CENTER - tmp1 * 3.2 : CENTER + tmp1 * 3.2;
+    u32 vddio_vol = vbg_vol * 1023 / vbg_value;
+    printf("vddio_vol %d (mv), vbg_vol %d (mv) %d %x\n", vddio_vol, vbg_vol, vbg_value, vbg_trim);
+
+    //if (vddio_vol < 3400) {
+    //    VDDIOM_VOL_SEL(VDDIOM_VOL_36V);
+    //}
+    u32 vddiom_lev = GET_VDDIOM_VOL();
+    u32 vddiom_ref = (vddiom_lev - VDDIOM_VOL_22V) * 200 + 2200;
+    int vddiom_diff = 32767;
+    u32 vbg_value_trim;
+    u32 vddiom_lev_trim = vddiom_lev;
+    printf("vddiom_lev %d, vddiom_ref %d\n", vddiom_lev, vddiom_ref);
+
+    u32 vddiow_lev_bak = GET_VDDIOW_VOL();
+    u32 vddiow_ref = 0;
+    VDDIOW_VOL_SEL(VDDIOW_VOL_21V);
+    switch (vddiow_lev_bak) {
+    case VDDIOW_VOL_21V:
+        vddiow_ref = 2100;
+        break;
+    case VDDIOW_VOL_24V:
+        vddiow_ref = 2400;
+        break;
+    case VDDIOW_VOL_28V:
+        vddiow_ref = 2800;
+        break;
+    case VDDIOW_VOL_32V:
+        vddiow_ref = 3200;
+        break;
+    }
+    printf("vddiow_lev %d, vddiow_ref %d\n", vddiow_lev_bak, vddiow_ref);
+
+    for (int lev = VDDIOM_VOL_36V; vddiom_lev > 1 && lev >= vddiom_lev - 2; lev--) {
+        VDDIOM_VOL_SEL(lev);
+        delay(5000);  //设完电压等级后要等电压稳定再采样
+        vbg_value = 0;
+        adc_sample(AD_CH_LDOREF);
+        for (int i = 0; i < 10; i++) {
+            while (!(JL_ADC->CON & BIT(7))) {  //wait pending
+            }
+            vbg_value += JL_ADC->RES;
+            JL_ADC->CON |= BIT(6);
+        }
+        vbg_value /= 10;
+        vddio_vol = vbg_vol * 1023 / vbg_value;
+        if (_ABS(vddiom_diff) > _ABS((int)vddio_vol - (int)vddiom_ref)) {
+            vddiom_diff = (int)vddio_vol - (int)vddiom_ref;
+            vbg_value_trim = vbg_value;
+            vddiom_lev_trim = lev;
+        }
+    }
+    vddio_vol = vddiom_ref + vddiom_diff;
+    VDDIOM_VOL_SEL(vddiom_lev_trim);
+    printf("trim: vddio_vol %d (mv), vddiom_lev %d, vddiom_diff %d, vbg_value %d\n", vddio_vol, vddiom_lev_trim, vddiom_diff, vbg_value_trim);
+
+    u32 temp = (vddiom_lev_trim - VDDIOM_VOL_22V) * 200 + 2200;
+    if (temp < vddiow_ref + 200) {  //vddiom需要比vddiow高200mV
+        if (temp >= 3200 + 200) {
+            VDDIOW_VOL_SEL(VDDIOW_VOL_32V);
+        } else if (temp >= 2800 + 200) {
+            VDDIOW_VOL_SEL(VDDIOW_VOL_28V);
+        } else if (temp >= 2400 + 200) {
+            VDDIOW_VOL_SEL(VDDIOW_VOL_24V);
+        } else {
+            VDDIOW_VOL_SEL(VDDIOW_VOL_21V);
+        }
+        printf("trim: vddiow lev %d to %d\n", vddiow_lev_bak, GET_VDDIOW_VOL());
+    } else {
+        VDDIOW_VOL_SEL(vddiow_lev_bak);
+    }
+}
 void adc_init()
 {
     JL_ANA->WLA_CON25 &= ~(BIT(19)); //fm
@@ -569,7 +673,7 @@ void adc_init()
     if (is_lcd_on()) {
         /*lcd_driver : power_down use vddiow, trim vddiow=vddiom*/
         /*参数为vddio和vbat是否绑定在一起*/
-        vddio_trim_30v(0);
+        vddio_trim_30v(0, 0);
     }
     _adc_init(1);
 

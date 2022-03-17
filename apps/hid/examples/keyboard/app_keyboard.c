@@ -499,7 +499,6 @@ static void hidkey_timer_handle_test(void)
  */
 /*************************************************************************************************/
 extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
-extern void le_hogp_set_direct_adv_type(u8 type);
 static void hidkey_app_start()
 {
     log_info("=======================================");
@@ -520,7 +519,8 @@ static void hidkey_app_start()
 
 #if TCFG_USER_BLE_ENABLE
     btstack_ble_start_before_init(&hidkey_ble_config, 0);
-    le_hogp_set_direct_adv_type(ADV_DIRECT_IND_LOW);
+    /* le_hogp_set_reconnect_adv_cfg(ADV_IND, 5000); */
+    le_hogp_set_reconnect_adv_cfg(ADV_DIRECT_IND_LOW, 5000);
 #endif
 
     btstack_init();

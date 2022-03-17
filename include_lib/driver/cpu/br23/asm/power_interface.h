@@ -95,9 +95,14 @@ struct low_power_param {
     u8 vdc13_keep; //如果进入低功耗时哒哒声，可以将该标志置1。该位置1时，会同时keep住vddio，单耳功耗会大100ua左右，对耳会大200ua左右。(哒哒声是由于电容的效应导致的)
 
     u32 osc_delay_us;
-    u8  virtual_rtc;
+    u16 dcdc_delay_us;
+    u8 virtual_rtc;
+    u32 vir_rtc_trim_time;
     u8 user_nv_timer_en;
     u16 nv_timer_interval;
+
+    u8 rtc_clk;
+    u8 lvd_keep;	//powerdown lvd keep
 };
 
 #define BLUETOOTH_RESUME    BIT(1)
@@ -284,7 +289,7 @@ char get_vddiom_trim();
 
 char get_vddiow_trim();
 
-void vddio_trim_30v(u8 tieup);
+void vddio_trim_30v(u8 tieup, u16 vddiom_limit);
 
 typedef u8(*idle_handler_t)(void);
 

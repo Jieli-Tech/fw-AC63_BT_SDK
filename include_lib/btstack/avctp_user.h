@@ -77,7 +77,7 @@ typedef enum {
     //hfp链路部分
     //控制打电话音量，注意可能有些手机进度条有变化音量大小没变化，同步要设置样机DAC音量
     /*跟电话音量操作有关的操作最终都执行回调函数call_vol_change*/
-    USER_CTRL_HFP_CMD_BEGIN,
+    USER_CTRL_HFP_CMD_BEGIN,           /* 接口扩展用来做HFP 连接 */
     USER_CTRL_HFP_CALL_VOLUME_UP,       /*音量加1，手机可以同步显示*/
     USER_CTRL_HFP_CALL_VOLUME_DOWN,      /*音量减1，手机可以同步显示*/
     USER_CTRL_HFP_CALL_SET_VOLUME,   /*设置固定值，手机可以同步显示，需要传1个音量值*/
@@ -121,9 +121,9 @@ typedef enum {
     //应答
     USER_CTRL_HFP_THREE_WAY_ANSWER1,     //挂断当前去听另一个（未接听或者在保留状态都可以）
     USER_CTRL_HFP_THREE_WAY_ANSWER2,     //保留当前去接听, 或者用于两个通话的切换
-    USER_CTRL_HFP_THREE_WAY_ANSWER1X,
-    USER_CTRL_HFP_THREE_WAY_ANSWER2X,
-    USER_CTRL_HFP_THREE_WAY_ANSWER3,
+    USER_CTRL_HFP_THREE_WAY_ANSWER1X,    //目前没有用
+    USER_CTRL_HFP_THREE_WAY_ANSWER2X,    //目前没有用
+    USER_CTRL_HFP_THREE_WAY_ANSWER3,   //可以发完USER_CTRL_HFP_THREE_WAY_ANSWER2,又发ANSWER3，自己看看效果
     //拒听
     USER_CTRL_HFP_THREE_WAY_REJECT,           //拒绝后台来电
     USER_CTRL_HFP_DISCONNECT,                   //断开HFP连接
@@ -208,6 +208,7 @@ typedef enum {
 
     USER_CTRL_HID_CMD_END,
 
+    /**有TWS命名的都不用了*/
     /*对箱操作命令*/
     USER_CTRL_TWS_CMD_BEGIN,
     USER_CTRL_SYNC_TRAIN,
@@ -284,12 +285,15 @@ typedef enum {
     USER_CTRL_AFH_CHANNEL,
     USER_CTRL_HALF_SEC_LOOP_CREATE,
     USER_CTRL_HALF_SEC_LOOP_DEL,
-
+    /**音量同步接口，自动选择通过HID还是AVRCP来发送*/
     USER_CTRL_CMD_SYNC_VOL_INC,
+    /**音量同步接口，自动选择通过HID还是AVRCP来发送*/
     USER_CTRL_CMD_SYNC_VOL_DEC,
+    /*单独HID和普通蓝牙模式的切换接口,音箱SDK才有完整流程*/
     USER_CTRL_CMD_CHANGE_PROFILE_MODE,
     USER_CTRL_CMD_RESERVE_INDEX4,
     USER_CTRL_CMD_RESUME_STACK,
+    //获取当前音乐的一些信息
     USER_CTRL_AVCTP_OPID_GET_MUSIC_INFO,
     USER_CTRL_LAST
 } USER_CMD_TYPE;
@@ -404,6 +408,7 @@ struct sniff_ctrl_config_t {
     u8	sniff_addr[6];
 };
 extern u32 user_send_cmd_prepare(USER_CMD_TYPE cmd, u16 param_len, u8 *param);
+/**发射器操作的几个接口*/
 extern u32 user_emitter_cmd_prepare(USER_CMD_TYPE cmd, u16 param_len, u8 *param);
 u8 get_emitter_connect_status(void);
 u16 get_emitter_curr_channel_state();
@@ -483,47 +488,62 @@ extern int tws_updata_internal_addr(u8 *internal_addr_local, u8 *internal_addr_r
 
 
 extern void bt_discon_complete_handle(u8 *addr, int reason);
-
+/*这个接口只用来判断回连或者开可发现可连接的状态*/
 extern bool is_1t2_connection(void);
+/*用来获取蓝牙连接的设备个数，不包含page状态的计数*/
 extern u8 get_total_connect_dev(void);
+/*可以通过地址查询HFP的状态*/
 extern u8 is_bt_conn_hfp_hangup(u8 *addr);
 
 extern void infor_2_user_handle_register(int (*handle)(u8 *info, u16 len), u8 *buffer_ptr);
+/*音乐的ID3信息返回接口注册函数*/
 extern void bt_music_info_handle_register(void (*handler)(u8 type, u32 time, u8 *info, u16 len));
+/*用户层不需要用了*/
 extern void set_bt_vm_interface(u32 vm_index, void *interface);
 extern void bredr_stack_init(void);
-extern u8 get_a2dp_decoder_status();
+/*sniff 的计数查询*/
 extern bool bt_api_conn_mode_check(u8 enable, u8 *addr);
 extern u8 bt_api_enter_sniff_status_check(u16 time_cnt, u8 *addr);
 extern void user_cmd_timer_init();
 extern void remove_user_cmd_timer();
+//get_auto_connect_state有时效性，一般不用。可以用消息BT_STATUS_RECONN_OR_CONN
 extern u8 get_auto_connect_state(u8 *addr);
+//判断SCO/esco有没有正在使用,两个接口一样的
 extern u8 get_esco_coder_busy_flag();
-extern u8 hci_standard_connect_check(void);
-extern void set_stack_exiting(u8 exit);
-extern int a2dp_media_packet_codec_type(u8 *data);
-extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
-extern u8 connect_last_device_from_vm();
-extern u8 hci_standard_connect_check(void);
-extern void __bt_set_hid_independent_flag(bool flag);
 extern bool get_esco_busy_flag();
-extern int btstack_exit();
-extern int sbc_energy_check(u8 *packet, u16 size);
-extern int a2dp_source_init(void *buf, u16 len, int deal_flag);
-extern int hfp_ag_buf_init(void *buf, int size, int deal_flag);
-extern void __set_emitter_enable_flag(u8 flag);
-extern void hci_cancel_inquiry();
+/*有可能低层刚开始走了连接，但是上层还没有消息，不维护蓝牙的不要随便用*/
 extern u8 hci_standard_connect_check(void);
+/*设置一个标识给库里面说明正在退出蓝牙*/
+extern void set_stack_exiting(u8 exit);
+/*根据规则生产BLE的随机地址*/
+extern void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
+/*查询最后一个VM记录的地址进行回连*/
+extern u8 connect_last_device_from_vm();
+/*配置协议栈支持HID功能，为了兼容以前的HID独立模式，音箱SDK有使用流程*/
+extern void __bt_set_hid_independent_flag(bool flag);
+extern int btstack_exit();
+/*能量检测之后有一些判断流程要走，非蓝牙开发不用*/
+extern int sbc_energy_check(u8 *packet, u16 size);
+/**发射器和接收器按键切换的时候要申请和释放资源**/
+extern int a2dp_source_init(void *buf, u16 len, int deal_flag);
+/**发射器和接收器按键切换的时候要申请和释放资源**/
+extern int hfp_ag_buf_init(void *buf, int size, int deal_flag);
+/*配置蓝牙协议栈处于发射器流程*/
+extern void __set_emitter_enable_flag(u8 flag);
+/*用户使用USER_CTRL_INQUIRY_CANCEL就行，下面的用户层不直接使用*/
+extern void hci_cancel_inquiry();
+/*发射器启动还是暂停数据发送的接口，会发start和suspend命令*/
 extern void __emitter_send_media_toggle(u8 *addr, u8 toggle);
+/*查询当前有没有a2dp source（发射器的音频发送链路）在连接状态*/
 extern u8 is_a2dp_source_dev_null();
-extern u8 get_total_connect_dev(void);
+/*选择用哪一块VM存储信息，非蓝牙维护人员不用*/
 extern u8 get_remote_dev_info_index();
 extern u8 check_tws_le_aa(void);
-extern u8 get_esco_coder_busy_flag();
 extern void tws_api_set_connect_aa(int);
 extern void tws_le_acc_generation_init(void);
 extern void tws_api_clear_connect_aa();
 extern void clear_sniff_cnt(void);
+/**删除VM记录的最后一个设备信息*/
 extern u8 delete_last_device_from_vm();
 
 #define BD_CLASS_WEARABLE_HEADSET	0x240404/*ios10.2 display headset icon*/
@@ -544,8 +564,11 @@ extern u8 delete_last_device_from_vm();
 
 #define BD_CLASS_TRANSFER_HEALTH    0x10091C
 
+/*修改什么的类型，会影响到手机显示的图标*/
 extern void __change_hci_class_type(u32 class);
+/*配置通话使用16k的msbc还是8k的cvsd*/
 extern void __set_support_msbc_flag(bool flag);
+/*配置协议栈使用支持AAC的信息*/
 extern void __set_support_aac_flag(bool flag);
 
 /*设置1拖2时电话是否抢断标识*/
@@ -636,5 +659,4 @@ enum {
 };
 u8 remote_dev_company_ioctrl(bd_addr_t dev_addr, u8 op_flag, u8 value);
 u8 hci_standard_link_check(void);
-extern void XM_status_update(u8 status);
 #endif

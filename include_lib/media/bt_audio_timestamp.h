@@ -25,7 +25,14 @@ bool a2dp_audio_timestamp_is_available(void *handle, u16 seqn, u32 dts, int *dro
 
 int tws_a2dp_share_timestamp(void *handle);
 
+void a2dp_audio_set_base_time(void *handle, u32 base_time);
+
 void a2dp_audio_timestamp_close(void *handle);
+
+int a2dp_tws_audio_conn_offline(void);
+
+void a2dp_tws_audio_conn_delete(void);
+
 /*========================================================================================*/
 
 /*===================================ESCO 音频时间戳接口==================================*/

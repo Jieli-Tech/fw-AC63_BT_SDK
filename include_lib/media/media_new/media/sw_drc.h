@@ -32,17 +32,33 @@ struct threshold_group {
 struct wdrc_struct {
     u16 attacktime;   //启动时间
     u16 releasetime;  //释放时间
-    struct threshold_group threshold[5];
+    struct threshold_group threshold[7];
     u8 threshold_num;
     u8 rms_time;
     u8 algorithm;//0:PEAK  1:RMS
     u8 mode;//0:PERPOINT  1:TWOPOINT
+    u16 holdtime; //预留位置
+    u8 reverved[2];//预留位置
 };
 //对耳wdrc处理，区分左右声道
 #define L_wdrc   0x10
 #define LL_wdrc  0x20
 #define R_wdrc   0x40
 #define RR_wdrc  0x80
+
+struct drc_ch_org {
+    u8 nband;		//max<=3，1：全带 2：两段 3：三段
+    u8 type;		//0:没有使能限幅和压缩器，1:限幅器   2:压缩器  3:wdrc
+    u8 reserved[2];     //reserved[1]保留,未用, reserved[0]记录了 多带限幅时，是否再开启一次全带限幅
+    int low_freq;       //中低频分频点
+    int high_freq;      //中高频分频点
+    int order;          //分频器阶数, 2或者4
+    union {
+        struct drc_limiter		limiter[4];   //限幅器
+        struct drc_compressor	compressor[3];//压缩器
+    } _p;
+};
+
 struct drc_ch {
     u8 nband;		//max<=3，1：全带 2：两段 3：三段
     u8 type;		//0:没有使能限幅和压缩器，1:限幅器   2:压缩器  3:wdrc
@@ -53,7 +69,7 @@ struct drc_ch {
     union {
         struct drc_limiter		limiter[4];   //限幅器
         struct drc_compressor	compressor[3];//压缩器
-        struct wdrc_struct  wdrc[2];// [0]wdrc左声道，[1]wdrc右声道
+        struct wdrc_struct      wdrc[4][2];// [][0]wdrc左声道，[][1]wdrc右声道
     } _p;
 };
 struct sw_drc {

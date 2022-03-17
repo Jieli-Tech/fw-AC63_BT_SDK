@@ -644,6 +644,7 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     case ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae3c_01_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
         if (buffer) {
             buffer[0] = att_get_ccc_config(handle);
             buffer[1] = 0;
@@ -697,6 +698,7 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
     case ATT_CHARACTERISTIC_ae04_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae3c_01_CLIENT_CONFIGURATION_HANDLE:
+    case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
         set_ble_work_state(BLE_ST_NOTIFY_IDICATE);
         check_connetion_updata_deal();
         log_info("\n------write ccc:%04x,%02x\n", handle, buffer[0]);
@@ -867,7 +869,7 @@ void ble_sm_setup_init(io_capability_t io_type, u8 auth_req, uint8_t min_key_siz
 }
 
 
-#define TCFG_BLE_SECURITY_REQUEST        0
+#define AT_COM_TCFG_BLE_SECURITY_REQUEST        0
 void ble_profile_init(void)
 {
     printf("ble profile init\n");
@@ -877,9 +879,9 @@ void ble_profile_init(void)
         sm_pair_mode = 1;
 
 #if PASSKEY_ENTER_ENABLE
-        ble_sm_setup_init(IO_CAPABILITY_DISPLAY_ONLY, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, TCFG_BLE_SECURITY_REQUEST);
+        ble_sm_setup_init(IO_CAPABILITY_DISPLAY_ONLY, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, AT_COM_TCFG_BLE_SECURITY_REQUEST);
 #else
-        ble_sm_setup_init(IO_CAPABILITY_NO_INPUT_NO_OUTPUT, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, TCFG_BLE_SECURITY_REQUEST);
+        ble_sm_setup_init(IO_CAPABILITY_NO_INPUT_NO_OUTPUT, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, AT_COM_TCFG_BLE_SECURITY_REQUEST);
 #endif
     }
 
@@ -982,7 +984,7 @@ static int set_adv_enable(void *priv, u32 en)
 {
     ble_state_e next_state, cur_state;
 
-    if (!adv_ctrl_en) {
+    if (!adv_ctrl_en && en) {
         return APP_BLE_OPERATION_ERROR;
     }
 

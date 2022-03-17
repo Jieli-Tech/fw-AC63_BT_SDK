@@ -127,13 +127,14 @@ void sdp_decode_response_info_output(u16 service_uuid, u16 attribute_id, const u
         }
     }
     break;
-
-    case BT_UUID_HID_DE:
-        if (BT_SDP_HID_DescriptorList == attribute_id) {
-            log_info("REPORT_MAP:");
-            put_buf(packet, size);
-        }
-        break;
+        /*
+            case BT_UUID_HID_DE:
+                if (BT_SDP_HID_DescriptorList == attribute_id) {
+                    log_info("REPORT_MAP:");
+                    put_buf(packet, size);
+                }
+                break;
+        */
     }
 }
 
