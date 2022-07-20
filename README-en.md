@@ -33,7 +33,7 @@ Documentation
 
 * SDK Version: [SDK History](doc/AC630N_bt_data_transfer_sdk_发布版本信息.pdf)
 
-* SDK introduction : [SDK quick start guide](./doc/AC630N_bt_data_transfer_sdk介绍.pdf)
+* SDK introduction : [SDK quick start guide](./doc/AC630N_bt_data_transfer_sdk_EN.pdf)
 
 * SDK architure : [SDK module architure ](./doc/architure)
 
