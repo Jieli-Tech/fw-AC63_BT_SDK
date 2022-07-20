@@ -31,7 +31,7 @@ Documentation
 
 * Chipset brief : [SoC datasheet](./doc)
 
-* SDK Version: [SDK History](doc/AC630N_bt_data_transfer_sdk_发布版本信息.pdf)
+* SDK Version: [SDK Version History](doc/AC630N_bt_data_transfer_sdk_version_info_EN.pdf)
 
 * SDK introduction : [SDK quick start guide](./doc/AC630N_bt_data_transfer_sdk_EN.pdf)
 
