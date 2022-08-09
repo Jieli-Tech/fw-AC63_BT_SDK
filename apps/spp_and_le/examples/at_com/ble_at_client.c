@@ -723,9 +723,9 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             break;
 
         case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
-            mtu = att_event_mtu_exchange_complete_get_MTU(packet) - 3;
+            mtu = att_event_mtu_exchange_complete_get_MTU(packet);
             log_info("ATT MTU = %u\n", mtu);
-            ble_op_att_set_send_mtu(mtu);
+            ble_op_att_set_send_mtu(mtu - 3);
             break;
 
         case HCI_EVENT_VENDOR_REMOTE_TEST:

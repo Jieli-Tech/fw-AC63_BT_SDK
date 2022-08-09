@@ -24,7 +24,7 @@
 #if  CONFIG_APP_AT_CHAR_COM
 
 #define LOG_TAG_CONST       AT_CHAR_COM
-#define LOG_TAG             "[AT_CHAR_UART]"
+/* #define LOG_TAG             "[AT_CHAR_UART]" */
 #define LOG_ERROR_ENABLE
 #define LOG_DEBUG_ENABLE
 #define LOG_INFO_ENABLE
@@ -245,10 +245,10 @@ static void ct_uart_write(char *buf, u16 len)
     }
 }
 
-int at_uart_send_packet(const u8 *packet, int size)
+int ct_uart_send_packet(const u8 *packet, int size)
 {
-    log_info("at_uart_send:%d", size);
-    log_info_hexdump(packet, size);
+    log_info("ct_uart_send_packet:%d", size);
+    /* log_info_hexdump(packet, size); */
 
 #if 0
     int i = 0;

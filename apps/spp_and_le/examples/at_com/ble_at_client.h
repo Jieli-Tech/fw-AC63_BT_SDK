@@ -7,6 +7,9 @@
 #include <stdint.h>
 #include "at.h"
 
+
+#define   AT_UART_FIFIO_BUFFER_SIZE  1024
+
 int ble_at_set_address(u8 *addr);
 int ble_at_set_name(u8 *name, u8 len);
 u8 ble_at_get_staus(void);

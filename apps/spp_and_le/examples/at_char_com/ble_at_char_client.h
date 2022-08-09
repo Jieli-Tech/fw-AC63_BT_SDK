@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include "at.h"
 
+#define   BT_UART_FIFIO_BUFFER_SIZE  1024
+
+void at_cmd_send_no_end(const u8 *packet, int size);
+int at_send_uart_data(u8 *packet, u16 size, int post_event);
 int bt_ble_scan_enable(void *priv, u32 en);
 static int client_create_connection(u8 *conn_addr, u8 addr_type);
 static int client_create_connection_cancel();

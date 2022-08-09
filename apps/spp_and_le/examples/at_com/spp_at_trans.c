@@ -47,13 +47,15 @@ extern void lmp_hci_write_local_address(const u8 *addr);
 extern void lmp_hci_write_local_name(const char *name);
 extern void lmp_hci_write_class_of_device(int class);
 
+int bt_comm_edr_sniff_clean(void);
+
 static void edr_at_send_event(u8 event_type, const u8 *packet, int size);
 extern void bt_sniff_ready_clean(void);
 
 int at_spp_send_data(u8 *data, u16 len)
 {
     if (spp_api) {
-        bt_sniff_ready_clean();
+        bt_comm_edr_sniff_clean();
         log_info("spp_api_tx(%d) \n", len);
         /* log_info_hexdump(data, len); */
         return spp_api->send_data(NULL, data, len);
@@ -80,6 +82,7 @@ static void at_spp_recieve_cbk(void *priv, u8 *buf, u16 len)
 {
     log_info("spp_api_rx(%d) \n", len);
     log_info_hexdump(buf, len);
+    bt_comm_edr_sniff_clean();
 
 #if TEST_SPP_DATA_RATE
     if ((buf[0] == 'A') && (buf[1] == 'F')) {

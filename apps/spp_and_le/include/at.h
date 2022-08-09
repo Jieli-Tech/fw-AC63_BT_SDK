@@ -20,7 +20,7 @@ struct at_format {
     u8 payload[0];
 };
 
-#define AT_FORMAT_HEAD  sizeof(struct at_format)
+#define AT_FORMAT_HEAD   3//sizeof(struct at_format)
 //
 #define AT_CMD_SET_BT_ADDR          0x00
 
@@ -178,7 +178,7 @@ struct cmd_set_dcdc {
 #define AT_EVT_PROFILE_SEARCH_END           0x22
 
 void at_uart_init(void *packet_handler);
-int at_uart_send_packet(const u8 *packet, int size);
+int  ct_uart_send_packet(const u8 *packet, int size);
 void slave_connect_param_update(u16 interval_min, u16 interval_max, u16 latency, u16 timeout);
 void at_send_event(u8 opcode, const u8 *packet, int size);
 void ct_uart_change_baud(u32 baud);

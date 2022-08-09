@@ -116,7 +116,8 @@ static void transport_spp_recieve_cbk(void *priv, u8 *buf, u16 len)
     spp_channel = (u16)priv;
     log_info("spp_api_rx(%d) \n", len);
     log_info_hexdump(buf, len);
-    clear_sniff_cnt();
+    /* clear_sniff_cnt(); */
+    bt_comm_edr_sniff_clean();
 
 #if TEST_SPP_DATA_RATE
     if ((buf[0] == 'A') && (buf[1] == 'F')) {

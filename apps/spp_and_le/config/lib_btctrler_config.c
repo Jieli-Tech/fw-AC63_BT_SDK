@@ -158,12 +158,12 @@ const int config_delete_link_key          = 1;           //配置是否连接失
 #if CONFIG_BT_GATT_CLIENT_NUM
 #define SET_MASTER_ROLS_CFG   (LE_SCAN | LE_INIT | LE_MASTER)
 const int config_btctler_le_afh_en = 1;
-const int config_btctler_le_master_multilink = (CONFIG_BT_GATT_CLIENT_NUM > 1);
 #else
 #define SET_MASTER_ROLS_CFG   0
 const int config_btctler_le_afh_en = 0;
-const int config_btctler_le_master_multilink = 0;
 #endif
+
+const int config_btctler_le_master_multilink = ((CONFIG_BT_GATT_CLIENT_NUM + CONFIG_BT_GATT_SERVER_NUM) > 1) ? 1 : 0;
 
 #if CONFIG_APP_NONCONN_24G
 const uint64_t config_btctler_le_features = 0;

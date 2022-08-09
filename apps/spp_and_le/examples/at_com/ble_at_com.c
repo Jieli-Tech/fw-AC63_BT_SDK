@@ -147,7 +147,7 @@ static void (*app_ble_state_callback)(void *priv, ble_state_e state) = NULL;
 static void (*ble_resume_send_wakeup)(void) = NULL;
 static u32 channel_priv;
 void (*at_send_event_callbak)(u8 event_type, const u8 *packet, int size);
-
+void ble_test_auto_adv(u8 en);
 
 static int app_send_user_data_check(u16 len);
 static int app_send_user_data_do(void *priv, u8 *data, u16 len);
@@ -1183,6 +1183,7 @@ void bt_ble_init(void)
     adv_data_len = 0;
     scan_rsp_data_len = 0;
     con_handle = 0;
+    ble_test_auto_adv(0);
 
     set_ble_work_state(BLE_ST_INIT_OK);
     ble_module_enable(1);

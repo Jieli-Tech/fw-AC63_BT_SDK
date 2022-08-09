@@ -14,7 +14,7 @@
 
 #include "ble_user.h"
 #include "le_client_demo.h"
-#include "le_at_char_client.h"
+#include "ble_at_char_client.h"
 
 #if  CONFIG_APP_AT_CHAR_COM
 
@@ -22,7 +22,7 @@
 
 #if 1
 //#define log_info            printf
-#define log_info(x, ...)    printf("\n[LE_AT_CLI]" x " ", ## __VA_ARGS__)
+#define log_info(x, ...)    printf("[LE_AT_CHAR_CLI]" x " ", ## __VA_ARGS__)
 
 #define log_info_hexdump    put_buf
 #else
@@ -30,32 +30,29 @@
 #define log_info_hexdump(...)
 #endif
 
-//------
-#define ATT_LOCAL_PAYLOAD_SIZE    (64*2)                  //note: need >= 20
-#define ATT_SEND_CBUF_SIZE        (512)                   //note: need >= 20,缓存大小，可修改
-#define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_PAYLOAD_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
-static u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
+#define JL_AT_TEST_MODE            1//连接杰理默认的透传从机
 
 #define SEARCH_PROFILE_BUFSIZE    (512)                   //note:
 static u8 search_ram_buffer[SEARCH_PROFILE_BUFSIZE] __attribute__((aligned(4)));
 #define scan_buffer search_ram_buffer
 //---------------
-
-#define   SUPPORT_MAX_DEV   (1) //最大支持的设备
+#define   SUPPORT_MAX_DEV        (CONFIG_BT_GATT_CLIENT_NUM) //最大支持的设备
+#define   HANDLE_INVAIL_INDEX    ((s8)-1)
 
 //搜索类型
-#define SET_SCAN_TYPE       SCAN_ACTIVE
+#define SET_SCAN_TYPE           SCAN_ACTIVE
 //搜索 周期大小
-#define SET_SCAN_INTERVAL   40 //(unit:0.625ms)
+#define SET_SCAN_INTERVAL       48 //(unit:0.625ms)
 //搜索 窗口大小
-#define SET_SCAN_WINDOW     8 //(unit:0.625ms)
+#define SET_SCAN_WINDOW         8 //(unit:0.625ms)
 
 //连接周期
-#define SET_CONN_INTERVAL   24 //(unit:1.25ms)
+#define SET_CONN_INTERVAL_MIN   24 //(unit:1.25ms)
+#define SET_CONN_INTERVAL_MAX   48 //(unit:1.25ms)
 //连接latency
-#define SET_CONN_LATENCY    0  //(unit:conn_interval)
+#define SET_CONN_LATENCY        0  //(unit:conn_interval)
 //连接超时
-#define SET_CONN_TIMEOUT    400 //(unit:10ms)
+#define SET_CONN_TIMEOUT        400 //(unit:10ms)
 //----------------------------------------------------------------------------
 static u8 scan_ctrl_en;
 static u8 ble_work_state = 0;
@@ -85,13 +82,11 @@ static struct pair_info_t  conn_pair_info;
 static u8 pair_bond_enable = 0;
 
 struct conn_update_param_t client_conn_param = {
-    .interval_min = 24,  //(unit:0.625ms)
-    .interval_max = 48,  //(unit:0.625ms)
-    .latency = 0,       //(unit: interval)
-    .timeout = 400,      //(unit:10ms)
+    .interval_min = SET_CONN_INTERVAL_MIN,  //(unit:0.625ms)
+    .interval_max = SET_CONN_INTERVAL_MAX,  //(unit:0.625ms)
+    .latency = SET_CONN_LATENCY,       //(unit: interval)
+    .timeout = SET_CONN_TIMEOUT,      //(unit:10ms)
 };
-
-
 
 //-------------------------------------------------------------------------------
 typedef struct {
@@ -105,18 +100,24 @@ typedef struct {
     uint16_t read_long_handle;
 } target_hdl_t;
 
-//记录handle 使用
-static u16 search_target_uuid16 = 0;
-static target_hdl_t target_handle[SUPPORT_MAX_DEV];
-static opt_handle_t opt_handle_table[OPT_HANDLE_MAX];
-static u8 opt_handle_used_cnt;
+typedef struct {
+    //可操作的handle
+    u16 value_handle;
+    u16 opt_type; //属性
+} opt_handle_record_t;
 
+
+//记录handle 使用
+static u16 search_target_uuid16 = 0xAE30;
+static target_hdl_t target_handle[SUPPORT_MAX_DEV];
+static opt_handle_record_t opt_handle_table[OPT_HANDLE_MAX];
+static u8 opt_handle_used_cnt;
 static  client_conn_cfg_t *client_config = NULL ;
 
 //----------------------------------------------------------------------------
-static void bt_ble_create_connection(u8 *conn_addr, u8 addr_type);
+static int bt_ble_create_connection(u8 *conn_addr, u8 addr_type);
 static int client_write_send(void *priv, u8 *data, u16 len);
-static int client_operation_send(u16 handle, u8 *data, u16 len, u8 att_op_type);
+static int client_operation_send(u16 conn_handle, u16 handle, u8 *data, u16 len, u8 att_op_type);
 static void ble_client_module_enable(u8 en);
 //----------------------------------------------------------------------------
 static s8 get_dev_index(u16 handle)
@@ -127,7 +128,7 @@ static s8 get_dev_index(u16 handle)
             return i;
         }
     }
-    return -1;
+    return HANDLE_INVAIL_INDEX;
 }
 
 static s8 get_idle_dev_index(void)
@@ -138,7 +139,7 @@ static s8 get_idle_dev_index(void)
             return i;
         }
     }
-    return -1;
+    return HANDLE_INVAIL_INDEX;
 }
 
 
@@ -151,7 +152,7 @@ static s8 del_dev_index(u16 handle)
             return i;
         }
     }
-    return -1;
+    return HANDLE_INVAIL_INDEX;
 }
 
 static bool dev_have_connected(void)
@@ -184,13 +185,6 @@ void client_send_conn_param_update(void)
     }
 }
 
-/* static void test_send_conn_update(void) */
-/* { */
-/* client_send_conn_param_update(); */
-/* send_param_index++; */
-/* send_param_index &= 3; */
-/* sys_timeout_add(0,test_send_conn_update,10000); */
-/* } */
 
 static void client_event_report(le_client_event_e event, u8 *packet, int size)
 {
@@ -264,7 +258,10 @@ static void check_target_uuid_match(search_result_t *result_info)
     u8 opt_type = result_info->characteristic.properties;
 
 #if JL_AT_TEST_MODE
-    if (result_info->characteristic.uuid16 != 0xae01 && result_info->characteristic.uuid16 != 0xae02) {
+    if (result_info->characteristic.uuid16 != 0xae01
+        && result_info->characteristic.uuid16 != 0xae02
+        && result_info->characteristic.uuid16 != 0xae05) {
+        log_info("======drop not jieli uuid\n");
         return;
     }
 #endif
@@ -281,6 +278,15 @@ static void check_target_uuid_match(search_result_t *result_info)
 
     if (opt_type & ATT_PROPERTY_NOTIFY) {
         target_handle[cur_dev_cid].notify_handle  = result_info->characteristic.value_handle;
+        opt_handle_record_t *opt_get = &opt_handle_table[opt_handle_used_cnt++];
+        opt_get->value_handle = result_info->characteristic.value_handle;
+        opt_get->opt_type = opt_type;
+
+    } else if (opt_type & ATT_PROPERTY_INDICATE) {
+        target_handle[cur_dev_cid].indicate_handle  = result_info->characteristic.value_handle;
+        opt_handle_record_t *opt_get = &opt_handle_table[opt_handle_used_cnt++];
+        opt_get->value_handle = result_info->characteristic.value_handle;
+        opt_get->opt_type = opt_type;
     }
 
     return;
@@ -289,6 +295,34 @@ static void check_target_uuid_match(search_result_t *result_info)
 //操作handle，完成 write ccc
 static void do_operate_search_handle(void)
 {
+    u16 tmp_16;
+    u16 i, cur_opt_type;
+    opt_handle_record_t *opt_hdl_pt;
+
+    log_info("opt_handle_used_cnt= %d\n", opt_handle_used_cnt);
+
+    log_info("find target_handle:");
+    log_info_hexdump(&target_handle, sizeof(target_hdl_t));
+
+    if (0 == opt_handle_used_cnt) {
+        goto opt_end;
+    }
+
+    for (i = 0; i < opt_handle_used_cnt; i++) {
+        opt_hdl_pt = &opt_handle_table[i];
+        cur_opt_type = opt_hdl_pt->opt_type;
+        if ((cur_opt_type & ATT_PROPERTY_NOTIFY) == ATT_PROPERTY_NOTIFY) {
+            tmp_16  = 0x01;//fixed
+            log_info("write_ntf_ccc:%04x\n", opt_hdl_pt->value_handle);
+            client_operation_send(con_handle[cur_dev_cid], opt_hdl_pt->value_handle + 1, &tmp_16, 2, ATT_OP_WRITE);
+        } else if ((cur_opt_type & ATT_PROPERTY_INDICATE) == ATT_PROPERTY_INDICATE) {
+            tmp_16  = 0x02;//fixed
+            log_info("write_ind_ccc:%04x\n", opt_hdl_pt->value_handle);
+            client_operation_send(con_handle[cur_dev_cid], opt_hdl_pt->value_handle + 1, &tmp_16, 2, ATT_OP_WRITE);
+        }
+    }
+
+opt_end:
     set_ble_work_state(BLE_ST_SEARCH_COMPLETE);
 }
 
@@ -308,24 +342,13 @@ void user_client_report_search_result(search_result_t *result_info)
         log_info("client_report_search_result finish!!!\n");
         do_operate_search_handle();
         client_event_report(CLI_EVENT_SEARCH_PROFILE_COMPLETE, 0, 0);
-        /* if (target_handle[cur_dev_cid].write_type &&  target_handle[cur_dev_cid].notify_handle) { */
-        /* log_info("connect match uuid\n"); */
-        /* put_buf(&target_handle[cur_dev_cid], sizeof(target_hdl_t)); */
-        /*  */
-        /* u16 tmp_16  = 0x01;//fixed */
-        /* log_info("write_ntf_ccc:%04x\n", target_handle[cur_dev_cid].notify_handle + 1); */
-        /* client_operation_send(target_handle[cur_dev_cid].notify_handle + 1, &tmp_16, 2, ATT_OP_WRITE); */
         at_send_string("OK");
         at_send_connected(cur_dev_cid);
         set_ble_work_state(BLE_ST_IDLE);
-        /* } else { */
-        /*     at_respond_send_err(ERR_AT_CMD); */
-        /*     le_at_client_disconnect(cur_dev_cid); */
-        /* } */
         return;
     }
 
-    log_info("\n*** services, uuid16:%04x,index=%d ***\n", result_info->services.uuid16, result_info->service_index);
+    log_info("*** services, uuid16:%04x,index=%d ***\n", result_info->services.uuid16, result_info->service_index);
     log_info("{charactc, uuid16:%04x,index=%d,handle:%04x~%04x,value_handle=%04x}\n",
              result_info->characteristic.uuid16, result_info->characteristic_index,
              result_info->characteristic.start_handle, result_info->characteristic.end_handle,
@@ -371,19 +394,20 @@ void user_client_report_data_callback(att_data_report_t *report_data)
 
 //    at_send_event_ble_data_receive(report_data->value_handle, report_data->blob, report_data->blob_length);
 
-    u8 tmp_cid = get_dev_index(report_data->conn_handle);
-    if (tmp_cid > SUPPORT_MAX_DEV) {
+    s8 tmp_cid = get_dev_index(report_data->conn_handle);
+    if (tmp_cid == HANDLE_INVAIL_INDEX) {
         log_info("report err handle: %04x\n", report_data->conn_handle);
         return;
     }
 
     switch (report_data->packet_type) {
     case GATT_EVENT_NOTIFICATION://notify
-        log_info("\n-notify_rx(%d):  %c    %c  \n ", report_data->blob_length, report_data->blob[0], report_data->blob[1]);
+        log_info("-notify_rx(%d):  %c    %c  \n ", report_data->blob_length, report_data->blob[0], report_data->blob[1]);
         at_send_rx_cid_data(tmp_cid, report_data->blob, report_data->blob_length);
+        /* le_att_client_send_data(tmp_cid,report_data->blob,4); */
         break;
     case GATT_EVENT_INDICATION://indicate
-        log_info("\n-indicate_rx(%d):  %c    %c  \n ", report_data->blob_length, report_data->blob[0], report_data->blob[1]);
+        log_info("-indicate_rx(%d):  %c    %c  \n ", report_data->blob_length, report_data->blob[0], report_data->blob[1]);
         break;
     case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT://read
     case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT://read long
@@ -399,8 +423,6 @@ static void client_search_profile_start(void)
     memset(&target_handle[cur_dev_cid], 0, sizeof(target_hdl_t));
     user_client_init(con_handle[cur_dev_cid], search_ram_buffer, SEARCH_PROFILE_BUFSIZE);
     if (!search_target_uuid16) {
-        /* le_at_client_disconnect(cur_dev_cid); */
-        /* at_respond_send_err(ERR_AT_CMD); */
         log_info("search all server\n");
         ble_op_search_profile_all();
     } else {
@@ -410,17 +432,9 @@ static void client_search_profile_start(void)
 }
 
 //------------------------------------------------------------
-extern void at_cmd_send_no_end(const u8 *packet, int size);
-extern void at_cmd_send(const u8 *packet, int size);
 extern u32 hex_2_str(u8 *hex, u32 hex_len, u8 *str);
 extern u32 str_2_hex(u8 *str, u32 str_len, u8 *hex);
 
-
-
-//u8 name_buf[40]= "NAME:";
-//u8 uuid_buf[128]="UUID:";
-//u8 manu_buf[128]="MANU:";
-//static u8 at_tmp_buf[48]={0};
 static u8 at_send_adv_buf[128] = {0};
 static bool resolve_adv_report(u8 *adv_address, u8 data_length, u8 *data, s8 rssi, u8 addr_type)
 {
@@ -433,6 +447,7 @@ static bool resolve_adv_report(u8 *adv_address, u8 data_length, u8 *data, s8 rss
     u8 ret = 0;
 
     adv_data_pt = data;
+
 
 
     /* log_info("----->\n"); */
@@ -456,9 +471,15 @@ static bool resolve_adv_report(u8 *adv_address, u8 data_length, u8 *data, s8 rss
         }
 
         lenght = *adv_data_pt++;
+        if (lenght >= data_length || (lenght + i) >= data_length) {
+            /*过滤非标准包格式*/
+            printf("!!!error_adv_packet:");
+            put_buf(data, data_length);
+            break;
+        }
+
         ad_type = *adv_data_pt++;
         i += (lenght + 1);
-
 
         switch (ad_type) {
         case HCI_EIR_DATATYPE_FLAGS:
@@ -536,16 +557,6 @@ static bool resolve_adv_report(u8 *adv_address, u8 data_length, u8 *data, s8 rss
         }
         adv_data_pt += (lenght - 1);
     }
-//--------------------new
-//    if(strlen(name_buf)>5)
-//    {
-//        at_cmd_send_no_end(name_buf, strlen(name_buf));
-//    }
-//    if(strlen(name_buf)>5)
-//    {
-//        at_cmd_send_no_end(manu_buf, strlen(manu_buf));
-//    }
-//-----------------------
     return find_remoter;
 }
 
@@ -565,8 +576,12 @@ static void client_report_adv_data(adv_report_t *report_pt, u16 len)
 
 static int client_create_connection_cannel(void)
 {
-    set_ble_work_state(BLE_ST_SEND_CREATE_CONN_CANNEL);
-    return ble_op_create_connection_cancel();
+    if (get_ble_work_state() == BLE_ST_CREATE_CONN) {
+        set_ble_work_state(BLE_ST_SEND_CREATE_CONN_CANNEL);
+        return ble_op_create_connection_cancel();
+    } else {
+        return 1;
+    }
 }
 
 static void connection_update_complete_success(u16 conn_handle, u8 *packet)
@@ -652,8 +667,8 @@ static void client_profile_start(u16 conn_handle)
 /* LISTING_START(packetHandler): Packet Handler */
 int client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
-    int mtu;
-    u32 tmp;
+    int tmp;
+    u16 tmp_handle;
     u8 status;
     int ret = 0;
 
@@ -689,7 +704,7 @@ int client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     break;
                 }
 
-                u16 tmp_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                tmp_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                 cur_dev_cid = get_idle_dev_index();
 
                 if (cur_dev_cid < 0) {
@@ -715,35 +730,40 @@ int client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 break;
 
             case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE: {
-                u16 tmp_handle = little_endian_read_16(packet, 4);
-                if (get_dev_index(tmp_handle) >= 0) {
+                tmp_handle = little_endian_read_16(packet, 4);
+                if (get_dev_index(tmp_handle) != HANDLE_INVAIL_INDEX) {
                     connection_update_complete_success(tmp_handle, packet);
                 }
             }
             break;
 
             case HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE:
-                log_info("APP HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE");
+                tmp_handle = little_endian_read_16(packet, 3);
+                if (get_dev_index(tmp_handle) != HANDLE_INVAIL_INDEX) {
+                    log_info("APP HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE");
+                }
                 break;
 
             case HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE:
-                log_info("APP HCI_SUBEVENT_LE_PHY_UPDATE %s\n", hci_event_le_meta_get_phy_update_complete_status(packet) ? "Fail" : "Succ");
-                log_info("Tx PHY: %s\n", phy_result[hci_event_le_meta_get_phy_update_complete_tx_phy(packet)]);
-                log_info("Rx PHY: %s\n", phy_result[hci_event_le_meta_get_phy_update_complete_rx_phy(packet)]);
+                tmp_handle = little_endian_read_16(packet, 4);
+                if (get_dev_index(tmp_handle) != HANDLE_INVAIL_INDEX) {
+                    log_info("APP HCI_SUBEVENT_LE_PHY_UPDATE %s\n", hci_event_le_meta_get_phy_update_complete_status(packet) ? "Fail" : "Succ");
+                    log_info("Tx PHY: %s\n", phy_result[hci_event_le_meta_get_phy_update_complete_tx_phy(packet)]);
+                    log_info("Rx PHY: %s\n", phy_result[hci_event_le_meta_get_phy_update_complete_rx_phy(packet)]);
+                }
                 break;
             }
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE: {
-            put_buf(packet, size);
-            u16 tmp_handle = little_endian_read_16(packet, 3);
+            tmp_handle = little_endian_read_16(packet, 3);
             s8 tmp_index = get_dev_index(tmp_handle);
-            if (tmp_index < 0) {
+            if (tmp_index == HANDLE_INVAIL_INDEX) {
                 log_info("unknown_handle:%04x\n", tmp_handle);
                 break;
             }
 
-            log_info("HCI_EVENT_DISCONNECTION_COMPLETE: %0x\n", packet[5]);
+            log_info("HCI_EVENT_DISCONNECTION_COMPLETE:%04x, %0x\n", tmp_handle, packet[5]);
             con_handle[tmp_index] = 0;
             ble_op_multi_att_send_conn_handle(0, tmp_index, 1);
             //set_ble_work_state(BLE_ST_DISCONN);
@@ -754,9 +774,12 @@ int client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         break;
 
         case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
-            mtu = att_event_mtu_exchange_complete_get_MTU(packet) - 3;
-            log_info("ATT MTU = %u\n", mtu);
-            ble_op_multi_att_set_send_mtu(con_handle[cur_dev_cid], mtu);
+            tmp_handle = little_endian_read_16(packet, 2);
+            if (get_dev_index(tmp_handle) != HANDLE_INVAIL_INDEX) {
+                tmp = att_event_mtu_exchange_complete_get_MTU(packet);
+                log_info("ATT MTU = %u\n", tmp);
+                ble_op_multi_att_set_send_mtu(con_handle[cur_dev_cid], tmp - 3);
+            }
             break;
 
         case HCI_EVENT_VENDOR_REMOTE_TEST:
@@ -764,8 +787,12 @@ int client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
 
         case L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE:
+            tmp_handle = little_endian_read_16(packet, 2);
             tmp = little_endian_read_16(packet, 4);
-            log_info("-update_rsp: %02x\n", tmp);
+            if (get_dev_index(tmp_handle) != HANDLE_INVAIL_INDEX) {
+                log_info("-update_rsp:%04x, %02x\n", tmp_handle, tmp);
+            }
+            ret = 0;//accept
             break;
 
         case GAP_EVENT_ADVERTISING_REPORT:
@@ -774,9 +801,12 @@ int client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
 
         case HCI_EVENT_ENCRYPTION_CHANGE:
-            log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d\n", packet[2]);
-            if (client_config->security_en) {
-                client_search_profile_start();
+            tmp_handle = little_endian_read_16(packet, 3);
+            if (get_dev_index(tmp_handle) != HANDLE_INVAIL_INDEX) {
+                log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d\n", packet[2]);
+                if (client_config->security_en) {
+                    client_search_profile_start();
+                }
             }
             break;
         }
@@ -786,33 +816,24 @@ int client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     return ret;
 }
 
-
-static int get_buffer_vaild_len(void *priv)
-{
-    u32 vaild_len = 0;
-    ble_op_multi_att_get_remain(con_handle[cur_dev_cid], &vaild_len);
-    return vaild_len;
-}
-
-static int client_operation_send(u16 handle, u8 *data, u16 len, u8 att_op_type)
+static int client_operation_send(u16 conn_handle, u16 handle, u8 *data, u16 len, u8 att_op_type)
 {
     int ret = APP_BLE_NO_ERROR;
-    if (!con_handle[cur_dev_cid]) {
-        return APP_BLE_OPERATION_ERROR;
-    }
+    u32 vaild_len = 0;
 
-    if (!handle) {
+    if (!conn_handle || !handle) {
         log_info("handle is null\n");
         return APP_BLE_OPERATION_ERROR;
     }
 
+    ble_op_multi_att_get_remain(conn_handle, &vaild_len);
 
-    if (get_buffer_vaild_len(0) < len) {
+    if (vaild_len < len) {
         log_info("opt_buff_full!!!\n");
         return APP_BLE_BUFF_FULL;
     }
 
-    ret = ble_op_multi_att_send_data(con_handle[cur_dev_cid], handle, data, len, att_op_type);
+    ret = ble_op_multi_att_send_data(conn_handle, handle, data, len, att_op_type);
     if (ret == BLE_BUFFER_FULL) {
         ret = APP_BLE_BUFF_FULL;
     }
@@ -835,79 +856,10 @@ static int client_disconnect(u8 cid)
     }
 }
 //-----------------------------------------------
-static int client_write_send(void *priv, u8 *data, u16 len)
-{
-    return 0;//client_operation_send(target_handle[cur_dev_cid].write_handle, data, len, ATT_OP_WRITE);
-}
-
-static int client_write_without_respond_send(void *priv, u8 *data, u16 len)
-{
-    return 0;//client_operation_send(target_handle[cur_dev_cid].write_no_respond, data, len, ATT_OP_WRITE_WITHOUT_RESPOND);
-}
-
-static int client_read_value_send(void *priv)
-{
-    u16 tmp_flag = 0x55A1;
-    return 0;//client_operation_send(target_handle[cur_dev_cid].read_handle, (u8 *)&tmp_flag, 2, ATT_OP_READ);
-}
-
-static int client_read_long_value_send(void *priv)
-{
-    u16 tmp_flag = 0x55A2;
-    return 0;//client_operation_send(target_handle[cur_dev_cid].read_handle, (u8 *)&tmp_flag, 2, ATT_OP_READ_LONG);
-}
-
-
 //扫描数设置
 static void scanning_setup_init(void)
 {
     ble_op_set_scan_param(SET_SCAN_TYPE, scan_interval_value, scan_window_value);
-}
-
-static int client_regiest_wakeup_send(void *priv, void *cbk)
-{
-    /* att_regist_wakeup_send(cbk); */
-    return APP_BLE_NO_ERROR;
-}
-
-static int client_regiest_recieve_cbk(void *priv, void *cbk)
-{
-    channel_priv = (u32)priv;
-    app_recieve_callback = cbk;
-    return APP_BLE_NO_ERROR;
-}
-
-static int client_regiest_state_cbk(void *priv, void *cbk)
-{
-    channel_priv = (u32)priv;
-    app_ble_state_callback = cbk;
-    return APP_BLE_NO_ERROR;
-}
-
-//该接口重新配置搜索的配置项
-static int client_init_config(void *priv, const client_conn_cfg_t *cfg)
-{
-    log_info("client_init_config\n");
-    client_config = cfg;//reset config
-    return APP_BLE_NO_ERROR;
-}
-
-static const struct ble_client_operation_t client_operation = {
-    .scan_enable = bt_ble_scan_enable,
-    .disconnect = client_disconnect,
-    .get_buffer_vaild = get_buffer_vaild_len,
-    .write_data = (void *)client_write_without_respond_send,
-    .read_do = (void *)client_read_value_send,
-    .regist_wakeup_send = client_regiest_wakeup_send,
-    .regist_recieve_cbk = client_regiest_recieve_cbk,
-    .regist_state_cbk = client_regiest_state_cbk,
-    .init_config = client_init_config,
-    .opt_comm_send = client_operation_send,
-};
-
-struct ble_client_operation_t *ble_get_client_operation_table(void)
-{
-    return &client_operation;
 }
 
 void ble_client_profile_init(void)
@@ -998,23 +950,6 @@ void client_connect_param_update(u16 interval_min, u16 interval_max, u16 latency
 }
 
 
-//static int ble_disconnect(u8 cid)
-//{
-//    if (con_handle[cid]) {
-//        if (BLE_ST_SEND_DISCONN != get_ble_work_state()) {
-//            log_info(">>>ble send disconnect\n");
-//            set_ble_work_state(BLE_ST_SEND_DISCONN);
-//            ble_op_disconnect(con_handle[cid]);
-//        } else {
-//            log_info(">>>ble wait disconnect...\n");
-//        }
-//        return APP_BLE_NO_ERROR;
-//    } else {
-//        return APP_BLE_OPERATION_ERROR;
-//    }
-//}
-
-
 int bt_ble_scan_enable(void *priv, u32 en)
 {
     ble_state_e next_state, cur_state;
@@ -1062,8 +997,9 @@ static int client_create_connection(u8 *conn_addr, u8 addr_type)
     struct create_conn_param_t *create_conn_par = scan_buffer;
     if (get_ble_work_state() == BLE_ST_CREATE_CONN) {
         log_info("already create conn!!!\n");
-        return 0;
+        return 2;
     }
+
     create_conn_par->conn_interval = client_conn_param.interval_max;
     create_conn_par->conn_latency = client_conn_param.latency;
     create_conn_par->supervision_timeout = client_conn_param.timeout;
@@ -1080,28 +1016,14 @@ static int client_create_connection(u8 *conn_addr, u8 addr_type)
 
 static int client_create_connection_cancel(void)
 {
-    set_ble_work_state(BLE_ST_SEND_CREATE_CONN_CANNEL);
-    return ble_op_create_connection_cancel();
+    if (BLE_ST_CREATE_CONN == get_ble_work_state()) {
+        set_ble_work_state(BLE_ST_SEND_CREATE_CONN_CANNEL);
+        return ble_op_create_connection_cancel();
+    } else {
+        return 1;
+    }
 }
 
-//int client_read_long_value(u8 *read_long_handle)
-//{
-//    u16 tmp_flag = 0x55A2;
-//    return client_operation_send(*read_long_handle, (u8 *)&tmp_flag, 2, ATT_OP_READ_LONG);
-//}
-//
-//int client_write(u16 write_handle, u8 *data, u8 len)
-//{
-//    return client_operation_send(write_handle, data, len, ATT_OP_WRITE);
-//}
-//
-//
-//int client_write_without_respond(u16 write_no_respond_handle, u8 *data, u16 len)
-//{
-//    return client_operation_send(write_no_respond_handle, data, len, ATT_OP_WRITE_WITHOUT_RESPOND);
-//}
-
-//
 int le_at_client_scan_enable(u8 enable)
 {
     if (get_idle_dev_index() == -1) {
@@ -1173,17 +1095,20 @@ int ble_at_client_scan_param(u16 scan_interval, u16 scan_window)
 
 int le_att_client_send_data(u8 cid, u8 *packet, u16 size)
 {
-    if (cid == cur_dev_cid) {
-        if (target_handle[cur_dev_cid].write_type == ATT_PROPERTY_WRITE_WITHOUT_RESPONSE) {
-            return client_operation_send(target_handle[cur_dev_cid].write_no_respond, packet, size, ATT_OP_WRITE_WITHOUT_RESPOND);
+    log_info("client cid=%d,send data= %d\n", cid, size);
+
+    if (cid < SUPPORT_MAX_DEV && con_handle[cid]) {
+        if (target_handle[cid].write_type == ATT_PROPERTY_WRITE_WITHOUT_RESPONSE) {
+            return client_operation_send(con_handle[cid], target_handle[cid].write_no_respond, packet, size, ATT_OP_WRITE_WITHOUT_RESPOND);
+        } else if (target_handle[cid].write_type == ATT_PROPERTY_WRITE) {
+            return client_operation_send(con_handle[cid], target_handle[cid].write_handle, packet, size, ATT_OP_WRITE);
         } else {
-            return client_operation_send(target_handle[cur_dev_cid].write_handle, packet, size, ATT_OP_WRITE);
+            log_info("no write handle ,drop data!!!\n");
+            return -1;
         }
+        return 0;
     }
-    return 0;
 }
-
-
 
 //----------------------------------------------------------------------------------
 

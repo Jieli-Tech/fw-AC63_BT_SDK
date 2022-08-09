@@ -15,6 +15,7 @@
 #include "app_charge.h"
 #include "app_power_manage.h"
 #include "app_comm_bt.h"
+#include "ble_at_client.h"
 
 #define LOG_TAG_CONST       AT_COM
 #define LOG_TAG             "[AT_COM]"
@@ -237,6 +238,8 @@ static void atcom_key_event_handler(struct sys_event *event)
     }
 }
 
+extern cbuffer_t at_to_uart_cbuf;
+static u8 at_uart_sent_buf[AT_UART_FIFIO_BUFFER_SIZE];
 extern void at_cmd_rx_handler(void);
 static int atcom_event_handler(struct application *app, struct sys_event *event)
 {
@@ -250,6 +253,13 @@ static int atcom_event_handler(struct application *app, struct sys_event *event)
             atcom_bt_connction_status_event_handler(&event->u.bt);
         } else if ((u32)event->arg == SYS_BT_EVENT_TYPE_HCI_STATUS) {
             atcom_bt_hci_event_handler(&event->u.bt);
+        } else if ((u32)event->arg == SYS_BT_EVENT_FORM_AT) {
+            int cbuf_len = cbuf_get_data_size(&at_to_uart_cbuf);
+            if (cbuf_len) {
+                cbuf_len = cbuf_read(&at_to_uart_cbuf, at_uart_sent_buf, cbuf_len);
+                ct_uart_send_packet(at_uart_sent_buf, cbuf_len);
+            }
+            /* put_buf(at_uart_sent_buf, cbuf_len);  */
         }
         return 0;
 

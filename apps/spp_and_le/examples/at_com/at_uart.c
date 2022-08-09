@@ -180,9 +180,9 @@ static void ct_uart_write(char *buf, u16 len)
     }
 }
 
-int at_uart_send_packet(const u8 *packet, int size)
+int ct_uart_send_packet(const u8 *packet, int size)
 {
-    log_info("at_uart_send:%d", size);
+    log_info("ct_uart_send_packet:%d", size);
     log_info_hexdump(packet, size);
 
 #if 0

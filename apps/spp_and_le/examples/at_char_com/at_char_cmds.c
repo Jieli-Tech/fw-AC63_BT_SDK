@@ -18,7 +18,7 @@
 
 
 #define LOG_TAG_CONST       AT_CHAR_COM
-#define LOG_TAG             "[AT_CHAR_CMD]"
+/* #define LOG_TAG             "[AT_CHAR_CMD]" */
 #define LOG_ERROR_ENABLE
 #define LOG_DEBUG_ENABLE
 #define LOG_INFO_ENABLE
@@ -26,6 +26,10 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+/* #undef log_info */
+/* #undef log_error */
+/* #define log_info(x, ...)    r_printf("[AT_CHAR_CMD]" x " ", ## __VA_ARGS__) */
+/* #define log_error log_info */
 
 #if  CONFIG_APP_AT_CHAR_COM
 
@@ -61,9 +65,11 @@ static u8 parse_buffer[PARSE_BUFFER_SIZE] __attribute__((aligned(4)));
 static u8 test_tcp_datasend = 0;
 /* static u8 sprintf_buffer[64]__attribute__((aligned(4)));   //ci data path memory */
 
-u8 BT_UART_BUF[UART_FIFIO_BUF_LEN] = {0};
+static u8 BT_UART_BUF[BT_UART_FIFIO_BUFFER_SIZE];
 cbuffer_t bt_to_uart_cbuf;
 
+
+int le_at_client_creat_cannel(void);
 //------------------------------------------
 
 
@@ -111,7 +117,8 @@ enum {
     STR_ID_CONN,
     STR_ID_DISC,
     STR_ID_OTA,
-//    STR_ID_,
+    STR_ID_CONN_CANNEL,
+    //    STR_ID_,
 //    STR_ID_,
 };
 
@@ -140,6 +147,7 @@ static const char at_str_targetuuid[]  = "TARGETUUID";
 static const char at_str_conn[]        = "CONN";
 static const char at_str_disc[]        = "DISC";
 static const char at_str_ota[]         = "OTA";
+static const char at_str_conn_cannel[] = "CONN_CANNEL";
 
 
 //static const char at_str_[]  = "";
@@ -178,6 +186,7 @@ static const str_info_t at_cmd_str_table[] = {
     INPUT_STR_INFO(STR_ID_CONN, at_str_conn),
     INPUT_STR_INFO(STR_ID_DISC, at_str_disc),
     INPUT_STR_INFO(STR_ID_OTA, at_str_ota),
+    INPUT_STR_INFO(STR_ID_CONN_CANNEL, at_str_conn_cannel),
 
 //    INPUT_STR_INFO(, ),
 //    INPUT_STR_INFO(, ),
@@ -374,35 +383,35 @@ static uint8_t key_hex_to_char(uint8_t hex_val)
 
 void at_cmd_send(const u8 *packet, int size)
 {
-    log_info("######at_cmd_send(%d):", size);
+    log_info("###at_cmd_send(%d):", size);
     // put_buf(packet, size);
+    at_send_uart_data(at_str_enter, 2, 0);
+    at_send_uart_data(packet, size, 0);
+    at_send_uart_data(at_str_enter, 2, 1);
 
-    at_uart_send_packet(at_str_enter, 2);
-    at_uart_send_packet(packet, size);
-    at_uart_send_packet(at_str_enter, 2);
 }
 
 void at_cmd_send_no_end(const u8 *packet, int size)
 {
-    at_uart_send_packet(at_str_enter, 2);
-    at_uart_send_packet(packet, size);
+    at_send_uart_data(at_str_enter, 2, 0);
+    at_send_uart_data(packet, size, 1);
 }
 
-static void at_ack_data_input(u16 cnt)
-{
-    u8 tmp[32];
-    sprintf(tmp, "Recv %d bytes\r\n", cnt);
-    at_uart_send_packet(tmp, at_str_length(tmp, '\n') + 1);
-}
+/* static void at_ack_data_input(u16 cnt) */
+/* { */
+/* u8 tmp[32]; */
+/* sprintf(tmp, "Recv %d bytes\r\n", cnt); */
+/* at_send_uart_data(tmp, at_str_length(tmp, '\n') + 1,1); */
+/* } */
 
-static void at_send_data_output(u8 *data, u16 cnt)
-{
-    u8 tmp[32];
-    sprintf(tmp, "+IPD,%d:\r\n", cnt);
-    at_uart_send_packet(tmp, at_str_length(tmp, '\r'));
-    at_uart_send_packet(data, cnt);
-    at_uart_send_packet("\r\n", 2);
-}
+/* static void at_send_data_output(u8 *data, u16 cnt) */
+/* { */
+/* u8 tmp[32]; */
+/* sprintf(tmp, "+IPD,%d:\r\n", cnt); */
+/* at_send_uart_data(tmp, at_str_length(tmp, '\r'),0); */
+/* at_send_uart_data(data, cnt,0); */
+/* at_send_uart_data("\r\n", 2,1); */
+/* } */
 
 u32 hex_2_str(u8 *hex, u32 hex_len, u8 *str)
 {
@@ -489,7 +498,7 @@ static void at_packet_handler(u8 *packet, int size)
         /* put_buf(packet, size); */
         do {
             ret = le_att_client_send_data(cur_atcom_cid, packet, size);
-            os_time_dly(2);
+            os_time_dly(1);
         } while (ret != 0);
         return;
     } else if (cur_atcom_cid == 8) {
@@ -497,7 +506,7 @@ static void at_packet_handler(u8 *packet, int size)
         /* put_buf(packet, size); */
         do {
             ret = le_att_server_send_data(cur_atcom_cid, packet, size);
-            os_time_dly(2);
+            os_time_dly(1);
         } while (ret != 0);
         return;
     }
@@ -829,7 +838,7 @@ at_cmd_parse_start:
             ret = le_at_client_scan_enable(func_char_to_dec(par->data, '\0'));
 
             if (ret == 0) {
-                //                    AT_STRING_SEND("OK");
+                AT_STRING_SEND("OK");
             } else {
                 // TODO ,需要返回错误码
                 at_respond_send_err(ERR_AT_CMD);
@@ -863,7 +872,20 @@ at_cmd_parse_start:
             create_conn_par.peer_address_type = 0;
 
             le_at_client_scan_enable(0);
-            le_at_client_creat_connection(create_conn_par.peer_address, 0);
+            if (!le_at_client_creat_connection(create_conn_par.peer_address, 0)) {
+                AT_STRING_SEND("OK");
+            } else {
+                at_respond_send_err(ERR_AT_CMD);
+            }
+        }
+        break;
+
+    case STR_ID_CONN_CANNEL:           //2.20
+        log_info("STR_ID_CONN_CANNEL\n");
+        if (!le_at_client_creat_cannel()) {
+            AT_STRING_SEND("OK");
+        } else {
+            at_respond_send_err(ERR_AT_CMD);
         }
         break;
 
@@ -975,26 +997,38 @@ void at_send_string(u8 *str)
     AT_STRING_SEND(str);
 }
 
-void at_send_rx_cid_data(u8 cid, u8 *packet, u16 size)
+int at_send_uart_data(u8 *packet, u16 size, int post_event)
 {
     struct sys_event e;
-    int ret = -1;
-    if (cur_atcom_cid == cid) {
-        log_info("cid=%d,send_data(%d):", cid, size);
-        /* put_buf(packet, size); */
-        /* at_uart_send_packet(packet, size); */
+    /* put_buf(packet, size); */
+    u16 ret = cbuf_write(&bt_to_uart_cbuf, packet, size);
+    if (ret < size) {
+        log_info("bt so fast, uart lose data!!,%d", size);
+        return 0;
+    }
 
-        ret = cbuf_write(&bt_to_uart_cbuf, packet, size);
-        if (ret < size) {
-            log_info("bt so fast, uart lost data!!");
-        }
+    if (post_event) {
         e.type = SYS_BT_EVENT;
         e.arg  = (void *)SYS_BT_EVENT_FORM_AT;
         e.u.dev.event = 0;
         e.u.dev.value = 0;
         sys_event_notify(&e);
     }
+    return size;
 }
+
+void at_send_rx_cid_data(u8 cid, u8 *packet, u16 size)
+{
+    struct sys_event e;
+    int ret = -1;
+    if (cur_atcom_cid == cid) {
+        log_info("cid=%d,send_data(%d):", cid, size);
+        at_send_uart_data(packet, size, 1);
+    } else {
+        log_info("lose %d,send_data(%d):", cid, size);
+    }
+}
+
 
 
 void at_cmd_init(void)
@@ -1018,7 +1052,7 @@ void at_cmd_init(void)
     at_uart_init(at_packet_handler);
 
     ble_at_set_adv_interval(adv_interval_default);
-    cbuf_init(&bt_to_uart_cbuf, BT_UART_BUF, UART_FIFIO_BUF_LEN);
+    cbuf_init(&bt_to_uart_cbuf, BT_UART_BUF, BT_UART_FIFIO_BUFFER_SIZE);
 
     log_info("at com is ready");
     AT_STRING_SEND("IM_READY");
