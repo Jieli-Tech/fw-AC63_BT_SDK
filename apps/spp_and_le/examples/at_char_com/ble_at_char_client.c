@@ -106,13 +106,19 @@ typedef struct {
     u16 opt_type; //属性
 } opt_handle_record_t;
 
+static const client_conn_cfg_t at_client_config_default = {
+    .report_data_callback = NULL,
+    .search_uuid_cnt = 0,
+    .security_en = 0,
+    .event_callback = NULL,
+};
 
 //记录handle 使用
 static u16 search_target_uuid16 = 0xAE30;
 static target_hdl_t target_handle[SUPPORT_MAX_DEV];
 static opt_handle_record_t opt_handle_table[OPT_HANDLE_MAX];
 static u8 opt_handle_used_cnt;
-static  client_conn_cfg_t *client_config = NULL ;
+static  client_conn_cfg_t *client_config = &at_client_config_default;
 
 //----------------------------------------------------------------------------
 static int bt_ble_create_connection(u8 *conn_addr, u8 addr_type);

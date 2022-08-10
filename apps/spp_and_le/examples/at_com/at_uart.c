@@ -151,7 +151,7 @@ static int ct_uart_init()
     u_arg.rx_cbuf = devBuffer_static;
     u_arg.rx_cbuf_size = UART_DB_SIZE;
     u_arg.frame_length = UART_DB_SIZE;
-    u_arg.rx_timeout = 1;
+    u_arg.rx_timeout = 6;  //ms,兼容波特率较低
     u_arg.isr_cbfun = ct_uart_isr_cb;
     u_arg.baud = UART_BAUD_RATE;
     u_arg.is_9bit = 0;

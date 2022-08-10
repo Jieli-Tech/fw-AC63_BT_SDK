@@ -203,7 +203,7 @@ int ct_uart_init(u32 baud)
     u_arg.rx_cbuf = devBuffer_static;
     u_arg.rx_cbuf_size = UART_CBUF_SIZE;  //>=
     u_arg.frame_length = UART_FRAM_SIZE;  //协议数据包
-    u_arg.rx_timeout = 1;  //ms
+    u_arg.rx_timeout = 6;  //ms,兼容波特率较低
     u_arg.isr_cbfun = ct_uart_isr_cb;
     u_arg.baud = baud;
     u_arg.is_9bit = 0;

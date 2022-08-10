@@ -15,11 +15,13 @@ AT+ADV=1\r
 AT+SCAN=0\r
 AT+CONNPARAM=10,24,0,400\r
 AT+SCAN=1\r
+//配置BLE主机连上后发起搜索的服务UUID
+AT+TARGETUUID=AE30\r
 
 //BLE主机发起连接
 AT+CONN=112233445566\r
+//取消发起连接的操作
 AT+CONN_CANNEL\r
 
-//BLE主机连上后发起搜索profile  UUID
-AT+TARGETUUID=AE30\r
+
 
