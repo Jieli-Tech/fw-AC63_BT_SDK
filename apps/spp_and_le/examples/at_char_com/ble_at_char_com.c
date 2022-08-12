@@ -350,8 +350,9 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                 log_info("HCI_SUBEVENT_LE_CONNECTION_COMPLETE: %0x\n", con_handle);
                 hci_subevent_le_connection_complete_get_peer_address(packet, peer_addr);
-                black_list_check(1, peer_addr);
+                multi_att_ccc_config_init();
 
+                black_list_check(1, peer_addr);
                 connection_update_complete_success(packet + 8);
                 server_profile_start(con_handle);
 #if RCSP_BTMATE_EN
@@ -484,7 +485,7 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     case ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE:
         if (buffer) {
-            buffer[0] = att_get_ccc_config(handle);
+            buffer[0] = multi_att_get_ccc_config(con_handle, handle);
             buffer[1] = 0;
         }
         att_value_len = 2;
@@ -541,7 +542,7 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 
     case ATT_CHARACTERISTIC_ae05_01_CLIENT_CONFIGURATION_HANDLE:
         log_info("------write ccc:%04x,%02x\n", handle, buffer[0]);
-        att_set_ccc_config(handle, buffer[0]);
+        multi_att_set_ccc_config(con_handle, handle, buffer[0]);
         break;
 
 #if RCSP_BTMATE_EN
@@ -559,7 +560,7 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
         /* } */
         check_connetion_updata_deal();
         log_info("\n------write ccc:%04x,%02x\n", handle, buffer[0]);
-        att_set_ccc_config(handle, buffer[0]);
+        multi_att_set_ccc_config(con_handle, handle, buffer[0]);
         break;
 
 #if RCSP_BTMATE_EN
@@ -586,7 +587,7 @@ static int app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type)
         return APP_BLE_OPERATION_ERROR;
     }
 
-    if (!att_get_ccc_config(handle + 1)) {
+    if (!multi_att_get_ccc_config(con_handle, handle + 1)) {
         log_info("fail,no write ccc!!!,%04x\n", handle + 1);
         return APP_BLE_NO_WRITE_CCC;
     }
