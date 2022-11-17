@@ -23,6 +23,9 @@
  *
  *  http://www.itl.nist.gov/fipspubs/fip180-1.htm
  */
+#include "app_config.h"
+
+#if (CONFIG_APP_TUYA)
 
 #define MBEDTLS_SHA1_C
 
@@ -573,3 +576,4 @@ exit:
 #endif /* MBEDTLS_SHA1_SELF_TEST */
 
 #endif /* MBEDTLS_SHA1_C */
+#endif /* CONFIG_APP_TUYA */

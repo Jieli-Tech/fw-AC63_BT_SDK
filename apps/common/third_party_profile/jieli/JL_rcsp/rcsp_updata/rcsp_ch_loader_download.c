@@ -37,6 +37,7 @@ typedef enum __DEVICE_REFRESH_FW_STATUS {
     DEVICE_UPDATE_STA_KEY_ERR,          //加密key不匹配
     DEVICE_UPDATE_STA_FILE_ERR,         //升级文件出错
     DEVICE_UPDATE_STA_TYPE_ERR,         //升级类型出错,仅code_type;
+    DEVICE_UPDATE_STA_SMAE_FILE = 9,    //相同文件;
     //DEVICE_UPDATE_STA_MAX_ERR,
     DEVICE_UPDATE_STA_LOADER_DOWNLOAD_SUCC = 0x80,
 } DEVICE_UPDATE_STA;
@@ -107,7 +108,9 @@ int rcsp_f_seek(void *fp, u8 type, u32 offset)
 static u16 rcsp_f_stop(u8 err);
 
 #define RETRY_TIMES		3
+#if (0 == CONFIG_APP_OTA_ENABLE)
 u8 get_rcsp_connect_status();
+#endif
 u16 rcsp_f_read(void *fp, u8 *buff, u16 len)
 {
     //printf("===rcsp_read:%x %x\n", __this->file_offset, len);
@@ -118,14 +121,21 @@ u16 rcsp_f_read(void *fp, u8 *buff, u16 len)
     __this->read_len = 0;
     __this->read_buf = buff;
 
+    __this->data_send_hdl(fp, __this->file_offset, len);
+
 __RETRY:
+#if (0 == CONFIG_APP_OTA_ENABLE)
     if (!get_rcsp_connect_status()) {   //如果已经断开连接直接返回-1
         return -1;
     }
-    __this->data_send_hdl(fp, __this->file_offset, len);
+#endif
 
     while (!((0 == __this->state) && (__this->read_len == len))) {
+#if (CONFIG_APP_OTA_ENABLE)
+        if (__this->sleep_hdl) {
+#else
         if (__this->sleep_hdl && get_rcsp_connect_status()) {
+#endif
             __this->sleep_hdl(NULL);
         } else {
             len = -1;
@@ -145,7 +155,6 @@ __RETRY:
     if ((u16) - 1 != len) {
         __this->file_offset += len;
     }
-
 
     return len;
 }
@@ -192,7 +201,7 @@ static u8 update_result_handle(u8 err)
             res = DEVICE_UPDATE_STA_VERIFY_ERR;
             break;
         case UPDATE_RESULT_FILE_SAME:           //相同文件升级直接报升级成功
-            res = DEVICE_UPDATE_STA_SUCCESS;
+            res = DEVICE_UPDATE_STA_SMAE_FILE;  //暂时把文件相同当作错误处理，后续和app同事确定处理策略。
             break;
 
         }
@@ -218,14 +227,18 @@ static u16 rcsp_f_stop(u8 err)
 
     err = update_result_handle(err);
     __this->state = UPDATA_STOP;
-    printf(">>>rcsp_stop:%x\n", __this->state);
+    printf(">>>rcsp_stop:%x, %x\n", __this->state, err);
 
     if (__this->data_send_hdl) {
         __this->data_send_hdl(NULL, 0, 0);
     }
 
     while (!(0 == __this->state)) {
+#if (CONFIG_APP_OTA_ENABLE)
+        if (__this->sleep_hdl) {
+#else
         if (__this->sleep_hdl && get_rcsp_connect_status()) {
+#endif
             if (__this->sleep_hdl(NULL) == OS_TIMEOUT) {
                 break;
             }
@@ -243,9 +256,11 @@ static u16 rcsp_f_stop(u8 err)
 
 void db_update_notify_fail_to_phone()
 {
+#if (0 == CONFIG_APP_OTA_ENABLE)
     if (get_rcsp_connect_status()) {
         rcsp_f_stop(DEVICE_UPDATE_STA_FAIL);
     }
+#endif
 }
 
 __attribute__((weak))

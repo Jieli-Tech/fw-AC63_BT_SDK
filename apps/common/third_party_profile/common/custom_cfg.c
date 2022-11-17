@@ -198,6 +198,12 @@ typedef struct _sdk_type_cfg_t {
     u8 data;
 } sdk_type_cfg_t;
 
+typedef struct _hid_param_cfg_t {
+    u16 crc;
+    u16 len;
+    u8 data[32];
+} hid_param_cfg_t;
+
 typedef struct _ex_cfg_t {
     adv_data_cfg_t adv_data_cfg;
     adv_data_cfg_t scan_rsp_cfg;
@@ -222,6 +228,7 @@ typedef struct _ex_cfg_t {
     pid_vid_cfg_t       pid_vid_cfg;
     md5_cfg_t           md5_cfg;
     sdk_type_cfg_t      sdk_type_cfg;
+    hid_param_cfg_t		hid_param_cfg;
 } ex_cfg_t;
 
 typedef union _ex_cfg_item_u {
@@ -249,6 +256,7 @@ typedef union _ex_cfg_item_u {
     pid_vid_cfg_t       pid_vid_cfg;
     md5_cfg_t           md5_cfg;
     sdk_type_cfg_t      sdk_type_cfg;
+    hid_param_cfg_t		hid_param_cfg;
 } ex_cfg_item_u;
 
 typedef struct _cfg_item_head_t {
@@ -601,6 +609,11 @@ static const cfg_item_attr_t cfg_item_attr_tab[] = {
         MEMBER_SIZE_OF_STRUCT(ex_cfg_t, sdk_type_cfg),
         MEMBER_SIZE_OF_STRUCT(ex_cfg_t, sdk_type_cfg.data),
         MEMBER_OFFSET_OF_STRUCT(ex_cfg_t, sdk_type_cfg),
+    },
+    [CFG_ITEM_HID_PARAM] = {
+        MEMBER_SIZE_OF_STRUCT(ex_cfg_t, hid_param_cfg),
+        MEMBER_SIZE_OF_STRUCT(ex_cfg_t, hid_param_cfg.data),
+        MEMBER_OFFSET_OF_STRUCT(ex_cfg_t, hid_param_cfg),
     }
 };
 
@@ -1119,10 +1132,16 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
 
 
     //CFG_ITEM_BLE_NAME
+#if CONFIG_APP_DONGLE
+    host_name = "USB_Update_Dongle";
+    host_name_len = strlen(host_name);
+#else
     host_name = bt_get_local_name();
     host_name_len = strlen(bt_get_local_name());
+#endif
     custom_cfg_item_write(CFG_ITEM_BLE_NAME, host_name, host_name_len);
 
+#if !(CONFIG_APP_OTA_ENABLE && RCSP_BTMATE_EN && CONFIG_APP_DONGLE && TCFG_PC_ENABLE && TCFG_USB_CUSTOM_HID_ENABLE)
     //CFG_ITEM_BLE_ADDR
     le_controller_get_mac(addr);
     //CFG_ITEM_SCAN_RSP
@@ -1218,6 +1237,7 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
     item_data = get_last_device_connect_linkkey(&len);
     put_buf(item_data, len);
     custom_cfg_item_write(CFG_ITEM_LAST_DEVICE_LINK_KEY_INFO, item_data, len);
+#endif
 
 #if VER_INFO_EXT_COUNT
     u8 authkey_len = 0;
@@ -1252,6 +1272,9 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
     sdk_type = RCSP_SDK_TYPE;
 #endif
     custom_cfg_item_write(CFG_ITEM_SDK_TYPE, &sdk_type, sizeof(sdk_type));
+
+    // 可填充hid信息
+    // custom_cfg_item_write(CFG_ITEM_HID_PARAM, &hid_param, sizeof(hid_param));
     return 0;
 }
 

@@ -387,6 +387,11 @@ bool ble_comm_need_wait_encryption(u8 role)
     if (!gatt_control_block->sm_config) {
         return false;
     }
+
+    if (!sm_return_master_reconn_encryption()) {
+        return false;
+    }
+
     if (GATT_ROLE_CLIENT == role) {
         return gatt_control_block->sm_config->master_set_wait_security;
     }
@@ -734,7 +739,8 @@ void ble_profile_init(void)
             sm_set_request_security(gatt_control_block->sm_config->slave_security_auto_req);
             sm_event_callback_set(&__ble_comm_cbk_sm_packet_handler);
 
-            if (gatt_control_block->sm_config->io_capabilities == IO_CAPABILITY_DISPLAY_ONLY) {
+            if (gatt_control_block->sm_config->io_capabilities == IO_CAPABILITY_DISPLAY_ONLY ||
+                gatt_control_block->sm_config->io_capabilities == IO_CAPABILITY_KEYBOARD_DISPLAY) {
                 reset_PK_cb_register_ext(__ble_comm_cbk_passkey_input);
             }
         }
@@ -1068,9 +1074,20 @@ bool ble_comm_att_check_send(u16 conn_handle, u16 pre_send_len)
  *  \note
  */
 /*************************************************************************************************/
+static const char *gatt_op_error_string[] = {
+    "GATT_CMD_RET_BUSY", //命令处理忙
+    "GATT_CMD_PARAM_OVERFLOW",  //传参数溢出
+    "GATT_CMD_OPT_FAIL",        //操作失败
+    "GATT_BUFFER_FULL",         //缓存满了
+    "GATT_BUFFER_ERROR",        //缓存出错
+    "GATT_CMD_PARAM_ERROR",     //传参出错
+    "GATT_CMD_STACK_NOT_RUN",   //协议栈没有运行
+    "GATT_CMD_USE_CCC_FAIL",    //没有使能通知，导致NOTIFY或INDICATE发送失败，
+};
+
 int ble_comm_att_send_data(u16 conn_handle, u16 att_handle, u8 *data, u16 len, att_op_type_e op_type)
 {
-    u32 ret = GATT_OP_RET_SUCESS;
+    gatt_op_ret_e ret = GATT_OP_RET_SUCESS;
     u16 tmp_16;
 
     if (!conn_handle) {
@@ -1094,7 +1111,18 @@ int ble_comm_att_send_data(u16 conn_handle, u16 att_handle, u8 *data, u16 len, a
     }
 
     if (ret) {
-        log_error("att_send_fail: %d!!!\n", ret);
+        const char *err_string;
+
+        int error_id = (int)0 - (int)GATT_CMD_RET_BUSY + (int)ret;
+        if (error_id >= 0 && error_id < sizeof(gatt_op_error_string) / sizeof(char *)) {
+            err_string = gatt_op_error_string[error_id];
+        } else {
+            err_string = "UNKNOW GATT_ERROR";
+        }
+
+        log_error("att_send_fail: %d!!!,%s", ret, err_string);
+        log_error("param:%04x, %04x, %02x,len= %d", conn_handle, att_handle, op_type, len);
+        /* put_buf(data,len); */
     }
     return ret;
 }

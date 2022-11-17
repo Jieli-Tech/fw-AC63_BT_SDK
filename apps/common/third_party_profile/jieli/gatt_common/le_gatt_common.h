@@ -42,6 +42,8 @@ typedef enum {
     GATT_COMM_EVENT_ENCRYPTION_CHANGE,/*加密完成*/
     GATT_COMM_EVENT_CAN_SEND_NOW,/*协议栈发送成功,通知上层可以填数*/
     GATT_COMM_EVENT_CONNECTION_UPDATE_COMPLETE,/*链路连接参数更新完成*/
+    GATT_COMM_EVENT_CONNECTION_PHY_UPDATE_COMPLETE,/*链路速率更新*/
+    GATT_COMM_EVENT_CONNECTION_DATA_LENGTH_CHANGE,/*DLE更新*/
 
     /*======master + slave*/
     //type:gatt common
@@ -66,8 +68,9 @@ typedef enum {
     GATT_COMM_EVENT_CREAT_CONN_TIMEOUT,/*建立连接超时*/
     GATT_COMM_EVENT_GATT_SEARCH_PROFILE_START,/*搜索profile开始*/
     GATT_COMM_EVENT_GATT_SEARCH_MATCH_UUID,/*搜索到匹配的UUID*/
-    GATT_COMM_EVENT_GATT_SEARCH_PROFILE_COMPLETE,/*搜索pr*/
+    GATT_COMM_EVENT_GATT_SEARCH_PROFILE_COMPLETE,/*搜索profile结束*/
     GATT_COMM_EVENT_GATT_DATA_REPORT,/*接收到server端的数据*/
+    GATT_COMM_EVENT_GATT_SEARCH_DESCRIPTOR_RESULT,/*搜索descriptor内容*/
 
     /*======slave + server, sm*/
     GATT_COMM_EVENT_SM_PASSKEY_INPUT = 0x90,/*输入key*/
@@ -79,7 +82,7 @@ typedef enum {
 
     //对应ble_api接口返回的错误
     GATT_CMD_RET_BUSY = -100, //命令处理忙
-    GATT_CMD_PARAM_OVERFLOW,  //传数溢出
+    GATT_CMD_PARAM_OVERFLOW,  //传参数溢出
     GATT_CMD_OPT_FAIL,        //操作失败
     GATT_BUFFER_FULL,         //缓存满了
     GATT_BUFFER_ERROR,        //缓存出错
@@ -229,8 +232,8 @@ int ble_gatt_server_adv_enable(u32 en);
 void ble_gatt_server_module_enable(u8 en);
 void ble_gatt_server_disconnect_all(void);
 int  ble_gatt_server_connetion_update_request(u16 conn_handle, const struct conn_update_param_t *update_table, u16 table_count);
-int ble_gatt_server_characteristic_ccc_set(u16 conn_handle, u16 att_handle, u16 ccc_config);
-u16 ble_gatt_server_characteristic_ccc_get(u16 conn_handle, u16 att_handle);
+int ble_gatt_server_characteristic_ccc_set(u16 conn_handle, u16 att_ccc_handle, u16 ccc_config);
+u16 ble_gatt_server_characteristic_ccc_get(u16 conn_handle, u16 att_ccc_handle);
 void ble_gatt_server_set_update_send(u16 conn_handle, u16 att_handle, u8 att_handle_type);
 void ble_gatt_server_receive_update_data(void *priv, void *buf, u16 len);
 void ble_gatt_server_set_adv_config(adv_cfg_t *adv_cfg);
@@ -248,6 +251,8 @@ int ble_gatt_client_create_connection_cannel(void);
 int ble_gatt_client_scan_enable(u32 en);
 void ble_gatt_client_module_enable(u8 en);
 void ble_gatt_client_disconnect_all(void);
+void ble_gatt_just_search_profile_start(u16 conn_handle);
+void ble_gatt_just_search_profile_stop(u16 conn_handle);
 
 #endif
 #endif

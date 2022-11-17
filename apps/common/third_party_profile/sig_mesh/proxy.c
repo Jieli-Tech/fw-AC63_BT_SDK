@@ -79,6 +79,8 @@ static struct bt_mesh_proxy_client {
 
 static u8_t __noinit client_buf_data[CLIENT_BUF_SIZE * CONFIG_BT_MAX_CONN];
 
+static void (*mesh_proxy_connect_finish_callback)(void);
+
 /* Track which service is enabled */
 static enum {
     MESH_GATT_NONE,
@@ -243,6 +245,20 @@ static void send_filter_status(struct bt_mesh_proxy_client *client,
     }
 }
 
+void mesh_proxy_connect_finish_callback_register(void (*handler)(void))
+{
+    mesh_proxy_connect_finish_callback = handler;
+}
+
+static void mesh_proxy_connect_finish_action(void)
+{
+    if (mesh_proxy_connect_finish_callback) {
+        log_info("mesh_proxy_connect_finish_action");
+        return mesh_proxy_connect_finish_callback();
+    }
+    return;
+}
+
 static void proxy_cfg(struct bt_mesh_proxy_client *client)
 {
     NET_BUF_SIMPLE_DEFINE(buf, 29);
@@ -281,6 +297,7 @@ static void proxy_cfg(struct bt_mesh_proxy_client *client)
             filter_add(client, addr);
         }
         send_filter_status(client, &rx, &buf);
+        mesh_proxy_connect_finish_action();
         break;
     case CFG_FILTER_REMOVE:
         while (buf.len >= 2) {

@@ -82,6 +82,9 @@ const int config_bt_temperature_pll_trim = 0;
 /*security check*/
 const int config_bt_security_vulnerability = 0;
 
+//DUT使用哪种模式通信: 0: HCI 1:2_wire
+const int config_dut_protocol_mode = 0;
+
 
 const int CONFIG_BTCTLER_QOS_ENABLE         = 1;
 

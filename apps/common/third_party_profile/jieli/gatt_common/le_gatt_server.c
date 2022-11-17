@@ -32,7 +32,7 @@
 #include "custom_cfg.h"
 #include "btstack/btstack_event.h"
 #include "le_gatt_common.h"
-
+#include "btstack_3th_protocol_user.h"
 
 #define LOG_TAG_CONST       GATT_SERVER
 #define LOG_TAG             "[GATT_SERVER]"
@@ -272,7 +272,7 @@ void ble_gatt_server_sm_packet(uint8_t packet_type, uint16_t channel, uint8_t *p
         case SM_EVENT_JUST_WORKS_REQUEST:
             //发送接受配对命令sm_just_works_confirm,否则不发
             sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
-            log_info("%04x->Just Works Confirmed.\n", event->con_handle);
+            log_info("first pair, %04x->Just Works Confirmed.\n", event->con_handle);
             __this->server_encrypt_process = LINK_ENCRYPTION_PAIR_JUST_WORKS;
             __gatt_server_event_callback_handler(GATT_COMM_EVENT_ENCRYPTION_REQUEST, &event->con_handle, 2, &__this->server_encrypt_process);
             break;
@@ -298,6 +298,34 @@ void ble_gatt_server_sm_packet(uint8_t packet_type, uint16_t channel, uint8_t *p
             switch (event->data[0]) {
             case SM_EVENT_PAIR_SUB_RECONNECT_START:
                 __this->server_encrypt_process = LINK_ENCRYPTION_RECONNECT;
+                log_info("reconnect start\n");
+                break;
+
+            case SM_EVENT_PAIR_SUB_PIN_KEY_MISS:
+                log_error("pin or keymiss\n");
+                break;
+
+            case SM_EVENT_PAIR_SUB_PAIR_FAIL:
+                log_error("pair fail,reason=%02x,is_peer? %d\n", event->data[1], event->data[2]);
+                break;
+
+            case SM_EVENT_PAIR_SUB_PAIR_TIMEOUT:
+                log_error("pair timeout\n");
+                break;
+
+            case SM_EVENT_PAIR_SUB_ADD_LIST_SUCCESS:
+                log_info("first pair,add list success\n");
+                break;
+
+            case SM_EVENT_PAIR_SUB_ADD_LIST_FAILED:
+                log_error("add list fail\n");
+                break;
+
+            case SM_EVENT_PAIR_SUB_SEND_DISCONN:
+                log_error("local send disconnect,reason= %02x\n", event->data[1]);
+                break;
+
+            default:
                 break;
             }
             break;
@@ -431,8 +459,11 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
 #if (defined(BT_CONNECTION_VERIFY) && (0 == BT_CONNECTION_VERIFY))
                     JL_rcsp_auth_reset();
 #endif
-                    //rcsp_dev_select(RCSP_BLE);
+#if CONFIG_APP_DONGLE
+                    rcsp_dev_select_v1(RCSP_BLE);
+#else
                     rcsp_init();
+#endif
                 }
 #endif
                 ble_comm_dev_set_handle_state(tmp_val[0], GATT_ROLE_SERVER, BLE_ST_CONNECT);
@@ -454,8 +485,12 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
             break;
 
             case HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE:
-                log_info("conn_handle = %04x\n", little_endian_read_16(packet, 4));
+                tmp_val[0] = little_endian_read_16(packet, 3);
+                log_info("conn_handle = %04x\n", tmp_val[0]);
                 log_info("APP HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE\n");
+                log_info("TX_Octets:%d, Time:%d\n", little_endian_read_16(packet, 5), little_endian_read_16(packet, 7));
+                log_info("RX_Octets:%d, Time:%d\n", little_endian_read_16(packet, 9), little_endian_read_16(packet, 11));
+                __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_DATA_LENGTH_CHANGE, tmp_val, 2, packet);
                 break;
 
             case HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE:
@@ -463,6 +498,7 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
                 log_info("APP HCI_SUBEVENT_LE_PHY_UPDATE %s\n", hci_event_le_meta_get_phy_update_complete_status(packet) ? "Fail" : "Succ");
                 log_info("Tx PHY: %s\n", server_phy_result[hci_event_le_meta_get_phy_update_complete_tx_phy(packet)]);
                 log_info("Rx PHY: %s\n", server_phy_result[hci_event_le_meta_get_phy_update_complete_rx_phy(packet)]);
+                __gatt_server_event_callback_handler(GATT_COMM_EVENT_CONNECTION_PHY_UPDATE_COMPLETE, tmp_val, 2, packet);
                 break;
             }
             break;
@@ -479,7 +515,9 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
             if (__this->update_conn_handle == tmp_val[0]) {
                 __this->update_conn_handle = 0;
                 __this->rcsp_ctrl_en = 0;
+#if (0 == CONFIG_APP_DONGLE)
                 rcsp_exit();
+#endif
             }
 #endif
 
@@ -496,8 +534,8 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
 
         case ATT_EVENT_MTU_EXCHANGE_COMPLETE: {
             tmp_val[0] = little_endian_read_16(packet, 2);
-            tmp_val[1] = att_event_mtu_exchange_complete_get_MTU(packet) - 3;
-            log_info("handle= %02x, ATT MTU = %u\n", tmp_val[0], tmp_val[1]);
+            tmp_val[1] = att_event_mtu_exchange_complete_get_MTU(packet);
+            log_info("handle= %02x, ATT_MTU= %u,payload= %u\n", tmp_val[0], tmp_val[1], tmp_val[1] - 3);
             __gatt_server_event_callback_handler(GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE, tmp_val, 4, 0);
         }
         break;
@@ -529,7 +567,10 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
         case HCI_EVENT_ENCRYPTION_CHANGE: {
             tmp_val[0] = little_endian_read_16(packet, 3);
             tmp_val[1] = packet[2] | (__this->server_encrypt_process << 8);
-            log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d\n", packet[2]);
+            log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d, %04x\n", packet[2], tmp_val[0]);
+            if (packet[2]) {
+                log_info("Encryption fail!!!,%d,%04x\n", packet[2], tmp_val[0]);
+            }
             __gatt_server_event_callback_handler(GATT_COMM_EVENT_ENCRYPTION_CHANGE, tmp_val, 4, 0);
         }
         break;
@@ -625,7 +666,7 @@ static bool __gatt_server_just_new_dev_adv(void)
 #endif
 
     if (state != BLE_ST_IDLE && state != BLE_ST_DISCONN && state != BLE_ST_INIT_OK) {
-        log_info("dev_doing\n");
+        log_info("dev_doing,%02x\n", state);
         return false;
     }
 
@@ -827,9 +868,9 @@ int ble_gatt_server_connetion_update_request(u16 conn_handle, const struct conn_
  *  \note       注意多机应用是，此接口会主动触发是否开新设备广播功能
  */
 /*************************************************************************************************/
-int ble_gatt_server_characteristic_ccc_set(u16 conn_handle, u16 att_handle, u16 ccc_config)
+int ble_gatt_server_characteristic_ccc_set(u16 conn_handle, u16 att_ccc_handle, u16 ccc_config)
 {
-    multi_att_set_ccc_config(conn_handle, att_handle, ccc_config);
+    multi_att_set_ccc_config(conn_handle, att_ccc_handle, ccc_config);
     if (BLE_ST_NOTIFY_IDICATE != ble_comm_dev_get_handle_state(conn_handle, GATT_ROLE_SERVER)) {
         ble_comm_dev_set_handle_state(conn_handle, GATT_ROLE_SERVER, BLE_ST_NOTIFY_IDICATE);
         __gatt_server_set_work_state(conn_handle, BLE_ST_NOTIFY_IDICATE, 1);
@@ -856,9 +897,9 @@ int ble_gatt_server_characteristic_ccc_set(u16 conn_handle, u16 att_handle, u16 
  *  \note
  */
 /*************************************************************************************************/
-u16 ble_gatt_server_characteristic_ccc_get(u16 conn_handle, u16 att_handle)
+u16 ble_gatt_server_characteristic_ccc_get(u16 conn_handle, u16 att_ccc_handle)
 {
-    return multi_att_get_ccc_config(conn_handle, att_handle);
+    return multi_att_get_ccc_config(conn_handle, att_ccc_handle);
 }
 
 /*************************************************************************************************/
@@ -986,10 +1027,18 @@ void ble_gatt_server_exit(void)
 /*************************************************************************************************/
 u8 *ble_get_scan_rsp_ptr(u16 *len)
 {
-    if (len) {
-        *len = __this->adv_config->rsp_data_len;
+    if (__this && __this->adv_config) {
+        if (len) {
+            *len = __this->adv_config->rsp_data_len;
+        }
+        return __this->adv_config->rsp_data;
+    } else {
+        if (len) {
+            *len = 0;
+        }
+        log_info("error: %s\n", __FUNCTION__);
+        return 0;
     }
-    return __this->adv_config->rsp_data;
 }
 
 /*************************************************************************************************/
@@ -1005,10 +1054,18 @@ u8 *ble_get_scan_rsp_ptr(u16 *len)
 /*************************************************************************************************/
 u8 *ble_get_adv_data_ptr(u16 *len)
 {
-    if (len) {
-        *len = __this->adv_config->adv_data_len;
+    if (__this && __this->adv_config) {
+        if (len) {
+            *len = __this->adv_config->adv_data_len;
+        }
+        return __this->adv_config->adv_data;
+    } else {
+        if (len) {
+            *len = 0;
+        }
+        log_info("error: %s\n", __FUNCTION__);
+        return 0;
     }
-    return __this->adv_config->adv_data;
 }
 
 /*************************************************************************************************/
@@ -1024,8 +1081,14 @@ u8 *ble_get_adv_data_ptr(u16 *len)
 /*************************************************************************************************/
 u8 *ble_get_gatt_profile_data(u16 *len)
 {
-    *len = __this->profile_data_len;
-    return __this->profile_data;
+    if (__this && __this->adv_config) {
+        *len = __this->profile_data_len;
+        return __this->profile_data;
+    } else {
+        *len = 0;
+        log_info("error: %s\n", __FUNCTION__);
+        return 0;
+    }
 }
 
 /*************************************************************************************************/

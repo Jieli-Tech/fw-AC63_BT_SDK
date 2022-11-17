@@ -217,6 +217,7 @@ void sdfile_head_addr_get(char *name, u32 *addr, u32 *len);
 
 u32 init_norsdfile_hdl(void);
 int set_res_startaddr(int offset);
+int sdfile_check_write_protect(u32 addr, u32 size);
 
 #endif /* _SDFILE_H_ */
 

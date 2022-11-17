@@ -21,9 +21,9 @@
 //*********************************************************************************//
 //                                 UART配置                                        //
 //*********************************************************************************//
-#define TCFG_UART0_ENABLE					DISABLE_THIS_MOUDLE                     //串口打印模块使能
+#define TCFG_UART0_ENABLE					ENABLE_THIS_MOUDLE                     //串口打印模块使能
 #define TCFG_UART0_RX_PORT					NO_CONFIG_PORT                         //串口接收脚配置（用于打印可以选择NO_CONFIG_PORT）
-#define TCFG_UART0_TX_PORT  				IO_PORT_DP//IO_PORTA_00                           //串口发送脚配置
+#define TCFG_UART0_TX_PORT  				IO_PORTA_00                           //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
 //*********************************************************************************//
@@ -35,11 +35,22 @@
 #define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE//U盘模块使能
 #define TCFG_OTG_USB_DEV_EN                 0//USB0 = BIT(0)  USB1 = BIT(1)
 
+#if CONFIG_APP_OTA_ENABLE
+#define TCFG_USB_CUSTOM_HID_ENABLE          1
+#else
+#define TCFG_USB_CUSTOM_HID_ENABLE          0
+#endif
+
 #include "usb_std_class_def.h"
 
 ///USB 配置重定义
 #undef USB_DEVICE_CLASS_CONFIG
+
+#if CONFIG_APP_OTA_ENABLE
+#define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS | CUSTOM_HID_CLASS)
+#else
 #define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS)
+#endif
 
 /*定义支持wakeup*/
 #undef  USB_SUSPEND_RESUME_SYSTEM_NO_SLEEP
@@ -171,6 +182,28 @@
 #define TCFG_ADKEY_VALUE9                   9
 
 //*********************************************************************************//
+//                                 Audio配置                                       //
+//*********************************************************************************//
+#ifdef CONFIG_LITE_AUDIO
+#define TCFG_AUDIO_ENABLE					DISABLE
+#if TCFG_AUDIO_ENABLE
+#define TCFG_DEC_USBC_ENABLE			    DISABLE
+#define TCFG_ENC_USBC_ENABLE              	DISABLE
+#define TCFG_DEC_LC3_ENABLE              	DISABLE
+#define TCFG_ENC_LC3_ENABLE              	DISABLE
+
+
+//lc3 参数配置
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+#define LC3_CODING_SAMPLERATE  16000 //lc3 编码的采样率
+#define LC3_CODING_FRAME_LEN   50  //帧长度，只支持25，50，100
+#define LC3_CODING_CHANNEL     1  //lc3 的通道数
+#endif
+
+#endif
+
+#endif
+//*********************************************************************************//
 //                                 irkey 配置                                      //
 //*********************************************************************************//
 #define TCFG_IRKEY_ENABLE                   DISABLE_THIS_MOUDLE//是否使能AD按键
@@ -270,7 +303,11 @@
 //                                  系统配置                                         //
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
+#if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15)
+#define TCFG_SYS_LVD_EN						      1   //dcdc模式电压低于2.4v的时候切为LDO模式，需要开启电量检测
+#else
 #define TCFG_SYS_LVD_EN						      0   //电量检测使能
+#endif
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
 #define TCFG_HID_AUTO_SHUTDOWN_TIME              (0 * 60)      //HID无操作自动关机(单位：秒)
 

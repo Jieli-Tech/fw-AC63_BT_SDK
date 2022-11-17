@@ -308,7 +308,9 @@ static int conn_24g_event_packet_handler(int event, u8 *packet, u16 size, u8 *ex
 
     case GATT_COMM_EVENT_CAN_SEND_NOW:
     case GATT_COMM_EVENT_CONNECTION_UPDATE_REQUEST_RESULT:
+        break;
     case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE:
+        log_info("con_handle= %02x, ATT MTU = %u\n", little_endian_read_16(packet, 0), little_endian_read_16(packet, 2));
         break;
 
     default:
@@ -583,7 +585,7 @@ static void conn_24g_adv_config_set(void)
         if (direct_address_flag == 7) {
             conn_24g_server_adv_config.adv_type = ADV_IND;
             conn_24g_server_adv_config.adv_interval = ADV_INTERVAL_MIN;
-            memset(conn_24g_server_adv_config.direct_address_info, 0, 8);
+            memset(conn_24g_server_adv_config.direct_address_info, 0, 7);
             log_info("===ADV_IND");
             put_buf(conn_24g_server_adv_config.direct_address_info, 7);
         } else {

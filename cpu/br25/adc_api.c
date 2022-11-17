@@ -645,6 +645,77 @@ static void temperature_pll_trim_exit(void)
 //*********************************************************************************
 
 
+u8 vddiom_trim_level;
+void vddiom_trim()
+{
+    u32 vbg_value = 0;
+
+    adc_pmu_detect_en(1);
+
+    adc_sample(AD_CH_LDOREF);
+    for (int i = 0; i < 10; i++) {
+        while (!(JL_ADC->CON & BIT(7))) { //wait pending
+        }
+        vbg_value += JL_ADC->RES;
+        JL_ADC->CON |= BIT(6);
+    }
+
+    vbg_value /= 10;
+
+    u32 vddio_vol = adc_value_to_voltage(vbg_value, 1023);
+    //  printf("vddio_vol %d (mv), vbg_value %d\n", vddio_vol, vbg_value);
+
+
+    u32 vddiom_lev = GET_VDDIOM_VOL();
+    u32 vddiom_ref = (vddiom_lev - VDDIOM_VOL_22V) * 200 + 2200;
+    int vddiom_diff = (vddio_vol - vddiom_ref);
+    if (__builtin_abs(vddiom_diff) > 100) {
+        if (vddio_vol > vddiom_ref) {
+            vddiom_trim_level = vddiom_lev - 1;
+        } else {
+            vddiom_trim_level = vddiom_lev + 1;
+        }
+        VDDIOM_VOL_SEL(vddiom_trim_level);
+        delay(5000);
+    } else {
+        vddiom_trim_level = vddiom_lev;
+    }
+
+    printf("trim: vddio_vol %d (mv), vddiom_lev %d, vddiom_diff %d, vbg_value %d\n", vddio_vol, vddiom_trim_level, vddiom_diff, vbg_value);
+
+    u32 temp = (vddiom_trim_level - VDDIOM_VOL_22V) * 200 + 2200;
+    u32 vddiow_lev_bak = GET_VDDIOW_VOL();
+    u32 vddiow_ref = 0;
+    VDDIOW_VOL_SEL(VDDIOW_VOL_21V);
+    switch (vddiow_lev_bak) {
+    case VDDIOW_VOL_21V:
+        vddiow_ref = 2100;
+        break;
+    case VDDIOW_VOL_24V:
+        vddiow_ref = 2400;
+        break;
+    case VDDIOW_VOL_28V:
+        vddiow_ref = 2800;
+        break;
+    case VDDIOW_VOL_32V:
+        vddiow_ref = 3200;
+        break;
+    }
+    if (temp < vddiow_ref + 200) {  //vddiom需要比vddiow高200mV
+        if (temp >= 3200 + 200) {
+            VDDIOW_VOL_SEL(VDDIOW_VOL_32V);
+        } else if (temp >= 2800 + 200) {
+            VDDIOW_VOL_SEL(VDDIOW_VOL_28V);
+        } else if (temp >= 2400 + 200) {
+            VDDIOW_VOL_SEL(VDDIOW_VOL_24V);
+        } else {
+            VDDIOW_VOL_SEL(VDDIOW_VOL_21V);
+        }
+        //  printf("trim: vddiow lev %d to %d\n", vddiow_lev_bak, GET_VDDIOW_VOL());
+    } else {
+        VDDIOW_VOL_SEL(vddiow_lev_bak);
+    }
+}
 
 void adc_init()
 {
@@ -659,6 +730,9 @@ void adc_init()
     JL_ANA->DAA_CON0 &= ~BIT(0);//VOUTL_TEST_EN_11v
 
     JL_CLOCK->PLL_CON1 &= ~BIT(18); //pll
+
+    //每次开机消耗5~8ms，
+    vddiom_trim();
 
     //trim wvdd
     wvdd_trim();

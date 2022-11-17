@@ -497,7 +497,34 @@
  * @format
 */
 #define HCI_EVENT_ANCS_META                                			0xEA
+#define HCI_EVENT_AMS_META                                          0xF2
 
+typedef enum {
+    AMS_RemoteCommandIDPlay = 0,
+    AMS_RemoteCommandIDPause,
+    AMS_RemoteCommandIDTogglePlayPause,
+    AMS_RemoteCommandIDNextTrack,
+    AMS_RemoteCommandIDPreviousTrack,
+    AMS_RemoteCommandIDVolumeUp,
+    AMS_RemoteCommandIDVolumeDown,
+    AMS_RemoteCommandIDAdvanceRepeatMode,
+    AMS_RemoteCommandIDAdvanceShuffleMode,
+    AMS_RemoteCommandIDSkipForward,
+    AMS_RemoteCommandIDSkipBackward,
+    AMS_RemoteCommandIDLikeTrack,
+    AMS_RemoteCommandIDDislikeTrack,
+    AMS_RemoteCommandIDBookmarkTrack,
+} ams_request_cmd_e;
+bool ams_send_request_command(ams_request_cmd_e cmd_id);
+
+/*
+config_map:
+bit0--IDPlayer,bit1--IDQueue,bit2--IDTrack
+ */
+#define AMS_IDPlayer_ENABLE            BIT(0)
+#define AMS_IDQueue_ENABLE             BIT(1)
+#define AMS_IDTrack_ENABLE             BIT(2)
+bool ams_entity_attribute_config(int config_map);
 
 /**
  * compact HCI Command packet description

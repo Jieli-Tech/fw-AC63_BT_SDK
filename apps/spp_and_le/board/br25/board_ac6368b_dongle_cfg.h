@@ -273,11 +273,23 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_UDISK_ENABLE					DISABLE_THIS_MOUDLE//U盘模块使能
 #define TCFG_OTG_USB_DEV_EN                 BIT(0)//USB0 = BIT(0)  USB1 = BIT(1)
 
+#if CONFIG_APP_OTA_ENABLE
+#define TCFG_USB_CUSTOM_HID_ENABLE          1
+#else
+#define TCFG_USB_CUSTOM_HID_ENABLE          0
+#endif
+
 #include "usb_std_class_def.h"
 
 ///USB 配置重定义
 #undef USB_DEVICE_CLASS_CONFIG
+
+#if CONFIG_APP_OTA_ENABLE
+#define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS | CUSTOM_HID_CLASS)
+#else
 #define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS)
+#endif
+
 #undef  USB_REMOTE_WAKEUP_TIMEOUT_DETECT_TIMES//休眠唤醒超时时间设置(ms)
 #define USB_REMOTE_WAKEUP_TIMEOUT_DETECT_TIMES  2000
 

@@ -69,10 +69,58 @@ static u8 sniff_ready_status = 0; //0:sniff_ready 1:sniff_not_ready
 static int sniff_timer = 0;
 static const edr_sniff_par_t *sniff_param_info;
 static u8 edr_remote_address[6];
+static u16 negotiation_sniff_interval_offset = 0;
+extern int edr_hid_timer_handle;
 
 extern void user_spp_data_handler(u8 packet_type, u16 ch, u8 *packet, u16 size);
 static void sys_auto_sniff_controle(u8 enable, u8 *addr);
 extern void bredr_set_dut_enble(u8 en, u8 phone);
+
+#define SNIFF_SLOT_STEP 6 //slot步进数
+#define SNIFF_PARAM_COUNT 3 //参数请求组个数
+
+/* ***************************************************************************/
+/**
+ * \Brief :       库调用进行sniff请求参数更新
+ *
+ * \Param :
+ * \Param :        attemp
+ * \Param :        timeout
+ * \Param :        negotiation
+ */
+/* ***************************************************************************/
+void __attribute__((weak)) sniff_negotiation_hook(u16 *T_sniff, u16 *attemp, u16 *timeout, u8 negotiation)
+{
+    static u8 negotiation_count;
+    if (sniff_param_info->sniff_mode == SNIFF_MODE_ANCHOR) {
+        //库提供的negotiation变量的值是 1~3~1~3 循环
+        if (negotiation == 1) {
+            //三次请求的相同sniff参数对端设备都不接受 只能进行下一组参数的请求
+            negotiation_count++;
+        }
+        if (negotiation_count > SNIFF_PARAM_COUNT) {
+            negotiation_count = 0;
+            log_error("sniff negotiation error Unable to negotiate");
+            return;
+        }
+        negotiation_sniff_interval_offset += negotiation_count * SNIFF_SLOT_STEP;
+    }
+    *T_sniff = sniff_param_info->max_interval_slots + negotiation_sniff_interval_offset;
+    *attemp = sniff_param_info->attempt_slots;
+    *timeout = sniff_param_info->timeout_slots;
+}
+
+/* ***************************************************************************/
+/**
+ * \Brief :       获得sniff更新周期
+ *
+ * \Return :      sniff周期
+ */
+/* ***************************************************************************/
+u16 get_app_sniff_interval()
+{
+    return (sniff_param_info->max_interval_slots + negotiation_sniff_interval_offset) * 5 / 8;  //ms
+}
 
 /*************************************************************************************************/
 /*!
@@ -166,9 +214,16 @@ void btstack_edr_start_before_init(const edr_init_cfg_t *cfg, int param)
 #endif
 
     //io_capabilities ; /*0: Display only 1: Display YesNo 2: KeyboardOnly 3: NoInputNoOutput*/
-    //authentication_requirements: 0:not protect  1 :protect
+    //oob: 0:data not present 1:data from remote device present
+    //authentication_requirements:
+    //0:MITM protect not require - NO bonding
+    //1:MITM protect require - NO bonding
+    //2:MITM protect not require - dedicated bonding
+    //3:MITM protect require - dedicated bonding
+    //4:MITM protect not require - general bonding
+    //5:MITM protect require - general bonding
     __set_simple_pair_param(cfg->io_capabilities, cfg->oob_data, cfg->authentication_req);
-    //__set_simple_pair_flag(!cfg->passkey_enable);
+    __set_simple_pair_flag(!cfg->passkey_enable);
 
     log_info("---edr's address");
     printf_buf((void *)bt_get_mac_addr(), 6);
@@ -272,6 +327,7 @@ static int bt_comm_edr_status_event_handler(struct bt_event *bt)
     case BT_STATUS_FIRST_DISCONNECT:
     case BT_STATUS_SECOND_DISCONNECT:
         log_info("BT_STATUS_DISCONNECT\n");
+        negotiation_sniff_interval_offset = 0;  //重置sinff偏移量
         break;
 
     case BT_STATUS_PHONE_INCOME:
@@ -312,6 +368,9 @@ static int bt_comm_edr_status_event_handler(struct bt_event *bt)
             sys_auto_sniff_controle(1, bt->args);
         } else {
             sys_auto_sniff_controle(0, bt->args);
+            if (edr_hid_timer_handle) {
+                sys_s_hi_timer_modify(edr_hid_timer_handle, (u32)(get_app_sniff_interval()));
+            }
         }
         break;
 

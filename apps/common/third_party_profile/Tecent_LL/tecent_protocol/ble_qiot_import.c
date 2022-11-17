@@ -30,27 +30,179 @@ static u8 adv_data[ADV_RSP_PACKET_MAX];//max is 31
 static u8 scan_rsp_data_len;
 static u8 scan_rsp_data[ADV_RSP_PACKET_MAX];//max is 31
 
+#define LL_SYNC_INFO    0
+
+#if LL_SYNC_INFO
+#define LLSYNC_DEVICE_NAME 6
+uint8_t ll_sync_product_id[10] = "YSUM4IEDOH";
+uint8_t ll_sync_device_name[LLSYNC_DEVICE_NAME] = "dev001";   //注意此处的dev name使用设备的mac地址来命名
+uint8_t ll_sync_device_secret[24] = "6WNLgmVK4fThhVIgdOBmKQ=="
+#else
+#define LLSYNC_DEVICE_NAME 6
+static uint8_t ll_sync_product_id[10] = "0";
+static uint8_t ll_sync_device_name[LLSYNC_DEVICE_NAME] = "0";   //注意此处的dev name使用设备的mac地址来命名
+static uint8_t ll_sync_device_secret[24] = "0";
+#endif /* LL_SYNC_INFO */
+
+#define LLSYNC_LEGAL_CHAR(c)       ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '+') || (c == '/') || (c == '=') || (c == '-'))
+#define LLSYNC_LIC_OFFSET       80
+
+typedef struct __llsync_flash_of_lic_para_head {
+    s16 crc;
+    u16 string_len;
+    const u8 para_string[];
+} __attribute__((packed)) _llsync_flash_of_lic_para_head;
+
+static u16 llsync_get_one_info(const u8 *in, u8 *out)
+{
+    int read_len = 0;
+    const u8 *p = in;
+
+    while (LLSYNC_LEGAL_CHAR(*p) && *p != ',') { //read product_uuid
+        *out++ = *p++;
+        read_len++;
+    }
+    return read_len;
+}
+
+static bool license_para_head_check(u8 *para)
+{
+    _llsync_flash_of_lic_para_head *head;
+
+    //fill head
+    head = (_llsync_flash_of_lic_para_head *)para;
+
+    ///crc check
+    u8 *crc_data = (u8 *)(para + sizeof(((_llsync_flash_of_lic_para_head *)0)->crc));
+    u32 crc_len = sizeof(_llsync_flash_of_lic_para_head) - sizeof(((_llsync_flash_of_lic_para_head *)0)->crc)/*head crc*/ + (head->string_len)/*content crc,include end character '\0'*/;
+    s16 crc_sum = 0;
+
+    crc_sum = CRC16(crc_data, crc_len);
+
+    if (crc_sum != head->crc) {
+        printf("license crc error !!! %x %x \n", (u32)crc_sum, (u32)head->crc);
+        return false;
+    }
+
+    return true;
+}
+
+const u8 *llsync_get_license_ptr(void)
+{
+    u32 flash_capacity = sdfile_get_disk_capacity();
+    u32 flash_addr = flash_capacity - 256 + LLSYNC_LIC_OFFSET;
+    u8 *lic_ptr = NULL;
+    _llsync_flash_of_lic_para_head *head;
+
+    printf("flash capacity:%x \n", flash_capacity);
+    lic_ptr = (u8 *)sdfile_flash_addr2cpu_addr(flash_addr);
+
+    //head length check
+    head = (_llsync_flash_of_lic_para_head *)lic_ptr;
+    if (head->string_len >= 0xff) {
+        printf("license length error !!! \n");
+        return NULL;
+    }
+
+    ////crc check
+    if (license_para_head_check(lic_ptr) == (false)) {
+        printf("license head check fail\n");
+        return NULL;
+    }
+
+    //put_buf(lic_ptr, 128);
+
+    lic_ptr += sizeof(_llsync_flash_of_lic_para_head);
+    return lic_ptr;
+}
+
+static uint8_t read_llsync_product_info_from_flash(uint8_t *read_buf, u16 buflen)
+{
+    uint8_t *rp = read_buf;
+    const uint8_t *llsync_ptr = (uint8_t *)llsync_get_license_ptr();
+    //printf("llsync_ptr:");
+    //put_buf(llsync_ptr, 69);
+
+    if (llsync_ptr == NULL) {
+        return FALSE;
+    }
+    int data_len = 0;
+    data_len = llsync_get_one_info(llsync_ptr, rp);
+    printf("product_id:");
+    put_buf(rp, data_len);
+    if (data_len != 10) {
+        printf("read product_id err, data_len:%d", data_len);
+        put_buf(rp, data_len);
+        return FALSE;
+    }
+    llsync_ptr += 10 + 1;
+
+    rp = read_buf + 10;
+
+    data_len = llsync_get_one_info(llsync_ptr, rp);
+    printf("name:");
+    put_buf(rp, data_len);
+    if (data_len != LLSYNC_DEVICE_NAME) {
+        printf("read device_name(mac) err, data_len:%d", data_len);
+        put_buf(rp, data_len);
+        return FALSE;
+    }
+    llsync_ptr += LLSYNC_DEVICE_NAME + 1;
+
+    rp = read_buf + 10 + LLSYNC_DEVICE_NAME;
+    data_len = llsync_get_one_info(llsync_ptr, rp);
+    printf("psk:");
+    put_buf(rp, data_len);
+    if (data_len != 24) {
+        printf("read psk err, data_len:%d", data_len);
+        put_buf(rp, data_len);
+        return FALSE;
+    }
+    llsync_ptr += 24 + 1;
+
+    return TRUE;
+}
+
+void llsync_dev_info_get()
+{
+    int ret;
+    u8 read_buf[10 + 12 + 24 + 1] = {0};
+    // add your code here
+#if LL_SYNC_INFO
+    ret = TRUE;
+#else
+    ret = read_llsync_product_info_from_flash(read_buf, sizeof(read_buf));
+    if (ret == TRUE) {
+        memcpy(ll_sync_product_id, read_buf, 10);
+        memcpy(ll_sync_device_name, read_buf + 10, LLSYNC_DEVICE_NAME);
+        memcpy(ll_sync_device_secret, read_buf + 10 + LLSYNC_DEVICE_NAME, 24);
+        printf("llsync read license success:%s\n", read_buf);
+    }
+#endif /* LL_SYNC_INFO */
+}
+
+
 int ble_get_product_id(char *product_id)
 {
     log_info("ble_get_product_id");
-    memcpy(product_id, PRODUCT_ID, strlen(PRODUCT_ID));
-    put_buf(product_id, strlen(product_id));
+    memcpy(product_id, ll_sync_product_id, 10);
+    put_buf(product_id, 10);
     return 0;
 }
 
 int ble_get_device_name(char *device_name)
 {
     log_info("ble_get_device_name");
-    memcpy(device_name, DEVICE_NAME, strlen(DEVICE_NAME));
-    put_buf(device_name, strlen(device_name));
-    return strlen(device_name);
+    memcpy(device_name, ll_sync_device_name, LLSYNC_DEVICE_NAME);
+    put_buf(device_name, LLSYNC_DEVICE_NAME);
+    return LLSYNC_DEVICE_NAME;
 }
 
 int ble_get_psk(char *psk)
 {
     log_info("ble_get_psk");
-    memcpy(psk, SECRET_KEY, strlen(SECRET_KEY));
-    put_buf(psk, strlen(psk));
+    memcpy(psk, ll_sync_device_secret, 24);
+    put_buf(psk, 24);
     return 0;
 }
 

@@ -561,6 +561,7 @@ extern u8 delete_last_device_from_vm();
 #define BD_CLASS_KEYBOARD           0x002540
 #define BD_CLASS_KEYBOARD_MOUSE     0x0025C0
 #define BD_CLASS_REMOTE_CONTROL     0x00254C
+#define BD_CLASS_GAMEPAD            0x002508
 
 #define BD_CLASS_TRANSFER_HEALTH    0x10091C
 
@@ -641,8 +642,9 @@ typedef struct {
     u8  *data_ptr;
 } hid_s_param_t;
 
-extern u16 sdp_create_diy_device_ID_service(u8 *buffer, u16 buffer_size);
-extern u16 sdp_create_diy_hid_service(u8 *buffer, u16 buffer_size, const u8 *hid_descriptor, u16 hid_descriptor_size);
+void sdp_diy_set_config_hid_info(const hid_sdp_info_t *hid_info);
+u16 sdp_create_diy_device_ID_service(u8 *buffer, u16 buffer_size);
+u16 sdp_create_diy_hid_service(u8 *buffer, u16 buffer_size, const u8 *hid_descriptor, u16 hid_descriptor_size);
 u8 get_remote_vol_sync(void);
 void set_start_search_spp_device(u8 spp);
 

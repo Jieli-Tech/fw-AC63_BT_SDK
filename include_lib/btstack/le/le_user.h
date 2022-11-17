@@ -21,16 +21,24 @@ extern "C" {
 #define BTSTACK_EVENT_STATE                                0x60
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77
 
-#define SM_EVENT_NUMERIC_COMPARISON_REQUEST                0xD6
-
 #define SM_EVENT_JUST_WORKS_REQUEST                        0xD0
 #define SM_EVENT_JUST_WORKS_CANCEL                         0xD1
 #define SM_EVENT_PASSKEY_DISPLAY_NUMBER                    0xD2
 #define SM_EVENT_PASSKEY_DISPLAY_CANCEL                    0xD3
 #define SM_EVENT_PASSKEY_INPUT_NUMBER                      0xD4
 #define SM_EVENT_PASSKEY_INPUT_CANCEL                      0xD5
+#define SM_EVENT_NUMERIC_COMPARISON_REQUEST                0xD6
+#define SM_EVENT_NUMERIC_COMPARISON_CANCEL                 0xD7
+#define SM_EVENT_IDENTITY_RESOLVING_STARTED                0xD8
+#define SM_EVENT_IDENTITY_RESOLVING_FAILED                 0xD9
+#define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED              0xDA
+#define SM_EVENT_AUTHORIZATION_REQUEST                     0xDB
+#define SM_EVENT_AUTHORIZATION_RESULT                      0xDC
+#define SM_EVENT_KEYPRESS_NOTIFICATION                     0xDD
+#define SM_EVENT_IDENTITY_CREATED                          0xDE
 #define SM_EVENT_PAIR_PROCESS                              0xDF
-//0xdf 's sub
+
+    //0xdf 's sub
 #define SM_EVENT_PAIR_SUB_RECONNECT_START                        0x01
 #define SM_EVENT_PAIR_SUB_PIN_KEY_MISS                           0x02
 #define SM_EVENT_PAIR_SUB_PAIR_FAIL                              0x03

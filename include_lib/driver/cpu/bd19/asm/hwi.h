@@ -78,6 +78,16 @@ static inline int core_num(void)
 }
 void request_irq(u8 index, u8 priority, void (*handler)(void), u8 cpu_id);
 
+/* ---------------------------------------------------------------------------- */
+/**
+ * @brief 调用该接口让指定中断号变成不可屏蔽中断
+ *
+ * @param index, 模块中断号, 如: IRQ_TIME0_IDX
+ * @param cpu_id: 本芯片型号固定设置为0.
+ */
+/* ---------------------------------------------------------------------------- */
+void irq_unmask_set(u8 index, u8 cpu_id);
+
 void unrequest_irq(u8 index);
 
 void bit_clr_ie(unsigned char index);

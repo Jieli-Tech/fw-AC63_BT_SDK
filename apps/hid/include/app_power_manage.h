@@ -4,9 +4,9 @@
 #include "typedef.h"
 #include "system/event.h"
 
-#define LOW_POWER_SHUTDOWN      300  //低电直接关机电压-拔出不开机-开盖不开机
-#define LOW_POWER_OFF_VAL   	330  //低电关机电压
-#define LOW_POWER_WARN_VAL   	340  //低电提醒电压
+#define LOW_POWER_SHUTDOWN      220  //低电直接关机电压-拔出不开机-开盖不开机
+#define LOW_POWER_OFF_VAL   	220  //低电关机电压
+#define LOW_POWER_WARN_VAL   	240  //低电提醒电压
 #define LOW_POWER_WARN_TIME   	(60 * 1000)  //低电提醒时间
 
 #define DEVICE_EVENT_FROM_POWER		(('P' << 24) | ('O' << 16) | ('W' << 8) | '\0')

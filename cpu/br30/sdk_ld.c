@@ -277,6 +277,7 @@ SECTIONS
 		#include "system/system_lib_data.ld"
 		. = ALIGN(4);
 
+		. = ALIGN(4);
 	} > ram0
 
 	.bss ALIGN(32):
@@ -313,6 +314,7 @@ SECTIONS
 
         . = ALIGN(32);
 
+		. = ALIGN(4);
     } > ram0
 
 	.data_code ALIGN(32):
@@ -635,14 +637,17 @@ SECTIONS
 text_begin  = ADDR(.text);
 text_size   = SIZEOF(.text);
 text_end    = text_begin + text_size;
+ASSERT((text_size % 4) == 0,"!!! text_size Not Align 4 Bytes !!!");
 
 bss_begin = ADDR(.bss);
 bss_size  = SIZEOF(.bss);
 bss_end    = bss_begin + bss_size;
+ASSERT((bss_size % 4) == 0,"!!! bss_size Not Align 4 Bytes !!!");
 
 data_addr = ADDR(.data);
 data_begin = text_begin + text_size;
 data_size =  SIZEOF(.data);
+ASSERT((data_size % 4) == 0,"!!! data_size Not Align 4 Bytes !!!");
 
 moveable_slot_addr = ADDR(.moveable_slot);
 moveable_slot_begin = data_begin + data_size;
@@ -651,6 +656,7 @@ moveable_slot_size =  SIZEOF(.moveable_slot);
 data_code_addr = ADDR(.data_code);
 data_code_begin = moveable_slot_begin + moveable_slot_size;
 data_code_size =  SIZEOF(.data_code);
+ASSERT((data_code_size % 4) == 0,"!!! data_code_size Not Align 4 Bytes !!!");
 
 
 //================ OVERLAY Code Info Export ==================//

@@ -66,6 +66,7 @@ static update_file_ext_id_t update_file_id_info = {
 };
 
 static update_mode_t update_record_info;
+static u16 rcsp_conn_handle = 0;
 
 u8 get_jl_update_flag(void)
 {
@@ -77,6 +78,11 @@ void set_jl_update_flag(u8 flag)
 {
     update_flag = flag;
     printf("update_flag:%x\n", update_flag);
+}
+
+void set_rcsp_conn_handle(u16 handle)
+{
+    rcsp_conn_handle =  handle;
 }
 
 void JL_controller_save_curr_cmd_para(u8 OpCode, u8 OpCode_SN)
@@ -93,6 +99,11 @@ void JL_controller_get_curr_cmd_para(u8 *OpCode, u8 *OpCode_SN)
 
 void register_receive_fw_update_block_handle(void (*handle)(u8 state, u8 *buf, u16 len))
 {
+    if (RCSP_BLE == get_curr_device_type()) {
+        if (rcsp_conn_handle) {
+            ble_op_latency_skip(rcsp_conn_handle, 0xffff); //
+        }
+    }
     fw_update_block_handle = handle;
 }
 
@@ -119,7 +130,9 @@ void JL_rcsp_update_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
         //if (DEV_UPDATE_FILE_INFO_LEN == len) {
         if (len) {
             //memcpy((u8 *)&update_file_id_info, data, DEV_UPDATE_FILE_INFO_LEN);
+#if (0 == CONFIG_APP_DONGLE)
             set_curr_update_type(data[0]);
+#endif
             rcsp_msg_post(MSG_JL_INQUIRE_DEVEICE_IF_CAN_UPDATE, 3, OpCode, OpCode_SN, 0x00);
         }
         break;
@@ -267,7 +280,7 @@ static JL_ERR JL_controller_resp_get_dev_refresh_fw_status(u8 OpCode, u8 OpCode_
     JL_ERR send_err = JL_ERR_NONE;
     u8 data[1];
 
-    data[0] = result;	//0:sucess 1:fail;
+    data[0] = result;
     send_err = JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, data, sizeof(data));
 
     return send_err;
@@ -434,9 +447,16 @@ void JL_rcsp_msg_deal(RCSP_MSG msg, int argc, int *argv)
         rcsp_update_data_api_register(rcsp_update_data_read, rcsp_update_status_response);
         register_receive_fw_update_block_handle(rcsp_update_handle);
         if (RCSP_BLE == get_curr_device_type()) {
+            if (rcsp_conn_handle) {
+                ble_op_latency_skip(rcsp_conn_handle, 0xffff); //
+            }
             rcsp_update_loader_download_init(BLE_APP_UPDATA, rcsp_loader_download_result_handle);
         } else if (RCSP_SPP == get_curr_device_type()) {
             rcsp_update_loader_download_init(SPP_APP_UPDATA, rcsp_loader_download_result_handle);
+#if CONFIG_APP_OTA_ENABLE
+        } else { // RCSP_HID
+            rcsp_update_loader_download_init(USB_HID_UPDATA, rcsp_loader_download_result_handle);
+#endif
         }
         break;
 
@@ -452,11 +472,18 @@ void JL_rcsp_msg_deal(RCSP_MSG msg, int argc, int *argv)
             update_mode_api_v2(BLE_APP_UPDATA,
                                rcsp_update_private_param_fill,
                                rcsp_update_before_jump_handle);
-        } else {
+        } else if (RCSP_SPP == get_curr_device_type()) {
             rcsp_printf("SPP_APP_UPDATA\n");
             update_mode_api_v2(SPP_APP_UPDATA,
                                rcsp_update_private_param_fill,
                                rcsp_update_before_jump_handle);
+#if CONFIG_APP_OTA_ENABLE
+        } else { // RCSP_HID
+            rcsp_printf("USB_HID_UPDATA\n");
+            update_mode_api_v2(USB_HID_UPDATA,
+                               rcsp_update_private_param_fill,
+                               rcsp_update_before_jump_handle);
+#endif
         }
         /* if (RCSP_BLE == get_curr_device_type()) { */
         /*     rcsp_printf("BLE_APP_UPDATE\n"); */
@@ -500,11 +527,18 @@ void rcsp_update_jump_for_hid_device()
         update_mode_api_v2(BLE_APP_UPDATA,
                            rcsp_update_private_param_fill,
                            rcsp_update_before_jump_handle);
-    } else {
+    } else if (RCSP_SPP == get_curr_device_type()) {
         rcsp_printf("SPP_APP_UPDATA\n");
         update_mode_api_v2(SPP_APP_UPDATA,
                            rcsp_update_private_param_fill,
                            rcsp_update_before_jump_handle);
+#if CONFIG_APP_OTA_ENABLE
+    } else { // RCSP_HID
+        rcsp_printf("USB_HID_UPDATA\n");
+        update_mode_api_v2(USB_HID_UPDATA,
+                           rcsp_update_private_param_fill,
+                           rcsp_update_before_jump_handle);
+#endif
     }
 }
 #endif

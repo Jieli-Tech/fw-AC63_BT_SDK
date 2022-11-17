@@ -27,6 +27,9 @@
 
 #include "aes.h"
 
+#include "app_config.h"
+
+#if (CONFIG_APP_TUYA)
 
 #if defined(MBEDTLS_AES_C)
 
@@ -2283,3 +2286,4 @@ exit:
 #endif /* MBEDTLS_AES_SELF_TEST */
 
 #endif /* MBEDTLS_AES_C */
+#endif /* CONFIG_APP_TUYA */

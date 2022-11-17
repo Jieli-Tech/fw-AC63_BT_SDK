@@ -103,6 +103,11 @@ void ll_hci_set_data_length(u16 conn_handle, u16 tx_octets, u16 tx_time);
 
 hci_ll_param_t *ll_hci_param_config_get(void);
 void hci_ll_get_device_address(uint8_t *addr_type, u8 *addr);
+
+/*
+   定制主机的跳频表,使用时需要把系统自带的AFH关掉
+ channel_map[5]:bit0~bit36 对应频点 0~36;未用bits默认填0
+ */
 void ll_hci_set_host_channel_classification(u8 *channel_map);
 
 // ble5

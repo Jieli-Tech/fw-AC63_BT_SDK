@@ -16,6 +16,7 @@ SECTIONS
 
         driver_data_end = .;
 
+		. = ALIGN(4);
     } > ram0
 
     .bss (NOLOAD) :ALIGN(4)
@@ -33,6 +34,7 @@ SECTIONS
 
         *(.sd_var)
         driver_bss_end = .;
+		. = ALIGN(4);
     } > ram0
 
     .text : ALIGN(4)

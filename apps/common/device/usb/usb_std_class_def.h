@@ -168,4 +168,18 @@
 #define CDC_INTR_EP_ENABLE          0
 #endif
 
+///////////CUSTOM_HID class
+#ifndef CUSTOM_HID_EP_IN
+#define CUSTOM_HID_EP_IN            4
+#endif
+#ifndef CUSTOM_HID_EP_OUT
+#define CUSTOM_HID_EP_OUT           4
+#endif
+#ifndef MAXP_SIZE_CUSTOM_HIDIN
+#define MAXP_SIZE_CUSTOM_HIDIN      64
+#endif
+#ifndef MAXP_SIZE_CUSTOM_HIDOUT
+#define MAXP_SIZE_CUSTOM_HIDOUT     64
+#endif
+
 #endif

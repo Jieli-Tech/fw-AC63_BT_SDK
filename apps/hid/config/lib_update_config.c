@@ -29,7 +29,7 @@ const int support_ota_tws_same_time_new =  0;
 #endif
 
 //是否支持升级之后保留vm数据
-const int support_vm_data_keep = 0;
+const int support_vm_data_keep = 1;
 
 const char log_tag_const_v_UPDATE AT(.LOG_TAG_CONST) = LIB_DEBUG &  FALSE;
 const char log_tag_const_i_UPDATE AT(.LOG_TAG_CONST) = LIB_DEBUG &  FALSE;

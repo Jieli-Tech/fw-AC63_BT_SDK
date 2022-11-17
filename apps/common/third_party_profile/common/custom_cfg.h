@@ -44,6 +44,7 @@ enum {
     CFG_ITEM_PVID,           //供loader使用
     CFG_ITEM_MD5,
     CFG_ITEM_SDK_TYPE,
+    CFG_ITEM_HID_PARAM,
 };
 
 enum {

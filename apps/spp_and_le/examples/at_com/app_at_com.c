@@ -84,7 +84,10 @@ void at_set_soft_poweroff(void)
     atcom_set_soft_poweroff();
 }
 
-
+void at_set_atcom_low_power_mode(u8 enable)
+{
+    is_app_atcom_active = !enable;
+}
 
 
 static void atcom_app_start()

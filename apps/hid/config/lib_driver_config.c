@@ -40,6 +40,25 @@ const char config_vad_lowpower_clock = TCFG_VAD_LOWPOWER_CLOCK;
 #else
 const char config_vad_lowpower_clock = 0;
 #endif
+
+#if TCFG_SD0_SD1_USE_THE_SAME_HW
+const int sd0_sd1_use_the_same_hw = 1;
+#else
+const int sd0_sd1_use_the_same_hw = 0;
+#endif
+
+#if TCFG_KEEP_CARD_AT_ACTIVE_STATUS
+const int keep_card_at_active_status = 1;
+#else
+const int keep_card_at_active_status = 0;
+#endif
+
+#if TCFG_SDX_CAN_OPERATE_MMC_CARD
+const int sdx_can_operate_mmc_card = 1;
+#else
+const int sdx_can_operate_mmc_card = 0;
+#endif
+
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)
  */
@@ -195,3 +214,9 @@ const char log_tag_const_i_USB AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(TRUE);
 const char log_tag_const_d_USB AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
 const char log_tag_const_w_USB AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(TRUE);
 const char log_tag_const_e_USB AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(TRUE);
+
+const char log_tag_const_v_SD AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
+const char log_tag_const_i_SD AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(TRUE);
+const char log_tag_const_d_SD AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
+const char log_tag_const_w_SD AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(FALSE);
+const char log_tag_const_e_SD AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(TRUE);

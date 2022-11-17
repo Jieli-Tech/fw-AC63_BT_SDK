@@ -153,6 +153,13 @@ const struct adkey_platform_data adkey_data = {
 #endif
 
 
+#if TCFG_IRKEY_ENABLE
+const struct irkey_platform_data irkey_data = {
+	    .enable = TCFG_IRKEY_ENABLE,                              //IR按键使能
+	    .port = TCFG_IRKEY_PORT,                                       //IR按键口
+};
+#endif
+
 /************************** DAC ****************************/
 #if TCFG_AUDIO_DAC_ENABLE
 struct dac_platform_data dac_data = {
@@ -415,7 +422,7 @@ static void board_devices_init(void)
     pwm_led_init(&pwm_led_data);
 #endif
 
-#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE)
+#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_IRKEY_ENABLE)
 	key_driver_init();
 #endif
 
@@ -436,6 +443,9 @@ void board_init()
     devices_init();
 
 	board_devices_init();
+
+    extern void temp_pll_trim_init(void);
+    temp_pll_trim_init();  //温度trim调用接口
 
 #if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
     if(get_charge_online_flag()){

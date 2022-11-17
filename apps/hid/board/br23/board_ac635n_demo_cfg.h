@@ -111,6 +111,11 @@
 
 
 //*********************************************************************************//
+//                                  RTC_ALARM配置                                  //
+//*********************************************************************************//
+#define TCFG_RTC_ALARM_ENABLE               DISABLE_THIS_MOUDLE
+
+//*********************************************************************************//
 //                                 key 配置                                        //
 //*********************************************************************************//
 #define KEY_NUM_MAX                        	10
@@ -251,6 +256,7 @@
 #define TCFG_DEC_G729_ENABLE                ENABLE
 #define TCFG_DEC_PCM_ENABLE					ENABLE
 #define TCFG_DEC_WTGV2_ENABLE               DISABLE
+#define TCFG_DEC_MP3_ENABLE					DISABLE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #define TCFG_ENC_LC3_ENABLE                 DISABLE
@@ -461,7 +467,7 @@ DAC硬件上的连接方式,可选的配置：
 //                                  系统配置                                         //
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
-#define TCFG_SYS_LVD_EN						      0   //电量检测使能
+#define TCFG_SYS_LVD_EN						      1   //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
 #define TCFG_HID_AUTO_SHUTDOWN_TIME             (0 * 60)      //HID无操作自动关机(单位：秒)
 

@@ -142,7 +142,7 @@ struct net_buf *net_buf_alloc_len(struct net_buf_pool *pool, size_t size,
 
     NET_BUF_ASSERT(pool);
 
-    NET_BUF_INFO("--func=%s, pool_id=%d", __FUNCTION__, pool_id(pool));
+    //NET_BUF_INFO("--func=%s, pool_id=%d", __FUNCTION__, pool_id(pool));
 
     key = irq_lock();
 
@@ -185,7 +185,7 @@ success:
         buf->__buf = NULL;
     }
 
-    NET_BUF_INFO("alloc free_count=%d, addr=0x%x", pool->free_count, buf);
+    //NET_BUF_INFO("alloc free_count=%d, addr=0x%x", pool->free_count, buf);
 
     buf->ref   = 1;
     buf->flags = 0;
@@ -223,7 +223,7 @@ static void net_buf_free(struct net_buf *buf)
 
         if (pool->free_count < pool->buf_count) {
             pool->free_count++;
-            NET_BUF_INFO("free free_count=%d, pool_id=%d", pool->free_count, buf->pool_id);
+            //NET_BUF_INFO("free free_count=%d, pool_id=%d", pool->free_count, buf->pool_id);
         } else {
             NET_BUF_ERR("free free_count=%d, pool_id=%d", pool->free_count, buf->pool_id);
         }
@@ -234,7 +234,7 @@ static void net_buf_free(struct net_buf *buf)
 
 void net_buf_unref(struct net_buf *buf)
 {
-    NET_BUF_INFO("--func=%s, buf=0x%x, ref=%d", __FUNCTION__, buf, buf->ref);
+    //NET_BUF_INFO("--func=%s, buf=0x%x, ref=%d", __FUNCTION__, buf, buf->ref);
 
     NET_BUF_ASSERT(buf);
 
@@ -254,7 +254,7 @@ void net_buf_unref(struct net_buf *buf)
 
 struct net_buf *net_buf_ref(struct net_buf *buf)
 {
-    NET_BUF_INFO("--func=%s, buf=0x%x, ref=%d", __FUNCTION__, buf, buf->ref);
+    //NET_BUF_INFO("--func=%s, buf=0x%x, ref=%d", __FUNCTION__, buf, buf->ref);
 
     NET_BUF_ASSERT(buf);
 
@@ -412,6 +412,20 @@ void *net_buf_simple_pull(struct net_buf_simple *buf, size_t len)
 
     buf->len -= len;
     return buf->data += len;
+}
+
+void *net_buf_simple_pull_mem(struct net_buf_simple *buf, size_t len)
+{
+    void *data = buf->data;
+
+    NET_BUF_SIMPLE_DBG("buf %p len %zu", buf, len);
+
+    __ASSERT_NO_MSG(buf->len >= len);
+
+    buf->len -= len;
+    buf->data += len;
+
+    return data;
 }
 
 u8_t net_buf_simple_pull_u8(struct net_buf_simple *buf)

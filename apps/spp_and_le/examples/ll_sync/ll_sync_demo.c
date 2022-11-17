@@ -171,7 +171,9 @@ static int llsync_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_
         break;
 
     case GATT_COMM_EVENT_CONNECTION_UPDATE_REQUEST_RESULT:
+        break;
     case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE:
+        log_info("con_handle= %02x, ATT MTU = %u\n", little_endian_read_16(packet, 0), little_endian_read_16(packet, 2));
         break;
 
     default:
@@ -367,6 +369,7 @@ void tecent_ll_init()
 #if LL_TECENT_SUPPORT_TASK
     tecent_ll_task_init();
 #endif
+    llsync_dev_info_get();
     ll_sync_init();
 }
 

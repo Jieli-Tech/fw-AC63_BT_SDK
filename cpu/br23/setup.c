@@ -208,6 +208,8 @@ void setup_arch()
 
     wdt_init(WDT_4S);
     /* wdt_close(); */
+    //上电初始所有io
+    port_init();
 
 #if (AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_FM)
     clk_init_osc_ldos(2);
@@ -225,9 +227,6 @@ void setup_arch()
     tick_timer_init();
     /* lvd_enable(); */
     /*interrupt_init();*/
-
-    //上电初始所有io
-    port_init();
 
 #if (defined CONFIG_DEBUG_ENABLE) || (defined CONFIG_DEBUG_LITE_ENABLE)
     debug_uart_init(NULL);

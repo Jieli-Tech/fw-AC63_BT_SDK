@@ -21,6 +21,7 @@ SECTIONS
 
         btstack_data_end = .;
 
+        . = ALIGN(4);
     } > ram0
 
     .bss (NOLOAD) :ALIGN(4)
@@ -40,6 +41,8 @@ SECTIONS
         BTSTACK_LE_HOST_MESH_BSS_SIZE = ABSOLUTE(. - BTSTACK_LE_HOST_MESH_BSS_START);
 
         btstack_bss_end = .;
+
+        . = ALIGN(4);
     } > ram0
 
     .text : ALIGN(4)

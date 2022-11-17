@@ -16,6 +16,7 @@
 #include "proxy.h"
 #include "prov.h"
 #include "settings.h"
+#include "model_api.h"
 
 #define LOG_TAG             "[MESH-prov]"
 #define LOG_INFO_ENABLE
@@ -945,6 +946,10 @@ static void send_confirm(void)
 
     prov_buf_init(&cfm, PROV_CONFIRM);
 
+#if (CONFIG_MESH_MODEL == SIG_MESH_TENCENT_MESH)
+    llsync_mesh_auth_clac(link.rand, link.auth);
+#endif /* CONFIG_MESH_MODEL == SIG_MESH_TENCENT_MESH */
+
     if (bt_mesh_prov_conf(link.conf_key, link.rand, link.auth,
                           net_buf_simple_add(&cfm, 16))) {
         BT_ERR("Unable to generate confirmation value");
@@ -1303,6 +1308,10 @@ static void prov_random(const u8_t *data)
     const u8_t *prov_rand, *dev_rand;
 
     BT_DBG("Remote Random: %s", bt_hex(data, 16));
+
+#if (CONFIG_MESH_MODEL == SIG_MESH_TENCENT_MESH)
+    llsync_mesh_auth_clac(data, link.auth);
+#endif
 
     if (bt_mesh_prov_conf(link.conf_key, data, link.auth, conf_verify)) {
         BT_ERR("Unable to calculate confirmation verification");
@@ -1995,13 +2004,13 @@ static void protocol_timeout(struct k_work *work)
     }
 #endif
 
+    atomic_set_bit(link.flags, LINK_CLOSING);
+
 #if defined(CONFIG_BT_MESH_PB_ADV)
     u8_t reason = CLOSE_REASON_TIMEOUT;
 
     link.rx.seg = 0U;
     bearer_ctl_send(LINK_CLOSE, &reason, sizeof(reason));
-
-    reset_state();
 #endif
 }
 

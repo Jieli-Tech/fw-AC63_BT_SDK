@@ -175,6 +175,32 @@
 #define TCFG_ADKEY_VALUE9                   9
 
 //*********************************************************************************//
+//                                 Audio配置                                       //
+//*********************************************************************************//
+#ifdef CONFIG_LITE_AUDIO
+#define TCFG_AUDIO_ENABLE					DISABLE
+#if TCFG_AUDIO_ENABLE
+#define TCFG_DEC_USBC_ENABLE			    DISABLE
+#define TCFG_ENC_USBC_ENABLE              	DISABLE
+#define TCFG_DEC_LC3_ENABLE              	DISABLE
+#define TCFG_ENC_LC3_ENABLE              	DISABLE
+#define TCFG_DEC_WAV_ENABLE                 DISABLE
+#define TCFG_DEC_WTGV2_ENABLE               DISABLE
+#define TCFG_ENC_ADPCM_ENABLE               DISABLE
+#define TCFG_DEC_OPUS_ENABLE                DISABLE
+#define TCFG_ENC_OPUS_ENABLE                DISABLE
+
+//lc3 参数配置
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+#define LC3_CODING_SAMPLERATE  16000 //lc3 编码的采样率
+#define LC3_CODING_FRAME_LEN   50  //帧长度，只支持25，50，100
+#define LC3_CODING_CHANNEL     1  //lc3 的通道数
+#endif
+
+#endif
+
+#endif
+//*********************************************************************************//
 //                                 irkey 配置                                      //
 //*********************************************************************************//
 #define TCFG_IRKEY_ENABLE                   DISABLE_THIS_MOUDLE//是否使能AD按键
@@ -253,6 +279,19 @@
 #define TCFG_PWMLED_ENABLE					DISABLE_THIS_MOUDLE			//是否支持PMW LED推灯模块
 #define TCFG_PWMLED_IOMODE					LED_ONE_IO_MODE				//LED模式，单IO还是两个IO推灯
 #define TCFG_PWMLED_PIN						IO_PORTB_06					//LED使用的IO口
+
+//*********************************************************************************//
+//                                  LED UI                                         //
+//*********************************************************************************//
+#define LED_UI_EN                           DISABLE
+#define LED_162X_EN                         DISABLE
+#define LED_UI_COMMON                       DISABLE
+#define LED_TM162X_DIO                      IO_PORTA_02
+#define LED_TM162X_CLK                      IO_PORTA_03
+#define LED_TM162X_STB                      IO_PORTA_04
+
+#define LED_IO_DRVIER                       DISABLE
+
 //*********************************************************************************//
 //                                  时钟配置                                       //
 //*********************************************************************************//
@@ -277,7 +316,7 @@
     VDDIOW_VOL_21V    VDDIOW_VOL_24V    VDDIOW_VOL_28V    VDDIOW_VOL_32V*/
 #define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_28V               //弱VDDIO等级配置
 #define TCFG_LOWPOWER_OSC_TYPE              OSC_TYPE_LRC
-#define TCFG_VD13_CAP_EN					0
+#define TCFG_VD13_CAP_EN					0 //有BT_AVDD引脚，需要配置1
 
 
 //*********************************************************************************//
@@ -293,7 +332,11 @@
 //                                  系统配置                                         //
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
+#if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15)
+#define TCFG_SYS_LVD_EN						      1   //dcdc模式电压低于2.4v的时候切为LDO模式，需要开启电量检测
+#else
 #define TCFG_SYS_LVD_EN						      1   //电量检测使能
+#endif
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
 #define TCFG_HID_AUTO_SHUTDOWN_TIME              (0 * 60)      //HID无操作自动关机(单位：秒)
 

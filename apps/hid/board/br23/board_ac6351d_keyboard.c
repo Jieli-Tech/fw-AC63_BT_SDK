@@ -9,6 +9,7 @@
 #include "asm/iic_soft.h"
 #include "matrix_keyboard.h"
 #include "SYD9557M.h"
+#include "usb/otg.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -28,6 +29,25 @@ const struct soft_iic_config soft_iic_cfg[] = {
         .delay = TCFG_SW_I2C0_DELAY_CNT,                //软件IIC延时参数，影响通讯时钟频率
         .io_pu = 1,                                     //是否打开上拉电阻，如果外部电路没有焊接上拉电阻需要置1
     },
+};
+
+/************************** otg data****************************/
+#if TCFG_OTG_MODE
+struct otg_dev_data otg_data = {
+    .usb_dev_en = TCFG_OTG_USB_DEV_EN,
+    .slave_online_cnt = TCFG_OTG_SLAVE_ONLINE_CNT,
+    .slave_offline_cnt = TCFG_OTG_SLAVE_OFFLINE_CNT,
+    .host_online_cnt = TCFG_OTG_HOST_ONLINE_CNT,
+    .host_offline_cnt = TCFG_OTG_HOST_OFFLINE_CNT,
+    .detect_mode = TCFG_OTG_MODE,
+    .detect_time_interval = TCFG_OTG_DET_INTERVAL,
+};
+#endif
+
+REGISTER_DEVICES(device_table) = {
+#if TCFG_OTG_MODE
+    { "otg",     &usb_dev_ops, (void *) &otg_data},
+#endif
 };
 
 /************************** LOW POWER config ****************************/
@@ -108,17 +128,21 @@ const struct adkey_platform_data adkey_data = {
 #endif
 
 #if TCFG_MATRIX_KEY_ENABLE
-/* static u32 key_row[] = {IO_PORTB_09, IO_PORTB_07, IO_PORTB_11, IO_PORTC_07,    IO_PORTB_10, IO_PORTC_06, IO_PORTB_06, IO_PORTB_08 }; */
-/*  */
-/* static u32 key_col[] = {IO_PORTA_04, IO_PORTA_00, IO_PORTA_02, IO_PORTA_01,    IO_PORTA_03, IO_PORTA_05, IO_PORTA_08, IO_PORTA_06, \ */
-/*          IO_PORTA_07, IO_PORTA_12, IO_PORTC_00, IO_PORTA_15,    IO_PORTC_01, IO_PORTB_05, IO_PORTA_13, IO_PORTA_14, \ */
-/*          IO_PORTA_09, IO_PORTA_11, IO_PORTA_10, */
-/*        }; */
+
+#if TCFG_MATRIX_KEY_CORE == 1
+static u32 key_row[] = {IO_PORTB_09, IO_PORTB_07, IO_PORTB_11, IO_PORTC_07,    IO_PORTB_10, IO_PORTC_06, IO_PORTB_06, IO_PORTB_08 };
+
+static u32 key_col[] = {IO_PORTA_04, IO_PORTA_00, IO_PORTA_02, IO_PORTA_01,    IO_PORTA_03, IO_PORTA_05, IO_PORTA_08, IO_PORTA_06, \
+         IO_PORTA_07, IO_PORTA_12, IO_PORTC_00, IO_PORTA_15,    IO_PORTC_01, IO_PORTB_05, IO_PORTA_13, IO_PORTA_14, \
+         IO_PORTA_09, /* IO_PORTA_11, IO_PORTA_10, */
+       };//若要使用键盘USB功能必须要屏蔽PA10,PA11.因为USBDP,USPDM和PA10,PA11存在绑定
+#elif TCFG_MATRIX_KEY_CORE == 0
 static u32 key_row[] = {IO_PORTB_06, IO_PORTB_07, IO_PORTB_08, IO_PORTB_09, IO_PORTB_10, IO_PORTB_11, IO_PORTC_07, IO_PORTA_00};
 static u32 key_col[] = {IO_PORTC_06, IO_PORTA_01, IO_PORTA_02, IO_PORTA_03, IO_PORTA_04, IO_PORTA_05, IO_PORTA_06, IO_PORTA_07, \
                         IO_PORTA_08, IO_PORTA_09, /*IO_PORTA_10,  IO_PORTA_11,*/ IO_PORTA_12, IO_PORTA_13, IO_PORTC_00, IO_PORTA_14, \
                         IO_PORTC_01, IO_PORTA_15, IO_PORTB_05,
                        };
+#endif
 
 static matrix_key_param  matrix_param = {
     .row_pin_list = key_row,

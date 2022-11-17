@@ -153,6 +153,12 @@
 #define TCFG_ADKEY_VALUE9                   9
 
 //*********************************************************************************//
+//                                 irkey 配置                                      //
+//*********************************************************************************//
+#define TCFG_IRKEY_ENABLE                   DISABLE_THIS_MOUDLE//是否使能AD按键
+#define TCFG_IRKEY_PORT                     IO_PORTA_08        //IR按键端口
+
+//*********************************************************************************//
 //                                 Audio配置                                       //
 //*********************************************************************************//
 #define TCFG_AUDIO_ADC_ENABLE				DISABLE_THIS_MOUDLE
@@ -186,6 +192,7 @@
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #define TCFG_DEC_WAV_ENABLE					DISABLE
+#define TCFG_DEC_MP3_ENABLE					DISABLE
 #else
 #define TCFG_DEC_PCM_CLOSE
 #define TCFG_DEC_SBC_CLOSE

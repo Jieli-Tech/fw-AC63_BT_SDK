@@ -41,6 +41,12 @@ const char log_tag_const_d_KEY_EVENT_DEAL AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_w_KEY_EVENT_DEAL AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_e_KEY_EVENT_DEAL AT(.LOG_TAG_CONST) = 1;
 
+const char log_tag_const_v_ONLINE_DB AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_i_ONLINE_DB AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_d_ONLINE_DB AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_w_ONLINE_DB AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_e_ONLINE_DB AT(.LOG_TAG_CONST) = 1;
+
 const char log_tag_const_v_APP_IDLE AT(.LOG_TAG_CONST) = 0;
 const char log_tag_const_i_APP_IDLE AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_d_APP_IDLE AT(.LOG_TAG_CONST) = 1;
@@ -156,6 +162,11 @@ const char log_tag_const_d_STD_KEYB AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_w_STD_KEYB AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_e_STD_KEYB AT(.LOG_TAG_CONST) = 1;
 
+const char log_tag_const_v_ELECTROCAR AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_i_ELECTROCAR AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_d_ELECTROCAR AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_w_ELECTROCAR AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_e_ELECTROCAR AT(.LOG_TAG_CONST) = 1;
 
 const char log_tag_const_v_GATT_COMM AT(.LOG_TAG_CONST) = 0;
 const char log_tag_const_i_GATT_COMM AT(.LOG_TAG_CONST) = 1;

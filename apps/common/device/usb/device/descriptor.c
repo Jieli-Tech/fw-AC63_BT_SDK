@@ -199,4 +199,17 @@ const u8 *usb_get_string_desc(u32 id)
     return NULL;
 }
 
+void get_device_info_to_ota(void *parm_priv)
+{
+    u8 *tmp = parm_priv;
+    memcpy(tmp, &(sDeviceDescriptor[8]), 4);
+    tmp[8]++;
+    if (product_string[0] > 28) {
+        log_error("The product_string length is more than 28 Byte");
+        memcpy(&(parm_priv[4]), product_string, 28);
+    } else {
+        memcpy(&(parm_priv[4]), product_string, product_string[0]);
+    }
+}
+
 #endif

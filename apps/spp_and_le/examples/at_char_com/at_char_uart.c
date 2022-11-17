@@ -135,7 +135,7 @@ void at_cmd_rx_handler(void)
         goto __cmd_rx_end;
     }
 
-    log_info("[%d]", __this->data_length);
+    log_info("rx[%d]", __this->data_length);
     log_info_hexdump(p_data, __this->data_length);
     if (__this->data_length > 3 && 0 == memcmp(at_change_channel_cmd, p_data, 3)) {
         cur_atcom_cid += 9;  //收到TA>命令后, 强行进入解析

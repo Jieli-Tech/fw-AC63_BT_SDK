@@ -510,11 +510,20 @@ enum {
  */
 #define P33_VLVD_EN(en)         P33_TX_NBIT(P3_VLVD_CON, BIT(0), en)
 
+#define GET_P33_VLVD_EN()		((P33_CON_GET(P3_VLVD_CON) & BIT(0)) ? 1:0)
+
 #define P33_VLVD_PS(en)         P33_TX_NBIT(P3_VLVD_CON, BIT(1), en)
 
 #define P33_VLVD_OE(en)         P33_TX_NBIT(P3_VLVD_CON, BIT(2), en)
 
 #define VLVD_SEL(lev)           P33_CON_SET(P3_VLVD_CON, 3, 3, lev)
+
+#define SOFF_FLAG_LVD_EN		BIT(7)
+
+#define GET_SOFF_FLAG_LVD_EN()	((P33_CON_GET(P3_SOFT_FLAG) & SOFF_FLAG_LVD_EN) ? 1:0)
+
+#define SET_SOFF_FLAG_LVD_EN(en)	(P33_CON_SET(P3_SOFT_FLAG, 7, 1, en))
+
 //Macro for VLVD_SEL
 enum {
     VLVD_SEL_19V = 0,

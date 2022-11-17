@@ -2,12 +2,14 @@
 # make 编译并下载
 # make VERBOSE=1 显示编译详细过程
 # make clean 清除编译临时文件
+#
 # 注意： Linux 下编译方式：
-# 1. 从 http://pkgman.jieliapp.com/doc/all 处找到下载链接
-# 2. 下载后，解压到 /opt/jieli 目录下，保证
-#   /opt/jieli/common/bin/clang 存在（注意目录层次）
-# 3. 确认 ulimit -n 的结果足够大（建议大于8096），否则链接可能会因为打开文件太多而失败
-#   可以通过 ulimit -n 8096 来设置一个较大的值
+#     1. 从 http://pkgman.jieliapp.com/doc/all 处找到下载链接
+#     2. 下载后，解压到 /opt/jieli 目录下，保证
+#       /opt/jieli/common/bin/clang 存在（注意目录层次）
+#     3. 确认 ulimit -n 的结果足够大（建议大于8096），否则链接可能会因为打开文件太多而失败
+#       可以通过 ulimit -n 8096 来设置一个较大的值
+#
 
 # 工具路径设置
 ifeq ($(OS), Windows_NT)
@@ -23,6 +25,7 @@ RM    := rm -rf
 SYS_LIB_DIR := C:/JL/pi32/q32s-lib
 SYS_INC_DIR := C:/JL/pi32/q32s-include
 EXT_CFLAGS  := # Windows 下不需要 -D__SHELL__
+export PATH:=$(TOOL_DIR);$(PATH)
 
 ## 后处理脚本
 FIXBAT          := ..\..\..\..\tools\utils\fixbat.exe # 用于处理 utf8->gbk 编码问题
@@ -37,10 +40,14 @@ LD    := lto-wrapper
 AR    := lto-ar
 MKDIR := mkdir -p
 RM    := rm -rf
+export OBJDUMP := $(TOOL_DIR)/objdump
+export OBJCOPY := $(TOOL_DIR)/objcopy
+export OBJSIZEDUMP := $(TOOL_DIR)/objsizedump
 
 SYS_LIB_DIR := $(TOOL_DIR)/../lib
 SYS_INC_DIR := $(TOOL_DIR)/../include
 EXT_CFLAGS  := -D__SHELL__ # Linux 下需要这个保证正确处理 download.c
+export PATH:=$(TOOL_DIR):$(PATH)
 
 ## 后处理脚本
 FIXBAT          := touch # Linux下不需要处理 bat 编码问题
@@ -83,6 +90,10 @@ CFLAGS := \
 	-Wreturn-type \
 	-Wimplicit-function-declaration \
 	-fms-extensions \
+
+
+# C++额外的编译参数
+CXXFLAGS :=
 
 
 # 宏定义
@@ -156,6 +167,7 @@ INCLUDES := \
 	-I../../../../cpu/bd29 \
 	-I../../../../apps/common/third_party_profile/jieli \
 	-I../../../../apps/common/third_party_profile/jieli/JL_rcsp \
+	-I../../../../apps/common/third_party_profile/jieli/online_db \
 	-I../../../../apps/common/third_party_profile/common \
 	-I../../../../include_lib/ai_stack/JL_rcsp \
 	-I../../../../include_lib/btstack \
@@ -166,6 +178,7 @@ INCLUDES := \
 	-I../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo \
 	-I../../../../apps/spp_and_le/examples/ll_sync \
 	-I../../../../apps/common/cJSON \
+	-I../../../../apps/common/ui/led \
 	-I../../../../apps/common/third_party_profile/tuya_protocol \
 	-I../../../../apps/common/third_party_profile/tuya_protocol/app/demo \
 	-I../../../../apps/common/third_party_profile/tuya_protocol/app/product_test \
@@ -175,6 +188,12 @@ INCLUDES := \
 	-I../../../../apps/common/third_party_profile/tuya_protocol/sdk/include \
 	-I../../../../apps/common/third_party_profile/tuya_protocol/sdk/lib \
 	-I../../../../apps/spp_and_le/examples/tuya \
+	-I../../../../apps/common/third_party_profile/hilink_protocol \
+	-I../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol \
+	-I../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls \
+	-I../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/configs \
+	-I../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/psa \
+	-I../../../../apps/spp_and_le/examples/hilink \
 	-I../../../../apps/common/device/usb \
 	-I../../../../apps/common/device/usb/device \
 	-I../../../../apps/common/device/usb/host \
@@ -188,10 +207,12 @@ c_SRC_FILES := \
 	../../../../apps/common/debug/debug.c \
 	../../../../apps/common/device/key/adkey.c \
 	../../../../apps/common/device/key/iokey.c \
+	../../../../apps/common/device/key/irkey.c \
 	../../../../apps/common/device/key/key_driver.c \
 	../../../../apps/common/device/key/touch_key.c \
 	../../../../apps/common/device/norflash/norflash.c \
 	../../../../apps/common/device/usb/device/cdc.c \
+	../../../../apps/common/device/usb/device/custom_hid.c \
 	../../../../apps/common/device/usb/device/descriptor.c \
 	../../../../apps/common/device/usb/device/hid.c \
 	../../../../apps/common/device/usb/device/msd.c \
@@ -227,12 +248,38 @@ c_SRC_FILES := \
 	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_md5.c \
 	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_utils_sha1.c \
 	../../../../apps/common/third_party_profile/common/custom_cfg.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/hilink_ota.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/hilink_protocol.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/hilink_task.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/aes.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/arc4.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/bignum.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/blowfish.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/ccm.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/chacha20.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/chachapoly.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/cipher.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/cipher_wrap.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/des.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/gcm.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls_main.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/md.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/md5.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/pkcs5.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/poly1305.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/ripemd160.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/sha1.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/sha256.c \
+	../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/sha512.c \
+	../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data/rcsp_hid_inter.c \
 	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.c \
 	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_ch_loader_download.c \
 	../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata/rcsp_user_update.c \
 	../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_client.c \
 	../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_common.c \
 	../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_server.c \
+	../../../../apps/common/third_party_profile/jieli/online_db/online_db_deal.c \
+	../../../../apps/common/third_party_profile/jieli/online_db/spp_online_db.c \
 	../../../../apps/common/third_party_profile/tuya_protocol/app/demo/tuya_ble_app_demo.c \
 	../../../../apps/common/third_party_profile/tuya_protocol/app/demo/tuya_ota.c \
 	../../../../apps/common/third_party_profile/tuya_protocol/app/product_test/tuya_ble_app_production_test.c \
@@ -262,6 +309,11 @@ c_SRC_FILES := \
 	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_storage.c \
 	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_unix_time.c \
 	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_utils.c \
+	../../../../apps/common/ui/led/led_api.c \
+	../../../../apps/common/ui/led/led_driver.c \
+	../../../../apps/common/ui/led/led_ui_api.c \
+	../../../../apps/common/ui/led/tm162x.c \
+	../../../../apps/common/ui/led/ui_common.c \
 	../../../../apps/common/update/testbox_update.c \
 	../../../../apps/common/update/uart_update.c \
 	../../../../apps/common/update/uart_update_master.c \
@@ -290,14 +342,20 @@ c_SRC_FILES := \
 	../../../../apps/spp_and_le/examples/ble_beacon/ble_beacon.c \
 	../../../../apps/spp_and_le/examples/ble_central/app_central.c \
 	../../../../apps/spp_and_le/examples/ble_central/ble_central.c \
+	../../../../apps/spp_and_le/examples/ble_central/ble_central_server.c \
 	../../../../apps/spp_and_le/examples/conn_24g/app_conn_24g.c \
 	../../../../apps/spp_and_le/examples/conn_24g/ble_24g_client.c \
 	../../../../apps/spp_and_le/examples/conn_24g/ble_24g_server.c \
 	../../../../apps/spp_and_le/examples/dongle/app_dongle.c \
 	../../../../apps/spp_and_le/examples/dongle/ble_dg_central.c \
 	../../../../apps/spp_and_le/examples/dongle/edr_hid_user.c \
+	../../../../apps/spp_and_le/examples/dongle/ota_dg_central.c \
 	../../../../apps/spp_and_le/examples/dongle/usb_hid_devices.c \
 	../../../../apps/spp_and_le/examples/dongle/usb_second_hid_devices.c \
+	../../../../apps/spp_and_le/examples/electrocar/electrocar.c \
+	../../../../apps/spp_and_le/examples/electrocar/electrocar_le_trans.c \
+	../../../../apps/spp_and_le/examples/hilink/app_hilink.c \
+	../../../../apps/spp_and_le/examples/hilink/hilink_demo.c \
 	../../../../apps/spp_and_le/examples/idle/app_idle.c \
 	../../../../apps/spp_and_le/examples/ll_sync/app_ll_sync.c \
 	../../../../apps/spp_and_le/examples/ll_sync/ll_sync_demo.c \
@@ -309,6 +367,8 @@ c_SRC_FILES := \
 	../../../../apps/spp_and_le/examples/nonconn_24g/ble_24g_deal.c \
 	../../../../apps/spp_and_le/examples/trans_data/app_spp_and_le.c \
 	../../../../apps/spp_and_le/examples/trans_data/ble_trans.c \
+	../../../../apps/spp_and_le/examples/trans_data/ble_trans_ios_services.c \
+	../../../../apps/spp_and_le/examples/trans_data/ble_trans_search.c \
 	../../../../apps/spp_and_le/examples/tuya/app_tuya.c \
 	../../../../apps/spp_and_le/examples/tuya/tuya_demo.c \
 	../../../../apps/spp_and_le/modules/bt/app_comm_ble.c \
@@ -355,6 +415,14 @@ s_SRC_FILES :=
 cpp_SRC_FILES :=
 
 
+# 需要编译的 .cc 文件
+cc_SRC_FILES :=
+
+
+# 需要编译的 .cxx 文件
+cxx_SRC_FILES :=
+
+
 # 链接参数
 LFLAGS := \
 	--plugin-opt=-inline-threshold=5 \
@@ -397,8 +465,10 @@ c_OBJS    := $(c_SRC_FILES:%.c=%.c.o)
 S_OBJS    := $(S_SRC_FILES:%.S=%.S.o)
 s_OBJS    := $(s_SRC_FILES:%.s=%.s.o)
 cpp_OBJS  := $(cpp_SRC_FILES:%.cpp=%.cpp.o)
+cxx_OBJS  := $(cxx_SRC_FILES:%.cxx=%.cxx.o)
+cc_OBJS   := $(cc_SRC_FILES:%.cc=%.cc.o)
 
-OBJS      := $(c_OBJS) $(S_OBJS) $(s_OBJS) $(cpp_OBJS)
+OBJS      := $(c_OBJS) $(S_OBJS) $(s_OBJS) $(cpp_OBJS) $(cxx_OBJS) $(cc_OBJS)
 DEP_FILES := $(OBJS:%.o=%.d)
 
 
@@ -416,7 +486,14 @@ endif
 # 一些旧的 make 不支持 file 函数，需要 make 的时候指定 LINK_AT=0 make
 LINK_AT ?= 1
 
+# 表示下面的不是一个文件的名字，无论是否存在 all, clean, pre_build 这样的文件
+# 还是要执行命令
+# see: https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
 .PHONY: all clean pre_build
+
+# 不要使用 make 预设置的规则
+# see: https://www.gnu.org/software/make/manual/html_node/Suffix-Rules.html
+.SUFFIXES:
 
 all: pre_build $(OUT_ELF)
 	$(info +POST-BUILD)
@@ -453,25 +530,37 @@ endif
 $(BUILD_DIR)/%.c.o : $(ROOT_PREFIX)/%.c
 	$(info +CC $<)
 	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
+	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.S.o : $(ROOT_PREFIX)/%.S
 	$(info +AS $<)
 	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
+	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.s.o : $(ROOT_PREFIX)/%.s
 	$(info +AS $<)
 	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
+	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cpp.o : $(ROOT_PREFIX)/%.cpp
 	$(info +CXX $<)
 	@$(MKDIR) $(@D)
-	@$(CXX) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT "$@" $< -o $(@:.o=.d)
-	$(QUITE) $(CXX) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+
+$(BUILD_DIR)/%.cxx.o : $(ROOT_PREFIX)/%.cxx
+	$(info +CXX $<)
+	@$(MKDIR) $(@D)
+	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+
+$(BUILD_DIR)/%.cc.o : $(ROOT_PREFIX)/%.cc
+	$(info +CXX $<)
+	@$(MKDIR) $(@D)
+	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 -include $(DEP_FILES)

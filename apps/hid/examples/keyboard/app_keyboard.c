@@ -36,7 +36,6 @@
 #include "app_comm_bt.h"
 
 #if(CONFIG_APP_KEYBOARD)
-
 #define LOG_TAG_CONST       HID_KEY
 #define LOG_TAG             "[HID_KEY]"
 #define LOG_ERROR_ENABLE
@@ -67,7 +66,7 @@ extern void midi_paly_test(u32 key);
 #define SNIFF_MIN_INTERVALSLOT        16
 #define SNIFF_ATTEMPT_SLOT            2
 #define SNIFF_TIMEOUT_SLOT            1
-#define SNIFF_CHECK_TIMER_PERIOD      100
+#define SNIFF_CHECK_TIMER_PERIOD      200
 #else
 
 #define SNIFF_MODE_TYPE               SNIFF_MODE_DEF
@@ -140,20 +139,20 @@ static const u8 hidkey_report_map[] = {
 //----------------------------------
 static const u16 hid_key_click_table[8] = {
     CONSUMER_PLAY_PAUSE,
-    0,
     CONSUMER_SCAN_PREV_TRACK,
-    0,
+    CONSUMER_VOLUME_DEC,
     CONSUMER_SCAN_NEXT_TRACK,
-    0,
+    CONSUMER_VOLUME_INC,
+    CONSUMER_MUTE,
     0,
     0,
 };
 
 static const u16 hid_key_hold_table[8] = {
     0,
-    0,
+    CONSUMER_SCAN_FRAME_BACK,
     CONSUMER_VOLUME_DEC,
-    0,
+    CONSUMER_SCAN_FRAME_FORWARD,
     CONSUMER_VOLUME_INC,
     0,
     0,
@@ -165,6 +164,7 @@ static const edr_init_cfg_t hidkey_edr_config = {
     .page_timeout = 8000,
     .super_timeout = 8000,
     .io_capabilities = 3,
+    .passkey_enable = 0,
     .authentication_req = 2,
     .oob_data = 0,
     .sniff_param = &hidkey_sniff_param,
@@ -285,15 +285,16 @@ void hidkey_test_keep_send_init(void)
 static void hidkey_app_key_deal_test(u8 key_type, u8 key_value)
 {
     u16 key_msg = 0;
+    u16 key_msg_up = 0;
 
     /*Audio Test Demo*/
 #if TCFG_AUDIO_ENABLE
     if (key_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE0) {
-        printf(">>>key0:open mic\n");
-        //br23/25 mic test
+        printf(">>>key0:mic/encode test\n");
+        //AC695N/AC696N mic test
         /* extern int audio_adc_open_demo(void); */
         /* audio_adc_open_demo(); */
-        //br30 mic test
+        //AD697N/AC897N/AC698N mic test
         /* extern void audio_adc_mic_demo(u8 mic_idx, u8 gain, u8 mic_2_dac); */
         /* audio_adc_mic_demo(1, 1, 1); */
 
@@ -301,6 +302,17 @@ static void hidkey_app_key_deal_test(u8 key_type, u8 key_value)
         /* extern int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 code_type); */
         /* audio_mic_enc_open(NULL, AUDIO_CODING_OPUS);//opus encode test */
         /* audio_mic_enc_open(NULL, AUDIO_CODING_SPEEX);//speex encode test  */
+
+
+        /*
+        //AC632N
+        编码测试类型：
+        AUDIO_CODING_LC3
+        AUDIO_CODING_USBC
+        */
+
+        extern int audio_demo_enc_open(int (*demo_output)(void *priv, void *buf, int len), u32 code_type, u8 ai_type);
+        /* audio_demo_enc_open(NULL, AUDIO_CODING_USBC, 0); */
 
 
 
@@ -311,17 +323,27 @@ static void hidkey_app_key_deal_test(u8 key_type, u8 key_value)
 
     }
     if (key_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE1) {
-        printf(">>>key1:tone_play_test\n");
-        //br23/25 tone play test
+        printf(">>>key1:tone/decode test\n");
+        //AC695N/AC696N tone play test
         /* tone_play_by_path(TONE_NORMAL, 1); */
         /* tone_play_by_path(TONE_BT_CONN, 1); */
-        //br30 tone play test
+        //AD697N/AC897N/AC698N tone play test
         /* tone_play(TONE_NUM_8, 1); */
         /* tone_play(TONE_SIN_NORMAL, 1); */
 
         //	printf(">>>key0:set  midi\n");
         //	midi_paly_test(KEY_IR_NUM_1);
 
+
+        /*
+        //AC632N
+        解码测试类型：(需要在audio_decode.c中配置)
+        AUDIO_CODING_LC3
+        AUDIO_CODING_USBC
+        */
+
+        extern void demo_frame_test(void);
+        /* demo_frame_test(); */
     }
 
     if (key_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE2) {
@@ -343,6 +365,19 @@ static void hidkey_app_key_deal_test(u8 key_type, u8 key_value)
         key_msg = hid_key_click_table[key_value];
     } else if (key_type == KEY_EVENT_HOLD) {
         key_msg = hid_key_hold_table[key_value];
+    } else if (key_type == KEY_EVENT_UP) {
+        log_info("key_up_val = %02x\n", key_value);
+        if (bt_hid_mode == HID_MODE_EDR) {
+#if TCFG_USER_EDR_ENABLE
+            bt_comm_edr_sniff_clean();
+            edr_hid_data_send(1, (u8 *)&key_msg_up, 2);
+#endif
+        } else {
+#if TCFG_USER_BLE_ENABLE
+            ble_hid_data_send(1, &key_msg_up, 2);
+#endif
+        }
+        return;
     }
 
     if (key_msg) {
@@ -350,11 +385,17 @@ static void hidkey_app_key_deal_test(u8 key_type, u8 key_value)
         if (bt_hid_mode == HID_MODE_EDR) {
 #if TCFG_USER_EDR_ENABLE
             bt_comm_edr_sniff_clean();
-            edr_hid_key_deal_test(key_msg);
+            edr_hid_data_send(1, (u8 *)&key_msg, 2);
+            if (KEY_EVENT_HOLD != key_type) {
+                edr_hid_data_send(1, (u8 *)&key_msg_up, 2);
+            }
 #endif
         } else {
 #if TCFG_USER_BLE_ENABLE
-            ble_hid_key_deal_test(key_msg);
+            ble_hid_data_send(1, &key_msg, 2);
+            if (KEY_EVENT_HOLD != key_type) {
+                ble_hid_data_send(1, &key_msg_up, 2);
+            }
 #endif
         }
         return;

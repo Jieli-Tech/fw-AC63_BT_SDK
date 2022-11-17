@@ -14,6 +14,7 @@
 #define ACTION_STANDARD_KEYBOARD    0x0007
 #define ACTION_MOUSE_DUAL_MAIN      0x0008
 #define ACTION_REMOTE_CONTROL       0x0009
+#define ACTION_ELECTROCAR           0x000a
 
 #endif
 

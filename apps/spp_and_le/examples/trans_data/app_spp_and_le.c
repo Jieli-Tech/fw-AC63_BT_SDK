@@ -281,11 +281,11 @@ static void spple_key_event_handler(struct sys_event *event)
         /*Audio Test Demo*/
 #if TCFG_AUDIO_ENABLE
         if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE0) {
-            log_info(">>>key0:open mic\n");
-            //br23/br25 mic test
+            log_info(">>>key0:mic/encode test\n");
+            //AC695N/AC696N mic test
             /* extern int audio_adc_open_demo(void); */
             /* audio_adc_open_demo(); */
-            //br30 mic test
+            //AD697N/AC897N/AC698N mic test
             /* extern void audio_adc_mic_demo(u8 mic_idx, u8 gain, u8 mic_2_dac); */
             /* audio_adc_mic_demo(1, 1, 1); */
 
@@ -294,6 +294,17 @@ static void spple_key_event_handler(struct sys_event *event)
             /* extern int audio_mic_enc_open(int (*mic_output)(void *priv, void *buf, int len), u32 code_type); */
             /* audio_mic_enc_open(NULL, AUDIO_CODING_OPUS);//opus encode test */
             /* audio_mic_enc_open(NULL, AUDIO_CODING_SPEEX);//speex encode test */
+
+
+            /*
+            //AC632N
+            编码测试类型：
+            AUDIO_CODING_LC3
+            AUDIO_CODING_USBC
+            */
+
+            /* extern int audio_demo_enc_open(int (*demo_output)(void *priv, void *buf, int len), u32 code_type, u8 ai_type); */
+            /* audio_demo_enc_open(NULL, AUDIO_CODING_USBC, 0); */
 
 
 
@@ -305,16 +316,27 @@ static void spple_key_event_handler(struct sys_event *event)
 
         }
         if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE1) {
-            log_info(">>>key1:tone_play_test\n");
-            //br23/25 tone play test
+            log_info(">>>key1:tone/decode test\n");
+            //AC695N/AC696N tone play test
             /* tone_play_by_path(TONE_NORMAL, 1); */
             /* tone_play_by_path(TONE_BT_CONN, 1); */
-            //br30 tone play test
+            //AD697N/AC897N/AC698N tone play test
             /* tone_play(TONE_NUM_8, 1); */
             /* tone_play(TONE_SIN_NORMAL, 1); */
             /* log_info(">>>key0:set  midi\n"); */
             // midi_paly_test(KEY_IR_NUM_1);
 
+
+
+            /*
+            //AC632N
+            解码测试类型：(需要在audio_decode.c中配置)
+            AUDIO_CODING_LC3
+            AUDIO_CODING_USBC
+             */
+
+            /* extern void demo_frame_test(void); */
+            /* demo_frame_test(); */
         }
 
 

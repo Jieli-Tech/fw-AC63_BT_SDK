@@ -16,7 +16,7 @@
 #include "le_client_demo.h"
 #include "ble_at_char_client.h"
 
-#if  CONFIG_APP_AT_CHAR_COM
+#if  CONFIG_APP_AT_CHAR_COM && CONFIG_BT_GATT_CLIENT_NUM
 
 #define SUPPORT_TEST_BOX_BLE_MASTER_TEST_EN	   1
 
@@ -112,6 +112,8 @@ static const client_conn_cfg_t at_client_config_default = {
     .security_en = 0,
     .event_callback = NULL,
 };
+
+
 
 //记录handle 使用
 static u16 search_target_uuid16 = 0xAE30;
@@ -927,7 +929,7 @@ void bt_ble_client_adv_enable(u8 enable)
 
 static u8 client_idle_query(void)
 {
-    return 0;
+    return 1;
 }
 
 REGISTER_LP_TARGET(client_user_target) = {

@@ -33,6 +33,8 @@ SECTIONS
 
         *(.sd_var)
         driver_bss_end = .;
+
+		. = ALIGN(4);
     } > ram0
 
     .text : ALIGN(4)
@@ -56,6 +58,7 @@ SECTIONS
         *(.uart_const)
 
         driver_code_end = .;
+
 		. = ALIGN(4);
     } > code0
 

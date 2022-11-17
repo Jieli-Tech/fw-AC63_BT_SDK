@@ -88,6 +88,10 @@ static u32 g_updata_flag = 0;
 static volatile u8 ota_status = 0;
 static succ_report_t succ_report;
 
+extern const int support_dual_bank_update_en;
+extern const int support_norflash_update_en;
+extern const int support_vm_data_keep;
+
 u16 update_result_get(void)
 {
     u16 ret = UPDATA_NON;
@@ -574,6 +578,7 @@ static int app_update_init(void)
 {
     update_module_init(update_common_state_cbk);
     testbox_update_init();
+    printf("app_update_cfg:%d,%d,%d\n", support_dual_bank_update_en, support_norflash_update_en, support_vm_data_keep);
     return 0;
 }
 

@@ -392,7 +392,7 @@ void input_key_handler(u8 key_status, u8 key_number)
     /*Audio Test Demo*/
 #if (TCFG_AUDIO_ENABLE && MESH_AUDIO_TEST)
     if (key_status == KEY_EVENT_CLICK && key_number == TCFG_ADKEY_VALUE0) {
-        printf(">>>key0:open mic\n");
+        printf(">>>key0:mic/encode test\n");
         //AC695N/AC696N mic test
         /* extern int audio_adc_open_demo(void); */
         /* audio_adc_open_demo(); */
@@ -402,19 +402,26 @@ void input_key_handler(u8 key_status, u8 key_number)
 
         /*encode test*/
         /*
+        //AC695N/AC696N/AD697N/AC897N/AC698N
         编码测试类型：
         AUDIO_CODING_OPUS
         AUDIO_CODING_SPEEX
         AUDIO_CODING_WAV
         AUDIO_CODING_LC3
         AUDIO_CODING_SBC
-        AUDIO_CODING_MSBC
+        AUDIO_CODING_MSBC   */
+        /*
+        //AC632N
+        编码测试类型：
+        AUDIO_CODING_LC3
+        AUDIO_CODING_USBC
         */
-        /* extern int audio_demo_enc_open(int (*demo_output)(void *priv, void *buf, int len), u32 code_type, u8 ai_type);  */
-        /* audio_demo_enc_open(NULL, AUDIO_CODING_OPUS, 0); */
+
+        extern int audio_demo_enc_open(int (*demo_output)(void *priv, void *buf, int len), u32 code_type, u8 ai_type);
+        audio_demo_enc_open(NULL, AUDIO_CODING_USBC, 0);
     }
     if (key_status == KEY_EVENT_CLICK && key_number == TCFG_ADKEY_VALUE1) {
-        printf(">>>key1:tone_play_test\n");
+        printf(">>>key1:tone/decode test\n");
         //AC695N/AC696N tone play test
         /* tone_play_by_path(TONE_NORMAL, 1); */
         /* tone_play_by_path(TONE_BT_CONN, 1); */
@@ -422,9 +429,20 @@ void input_key_handler(u8 key_status, u8 key_number)
         /* tone_play(TONE_NUM_8, 1); */
         /* tone_play(TONE_SIN_NORMAL, 1); */
 
-        //lc3 decode test
-        /* extern void demo_frame_test(void); */
-        /* demo_frame_test(); */
+        // decode test
+        /*
+        //AC695N/AC696N/AD697N/AC897N/AC698N
+        解码测试类型：
+        AUDIO_CODING_LC3
+
+        //AC632N
+        解码测试类型：(需要在audio_decode.c中配置)
+        AUDIO_CODING_LC3
+        AUDIO_CODING_USBC
+        */
+
+        extern void demo_frame_test(void);
+        demo_frame_test();
     }
 #else
 

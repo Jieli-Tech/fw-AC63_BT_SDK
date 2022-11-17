@@ -1,5 +1,5 @@
-  local_irq_enable = ABSOLUTE(0x103e88);
-  local_irq_disable = ABSOLUTE(0x103e8c);
+  _local_irq_enable = ABSOLUTE(0x103e88);
+  _local_irq_disable = ABSOLUTE(0x103e8c);
   /* p33_buf = ABSOLUTE(0x103e90); */
   /* p33_xor_1byte = ABSOLUTE(0x103e94); */
   /* p33_and_1byte = ABSOLUTE(0x103e98); */

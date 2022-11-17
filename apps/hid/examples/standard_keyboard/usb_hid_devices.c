@@ -26,8 +26,8 @@ static const u8 sHIDDescriptor[] = {
     /* 0x04,                      // bInterface number */
     0x00,                       // bInterface number
     0x00,                      // AlternateSetting
-    0x01,                      // NumEndpoint
-    /* 0x02,                        // NumEndpoint */
+    /* 0x01,                      // NumEndpoint */
+    0x02,                        // NumEndpoint
     USB_CLASS_HID,             // Class = Human Interface Device
     0x00,                      // Subclass, 0 No subclass, 1 Boot Interface subclass
     0x00,                      // Procotol, 0 None, 1 Keyboard, 2 Mouse
@@ -53,7 +53,7 @@ static const u8 sHIDDescriptor[] = {
     0x01,     // Poll every 10msec seconds
 
 //@Endpoint Descriptor:
-    /* USB_DT_ENDPOINT_SIZE,       // bLength
+    USB_DT_ENDPOINT_SIZE,       // bLength
     USB_DT_ENDPOINT,            // bDescriptorType, Type
     USB_DIR_OUT | HID_EP_OUT,   // bEndpointAddress
     USB_ENDPOINT_XFER_INT,      // Interrupt
@@ -92,19 +92,33 @@ static void *get_hid_report_desc(u32 index)
     return hid_report_map;
 }
 
+static void (*usb_hid_output_callback)(u8 *buffer, u16 size) = NULL;
+void usb_hid_set_output_callback(void *cb)
+{
+    usb_hid_output_callback = cb;
+}
 
 static u8 *hid_ep_in_dma;
-/* static u8 *hid_ep_out_dma; */
+static u8 *hid_ep_out_dma;
 
 static u32 hid_tx_data(struct usb_device_t *usb_device, const u8 *buffer, u32 len)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
     return usb_g_intr_write(usb_id, HID_EP_IN, buffer, len);
 }
+
 static void hid_rx_data(struct usb_device_t *usb_device, u32 ep)
 {
-    /* const usb_dev usb_id = usb_device2id(usb_device); */
-    /* u32 rx_len = usb_g_intr_read(usb_id, ep, NULL, 64, 0); */
+    u8 data[MAXP_SIZE_HIDOUT];
+    memset(data, 0x00, sizeof(data));
+    const usb_dev usb_id = usb_device2id(usb_device);
+    u32 rx_len = usb_g_intr_read(usb_id, ep, data, MAXP_SIZE_HIDOUT, 0);
+
+    /* r_printf("%s[len:%d]", __func__, rx_len); */
+    /* put_buf(data, rx_len); */
+    if (usb_hid_output_callback) {
+        usb_hid_output_callback(data, rx_len);
+    }
     /* hid_tx_data(usb_device, hid_ep_out_dma, rx_len); */
 }
 
@@ -112,6 +126,10 @@ static void hid_endpoint_init(struct usb_device_t *usb_device, u32 itf)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
     usb_g_ep_config(usb_id, HID_EP_IN | USB_DIR_IN, USB_ENDPOINT_XFER_INT, 0, hid_ep_in_dma, MAXP_SIZE_HIDIN);
+
+    usb_g_ep_config(usb_id, HID_EP_OUT | USB_DIR_OUT, USB_ENDPOINT_XFER_INT, 1, hid_ep_out_dma, MAXP_SIZE_HIDOUT);
+    usb_g_set_intr_hander(usb_id, HID_EP_OUT, hid_rx_data);
+
     usb_enable_ep(usb_id, HID_EP_IN);
 
     /* usb_g_set_intr_hander(usb_id, HID_EP_OUT, hid_rx_data); */
@@ -120,7 +138,7 @@ static void hid_endpoint_init(struct usb_device_t *usb_device, u32 itf)
 u32 hid_register(const usb_dev usb_id)
 {
     hid_ep_in_dma = usb_alloc_ep_dmabuffer(usb_id, HID_EP_IN | USB_DIR_IN, MAXP_SIZE_HIDIN);
-
+    hid_ep_out_dma = usb_alloc_ep_dmabuffer(usb_id, HID_EP_OUT | USB_DIR_OUT, MAXP_SIZE_HIDOUT);
     /* hid_ep_out_dma = usb_alloc_ep_dmabuffer(usb_id, HID_EP_OUT,MAXP_SIZE_HIDOUT); */
     return 0;
 }
@@ -249,7 +267,7 @@ static u32 hid_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreques
 
 u32 hid_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 {
-    printf("123--hid interface num:%d\n", *cur_itf_num);
+    printf("%s--hid interface num:%d\n", __func__, *cur_itf_num);
     u8 *_ptr = ptr;
     memcpy(ptr, sHIDDescriptor, sizeof(sHIDDescriptor));
     ptr[2] = *cur_itf_num;

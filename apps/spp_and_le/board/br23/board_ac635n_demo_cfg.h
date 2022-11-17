@@ -98,6 +98,10 @@
 #define TCFG_SD1_DET_IO_LEVEL				0//IO检查，0：低电平检测到卡。 1：高电平(外部电源)检测到卡。 2：高电平(SD卡电源)检测到卡。
 #define TCFG_SD1_CLK						(3000000*4L)
 
+//*********************************************************************************//
+//                                  RTC_ALARM配置                                  //
+//*********************************************************************************//
+#define TCFG_RTC_ALARM_ENABLE               DISABLE_THIS_MOUDLE
 
 //*********************************************************************************//
 //                                 key 配置                                        //
@@ -242,6 +246,7 @@
 #define TCFG_LINEIN_LR_CH					AUDIO_LIN0_LR
 #define TCFG_DEC_WAV_ENABLE					DISABLE
 #define TCFG_DEC_MIDI_ENABLE			    DISABLE//midi文件播放
+#define TCFG_DEC_MP3_ENABLE					DISABLE
 #else
 #define TCFG_DEC_PCM_ENABLE					DISABLE
 #endif/*TCFG_AUDIO_ENABLE*/
@@ -427,7 +432,7 @@ DAC硬件上的连接方式,可选的配置：
 //                                  系统配置                                         //
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
-#define TCFG_SYS_LVD_EN						      0   //电量检测使能
+#define TCFG_SYS_LVD_EN						      1   //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
 #define TCFG_HID_AUTO_SHUTDOWN_TIME             (0 * 60)      //HID无操作自动关机(单位：秒)
 

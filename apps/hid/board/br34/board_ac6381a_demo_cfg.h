@@ -24,7 +24,7 @@
 //*********************************************************************************//
 #define TCFG_UART0_ENABLE					ENABLE_THIS_MOUDLE                     //串口打印模块使能
 #define TCFG_UART0_RX_PORT					NO_CONFIG_PORT                         //串口接收脚配置（用于打印可以选择NO_CONFIG_PORT）
-#define TCFG_UART0_TX_PORT  				IO_PORTC_04                             //串口发送脚配置
+#define TCFG_UART0_TX_PORT  				IO_PORT_DP                             //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
 
@@ -170,7 +170,184 @@
 //                                 irkey 配置                                      //
 //*********************************************************************************//
 #define TCFG_IRKEY_ENABLE                   DISABLE_THIS_MOUDLE//是否使能AD按键
-#define TCFG_IRKEY_PORT                     IO_PORTA_08        //IR按键端口
+#define TCFG_IRKEY_PORT                     IO_PORTA_06        //IR按键端口
+
+//*********************************************************************************//
+//                             lp tocuh key 配置                                   //
+//*********************************************************************************//
+#define TCFG_LP_TOUCH_KEY_ENABLE 			DISABLE_THIS_MOUDLE     //是否使能触摸按键
+#define TCFG_LP_EARTCH_KEY_ENABLE 			DISABLE_THIS_MOUDLE 	//是否使能CH1
+//内置触摸灵敏度调试工具使能, 使能后可以通过连接PC端上位机通过SPP调试,
+//打开该宏需要确保同时打开宏:
+//1.USER_SUPPORT_PROFILE_SPP
+//2.APP_ONLINE_DEBUG
+//可以针对每款样机校准灵敏度参数表(在lp_touch_key.c ch_sensitivity_table), 详细使用方法请参考《低功耗内置触摸介绍》文档.
+#define TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE 	DISABLE //是否使能内置触摸调试功能
+
+//电容检测灵敏度级数配置(范围: 0 ~ 9)
+//该参数配置与触摸时电容变化量有关, 触摸时电容变化量跟模具厚度, 触摸片材质, 面积等有关,
+//触摸时电容变化量越小, 推荐选择灵敏度级数越大,
+//触摸时电容变化量越大, 推荐选择灵敏度级数越小,
+//用户可以从灵敏度级数为0开始调试, 级数逐渐增大, 直到选择一个合适的灵敏度配置值.
+#define TCFG_LP_TOUCH_KEY_SENSITIVITY 			5 	//触摸按键电容检测灵敏度配置(级数0 ~ 9)
+#define TCFG_EARIN_TOUCH_KEY_SENSITIVITY 		5 	//触摸按键电容检测灵敏度配置(级数0 ~ 9)
+
+#if TCFG_LP_TOUCH_KEY_ENABLE
+//取消外置触摸的一些宏定义
+#ifdef TCFG_IOKEY_ENABLE
+#undef TCFG_IOKEY_ENABLE
+#define TCFG_IOKEY_ENABLE 					DISABLE_THIS_MOUDLE
+#endif /* #ifdef TCFG_IOKEY_ENABLE */
+
+#ifdef TCFG_ADKEY_ENABLE
+#undef TCFG_ADKEY_ENABLE
+#define TCFG_ADKEY_ENABLE                   DISABLE_THIS_MOUDLE
+#endif /* #ifdef TCFG_ADKEY_ENABLE */
+
+#endif /* #if TCFG_LP_TOUCH_KEY_ENABLE */
+
+#if TCFG_LP_EARTCH_KEY_ENABLE
+
+#ifdef TCFG_EARTCH_EVENT_HANDLE_ENABLE
+#undef TCFG_EARTCH_EVENT_HANDLE_ENABLE
+#endif /* #ifdef TCFG_EARTCH_EVENT_HANDLE_ENABLE */
+
+#define TCFG_EARTCH_EVENT_HANDLE_ENABLE 	ENABLE_THIS_MOUDLE 		//入耳检测事件APP流程处理使能
+
+#endif /* #if TCFG_LP_EARTCH_KEY_ENABLE */
+
+
+//*********************************************************************************//
+//                                 Audio配置                                       //
+//*********************************************************************************//
+#define TCFG_AUDIO_ADC_ENABLE				DISABLE_THIS_MOUDLE
+/*
+ *LADC_CH_MIC_L: MIC0(PA1)
+ *LADC_CH_MIC_R: MIC1(PB8)
+ *PLNK_MIC: MIC_PWR CLK DAT0 DAT1(IO可随意映射)
+ */
+#define TCFG_AUDIO_ADC_MIC_CHA				LADC_CH_MIC_L
+#define TCFG_AUDIO_ADC_LINE_CHA				LADC_LINE0_MASK
+/*MIC LDO电流档位设置：
+    0:0.625ua    1:1.25ua    2:1.875ua    3:2.5ua*/
+#define TCFG_AUDIO_ADC_LD0_SEL				3
+
+#define TCFG_AUDIO_DAC_ENABLE				DISABLE_THIS_MOUDLE
+//支持Audio功能，才能使能DAC/ADC模块
+
+#ifdef CONFIG_LITE_AUDIO
+#define TCFG_AUDIO_ENABLE					DISABLE
+#if TCFG_AUDIO_ENABLE
+#undef TCFG_AUDIO_ADC_ENABLE
+#undef TCFG_AUDIO_DAC_ENABLE
+#define TCFG_AUDIO_ADC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_AUDIO_DAC_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_DEC_SBC_CLOSE
+#define TCFG_DEC_MSBC_CLOSE
+#define TCFG_DEC_SBC_HWACCEL_CLOSE
+#define TCFG_DEC_PCM_ENABLE                 ENABLE
+#define TCFG_DEC_G729_ENABLE                ENABLE
+#define TCFG_DEC_WTGV2_ENABLE               DISABLE
+#define TCFG_DEC_CVSD_CLOSE
+#define TCFG_ENC_OPUS_ENABLE               	DISABLE
+#define TCFG_ENC_SPEEX_ENABLE              	DISABLE
+#define TCFG_ENC_LC3_ENABLE                 DISABLE
+
+// enc 编码 demo文件
+#define ENC_DEMO_EN                        DISABLE
+
+#define TCFG_ENC_ADPCM_ENABLE               DISABLE
+#define TCFG_ENC_SBC_ENABLE                 DISABLE
+//lc3 编码参数配置
+#if TCFG_ENC_LC3_ENABLE
+#define LC3_CODING_SAMPLERATE  16000 //lc3 编码的采样率
+#define LC3_CODING_FRAME_LEN   100  //帧长度，只支持25，50，100
+#define LC3_CODING_CHANNEL     1  //lc3 的通道数
+#endif
+
+#define TCFG_DEC_WAV_ENABLE				   DISABLE
+#else
+#define TCFG_DEC_PCM_CLOSE
+#define TCFG_DEC_SBC_CLOSE
+#define TCFG_DEC_MSBC_CLOSE
+#define TCFG_DEC_SBC_HWACCEL_CLOSE
+#define TCFG_DEC_CVSD_CLOSE
+#endif/*TCFG_AUDIO_ENABLE*/
+#endif/*CONFIG_LITE_AUDIO*/
+
+#define TCFG_AUDIO_DAC_LDO_VOLT				DACVDD_LDO_1_25V
+/*
+DAC硬件上的连接方式,可选的配置：
+    DAC_OUTPUT_MONO_L               左声道
+    DAC_OUTPUT_MONO_R               右声道
+    DAC_OUTPUT_LR                   立体声
+    DAC_OUTPUT_MONO_LR_DIFF         单声道差分输出
+*/
+#define TCFG_AUDIO_DAC_CONNECT_MODE        DAC_OUTPUT_MONO_LR_DIFF
+/*ENC(双mic降噪)使能*/
+#define TCFG_AUDIO_DUAL_MIC_ENABLE			DISABLE_THIS_MOUDLE
+/*ENC双mic配置主mic副mic对应的mic port*/
+#define DMS_MASTER_MIC0		0 //mic0是主mic
+#define DMS_MASTER_MIC1		1 //mic1是主mic
+#define TCFG_AUDIO_DMS_MIC_MANAGE			DMS_MASTER_MIC0
+
+/*噪声门限&&限幅器使能*/
+#define TCFG_AUDIO_NOISE_GATE				DISABLE_THIS_MOUDLE
+/*
+ *系统音量类型选择
+ *软件数字音量是指纯软件对声音进行运算后得到的
+ *硬件数字音量是指dac内部数字模块对声音进行运算后输出
+ */
+#define VOL_TYPE_DIGITAL		0	//软件数字音量
+#define VOL_TYPE_ANALOG			1	//硬件模拟音量
+#define VOL_TYPE_AD				2	//联合音量(模拟数字混合调节)
+#define VOL_TYPE_DIGITAL_HW		3  	//硬件数字音量
+#define SYS_VOL_TYPE            VOL_TYPE_AD
+/*
+ *通话的时候使用数字音量
+ *0：通话使用和SYS_VOL_TYPE一样的音量调节类型
+ *1：通话使用数字音量调节，更加平滑
+ */
+#define TCFG_CALL_USE_DIGITAL_VOLUME		0
+
+#define TCFG_AUDIO_ANC_ENABLE				0	//0:关闭 1:测试使用 2:正常使用
+
+/*Audio数据导出配置:通过蓝牙spp导出或者sd写卡导出*/
+#define AUDIO_DATA_EXPORT_USE_SD	1
+#define AUDIO_DATA_EXPORT_USE_SPP 	2
+#define TCFG_AUDIO_DATA_EXPORT_ENABLE		DISABLE_THIS_MOUDLE
+/*
+ *支持省电容MIC模块
+ *(1)要使能省电容mic,首先要支持该模块:TCFG_SUPPORT_MIC_CAPLESS
+ *(2)只有支持该模块，才能使能该模块:TCFG_MIC_CAPLESS_ENABLE
+ */
+#define TCFG_SUPPORT_MIC_CAPLESS			ENABLE_THIS_MOUDLE
+//省电容MIC使能
+#define TCFG_MIC_CAPLESS_ENABLE				DISABLE_THIS_MOUDLE
+//省电容MIC1使能
+#define TCFG_MIC1_CAPLESS_ENABLE			DISABLE_THIS_MOUDLE
+
+// AUTOMUTE
+#define AUDIO_OUTPUT_AUTOMUTE   DISABLE_THIS_MOUDLE
+
+
+
+//*********************************************************************************//
+//                            ctmu tocuh key 配置                                      //
+//*********************************************************************************//
+#define TCFG_CTMU_TOUCH_KEY_ENABLE              DISABLE_THIS_MOUDLE             //是否使能CTMU触摸按键
+//key0配置
+#define TCFG_CTMU_TOUCH_KEY0_PRESS_DELTA	   	1000//变化阈值，当触摸产生的变化量达到该阈值，则判断被按下，每个按键可能不一样，可先在驱动里加到打印，再反估阈值
+#define TCFG_CTMU_TOUCH_KEY0_PORT 				IO_PORTA_06 //触摸按键key0 IO配置
+#define TCFG_CTMU_TOUCH_KEY0_VALUE 				0x12 		//触摸按键key0 按键值
+//key1配置
+#define TCFG_CTMU_TOUCH_KEY1_PRESS_DELTA	   	1000//变化阈值，当触摸产生的变化量达到该阈值，则判断被按下，每个按键可能不一样，可先在驱动里加到打印，再反估阈值
+#define TCFG_CTMU_TOUCH_KEY1_PORT 				IO_PORTA_05 //触摸按键key1 IO配置
+#define TCFG_CTMU_TOUCH_KEY1_VALUE 				0x34        //触摸按键key1 按键值
+//key2配置
+#define TCFG_CTMU_TOUCH_KEY2_PRESS_DELTA	   	1000//变化阈值，当触摸产生的变化量达到该阈值，则判断被按下，每个按键可能不一样，可先在驱动里加到打印，再反估阈值
+#define TCFG_CTMU_TOUCH_KEY2_PORT 				IO_PORTB_06 //触摸按键key1 IO配置
+#define TCFG_CTMU_TOUCH_KEY2_VALUE 				0x56        //触摸按键key1 按键值
 
 //*********************************************************************************//
 //                                  充电仓配置                                     //
@@ -189,6 +366,10 @@
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE
 //是否支持拔出充电自动开机功能
 #define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
+//是否支持lighting握手协议
+#define TCFG_HANDSHAKE_ENABLE               DISABLE
+#define TCFG_HANDSHAKE_IO_DATA1             IO_PORTB_02//握手IO靠近lighting座子中间的
+#define TCFG_HANDSHAKE_IO_DATA2             IO_PORTB_07//握手IO在lighting座子边上的
 /*
 充电截止电压可选配置：
     CHARGE_FULL_V_3962  CHARGE_FULL_V_4002  CHARGE_FULL_V_4044  CHARGE_FULL_V_4086
@@ -231,7 +412,7 @@
 //*********************************************************************************//
 //                                  低功耗配置                                     //
 //*********************************************************************************//
-#define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15          //电源模式设置，可选DCDC和LDO
+#define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15//PWR_DCDC15                    //电源模式设置，可选DCDC和LDO
 #define TCFG_LOWPOWER_BTOSC_DISABLE			0                            //低功耗模式下BTOSC是否保持
 #define TCFG_LOWPOWER_LOWPOWER_SEL			1   //芯片是否进入powerdown
 /*强VDDIO等级配置,可选：
@@ -243,21 +424,6 @@
 #define TCFG_LOWPOWER_VDDIOW_LEVEL			VDDIOW_VOL_28V               //弱VDDIO等级配置
 #define TCFG_LOWPOWER_OSC_TYPE              OSC_TYPE_LRC
 
-//*********************************************************************************//
-//                                  EQ配置                                         //
-//*********************************************************************************//
-//EQ配置，使用在线EQ时，EQ文件和EQ模式无效。有EQ文件时，默认不用EQ模式切换功能
-#define TCFG_EQ_ENABLE                            0     //支持EQ功能
-#define TCFG_EQ_ONLINE_ENABLE                     0     //支持在线EQ调试
-#define TCFG_BT_MUSIC_EQ_ENABLE                   0     //支持蓝牙音乐EQ
-#define TCFG_PHONE_EQ_ENABLE                      0     //支持通话近端EQ
-
-
-// ONLINE CCONFIG
-#define TCFG_ONLINE_ENABLE                        (TCFG_EQ_ONLINE_ENABLE)    //是否支持EQ在线调试功能
-#define TCFG_ONLINE_TX_PORT						  IO_PORT_DP                 //EQ调试TX口选择
-#define TCFG_ONLINE_RX_PORT						  IO_PORT_DM                 //EQ调试RX口选择
-
 
 //*********************************************************************************//
 //                                  g-sensor配置                                   //
@@ -268,23 +434,14 @@
 #define TCFG_STK8321_EN                           0
 #define TCFG_GSENOR_USER_IIC_TYPE                 0     //0:软件IIC  1:硬件IIC
 
-
-//*********************************************************************************//
-//                                  code switch配置                                //
-//*********************************************************************************//
-#define TCFG_CODE_SWITCH_ENABLE                   DISABLE_THIS_MOUDLE //code switch使能
-#define TCFG_CODE_SWITCH_A_PHASE_PORT             IO_PORTB_06
-#define TCFG_CODE_SWITCH_B_PHASE_PORT             IO_PORTB_07
-
-
-
 //*********************************************************************************//
 //                                  系统配置                                         //
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
-#define TCFG_SYS_LVD_EN						      0   //电量检测使能
+#define TCFG_SYS_LVD_EN						      1   //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
 #define TCFG_HID_AUTO_SHUTDOWN_TIME             (0 * 60)      //HID无操作自动关机(单位：秒)
+#define AUDIO_OUT_MIXER_ENABLE					  1	  // AUIDO输出使用mixer
 
 //*********************************************************************************//
 //                                  蓝牙配置                                       //
@@ -293,6 +450,7 @@
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
+#if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    0
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
@@ -300,6 +458,9 @@
 #define USER_SUPPORT_PROFILE_HID    1
 #define USER_SUPPORT_PROFILE_PNP    1
 #define USER_SUPPORT_PROFILE_PBAP   0
+#endif
+
+#define APP_ONLINE_DEBUG            0//在线APP调试,发布默认不开
 
 
 
@@ -334,7 +495,6 @@
 #define CONFIG_BT_CALL_ADVANCE_HZ       (64 * 1000000L)
 #define CONFIG_BT_CALL_16k_HZ	        (64 * 1000000L)
 #define CONFIG_BT_CALL_16k_ADVANCE_HZ   (768 * 100000L) //76.8MHz
-
 
 //*********************************************************************************//
 //                                 配置结束                                         //

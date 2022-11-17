@@ -124,14 +124,26 @@ static u8 iokey_value_remap(u8 bit_mark)
 
 #if TCFG_IO_MULTIPLEX_WITH_SD == ENABLE
 static u8 mult_key_value = 1;
+/* extern const int set_to_close_timer0_delay; */
 static void udelay(u32 usec)
 {
+    /* if (set_to_close_timer0_delay) { */
+    /*     JL_MCPWM->MCPWM_CON0 &= ~BIT(8 + 3); */
+    /*     JL_MCPWM->TMR3_CNT = 0; */
+    /*     JL_MCPWM->TMR3_PR = clk_get("lsb") / 1000000 * usec; */
+    /*     JL_MCPWM->TMR3_CON = BIT(10) | BIT(0); */
+    /*     JL_MCPWM->MCPWM_CON0 |= BIT(8 + 3); */
+    /*     while (!(JL_MCPWM->TMR3_CON & BIT(12))); */
+    /*     JL_MCPWM->TMR3_CON = BIT(10); */
+    /*     JL_MCPWM->MCPWM_CON0 &= ~BIT(8 + 3); */
+    /* } else { */
     JL_TIMER0->CON = BIT(14);
     JL_TIMER0->CNT = 0;
-    JL_TIMER0->PRD = clk_get("lsb") / 1000000L  * usec;
-    JL_TIMER0->CON = BIT(0); //lsb clk
+    JL_TIMER0->PRD = 16 * 1000000L / 1000000L  * usec; //1us
+    JL_TIMER0->CON = BIT(0); //sys clk
     while ((JL_TIMER0->CON & BIT(15)) == 0);
     JL_TIMER0->CON = BIT(14);
+    /* } */
 }
 extern u8 sd_io_suspend(u8 sdx, u8 sd_io);
 extern u8 sd_io_resume(u8 sdx, u8 sd_io);

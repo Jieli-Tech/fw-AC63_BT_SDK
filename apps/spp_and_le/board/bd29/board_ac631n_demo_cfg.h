@@ -107,6 +107,11 @@
 #define TCFG_ADKEY_VALUE8                   8
 #define TCFG_ADKEY_VALUE9                   9
 
+//*********************************************************************************//
+//                                 irkey 配置                                      //
+//*********************************************************************************//
+#define TCFG_IRKEY_ENABLE                   DISABLE_THIS_MOUDLE//是否使能AD按键
+#define TCFG_IRKEY_PORT                     IO_PORTA_08        //IR按键端口
 
 //*********************************************************************************//
 //                                  RTC_ALARM配置                                  //
@@ -157,8 +162,8 @@
 //*********************************************************************************//
 //                                  低功耗配置                                     //
 //*********************************************************************************//
-#define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15//
-// #define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15//
+// #define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15//
+#define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15//
 #define TCFG_LOWPOWER_BTOSC_DISABLE			0
 #define TCFG_LOWPOWER_LOWPOWER_SEL			SLEEP_EN
 #define TCFG_LOWPOWER_VDDIOM_LEVEL			VDDIOM_VOL_30V
@@ -176,7 +181,7 @@
 //                                  系统配置                                         //
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
-#define TCFG_SYS_LVD_EN						      0   //电量检测使能
+#define TCFG_SYS_LVD_EN						      1   //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
 #define TCFG_HID_AUTO_SHUTDOWN_TIME              (0 * 60)  //鼠标无操作自动关机(单位：秒)
 

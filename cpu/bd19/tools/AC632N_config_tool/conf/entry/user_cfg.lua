@@ -27,7 +27,7 @@ enable_moudles = {
     ["audio"]   = false,
     ["charge"]  = true,
     ["status"]  = false,
-    ["tone"]    = false,
+    ["tone"]    = true,
     ["bluetooth"]   = true,
     ["ble_config"] = false,
     ["key_msg"] = {enable = false, num = 10},

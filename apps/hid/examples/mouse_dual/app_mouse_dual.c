@@ -305,7 +305,7 @@ static const u8 mouse_report_map[] = {
 #define SNIFF_MIN_INTERVALSLOT        EDR_SET_SNIFF_SLOTS
 #define SNIFF_ATTEMPT_SLOT            2
 #define SNIFF_TIMEOUT_SLOT            1
-#define SNIFF_CHECK_TIMER_PERIOD      100
+#define SNIFF_CHECK_TIMER_PERIOD      200
 #else
 
 #define SNIFF_MODE_TYPE               SNIFF_MODE_DEF
@@ -333,6 +333,7 @@ static const edr_init_cfg_t mouse_dual_edr_config = {
     .page_timeout = 8000,
     .super_timeout = 8000,
     .io_capabilities = 3,
+    .passkey_enable = 0,
     .authentication_req = 2,
     .oob_data = 0,
     .sniff_param = &mouse_dual_sniff_param,
@@ -1467,6 +1468,9 @@ static int mouse_dual_bt_connction_status_event_handler(struct bt_event *bt)
             sys_auto_sniff_controle(1, bt->args);
         } else {
             sys_auto_sniff_controle(0, bt->args);
+            if (edr_hid_timer_handle) {
+                sys_s_hi_timer_modify(edr_hid_timer_handle, (u32)(get_app_sniff_interval()));
+            }
         }
         break;
     default:

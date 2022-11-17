@@ -233,7 +233,9 @@ static int tuya_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
         break;
 
     case GATT_COMM_EVENT_CONNECTION_UPDATE_REQUEST_RESULT:
+        break;
     case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE:
+        log_info("con_handle= %02x, ATT MTU = %u\n", little_endian_read_16(packet, 0), little_endian_read_16(packet, 2));
         break;
 
     default:

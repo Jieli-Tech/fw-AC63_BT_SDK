@@ -11,6 +11,7 @@
 #include "user_cfg.h"
 #include "usb/otg.h"
 #include "norflash.h"
+#include "asm/power/p33.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -301,6 +302,10 @@ void board_init()
 	devices_init();
 
 	board_devices_init();
+    //温度trim调用接口
+    extern void temp_pll_trim_init(void);
+    temp_pll_trim_init();
+
 
 	if(get_charge_online_flag()) {
 		power_set_mode(PWR_LDO15);
@@ -341,6 +346,10 @@ static void close_gpio(void)
         [PORTC_GROUP] = 0x3ff,//
     };
 
+	if(P3_ANA_CON2 & BIT(3))
+	{
+		port_protect(port_group, IO_PORTB_02);	//protect VCM_IO
+	}
 
 #if TCFG_ADKEY_ENABLE
     port_protect(port_group,TCFG_ADKEY_PORT);

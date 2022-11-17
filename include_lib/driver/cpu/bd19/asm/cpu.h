@@ -73,14 +73,13 @@ static inline int cpu_in_irq()
     return flag & 0xff;
 }
 
-static inline int cpu_irq_disabled()
-{
-    int flag;
-    __asm__ volatile("%0 = icfg" : "=r"(flag));
-    return (flag & 0x300) != 0x300;
-}
+///屏蔽的优先级, < N的优先级不可以响应
+#define CPU_IRQ_IPMASK_LEVEL   				3
 
-#if 0
+extern int cpu_irq_disabled();
+
+
+#if 1
 static inline int data_sat_s16(int ind)
 {
     if (ind > 32767) {

@@ -173,6 +173,8 @@ void setup_arch()
 
     wdt_init(WDT_8S);
     /* wdt_close(); */
+    //上电初始所有io
+    port_init();
 
     u8 mode = TCFG_CLOCK_MODE;
     if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15) {
@@ -203,9 +205,6 @@ void setup_arch()
     tick_timer_init();
 
     /*interrupt_init();*/
-
-    //上电初始所有io
-    port_init();
 
 #if (defined CONFIG_DEBUG_ENABLE) || (defined CONFIG_DEBUG_LITE_ENABLE)
     debug_uart_init(NULL);

@@ -87,11 +87,10 @@
 //#define CONFIG_CUSTOM_CFG3_TYPE
 //#define CONFIG_CUSTOM_CFG3_VALUE
 
-
-//#define CONFIG_VDDIO_LVD_LEVEL                  4 ////VDDIO_LVD挡位，0: 1.9V   1: 2.0V   2: 2.1V   3: 2.2V   4: 2.3V   5: 2.4V   6: 2.5V   7: 2.6V
+//#define CONFIG_VDDIO_LVD_LEVEL                  4 ////VDDIO_LVD挡位，0: 1.55V   1: 1.70V   2: 1.85V   3: 2.00V   4: 2.15V   5: 2.30V   6: 2.45V   7: 2.60V
 
 //with single-bank mode,actual vm size should larger this VM_LEAST_SIZE,and dual bank mode,actual vm size equals this;
-#define CONFIG_VM_LEAST_SIZE                    32K
+#define CONFIG_VM_LEAST_SIZE                    8K
 //config whether erased this area when do a update,1-No Operation,0-Erase
 #define CONFIG_VM_OPT							1
 

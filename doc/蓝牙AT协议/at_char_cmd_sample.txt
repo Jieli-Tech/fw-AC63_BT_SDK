@@ -24,4 +24,13 @@ AT+CONN=112233445566\r
 AT+CONN_CANNEL\r
 
 
+//设置进入关机睡眠
+AT+POWEROFF\r
+
+//低功耗模式控制
+AT+LOWPOWER=1\r
+AT+LOWPOWER=0\r
+AT+LOWPOWER?\r
+
+
 

@@ -11,6 +11,9 @@
 #define SIG_MESH_ALIGENIE_FAN            	6 // examples/AliGenie_socket.c
 #define SIG_MESH_LIGHT_LIGHTNESS_SERVER		7 // examples/light_lightness_server.c
 #define SIG_MESH_TUYA_LIGHT            	    8 // examples/AliGenie_socket.c
+#define SIG_MESH_TENCENT_MESH               9 // examples/tecent_mesh.c
+#define SIG_MESH_PROVISIONER                10 // examples/provisioner.c
+#define SIG_MESH_ONOFF_TOBE_PROV            11 // examples/onoff_tobe_provision.c
 // more...
 
 //< Config whick example will use in <examples>

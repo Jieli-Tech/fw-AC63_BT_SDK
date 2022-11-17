@@ -32,6 +32,8 @@ typedef enum {
     BLE_TEST_UPDATA,
     NORFLASH_UPDATA,
     //NOTE:以上的定义不要调整,新升级方式在此添加,注意加在USER_NORFLASH_UFW_UPDATA之前;
+    USER_LC_FLASH_UFW_UPDATA,
+    USB_HID_UPDATA,
     USER_NORFLASH_UFW_UPDATA,
 
     NON_DEV = 0xFFFF,

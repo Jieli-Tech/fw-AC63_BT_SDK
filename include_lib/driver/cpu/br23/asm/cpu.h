@@ -38,7 +38,7 @@ typedef unsigned long long      u64;
 #define CPU_CORE_NUM     1
 
 ///屏蔽的优先级
-#define IRQ_IPMASK   6
+#define CPU_IRQ_IPMASK_LEVEL   6
 
 #define  CPU_TASK_CLR(a)
 #define  CPU_TASK_SW(a) 		\
@@ -80,7 +80,7 @@ static inline int cpu_irq_disabled()
 {
     int flag;
     __asm__ volatile("%0 = icfg" : "=r"(flag));
-    return (flag & 0x300) != 0x300 || ((q32DSP(0)->IPMASK) == IRQ_IPMASK);
+    return (flag & 0x300) != 0x300 || ((q32DSP(0)->IPMASK) == CPU_IRQ_IPMASK_LEVEL);
 }
 
 #if 0

@@ -382,8 +382,8 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 //                                  低功耗配置                                     //
 //*********************************************************************************//
-#define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15                    //电源模式设置，可选DCDC和LDO
-//#define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15 //电源模式设置，可选DCDC和LDO
+// #define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15                    //电源模式设置，可选DCDC和LDO
+#define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15 //电源模式设置，可选DCDC和LDO
 #define TCFG_LOWPOWER_BTOSC_DISABLE			0                            //低功耗模式下BTOSC是否保持
 #define TCFG_LOWPOWER_LOWPOWER_SEL			1   //芯片是否进入powerdown
 /*强VDDIO等级配置,可选：

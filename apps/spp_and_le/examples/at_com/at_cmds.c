@@ -57,6 +57,7 @@ extern void bt_max_pwr_set(u8 pwr, u8 pg_pwr, u8 iq_pwr, u8 ble_pwr);
 
 void bredr_set_fix_pwr(u8 fix);
 void ble_set_fix_pwr(u8 fix);
+void at_set_atcom_low_power_mode(u8 enable);
 
 
 static u8 at_uart_fifo_buffer[AT_UART_FIFIO_BUFFER_SIZE];
@@ -284,6 +285,20 @@ static void at_com_packet_handler(const u8 *packet, int size)
         at_set_soft_poweroff();
     }
     break;
+
+    case AT_CMD_SET_LOW_POWER_MODE : {
+        status = 0;
+        log_info("AT_CMD_SET_LOW_POWER_MODE: %d", cmd->payload[0]);
+        at_send_event_cmd_complete(cmd->opcode, status, NULL, 0);
+#if (defined CONFIG_CPU_BD19)
+        extern void board_at_uart_wakeup_enalbe(u8 enalbe);
+        board_at_uart_wakeup_enalbe(cmd->payload[0]);
+        at_set_atcom_low_power_mode(cmd->payload[0]);
+#endif
+
+    }
+    break;
+
     case AT_CMD_SET_CONFIRM_GKEY:
         log_info("AT_CMD_SET_CONFIRM_GKEY");
         status = 0;

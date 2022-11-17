@@ -11,7 +11,7 @@
 /* #include "audio_config.h" */
 /* #include "gSensor/gSensor_manage.h" */
 #include "key_event_deal.h"
-/* #include "asm/lp_touch_key_api.h" */
+#include "asm/lp_touch_key_api.h"
 #include "user_cfg.h"
 #include "asm/power/p33.h"
 #include "asm/power_interface.h"
@@ -35,7 +35,7 @@ const struct low_power_param power_param = {
     .vddiom_lev     = TCFG_LOWPOWER_VDDIOM_LEVEL,          //强VDDIO等级,可选：2.0V  2.2V  2.4V  2.6V  2.8V  3.0V  3.2V  3.6V
     .vddiow_lev     = TCFG_LOWPOWER_VDDIOW_LEVEL,          //弱VDDIO等级,可选：2.1V  2.4V  2.8V  3.2V
     .osc_type       = OSC_TYPE_LRC,
-    .lpctmu_en 		= 0,
+    .lpctmu_en      = TCFG_LP_TOUCH_KEY_ENABLE,
 };
 
 #define __this (&status_config)
@@ -212,6 +212,32 @@ const struct adkey_platform_data adkey_data = {
 };
 #endif
 
+#if TCFG_IRKEY_ENABLE
+const struct irkey_platform_data irkey_data = {
+	    .enable = TCFG_IRKEY_ENABLE,                              //IR按键使能
+	    .port = TCFG_IRKEY_PORT,                                       //IR按键口
+};
+#endif
+
+/************************** LP TOUCH KEY ****************************/
+#if TCFG_LP_TOUCH_KEY_ENABLE
+const struct lp_touch_key_platform_data lp_touch_key_config = {
+    //CH0: POWER KEY
+    .ch0.enable = 1,
+    .ch0.port = IO_PORTB_01,
+    .ch0.sensitivity = TCFG_LP_TOUCH_KEY_SENSITIVITY, //cap检测灵敏度级数5
+    .ch0.key_value = 0,
+
+#if TCFG_LP_EARTCH_KEY_ENABLE
+    .ch1.enable = 1,
+    .ch1.port = IO_PORTB_02,
+    .ch1.sensitivity = TCFG_EARIN_TOUCH_KEY_SENSITIVITY, //cap检测灵敏度级数
+    .ch1.key_value = 3, //非0xFF, 使用标准入耳检测流程; 0xFF, 使用用户自定义入耳检测流程
+#endif /* #if TCFG_LP_EARTCH_KEY_ENABLE */
+};
+#endif /* #if TCFG_LP_TOUCH_KEY_ENABLE */
+
+
 void debug_uart_init(const struct uart_platform_data *data)
 {
 #if TCFG_UART0_ENABLE
@@ -272,9 +298,15 @@ static void board_devices_init(void)
     pwm_led_init(&pwm_led_data);
 #endif
 
-#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE)
+#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_IRKEY_ENABLE)
 	key_driver_init();
 #endif
+
+
+#if TCFG_LP_TOUCH_KEY_ENABLE
+    lp_touch_key_init(&lp_touch_key_config);
+#endif /* #if TCFG_LP_TOUCH_KEY_ENABLE */
+
 }
 
 extern void cfg_file_parse(u8 idx);
@@ -287,6 +319,9 @@ void board_init()
     devices_init();
 
 	board_devices_init();
+    //温度trim调用接口
+    extern void temp_pll_trim_init(void);
+    temp_pll_trim_init();
 
 #if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
     if(get_charge_online_flag()){
@@ -376,6 +411,7 @@ static void close_gpio(u8 is_softoff)
         [PORTD_GROUP] = 0xffff,
     };
 
+#if (!TCFG_LP_TOUCH_KEY_ENABLE)
 #if TCFG_ADKEY_ENABLE
     port_protect(port_group,TCFG_ADKEY_PORT);
 #endif
@@ -385,6 +421,7 @@ static void close_gpio(u8 is_softoff)
     /* port_protect(port_group, TCFG_IOKEY_PREV_ONE_PORT); */
     /* port_protect(port_group, TCFG_IOKEY_NEXT_ONE_PORT); */
 #endif /* TCFG_IOKEY_ENABLE */
+#endif
 
 #if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
     if (is_softoff == 0) {
@@ -450,8 +487,12 @@ void board_set_soft_poweroff(void)
 {
     u32 porta_value = 0xffff;
 
+#if TCFG_LP_TOUCH_KEY_ENABLE
+    u32 portb_value = 0xffff;
+#else
 	//保留长按Reset Pin - PB1
     u32 portb_value = 0xffff & (~BIT(1));
+#endif
     u32 portc_value = 0xffff;
 
 	mask_io_cfg();
@@ -578,8 +619,10 @@ struct port_wakeup ldoin_fall_port = {
 
 
 const struct wakeup_param wk_param = {
+#if (!TCFG_LP_TOUCH_KEY_ENABLE)
 #if TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE
 	.port[1] = &port0,
+#endif
 #endif
 #if TCFG_CHARGE_ENABLE
     .port[2] = &charge_port,

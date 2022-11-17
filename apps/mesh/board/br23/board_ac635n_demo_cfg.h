@@ -241,6 +241,7 @@
 #define TCFG_DEC_OPUS_ENABLE                DISABLE
 #define TCFG_DEC_SPEEX_ENABLE         	    DISABLE
 #define TCFG_DEC_LC3_ENABLE         	    DISABLE
+#define TCFG_DEC_MP3_ENABLE					DISABLE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #define TCFG_ENC_ADPCM_ENABLE              	DISABLE

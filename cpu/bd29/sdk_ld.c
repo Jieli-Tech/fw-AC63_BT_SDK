@@ -150,6 +150,7 @@ SECTIONS
         . = ALIGN(4);
 		#include "system/system_lib_data.ld"
 
+        . = ALIGN(4);
 	  } > ram0
 
     .irq_stack ALIGN(32) :
@@ -246,8 +247,8 @@ SECTIONS
     } > ram0
 
     /* maskrom area */
-    NVRAM_LIMIT = 0xc000 - 0x100 - 0x400;
-   	_nv_pre_end = 0xc000 - 0x100 - 0x400;
+    NVRAM_LIMIT = 0xc000 - 0x100 - 0x400 - UPDATA_SIZE;
+   	_nv_pre_end = 0xc000 - 0x100 - 0x400 - UPDATA_SIZE;
     ASSERT(NVRAM_END <= NVRAM_LIMIT, "NVRAM space overflow!")
 
 
@@ -280,17 +281,21 @@ SECTIONS
 text_begin  = ADDR(.text) ;
 text_size   = SIZEOF(.text) ;
 text_end    = ADDR(.text) + SIZEOF(.text) ;
+ASSERT((text_size % 4) == 0,"!!! text_size Not Align 4 Bytes !!!");
 
 bss_begin = ADDR(.bss) ;
 bss_size  = SIZEOF(.bss);
+ASSERT((bss_size % 4) == 0,"!!! bss_size Not Align 4 Bytes !!!");
 
 //nvbss_begin = ORIGIN(nvram);
 nvbss_begin = NVRAM_DATA_START;
 nvbss_size  = NVRAM_LIMIT - nvbss_begin;
+ASSERT((nvbss_size % 4) == 0,"!!! nvbss_size Not Align 4 Bytes !!!");
 
 data_addr = ADDR(.data)  ;
 data_begin = text_begin + text_size;
 data_size =  SIZEOF(.data) ;
+ASSERT((data_size % 4) == 0,"!!! data_size Not Align 4 Bytes !!!");
 
 _HEAP_BEGIN = NVRAM_END;
 PROVIDE(HEAP_BEGIN = NVRAM_END);

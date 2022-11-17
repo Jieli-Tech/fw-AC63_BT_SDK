@@ -8,6 +8,8 @@
 #include "asm/power/p33.h"
 #include "asm/iic_soft.h"
 #include "usb/otg.h"
+#include "rtc_alarm.h"
+#include "asm/power/power_port.h"
 
 #ifdef CONFIG_LITE_AUDIO
 #include "media/includes.h"
@@ -43,6 +45,9 @@ const struct low_power_param power_param = {
     .vddiow_lev     = TCFG_LOWPOWER_VDDIOW_LEVEL,          //弱VDDIO等级,可选：2.1V  2.4V  2.8V  3.2V
     .osc_type       = OSC_TYPE_LRC,
     .dcdc_port      = TCFG_DCDC_PORT_SEL,
+#if TCFG_RTC_ALARM_ENABLE
+    .rtc_clk    	= CLK_SEL_32K,
+#endif
 };
 
 
@@ -118,6 +123,13 @@ const struct adkey_platform_data adkey_data = {
 };
 #endif
 
+#if TCFG_IRKEY_ENABLE
+const struct irkey_platform_data irkey_data = {
+	    .enable = TCFG_IRKEY_ENABLE,                              //IR按键使能
+	    .port = TCFG_IRKEY_PORT,                                       //IR按键口
+};
+#endif
+
 /************************** IO KEY ****************************/
 #if TCFG_IOKEY_ENABLE
 const struct iokey_port iokey_list[] = {
@@ -164,6 +176,32 @@ const struct key_remap_data iokey_remap_data = {
 
 #endif
 
+#if TCFG_RTC_ALARM_ENABLE
+const struct sys_time def_sys_time = {  //初始一下当前时间
+    .year = 2020,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+const struct sys_time def_alarm = {     //初始一下目标时间，即闹钟时间
+    .year = 2020,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 7,
+};
+
+extern void alarm_isr_user_cbfun(u8 index);
+RTC_DEV_PLATFORM_DATA_BEGIN(rtc_data)
+	.default_sys_time = &def_sys_time,
+	.default_alarm = &def_alarm,
+    /* .cbfun = NULL,                      //闹钟中断的回调函数,用户自行定义 */
+    .cbfun = alarm_isr_user_cbfun,
+RTC_DEV_PLATFORM_DATA_END()
+#endif
 
 /************************** otg data****************************/
 #if TCFG_OTG_MODE
@@ -227,8 +265,12 @@ static void board_devices_init(void)
     pwm_led_init(&pwm_led_data);
 #endif
 
-#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
+#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_IRKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
 	key_driver_init();
+#endif
+
+#if TCFG_RTC_ALARM_ENABLE
+    alarm_init(&rtc_data);
 #endif
 }
 
@@ -366,20 +408,6 @@ static struct port_wakeup port1 = {
 };
 
 
-enum {
-    PORTA_GROUP = 0,
-    PORTB_GROUP,
-    PORTC_GROUP,
-};
-
-static void port_protect(u16 *port_group, u32 port_num)
-{
-    if (port_num == NO_CONFIG_PORT) {
-        return;
-    }
-    port_group[port_num / IO_GROUP_NUM] &= ~BIT(port_num % IO_GROUP_NUM);
-}
-
 /*进软关机之前默认将IO口都设置成高阻状态，需要保留原来状态的请修改该函数*/
 static void close_gpio(u8 is_softoff)
 {
@@ -388,6 +416,18 @@ static void close_gpio(u8 is_softoff)
         [PORTB_GROUP] = 0xffff,
         [PORTC_GROUP] = 0xffff,
     };
+
+    /*
+       u8 mode = (JL_SFC->CON >> 8) & 0x0f;
+       extern u32 spi_get_port(void);
+       if (spi_get_port() != 0) {
+       if ((mode == 0b0101) || (mode == 0b0111)) {
+       port_group[PORTA_GROUP] = 0x1fff;
+       } else {
+       port_group[PORTA_GROUP] = 0x9fff;
+       }
+       }
+     */
 
 #if TCFG_IOKEY_ENABLE
 	port_protect(port_group, TCFG_IOKEY_POWER_ONE_PORT);
@@ -435,60 +475,78 @@ static void close_gpio(u8 is_softoff)
 
 /*进软关机之前默认将IO口都设置成高阻状态，需要保留原来状态的请修改该函数*/
 extern void dac_power_off(void);
+
 void board_set_soft_poweroff(void)
 {
-    u32 porta_value = 0xffff;
-    u32 portb_value = 0xffff & ~(BIT(1));
-    u32 portc_value = 0xffff;
-	u32 portd_value = 0xffff;
-
-	u32 spi_get_port(void);
-	u8 port = spi_get_port();
-	u8 mode = (JL_SFC->CON >> 8) & 0xf;
-
-	if(port == 0){
-	  portd_value &= ~(BIT(4)|BIT(3)|BIT(0)|BIT(1)|BIT(2));
-	  if((mode == 0b0101)||(mode == 0b0111)){
-	    portb_value &= ~(BIT(7));
-	    portd_value &= ~(BIT(5));
-	  }
-	}else{
-	  porta_value &= ~(BIT(13)|BIT(14));
-	  portd_value &= ~(BIT(4)|BIT(0)|BIT(1));
-	  if((mode == 0b0101)||(mode == 0b0111)){
-	    porta_value &= ~(BIT(15));
-	    portd_value &= ~(BIT(5));
-	  }
-	}
+    u16 port_group[] = {
+        [PORTA_GROUP] = 0xffff,
+        [PORTB_GROUP] = 0xffff,
+        [PORTC_GROUP] = 0xffff,
+		[PORTD_GROUP] = 0Xffff,
+    };
 
 	if(TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15){
 		power_set_mode(PWR_LDO15);
 	}
 
-    gpio_dir(GPIOA, 0, 16, porta_value, GPIO_OR);
-    gpio_set_pu(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_set_pd(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_die(GPIOA, 0, 16, ~porta_value, GPIO_AND);
-    gpio_dieh(GPIOA, 0, 16, ~portc_value, GPIO_AND);
+	//flash电源
+	if(spi_get_port()==0){
+		port_protect(port_group, SPI0_PWR_A);
+		port_protect(port_group, SPI0_CS_A);
+		port_protect(port_group, SPI0_CLK_A);
+		port_protect(port_group, SPI0_DO_D0_A);
+		port_protect(port_group, SPI0_DI_D1_A);
+		if(get_sfc_bit_mode()==4){
+			port_protect(port_group, SPI0_WP_D2_A);
+			port_protect(port_group, SPI0_HOLD_D3_A);
+		}
+	}else{
+		port_protect(port_group, SPI0_PWR_B);
+		port_protect(port_group, SPI0_CS_B);
+		port_protect(port_group, SPI0_CLK_B);
+		port_protect(port_group, SPI0_DO_D0_B);
+		port_protect(port_group, SPI0_DI_D1_B);
+		if(get_sfc_bit_mode()==4){
+			port_protect(port_group, SPI0_WP_D2_B);
+			port_protect(port_group, SPI0_HOLD_D3_B);
+		}
+	}
 
-    //保留长按Reset Pin - PB1
-    gpio_dir(GPIOB, 0, 16, portb_value, GPIO_OR);
-    gpio_set_pu(GPIOB, 0, 16, ~portb_value, GPIO_AND);
-    gpio_set_pd(GPIOB, 0, 16, ~portb_value, GPIO_AND);
-    gpio_die(GPIOB, 0, 16, ~portb_value, GPIO_AND);
-    gpio_dieh(GPIOB, 0, 16, ~portb_value, GPIO_AND);
+//adkey / io可以作为唤醒口保留
+#if TCFG_IOKEY_ENABLE
+	port_protect(port_group, TCFG_IOKEY_POWER_ONE_PORT);
+#endif
 
-    gpio_dir(GPIOC, 0, 16, portc_value, GPIO_OR);
-    gpio_set_pu(GPIOC, 0, 16, ~portc_value, GPIO_AND);
-    gpio_set_pd(GPIOC, 0, 16, ~portc_value, GPIO_AND);
-    gpio_die(GPIOC, 0, 16, ~portc_value, GPIO_AND);
-    gpio_dieh(GPIOC, 0, 16, ~portc_value, GPIO_AND);
+#if TCFG_ADKEY_ENABLE
+    port_protect(port_group,TCFG_ADKEY_PORT);
+#endif
 
-    gpio_dir(GPIOD, 0, 16, portd_value, GPIO_OR);
-    gpio_set_pu(GPIOD, 0, 16, ~portd_value, GPIO_AND);
-    gpio_set_pd(GPIOD, 0, 16, ~portd_value, GPIO_AND);
-    gpio_die(GPIOD, 0, 16, ~portd_value, GPIO_AND);
-    gpio_dieh(GPIOD, 0, 16, ~portd_value, GPIO_AND);
+    //< close gpio
+    gpio_dir(GPIOA, 0, 16, port_group[PORTA_GROUP], GPIO_OR);
+    gpio_set_pu(GPIOA, 0, 16, ~port_group[PORTA_GROUP], GPIO_AND);
+    gpio_set_pd(GPIOA, 0, 16, ~port_group[PORTA_GROUP], GPIO_AND);
+    gpio_die(GPIOA, 0, 16, ~port_group[PORTA_GROUP], GPIO_AND);
+    gpio_dieh(GPIOA, 0, 16, ~port_group[PORTA_GROUP], GPIO_AND);
+
+    gpio_dir(GPIOB, 0, 16, port_group[PORTB_GROUP], GPIO_OR);
+    gpio_set_pu(GPIOB, 0, 16, ~port_group[PORTB_GROUP], GPIO_AND);
+    gpio_set_pd(GPIOB, 0, 16, ~port_group[PORTB_GROUP], GPIO_AND);
+    gpio_die(GPIOB, 0, 16, ~port_group[PORTB_GROUP], GPIO_AND);
+    gpio_dieh(GPIOB, 0, 16, ~port_group[PORTB_GROUP], GPIO_AND);
+
+    gpio_dir(GPIOC, 0, 16, port_group[PORTC_GROUP], GPIO_OR);
+    gpio_set_pu(GPIOC, 0, 16, ~port_group[PORTC_GROUP], GPIO_AND);
+    gpio_set_pd(GPIOC, 0, 16, ~port_group[PORTC_GROUP], GPIO_AND);
+    gpio_die(GPIOC, 0, 16, ~port_group[PORTC_GROUP], GPIO_AND);
+    gpio_dieh(GPIOC, 0, 16, ~port_group[PORTC_GROUP], GPIO_AND);
+
+	gpio_dir(GPIOD, 0, 16, port_group[PORTD_GROUP], GPIO_OR);
+    gpio_set_pu(GPIOD, 0, 16, ~port_group[PORTD_GROUP], GPIO_AND);
+    gpio_set_pd(GPIOD, 0, 16, ~port_group[PORTD_GROUP], GPIO_AND);
+    gpio_die(GPIOD, 0, 16, ~port_group[PORTD_GROUP], GPIO_AND);
+    gpio_dieh(GPIOD, 0, 16, ~port_group[PORTD_GROUP], GPIO_AND);
+
+    usb_iomode(1);
 
     gpio_set_pull_up(IO_PORT_DP, 0);
     gpio_set_pull_down(IO_PORT_DP, 0);
@@ -574,6 +632,9 @@ void board_power_init(void)
 	power_keep_dacvdd_en(0);
 
 	power_wakeup_init(&wk_param);
+
+
+
 
 #if (!TCFG_IOKEY_ENABLE && !TCFG_ADKEY_ENABLE)
     charge_check_and_set_pinr(0);

@@ -15,7 +15,7 @@
 #define AD_CH_PB4    (0x9)
 #define AD_CH_DP0    (0xA)
 #define AD_CH_DM0    (0xB)
-#define AD_CH_DB6    (0xC)
+#define AD_CH_PB6    (0xC)
 #define AD_CH_PMU    (0xD)
 #define AD_CH_OSC32K     (0xE)
 #define AD_CH_BT     (0xF)

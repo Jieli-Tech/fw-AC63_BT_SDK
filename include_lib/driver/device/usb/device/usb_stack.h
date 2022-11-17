@@ -219,6 +219,7 @@ u32 usb_root2_testing();
 extern void usb_start();
 extern void usb_stop();
 extern void usb_pause();
+void get_device_info_to_ota(void *parm_priv);
 
 /* #define usb_add_desc_config(fn) \                                    */
 /*     const desc_config usb_desc_config##fn sec(.usb.desc_config) = fn */

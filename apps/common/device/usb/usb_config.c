@@ -46,6 +46,12 @@ static u8 ep0_dma_buffer[EP0_SETUP_LEN]     __attribute__((aligned(4))) SEC(.usb
 #define     HID_DMA_SIZE    0
 #endif
 
+#if TCFG_USB_CUSTOM_HID_ENABLE
+#define     CUSTOM_HID_DMA_SIZE    64 * 2
+#else
+#define     CUSTOM_HID_DMA_SIZE    0
+#endif
+
 #if TCFG_USB_SLAVE_AUDIO_ENABLE
 #define     AUDIO_DMA_SIZE  256+192
 #else
@@ -77,7 +83,7 @@ static struct usb_config_var_t _usb_config_var SEC(.usb_config_var);
 
 #define USB_DMA_BUF_ALIGN	(8)
 #ifndef USB_DMA_BUF_MAX_SIZE
-#define USB_DMA_BUF_MAX_SIZE (HID_DMA_SIZE +USB_DMA_BUF_ALIGN+ AUDIO_DMA_SIZE +USB_DMA_BUF_ALIGN+ MSD_DMA_SIZE*2 + USB_DMA_BUF_ALIGN+CDC_DMA_SIZE + USB_DMA_BUF_ALIGN)
+#define USB_DMA_BUF_MAX_SIZE (HID_DMA_SIZE +USB_DMA_BUF_ALIGN+ AUDIO_DMA_SIZE +USB_DMA_BUF_ALIGN+ MSD_DMA_SIZE*2 + USB_DMA_BUF_ALIGN+CDC_DMA_SIZE + USB_DMA_BUF_ALIGN + CUSTOM_HID_DMA_SIZE + USB_DMA_BUF_ALIGN+ 100)
 #endif//USB_DMA_BUF_MAX_SIZE
 
 static u8 usb_dma_buf[USB_DMA_BUF_MAX_SIZE] SEC(.usb_msd_dma) __attribute__((aligned(8)));

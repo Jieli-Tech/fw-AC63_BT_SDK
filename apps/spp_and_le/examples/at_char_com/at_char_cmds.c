@@ -68,8 +68,10 @@ static u8 test_tcp_datasend = 0;
 static u8 BT_UART_BUF[BT_UART_FIFIO_BUFFER_SIZE];
 cbuffer_t bt_to_uart_cbuf;
 
-
 int le_at_client_creat_cannel(void);
+void at_set_low_power_mode(u8 enable);
+u8 at_get_low_power_mode(void);
+void at_set_soft_poweroff(void);
 //------------------------------------------
 
 
@@ -118,6 +120,8 @@ enum {
     STR_ID_DISC,
     STR_ID_OTA,
     STR_ID_CONN_CANNEL,
+    STR_ID_POWER_OFF,
+    STR_ID_LOW_POWER,
     //    STR_ID_,
 //    STR_ID_,
 };
@@ -148,6 +152,8 @@ static const char at_str_conn[]        = "CONN";
 static const char at_str_disc[]        = "DISC";
 static const char at_str_ota[]         = "OTA";
 static const char at_str_conn_cannel[] = "CONN_CANNEL";
+static const char at_str_power_off[]   = "POWEROFF";
+static const char at_str_lowpower[]    = "LOWPOWER";
 
 
 //static const char at_str_[]  = "";
@@ -187,6 +193,8 @@ static const str_info_t at_cmd_str_table[] = {
     INPUT_STR_INFO(STR_ID_DISC, at_str_disc),
     INPUT_STR_INFO(STR_ID_OTA, at_str_ota),
     INPUT_STR_INFO(STR_ID_CONN_CANNEL, at_str_conn_cannel),
+    INPUT_STR_INFO(STR_ID_POWER_OFF, at_str_power_off),
+    INPUT_STR_INFO(STR_ID_LOW_POWER, at_str_lowpower),
 
 //    INPUT_STR_INFO(, ),
 //    INPUT_STR_INFO(, ),
@@ -494,12 +502,14 @@ static void at_packet_handler(u8 *packet, int size)
 
 #if FLOW_CONTROL
     if (cur_atcom_cid < 8) {
+#if CONFIG_BT_GATT_CLIENT_NUM
         log_info("###le_client_data(%d):", size);
         /* put_buf(packet, size); */
         do {
             ret = le_att_client_send_data(cur_atcom_cid, packet, size);
             os_time_dly(1);
         } while (ret != 0);
+#endif
         return;
     } else if (cur_atcom_cid == 8) {
         log_info("###le_server_data(%d):", size);
@@ -512,9 +522,11 @@ static void at_packet_handler(u8 *packet, int size)
     }
 #else
     if (cur_atcom_cid < 8) {
+#if CONFIG_BT_GATT_CLIENT_NUM
         log_info("###le_client_data(%d):", size);
         /* put_buf(packet, size); */
         le_att_client_send_data(cur_atcom_cid, packet, size);
+#endif
         return;
     } else if (cur_atcom_cid == 8) {
         log_info("###le_server_data(%d):", size);
@@ -662,6 +674,38 @@ at_cmd_parse_start:
         }
         break;
 
+    case STR_ID_POWER_OFF:  //2.18
+        log_info("STR_ID_POWER_OFF\n");
+        {
+            AT_STRING_SEND("OK");
+            // TODO ,需要返回错误码
+            sys_timeout_add(0, at_set_soft_poweroff, 100);
+        }
+        break;
+
+    case STR_ID_LOW_POWER:  //2.18
+        log_info("STR_ID_LOW_POWER\n");
+        {
+            u8 lp_state;
+            if (operator_type == AT_CMD_OPT_SET) { //2.9
+                AT_STRING_SEND("OK");
+                lp_state = func_char_to_dec(par->data, '\0');
+                log_info("set lowpower: %d\n", lp_state);
+#if (defined CONFIG_CPU_BD19)
+                at_set_low_power_mode(lp_state);
+                extern void board_at_uart_wakeup_enalbe(u8 enalbe);
+                board_at_uart_wakeup_enalbe(lp_state);
+#endif
+            } else {
+                lp_state = at_get_low_power_mode();
+                log_info("get lowpower: %d\n", lp_state);
+                sprintf(buf, "+LOWPOWER:%d", lp_state);
+                at_cmd_send(buf, strlen(buf));
+                AT_STRING_SEND("OK");
+            }
+        }
+        break;
+
     case STR_ID_ADV:
         log_info("STR_ID_ADV\n");
         {
@@ -788,6 +832,7 @@ at_cmd_parse_start:
     case STR_ID_CONNPARAM:
         log_info("STR_ID_CONNPARAM\n");
         {
+#if CONFIG_BT_GATT_CLIENT_NUM
             u16 conn_param[4] = {0}; //interva_min, interva_max, conn_latency, conn_timeout;
             u8 i = 0;
 
@@ -829,11 +874,13 @@ at_cmd_parse_start:
                 at_cmd_send(buf, len);
                 AT_STRING_SEND("OK");
             }
+#endif
         }
         break;
 
     case STR_ID_SCAN:  //2.18
         log_info("STR_ID_SCAN\n");
+#if CONFIG_BT_GATT_CLIENT_NUM
         {
             ret = le_at_client_scan_enable(func_char_to_dec(par->data, '\0'));
 
@@ -844,10 +891,12 @@ at_cmd_parse_start:
                 at_respond_send_err(ERR_AT_CMD);
             }
         }
+#endif
         break;
 
     case STR_ID_TARGETUUID:  //2.19 TODO
         log_info("STR_ID_TARGETUUID\n");
+#if CONFIG_BT_GATT_CLIENT_NUM
         {
             u16 tag_uuid;
             if (operator_type == AT_CMD_OPT_SET) {
@@ -861,10 +910,12 @@ at_cmd_parse_start:
                 at_respond_send_err(ERR_AT_CMD);
             }
         }
+#endif
         break;
 
     case STR_ID_CONN:           //2.20
         log_info("STR_ID_CONN\n");
+#if CONFIG_BT_GATT_CLIENT_NUM
         {
             struct create_conn_param_t create_conn_par;
             str_2_hex(par->data, par->len, create_conn_par.peer_address);
@@ -878,15 +929,18 @@ at_cmd_parse_start:
                 at_respond_send_err(ERR_AT_CMD);
             }
         }
+#endif
         break;
 
     case STR_ID_CONN_CANNEL:           //2.20
         log_info("STR_ID_CONN_CANNEL\n");
+#if CONFIG_BT_GATT_CLIENT_NUM
         if (!le_at_client_creat_cannel()) {
             AT_STRING_SEND("OK");
         } else {
             at_respond_send_err(ERR_AT_CMD);
         }
+#endif
         break;
 
     case STR_ID_DISC:           //2.21
@@ -894,7 +948,9 @@ at_cmd_parse_start:
         {
             u8 tmp_cid = func_char_to_dec(par->data, '\0');
             if (tmp_cid < 7) {
+#if CONFIG_BT_GATT_CLIENT_NUM
                 le_at_client_disconnect(tmp_cid);
+#endif
             } else if (tmp_cid == 8) {
                 ble_app_disconnect();
             } else {

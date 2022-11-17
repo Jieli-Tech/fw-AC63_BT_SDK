@@ -14,6 +14,7 @@
 
 #define CONFIG_DEBUG_ENABLE
 
+#define TCFG_MEDIA_LIB_USE_MALLOC		    1
 #include "board_config.h"
 
 #include "btcontroller_mode.h"

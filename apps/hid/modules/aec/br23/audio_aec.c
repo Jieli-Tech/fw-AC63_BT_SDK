@@ -62,6 +62,11 @@ const u8 CONST_ANS_MODE = 1;
 /*参考数据变采样处理*/
 const u8 CONST_REF_SRC = 0;
 
+/*
+ *ANS版本配置
+ *ANS_V100:传统降噪
+ **/
+const u8 CONST_ANS_VERSION = ANS_V100;
 
 /*
  *延时估计使能

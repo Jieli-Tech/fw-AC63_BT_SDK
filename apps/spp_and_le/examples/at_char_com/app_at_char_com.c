@@ -67,6 +67,16 @@ void at_set_soft_poweroff(void)
     atchar_set_soft_poweroff();
 }
 
+void at_set_low_power_mode(u8 enable)
+{
+    is_app_atchar_active = !enable;
+}
+
+u8 at_get_low_power_mode(void)
+{
+    return !is_app_atchar_active;
+}
+
 #define BLE_AT_TEST_SEND_DATA    0
 void ble_at_client_test_senddata(void);
 static void atchar_timer_handler(void)
@@ -84,16 +94,18 @@ static void atchar_app_start()
     log_info("app_file: %s", __FILE__);
 
     clk_set("sys", BT_NORMAL_HZ);
+#if TCFG_USER_BLE_ENABLE
     u32 sys_clk =  clk_get("sys");
     bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
 
     APP_IO_OUTPUT_0(B, 0);
 
-#if TCFG_USER_BLE_ENABLE
+
     btstack_ble_start_before_init(NULL, 0);
+    btstack_init();
 #endif
 
-    btstack_init();
+
     /* 按键消息使能 */
     sys_key_event_enable();
 

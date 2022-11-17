@@ -112,6 +112,7 @@ struct cmd_set_cod {
     u8 classofdevice[0x03];
 };
 
+#define AT_CMD_SET_LOW_POWER_MODE   0x26
 #define AT_CMD_ENTER_SLEEP_MODE     0x27
 #define AT_CMD_SET_CONFIRM_GKEY     0x28
 

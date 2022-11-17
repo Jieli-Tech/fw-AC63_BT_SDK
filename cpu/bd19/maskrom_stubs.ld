@@ -1,5 +1,5 @@
-  local_irq_enable = ABSOLUTE(0x106d98);
-  local_irq_disable = ABSOLUTE(0x106d9c);
+  _local_irq_enable = ABSOLUTE(0x106d98);
+  _local_irq_disable = ABSOLUTE(0x106d9c);
   lp_signature_set = ABSOLUTE(0x106da0);
   os_init = ABSOLUTE(0x106da4);
   os_start = ABSOLUTE(0x106da8);

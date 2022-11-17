@@ -114,6 +114,7 @@ SECTIONS
         *(.text*)
         *(.LOG_TAG_CONST*)
         *(.rodata*)
+        . = ALIGN(4);
 #endif
     } > psram
 
@@ -122,6 +123,7 @@ SECTIONS
 #ifdef CONFIG_PSRAM_ENABLE
         *(.bss)
         *(COMMON)
+        . = ALIGN(4);
 #endif
     } > psram
 
@@ -456,20 +458,25 @@ SECTIONS
 text_begin  = ADDR(.text) ;
 text_size   = SIZEOF(.text) ;
 text_end    = ADDR(.text) + SIZEOF(.text) ;
+ASSERT((text_size % 4) == 0,"!!! text_size Not Align 4 Bytes !!!");
 
 bss_begin = ADDR(.bss) ;
 bss_size  = SIZEOF(.bss);
+ASSERT((bss_size % 4) == 0,"!!! bss_size Not Align 4 Bytes !!!");
 
 bss1_begin = ADDR(.bss1) ;
 bss1_size  = SIZEOF(.bss1);
+ASSERT((bss1_size % 4) == 0,"!!! bss1_size Not Align 4 Bytes !!!");
 
 data_addr = ADDR(.data)  ;
 data_begin = text_begin + text_size;
 data_size =  SIZEOF(.data) ;
+ASSERT((data_size % 4) == 0,"!!! data_size Not Align 4 Bytes !!!");
 
 psram_vaddr = ADDR(.psram_text)  ;
 psram_laddr = text_begin + text_size + data_size;
 psram_text_size =  SIZEOF(.psram_text) ;
+ASSERT((psram_text_size % 4) == 0,"!!! psram_text_size Not Align 4 Bytes !!!");
 
 bank_code_load_addr = data_begin + data_size;
 

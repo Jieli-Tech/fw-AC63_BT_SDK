@@ -160,6 +160,7 @@
 //                                 矩阵按键 配置                                      //
 //*********************************************************************************//
 #define TCFG_MATRIX_KEY_ENABLE              ENABLE_THIS_MOUDLE
+#define TCFG_MATRIX_KEY_CORE                0//0:默认键芯; 1:晶之上键芯
 
 //*********************************************************************************//
 //                                 触摸板 配置                                      //
@@ -467,13 +468,13 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
 #define TCFG_SYS_LVD_EN						      1    //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
-#define TCFG_HID_AUTO_SHUTDOWN_TIME             (1 * 30)      //HID无操作自动关机(单位：秒)
+#define TCFG_HID_AUTO_SHUTDOWN_TIME              (5 * 60)      //HID无操作自动关机(单位：秒)
 
 //*********************************************************************************//
 //                                  蓝牙配置                                       //
 //*********************************************************************************//
 #define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
-#define TCFG_USER_BLE_ENABLE                      0   //BLE功能使能
+#define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
 
 #if TCFG_USER_EDR_ENABLE

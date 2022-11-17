@@ -49,6 +49,8 @@ _WEAK_ void set_led_duty(u16 duty)
  */
 /*-----------------------------------------------------------*/
 #define BT_MESH_FEAT_SUPPORTED_TEMP         ( \
+                                                BT_MESH_FEAT_RELAY | \
+                                                BT_MESH_FEAT_PROXY | \
                                                 0 \
                                             )
 #include "feature_correct.h"
@@ -103,9 +105,12 @@ void get_mesh_adv_name(u8 *len, u8 **data)
 #define MAC_ADDRESS_STRING_SIZE     (sizeof(Mac_Address) * 2)
 #define SECRET_STRING_SIZE          (sizeof(Secret) - 1)
 
-#define CUR_DEVICE_MAC_ADDR         0x18146c110001
-#define PRODUCT_ID                  7218909
-#define DEVICE_SECRET               "aab00b61998063e62f98ff04c9a787d4"
+#define CUR_DEVICE_MAC_ADDR         0x18146c110301
+#define PRODUCT_ID                  11528252
+#define DEVICE_SECRET               "3f2254fcdaa99a446cd93377444123c9"
+
+#define ALIGENIE_SUB_ADDR_1   0xc000
+#define ALIGENIE_SUB_ADDR_2   0xcfff
 
 /*
  * @brief Publication Declarations
@@ -871,7 +876,6 @@ struct bt_mesh_model root_models[] = {
 };
 
 struct bt_mesh_model vendor_server_models[] = {
-    //BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_CLI, vendor_srv_op, NULL, NULL),
     BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_SRV, vendor_srv_op, NULL, &onoff_state[0]),
 };
 
@@ -909,8 +913,7 @@ static const u8 dev_uuid[16] = {
     0x01 | BIT(4) | BIT(6), // PID
     PID_TO_LITTLE_ENDIAN(PRODUCT_ID), // ProductID
     MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR), // MAC
-    //BIT(1), // FeatureFlag
-    0x00,
+    BIT(1), // FeatureFlag
     0x00, 0x00 // RFU
 };
 
@@ -1180,6 +1183,44 @@ void iot_init()
     sys_timer_add(NULL, period_msg, 180 * 1000);
 }
 
+static void aligenie_app_key_set(u16_t app_key)
+{
+    log_info("aligenie_app_key_set");
+    mesh_mod_bind(root_models[1], app_key);
+    mesh_mod_bind(root_models[2], app_key);
+    mesh_mod_bind(vendor_server_models[0], app_key);
+}
+
+static void aligenie_sub_set(struct bt_mesh_model *mod, u16_t sub_addr)
+{
+    int i = 0;
+    for (i = 0; i < ARRAY_SIZE(mod->groups); i++) {
+        if (mod->groups[i] == BT_MESH_ADDR_UNASSIGNED) {
+            mod->groups[i] = sub_addr;
+            break;
+        }
+    }
+
+    if (i != ARRAY_SIZE(mod->groups)) {
+        if (IS_ENABLED(CONFIG_BT_SETTINGS)) {
+            bt_mesh_store_mod_sub(mod);
+        }
+        if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER)) {
+            bt_mesh_lpn_group_add(sub_addr);
+        }
+    }
+}
+
+static void aligenie_configuration()
+{
+    aligenie_sub_set(&root_models[1], ALIGENIE_SUB_ADDR_1);
+    aligenie_sub_set(&root_models[1], ALIGENIE_SUB_ADDR_2);
+    aligenie_sub_set(&root_models[2], ALIGENIE_SUB_ADDR_1);
+    aligenie_sub_set(&root_models[2], ALIGENIE_SUB_ADDR_2);
+    aligenie_sub_set(&vendor_server_models[0], ALIGENIE_SUB_ADDR_1);
+    aligenie_sub_set(&vendor_server_models[0], ALIGENIE_SUB_ADDR_2);
+}
+
 /*
  * @brief Mesh Profile Setup
  */
@@ -1207,6 +1248,10 @@ static void mesh_init(void)
 #else
     printf("\nThis board had not set up timer_pwm\n");
 #endif
+
+    mesh_app_key_add_callback_register(aligenie_app_key_set);
+
+    aligenie_configuration();
 
     iot_init();     //indicate_state
 }

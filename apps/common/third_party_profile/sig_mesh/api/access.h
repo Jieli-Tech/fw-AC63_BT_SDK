@@ -20,7 +20,11 @@
 #define BT_MESH_ADDR_RELAYS       0xfffe
 
 #define BT_MESH_KEY_UNUSED        0xffff
-#define BT_MESH_KEY_DEV           0xfffe
+#define BT_MESH_KEY_DEV_LOCAL     0xfffe
+#define BT_MESH_KEY_DEV_REMOTE    0xfffc
+
+#define BT_MESH_IS_DEV_KEY(key) (key == BT_MESH_KEY_DEV_LOCAL || \
+                         key == BT_MESH_KEY_DEV_REMOTE)
 
 /** Helper to define a mesh element within an array.
  *

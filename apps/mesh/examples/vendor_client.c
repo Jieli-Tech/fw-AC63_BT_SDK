@@ -455,7 +455,7 @@ static void mesh_init(void)
 
     err = bt_mesh_provision(net_key, net_idx, flags, iv_index, node_addr, dev_key);
     if (err) {
-        log_error("Using stored settings\n");
+        log_info("Using stored settings\n");
     } else {
         log_info("Provisioning completed\n");
 

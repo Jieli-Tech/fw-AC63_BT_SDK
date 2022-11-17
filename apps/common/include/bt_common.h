@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include "app_config.h"
 
-#define UART_FIFIO_BUF_LEN 1024
 
 #ifdef APP_PRIVATE_PROFILE_CFG
 #include "lib_profile_cfg.h"

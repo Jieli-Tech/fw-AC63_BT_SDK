@@ -41,13 +41,14 @@ typedef enum {
     BLE_CMD_ATT_VAILD_LEN,
     BLE_CMD_ATT_SEND_DATA,
     BLE_CMD_REQ_CONN_PARAM_UPDATE,
-
+    //12
     BLE_CMD_SCAN_ENABLE,
     BLE_CMD_SCAN_PARAM,
     BLE_CMD_STACK_EXIT,
     BLE_CMD_CREATE_CONN,
     BLE_CMD_CREATE_CONN_CANCEL,
 
+    //17
     BLE_CMD_ADV_PARAM_EXT,
     BLE_CMD_SEND_TEST_KEY_NUM,
     BLE_CMD_LATENCY_HOLD_CNT,
@@ -56,7 +57,7 @@ typedef enum {
     BLE_CMD_SCAN_ENABLE2,
     BLE_CMD_ATT_SERVER_REQ_RESUME,
 
-    //MULTI API,多机接口
+    //MULTI API,多机接口,兼容单机默认的发送接口
     BLE_CMD_MULTI_ATT_SEND_INIT,
     BLE_CMD_MULTI_ATT_SET_CONN_HANDLE,
     BLE_CMD_MULTI_ATT_SEND_DATA,
@@ -70,6 +71,12 @@ typedef enum {
     BLE_CMD_CREATE_CONN_EXT,
     BLE_CMD_DISCONNECT_EXT,
     BLE_CMD_ATT_CLEAR_SEND_DATA,
+
+    //优先级高的发送缓存初始化和使用
+    //基于原来的ATT发送机制,再添加1套发送缓存初始化;两套缓存要同时使用
+    BLE_CMD_HIGH_ATT_SEND_INIT,
+    BLE_CMD_HIGH_ATT_SEND_DATA,
+    BLE_CMD_HIGH_ATT_VAILD_LEN,
 
     //< ble5
     BLE_CMD_EXT_ADV_PARAM = 0x40,
@@ -311,9 +318,9 @@ bool ble_vendor_interval_event_enable(u16 conn_handle, int enable);
 
 /*************************************************************************************************/
 /*!
- *  \brief      配置协议栈ATT默认的MTU大小.
+ *  \brief      配置bt协议栈的 ATT协议交换MTU的大小
  *
- *  \param      [in] mtu_size     配置MUT大小 ,range :23 ~517.
+ *  \param      [in] mtu_size     配置MTU大小 ,range :23 ~517.
  *
  *  \return     配置后mtu_size的值.
  */
@@ -574,32 +581,32 @@ void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 /*!
  *  \brief      根据对方的接收MTU大小，配置本地可发送MTU的payload大小.
  *
- *  \function   ble_cmd_ret_e ble_op_att_set_send_mtu(u16 mtu).
+ *  \function   ble_cmd_ret_e ble_op_att_set_send_mtu(u16 mtu_payload_size).
  *
- *  \param      [in] mtu         对方mtu payload的大小.
+ *  \param      [in] mtu_payload_size    mtu的payload的大小; mtu_size-3
  *
  *  \return     see ble_cmd_ret_e.
  */
 /*************************************************************************************************/
-/* ble_cmd_ret_e ble_op_att_set_send_mtu(u16 mtu) */
-#define ble_op_att_set_send_mtu(mtu)     \
-	ble_user_cmd_prepare(BLE_CMD_ATT_MTU_SIZE, 1, mtu);
+/* ble_cmd_ret_e ble_op_att_set_send_mtu(u16 mtu_payload_size)) */
+#define ble_op_att_set_send_mtu(mtu_payload_size)     \
+	ble_user_cmd_prepare(BLE_CMD_ATT_MTU_SIZE, 1, mtu_payload_size);
 
 /*************************************************************************************************/
 /*!
  *  \brief      MULTI API: 根据对方的接收MTU大小，配置本地可发送的MTU的大小.
  *
- *  \function   ble_cmd_ret_e ble_op_multi_att_set_send_mtu(u16 con_handle,u16 mtu).
+ *  \function   ble_cmd_ret_e ble_op_multi_att_set_send_mtu(u16 con_handle,u16 mtu_payload_size).
  *
- *  \param      [in] con_handle     连接 con_handle,range：>0.
- *  \param      [in] mtu            对方mtu payload的大小.
+ *  \param      [in] con_handle          连接 con_handle,range：>0.
+ *  \param      [in] mtu_payload_size    mtu的payload的大小; mtu_size-3
  *
  *  \return     see ble_cmd_ret_e.
  */
 /*************************************************************************************************/
-/* ble_cmd_ret_e ble_op_multi_att_set_send_mtu(u16 con_handle,u16 mtu) */
-#define ble_op_multi_att_set_send_mtu(con_handle,mtu)     \
-	ble_user_cmd_prepare(BLE_CMD_MULTI_ATT_MTU_SIZE, 2, con_handle,mtu);
+/* ble_cmd_ret_e ble_op_multi_att_set_send_mtu(u16 con_handle,u16 mtu_payload_size) */
+#define ble_op_multi_att_set_send_mtu(con_handle,mtu_payload_size)     \
+	ble_user_cmd_prepare(BLE_CMD_MULTI_ATT_MTU_SIZE, 2, con_handle,mtu_payload_size);
 
 /*************************************************************************************************/
 /*!
@@ -674,7 +681,7 @@ void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 
 /*************************************************************************************************/
 /*!
- *  \brief      ATT操作,清缓存发送的数据缓存
+ *  \brief      ATT操作,清默认缓存发送的数据缓存
  *
  *  \function   ble_op_att_clear_data(void).
  *
@@ -778,7 +785,7 @@ void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
  */
 /*************************************************************************************************/
 /* ble_cmd_ret_e ble_op_set_ext_adv_enable(u8 *cmd,u16 cmd_le) */
-#define ble_op_set_ext_adv_enable(cmd,len)     \
+#define ble_op_set_ext_adv_enable(cmd,cmd_len)     \
 	ble_user_cmd_prepare(BLE_CMD_EXT_ADV_ENABLE, 2, cmd, cmd_len)
 
 /*************************************************************************************************/
@@ -1110,6 +1117,77 @@ void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 	ble_user_cmd_prepare(BLE_CMD_ONNN_PARAM_UPDATA, 2, con_handle, con_param)
 
 
+/*************************************************************************************************/
+/*!
+ *  \brief      API: 配置ATT,第二套缓存发送模块初始化(优先级比默认缓存高).
+ *
+ *  \function   ble_cmd_ret_e ble_op_high_att_send_init(u8 *att_ram_addr,int att_ram_size).
+ *
+ *  \param      [in] att_ram_addr      传入ATT发送模块ram地址，地址按4字节对齐.
+ *  \param      [in] att_ram_size      传入ATT发送模块ram大小.
+ *
+ *  \return     see ble_cmd_ret_e.
+ *
+ *  \note       必须在原有的缓存初始化使用后，才能再初始化新的缓存使用.
+ */
+/*************************************************************************************************/
+/* ble_cmd_ret_e ble_op_high_att_send_init(u8 *att_ram_addr,int att_ram_size) */
+#define ble_op_high_att_send_init(att_ram_addr,att_ram_size)     \
+	ble_user_cmd_prepare(BLE_CMD_HIGH_ATT_SEND_INIT, 2, att_ram_addr,att_ram_size)
+
+
+/*************************************************************************************************/
+/*!
+ *  \brief      API: ATT操作high 缓存 handle发送数据.
+ *
+ *  \function   ble_cmd_ret_e ble_op_high_att_send_data(u16 con_handle,u16 att_handle,u8 *data,u16 len, att_op_type_e att_op_type).
+ *
+ *  \param      [in] con_handle     连接 con_handle,range：>0.
+ *  \param      [in] att_handle     att操作handle.
+ *  \param      [in] data           数据地址.
+ *  \param      [in] len            数据长度  <= cbuffer 可写入的长度.
+ *  \param      [in] att_op_type    see  att_op_type_e (att.h).
+ *
+ *  \return     see ble_cmd_ret_e.
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+/* ble_cmd_ret_e ble_op_high_att_send_data(u16 con_handle,u16 att_handle,u8 *data,u16 len, att_op_type_e att_op_type) */
+#define ble_op_high_att_send_data(con_handle,att_handle,data,len,att_op_type)     \
+	ble_user_cmd_prepare(BLE_CMD_HIGH_ATT_SEND_DATA, 5, con_handle,att_handle, data, len, att_op_type)
+
+/*************************************************************************************************/
+/*!
+ *  \brief      ATT操作,清high缓存发送的数据缓存
+ *
+ *  \function   ble_op_high_att_clear_send_data(void).
+ *
+ *  \return     see ble_cmd_ret_e.
+ */
+/*************************************************************************************************/
+/* ble_cmd_ret_e ble_op_high_att_clear_send_data(void) */
+#define ble_op_high_att_clear_send_data(void)     \
+    ble_user_cmd_prepare(BLE_CMD_ATT_CLEAR_SEND_DATA, 1, 2)
+
+
+/*************************************************************************************************/
+/*!
+ *  \brief      API: 获取ATT发送模块,high 缓存cbuffer 可写入数据的长度.
+ *
+ *  \function   ble_cmd_ret_e ble_op_high_att_get_remain(u16 con_handle,int *remain_size_ptr).
+ *
+ *  \param      [in]  con_handle         range：>0.
+ *  \param      [out] remain_size_ptr    输出可写入长度值.
+ *
+ *  \return     see ble_cmd_ret_e.
+ */
+/*************************************************************************************************/
+/* ble_cmd_ret_e ble_op_high_att_get_remain(u16 con_handle,int *remain_size_ptr) */
+#define ble_op_high_att_get_remain(con_handle,remain_size_ptr)     \
+	ble_user_cmd_prepare(BLE_CMD_HIGH_ATT_VAILD_LEN, 2,con_handle, remain_size_ptr)
+
+
 
 /*************************************************************************************************/
 /*!
@@ -1141,6 +1219,19 @@ void ble_list_config_reset(u8 pair_devices_count, u8 is_allow_cover);
  */
 /*************************************************************************************************/
 bool ble_list_pair_accept(u8 enable);
+
+/*************************************************************************************************/
+/*!
+ *  \brief      当前配置是否接受新设备请求配对
+ *
+ *  \param      [in] NULL
+ *
+ *  \return     true or false.
+ *
+ *  \note       VM 掉电记录保护.
+ */
+/*************************************************************************************************/
+bool ble_list_is_pair_accept(void);
 
 
 /*************************************************************************************************/
@@ -1192,7 +1283,7 @@ bool ble_list_check_addr_is_exist(u8 *conn_addr, u8 conn_addr_type);
 
 /*************************************************************************************************/
 /*!
- *  \brief      ble 把设备从配对表中删除.
+ *  \brief      ble 把记录对方设备的信息从配对表中删除.
  *
  *  \param      [in] conn_addr        对方地址6bytes.
  *  \param      [in] conn_addr_type   对方地址类型range: 0~1.
@@ -1201,6 +1292,19 @@ bool ble_list_check_addr_is_exist(u8 *conn_addr, u8 conn_addr_type);
  */
 /*************************************************************************************************/
 bool ble_list_delete_device(u8 *conn_addr, u8 conn_addr_type);
+
+
+/*************************************************************************************************/
+/*!
+ *  \brief      ble 根据记录本地地址的信息,从配对表中删除.(适用于不同通道本地地址不一样,清空通道记录信息)
+ *
+ *  \param      [in] local_addr        本地地址6bytes.
+ *  \param      [in] local_addr_type   本地地址类型range: 0~1.
+ *
+ *  \return     true or false.
+ */
+/*************************************************************************************************/
+bool ble_list_delete_device_by_local_address(u8 *local_addr, u8 local_addr_type);
 
 
 /*************************************************************************************************/

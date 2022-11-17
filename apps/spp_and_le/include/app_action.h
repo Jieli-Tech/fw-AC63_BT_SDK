@@ -13,6 +13,8 @@
 #define ACTION_BEACON_MAIN      0x000a
 #define ACTION_TUYA             0x000b
 #define ACTION_CONN_24G_MAIN    0x000c
+#define ACTION_HILINK_MAIN      0x000d
+#define ACTION_ELECTROCAR       0x000e
 
 
 #endif

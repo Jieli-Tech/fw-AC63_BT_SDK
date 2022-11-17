@@ -1,6 +1,10 @@
 #include "sha1.h"
 #include "sha256.h"
 #include "hmac.h"
+#include "app_config.h"
+
+#if (CONFIG_APP_TUYA)
+
 
 
 #define hmac_printf
@@ -364,3 +368,4 @@ void hkdf_test(void)
 
 #endif
 
+#endif /* CONFIG_APP_TUYA */

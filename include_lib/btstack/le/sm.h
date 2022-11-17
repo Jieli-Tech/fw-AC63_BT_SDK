@@ -29,8 +29,13 @@ void ble_sm_setup_init(io_capability_t io_type, u8 auth_req, uint8_t min_key_siz
 
 void ble_cbk_handler_register(btstack_packet_handler_t packet_cbk, sm_stack_packet_handler_t sm_cbk);
 
+/*确认接受对方的配对绑定请求*/
 void sm_just_works_confirm(hci_con_handle_t con_handle);
 
+/*拒绝对方的配对绑定请求*/
+void sm_bonding_decline(hci_con_handle_t con_handle);
+
+/*init*/
 void sm_init(void);
 
 /*接口同时设置master 和 slave的配置*/
@@ -66,4 +71,11 @@ void sm_set_master_pair_redo(int enable);
 //设置回连时，延时发起加密流程的时间，可用于兼容一些设备连接
 void sm_set_master_reconnect_enc_delay(u16 delay_ms);
 void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
+
+//指定当前配置的链路使用的irk值(用于不同从机设备连接相同的主机), uint8_t irk[16];建议用随机数生成
+void sm_set_ready_irk(const *irk);
+
+void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action);
+
+
 #endif

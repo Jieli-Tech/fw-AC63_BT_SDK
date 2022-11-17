@@ -81,6 +81,14 @@ dts_decoder
 g729_decoder
 #endif
 
+#if TCFG_DEC_WTGV2_ENABLE
+wtgv2_decoder
+#endif
+
+#if TCFG_DEC_OPUS_ENABLE
+opus_decoder
+#endif
+
 #if TCFG_DEC_AAC_ENABLE || TCFG_BT_SUPPORT_AAC
 aac_decoder
 #endif
@@ -97,5 +105,27 @@ midi_decoder
 wav_decoder
 #endif
 
+#if TCFG_DEC_LC3_ENABLE
+lc3_decoder
+#endif
 
+#if TCFG_ENC_LC3_ENABLE
+lc3_encoder
+#endif
+
+#if TCFG_ENC_OPUS_ENABLE
+opus_encoder
+#endif
+
+#if TCFG_DEC_USBC_ENABLE
+usbc_decoder
+#endif
+
+#if TCFG_ENC_USBC_ENABLE
+usbc_encoder
+#endif
+
+#if TCFG_ENC_ADPCM_ENABLE
+adpcm_encoder
+#endif
 

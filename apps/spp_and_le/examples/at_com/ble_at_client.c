@@ -976,7 +976,7 @@ void input_key_handler(u8 key_status, u8 key_number)
 
 static u8 client_idle_query(void)
 {
-    return 0;
+    return 1;
 }
 
 REGISTER_LP_TARGET(client_user_target) = {

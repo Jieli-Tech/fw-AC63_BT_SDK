@@ -288,12 +288,15 @@ const int config_ape_dec_use_malloc     = 0;
 const int config_aac_dec_use_malloc     = 0;
 const int config_aptx_dec_use_malloc    = 0;
 const int config_midi_dec_use_malloc    = 0;
-const int config_lc3_dec_use_malloc     = 0;
+const int config_lc3_dec_use_malloc     = 1;
 const int config_speex_dec_use_malloc   = 0;
 const int config_opus_dec_use_malloc   = 0;
 #endif
 
-#if  TCFG_ENC_LC3_ENABLE
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+const int   LC3_PLC_EN = 0;   //置1做plc，置0的效果类似补静音包
+const  int  LC3_HW_FFT = 0;           //br27/br28置1，其他芯片置0
+const int  LC3_INT24bit_INOUT = 0;
 const int LC3_SUPPORT_CH = LC3_CODING_CHANNEL;     //lc3解码输入通道数 1：单声道输入， 2:双声道输入(br30可支持2)
 const int LC3_DMS_VAL = LC3_CODING_FRAME_LEN;      //单位ms, 【只支持 25,50,100】
 //LC3_DMS_FSINDEX配置采样率【只支持0到4】，影响用哪组表以及一次的处理长度(<=8k的时候，配0. <=16k的时候，配1.<=24k的时候，配2.<=32k的时候，配3.<=48k的时候，配4)
@@ -311,6 +314,12 @@ const int LC3_DMS_FSINDEX = 4;
 
 const int LC3_QUALTIY_CONFIG = 4;//【范围1到4， 1需要的速度最少，这个默认先配4】
 
+#endif
+
+#if (TCFG_ENC_USBC_ENABLE || TCFG_DEC_USBC_ENABLE)
+//参数设置     BITPOOL=26为msbc音质.  BLKS=(4:16)建议值10.
+const int BITPOOL = 26;
+const int BLKS = 10;
 #endif
 
 const int vc_pitchshift_fastmode_flag        = 1;

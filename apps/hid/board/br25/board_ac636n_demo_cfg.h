@@ -161,6 +161,13 @@
 #define TCFG_ADKEY_VALUE7                   7
 #define TCFG_ADKEY_VALUE8                   8
 #define TCFG_ADKEY_VALUE9                   9
+
+//*********************************************************************************//
+//                                 irkey 配置                                      //
+//*********************************************************************************//
+#define TCFG_IRKEY_ENABLE                   DISABLE_THIS_MOUDLE//是否使能AD按键
+#define TCFG_IRKEY_PORT                     IO_PORTA_08        //IR按键端口
+
 //*********************************************************************************//
 //                                  app 配置                                       //
 //*********************************************************************************//
@@ -203,6 +210,7 @@
 #define TCFG_DEC_G729_ENABLE                ENABLE
 #define TCFG_DEC_WTGV2_ENABLE               DISABLE
 #define TCFG_DEC_CVSD_CLOSE
+#define TCFG_DEC_MP3_ENABLE					DISABLE
 #define TCFG_ENC_OPUS_ENABLE               	DISABLE
 #define TCFG_ENC_SPEEX_ENABLE              	DISABLE
 #define TCFG_ENC_LC3_ENABLE                 DISABLE

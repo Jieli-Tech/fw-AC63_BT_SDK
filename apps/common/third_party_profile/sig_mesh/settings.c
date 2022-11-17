@@ -12,6 +12,7 @@
 #include "foundation.h"
 #include "proxy.h"
 #include "settings.h"
+#include "os/os_cpu.h"
 
 #define LOG_TAG             "[MESH-settings]"
 /* #define LOG_INFO_ENABLE */
@@ -216,6 +217,11 @@ static void store_pending_cdb_nodes(void);
 static void store_pending_cdb_keys(void);
 
 #endif /* CONFIG_BT_MESH_PROVISIONER */
+
+static struct {
+    u16_t app_idx;
+    u8 use_flag;
+} mesh_app_key_store_info[CONFIG_BT_MESH_SUBNET_COUNT];
 
 static u8 get_model_store_index(bool vnd, u8 elem_idx, u8 mod_idx)
 {
@@ -482,8 +488,11 @@ static void app_key_set(void)
             return;
         }
 
+        mesh_app_key_store_info[app_idx].app_idx = key.app_idx;
+        mesh_app_key_store_info[app_idx].use_flag = 1;
+
         app->net_idx = key.net_idx;
-        app->app_idx = app_idx;
+        app->app_idx = key.app_idx;
         app->updated = key.updated;
         memcpy(app->keys[0].val, key.val[0], 16);
         memcpy(app->keys[1].val, key.val[1], 16);
@@ -850,9 +859,9 @@ static void schedule_store(int flag)
     BT_DBG("Waiting %d seconds", timeout / MSEC_PER_SEC);
 #endif
 
-    /* OS_ENTER_CRITICAL(); */
+    OS_ENTER_CRITICAL();
     store_pending();
-    /* OS_EXIT_CRITICAL(); */
+    OS_EXIT_CRITICAL();
 }
 
 static void clear_iv(void)
@@ -946,7 +955,7 @@ static void store_rpl(struct bt_mesh_rpl *entry, u8 index)
     node_info_store(RPL_INDEX + index, &__rpl, sizeof(__rpl));
 }
 
-static void clear_rpl(void)
+void clear_rpl(void)
 {
     int i;
 
@@ -1039,7 +1048,17 @@ static void clear_app_key(u16_t app_idx)
 
     BT_DBG("AppKeyIndex 0x%03x", app_idx);
 
-    node_info_clear(APP_KEY_INDEX + app_idx, sizeof(struct app_key_val));
+    for (int i = 0; i < CONFIG_BT_MESH_SUBNET_COUNT; i++) {
+        if (mesh_app_key_store_info[i].app_idx != app_idx) {
+            continue;
+        }
+        if (i == CONFIG_BT_MESH_SUBNET_COUNT) {
+            printf("clear app_key no found!!!");
+            return;
+        }
+        mesh_app_key_store_info[i].use_flag = 0;
+        node_info_clear(APP_KEY_INDEX + i, sizeof(struct app_key_val));
+    }
 }
 
 static void clear_net_key(u16_t net_idx)
@@ -1074,11 +1093,27 @@ static void store_app_key(struct bt_mesh_app_key *app)
     BT_INFO("--func=%s", __FUNCTION__);
     key.net_idx = app->net_idx;
     key.updated = app->updated;
+    key.app_idx = app->app_idx;
     memcpy(key.val[0], app->keys[0].val, 16);
     memcpy(key.val[1], app->keys[1].val, 16);
 
     BT_INFO("app->net_idx=0x%x", app->net_idx);
-    node_info_store(APP_KEY_INDEX + app->net_idx, &key, sizeof(key));
+    BT_INFO("app->app_idx=0x%x", app->app_idx);
+
+    for (int i = 0; i < CONFIG_BT_MESH_SUBNET_COUNT; i++) {
+        if (mesh_app_key_store_info[i].use_flag) {
+            continue;
+        }
+        if (i == CONFIG_BT_MESH_SUBNET_COUNT) {
+            printf("app_key_store_full!!!");
+            return;
+        }
+        mesh_app_key_store_info[i].use_flag = 1;
+        mesh_app_key_store_info[i].app_idx = key.app_idx;
+        printf("app_key store i:%d, id:%d", i, APP_KEY_INDEX + i);
+        node_info_store(APP_KEY_INDEX + i, &key, sizeof(key));
+        break;
+    }
 }
 
 static void store_pending_keys(void)

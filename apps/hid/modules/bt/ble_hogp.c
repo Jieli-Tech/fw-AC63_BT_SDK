@@ -71,8 +71,12 @@ static const char user_tag_string[] = {EIR_TAG_STRING};
 //用户可配对的，这是样机跟客户开发的app配对的秘钥
 //const u8 link_key_data[16] = {0x06, 0x77, 0x5f, 0x87, 0x91, 0x8d, 0xd4, 0x23, 0x00, 0x5d, 0xf1, 0xd8, 0xcf, 0x0c, 0x14, 0x2b};
 
+#if CONFIG_BLE_HIGH_SPEED
 //ATT发送的包长,    note: 23 <=need >= MTU
+#define ATT_LOCAL_MTU_SIZE        (247)
+#else
 #define ATT_LOCAL_MTU_SIZE        (64)
+#endif
 
 //ATT缓存的buffer支持缓存数据包个数
 #define ATT_PACKET_NUMS_MAX       (2)
@@ -89,7 +93,10 @@ static uint8_t hogp_connection_update_enable = 1;
 //连接参数表,按顺序优先请求,主机接受了就中止
 static const struct conn_update_param_t Peripheral_Preferred_Connection_Parameters[] = {
     {6, 9,  100, 300}, //android
+    /* {7, 7,  20, 300}, //mosue */
+    /* {20, 20,  20, 300}, //kb */
     {12, 12, 30, 300}, //ios
+    {6,  12, 30, 400},// ios fast
 };
 //共可用的参数组数
 #define CONN_PARAM_TABLE_CNT      (sizeof(Peripheral_Preferred_Connection_Parameters)/sizeof(struct conn_update_param_t))
@@ -145,7 +152,7 @@ static u8 cur_peer_addr_info[7];//当前连接对方地址信息
 //为了及时响应手机数据包，某些流程会忽略进入latency的控制
 //如下是定义忽略进入的interval个数
 #define LATENCY_SKIP_INTERVAL_MIN     (3)
-#define LATENCY_SKIP_INTERVAL_KEEP    (15)
+#define LATENCY_SKIP_INTERVAL_KEEP    (20)
 #define LATENCY_SKIP_INTERVAL_LONG    (0xffff)
 
 //hid device infomation
@@ -164,12 +171,14 @@ static const u8 System_ID[] = {0, 0, 0, 0, 0, 0, 0, 0};
 #define  PNP_PID          0x022C //
 #define  PNP_PID_VERSION  0x011b //1.1.11
 
-static const u8 PnP_ID[] = {PNP_VID_SOURCE, PNP_VID & 0xFF, PNP_VID >> 8, PNP_PID & 0xFF, PNP_PID >> 8, PNP_PID_VERSION & 0xFF, PNP_PID_VERSION >> 8};
+static u8 PnP_ID[] = {PNP_VID_SOURCE, PNP_VID & 0xFF, PNP_VID >> 8, PNP_PID & 0xFF, PNP_PID >> 8, PNP_PID_VERSION & 0xFF, PNP_PID_VERSION >> 8};
 /* static const u8 PnP_ID[] = {0x02, 0x17, 0x27, 0x40, 0x00, 0x23, 0x00}; */
 /* static const u8 PnP_ID[] = {0x02, 0xac, 0x05, 0x2c, 0x02, 0x1b, 0x01}; */
 
 /* static const u8 hid_information[] = {0x11, 0x01, 0x00, 0x01}; */
-static const u8 hid_information[] = {0x01, 0x01, 0x00, 0x03};
+/* static const u8 hid_information[] = {0x01, 0x01, 0x00, 0x03}; */
+static const u8 hid_information[] = {0x11, 0x01, 0x00, 0x03};
+static const u8 hid_information1[] = {0x00, 0x00, 0x00, 0x00};
 
 static  u8 *report_map; //描述符
 static  u16 report_map_size;//描述符大小
@@ -180,6 +189,11 @@ static u16 hogp_adv_timeout_number = 0;
 //report 发生变化，通过service change 通知主机重新获取
 static u8 hid_report_change = 0;
 static u8 hid_battery_level = 88;
+static u32 hid_battery_level_add_sum;/*电量采集累加*/
+static u32 hid_battery_level_add_cnt;/*电量采集次数*/
+
+#define HID_BATTERY_TIMER_SET     (60000) /*定时检测电量变化的时间30~60*/
+static u16 hid_battery_notify_timer_id;
 
 static u8(*get_vbat_percent_call)(void) = NULL;
 static void (*le_hogp_output_callback)(u8 *buffer, u16 size) = NULL;
@@ -187,10 +201,12 @@ static void (*le_hogp_output_callback)(u8 *buffer, u16 size) = NULL;
 static void __hogp_resume_all_ccc_enable(u8 update_request);
 static void __check_report_map_change(void);
 void ble_hid_transfer_channel_recieve(u8 *packet, u16 size);
+void ble_hid_transfer_channel_recieve1(u8 *packet, u16 size);
 static uint16_t hogp_att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_param);
 static void hogp_adv_config_set(void);
+static u8 hid_get_vbat_handle(void);
 //------------------------------------------------------
 
 static u8 multi_dev_adv_flag = 0; /*多地址设备切换广播*/
@@ -404,7 +420,13 @@ static void __hogp_resume_all_ccc_enable(u8 update_request)
     ble_gatt_server_characteristic_ccc_set(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_06_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
     ble_gatt_server_characteristic_ccc_set(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_07_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
     ble_gatt_server_characteristic_ccc_set(hogp_con_handle, ATT_CHARACTERISTIC_ae42_01_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
+    ble_gatt_server_characteristic_ccc_set(hogp_con_handle, ATT_CHARACTERISTIC_2a19_01_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY);
 
+#if RCSP_BTMATE_EN
+    /* ble_gatt_server_characteristic_ccc_set(hogp_con_handle, ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE, ATT_OP_NOTIFY); */
+    /* ble_gatt_server_set_update_send(hogp_con_handle, ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE, ATT_OP_AUTO_READ_CCC); */
+    /* set_rcsp_conn_handle(hogp_con_handle); */
+#endif
     if (update_request) {
         __hogp_send_connetion_update_deal(hogp_con_handle);
     }
@@ -480,6 +502,10 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
         if (ble_hid_timer_handle) {
             log_info("mdy_timer= %d\n", (u32)(little_endian_read_16(ext_param, 14 + 0) * 1.25));
             sys_s_hi_timer_modify(ble_hid_timer_handle, (u32)(little_endian_read_16(ext_param, 14 + 0) * 1.25));
+        }
+
+        if (little_endian_read_16(ext_param, 14 + 2)) {
+            ble_op_latency_skip(hogp_con_handle, LATENCY_SKIP_INTERVAL_KEEP); //
         }
         break;
 
@@ -596,7 +622,7 @@ static uint16_t hogp_att_read_callback(hci_con_handle_t connection_handle, uint1
     uint16_t  att_value_len = 0;
     uint16_t handle = att_handle;
 
-    log_info("read_callback, handle= 0x%04x,buffer= %08x\n", handle, (u32)buffer);
+    log_info("read_callback, handle= 0x%04x,buffer= %08x,offset= %04x\n", handle, (u32)buffer, offset);
 
     switch (handle) {
     case ATT_CHARACTERISTIC_2a00_01_VALUE_HANDLE: {
@@ -731,7 +757,8 @@ static uint16_t hogp_att_read_callback(hci_con_handle_t connection_handle, uint1
         att_value_len = 1;
         if (buffer) {
             if (get_vbat_percent_call) {
-                hid_battery_level = get_vbat_percent_call();
+                hid_battery_level = hid_get_vbat_handle();
+                log_info("read vbat:%d\n", hid_battery_level);
             }
             buffer[0] = hid_battery_level;
         }
@@ -758,6 +785,21 @@ static uint16_t hogp_att_read_callback(hci_con_handle_t connection_handle, uint1
             att_value_len = buffer_size;
         }
         break;
+
+    case ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE:
+        att_value_len = sizeof(hid_information1);
+        if ((offset >= att_value_len) || (offset + buffer_size) > att_value_len) {
+            log_info("len is err");
+            break;
+        }
+        if (buffer) {
+            memcpy(buffer, &hid_information1[offset], buffer_size);
+            att_value_len = buffer_size;
+            put_buf(buffer, att_value_len);
+        }
+        /* __hogp_send_connetion_update_deal(connection_handle); */
+        break;
+
 
     case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_2a19_01_CLIENT_CONFIGURATION_HANDLE:
@@ -838,6 +880,7 @@ static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t 
 #if RCSP_BTMATE_EN
     case ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE:
         ble_gatt_server_set_update_send(connection_handle, ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE, ATT_OP_AUTO_READ_CCC);
+        set_rcsp_conn_handle(connection_handle);
 #if (0 == BT_CONNECTION_VERIFY)
         JL_rcsp_auth_reset();       //hid设备试能nofity的时候reset auth保证APP可以重新连接
 #endif
@@ -859,20 +902,43 @@ static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t 
     case ATT_CHARACTERISTIC_2a19_01_CLIENT_CONFIGURATION_HANDLE:
         __hogp_send_connetion_update_deal(hogp_con_handle);
         log_info("\n------write ccc:%04x,%02x\n", handle, buffer[0]);
+#if RCSP_BTMATE_EN
+        //-----如果主机notify RCSP协议,从机告知主机存在此协议
+        if (handle == ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE) {
+            u8 data[1] = {0xff};
+            ble_comm_att_send_data(connection_handle, ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE, &data, 1, ATT_OP_NOTIFY);
+        }
+#endif
         ble_gatt_server_characteristic_ccc_set(hogp_con_handle, handle, buffer[0]);
         break;
 
 #if RCSP_BTMATE_EN
     case ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE:
         log_info("rcsp_read:%x\n", buffer_size);
+        put_buf(buffer, (buffer_size > 30) ? 30 : buffer_size);
         hogp_connection_update_enable = 0;
-        ble_op_latency_skip(hogp_con_handle, LATENCY_SKIP_INTERVAL_LONG); //
         ble_gatt_server_receive_update_data(NULL, buffer, buffer_size);
         break;
 #endif
 
     case ATT_CHARACTERISTIC_ae41_01_VALUE_HANDLE:
         ble_hid_transfer_channel_recieve(buffer, buffer_size);
+        break;
+
+    case ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE:
+        tmp16 = sizeof(hid_information1);
+        if ((offset >= tmp16) || (offset + buffer_size) > tmp16) {
+            break;
+        }
+
+        log_info("cur_state:");
+        put_buf(hid_information1, tmp16);
+
+        memcpy(&hid_information1[offset], buffer, buffer_size);
+
+        log_info("new_state:");
+        put_buf(hid_information1, tmp16);
+        ble_hid_transfer_channel_recieve1(hid_information1, tmp16);
         break;
 
     default:
@@ -987,6 +1053,16 @@ void modify_ble_name(const char *name)
     ble_comm_set_config_name(bt_get_local_name(), 1);
 }
 
+static void wait_to_open_adv(void)
+{
+    if (!hogp_con_handle) {
+        log_info("allow open adv");
+        ble_gatt_server_adv_enable(1);
+    } else {
+        log_info("no allow open adv");
+    }
+}
+
 static void __hogp_reconnect_low_timeout_handle(void)
 {
     if (0 == hogp_con_handle && ble_gatt_server_get_work_state() == BLE_ST_ADV) {
@@ -994,7 +1070,11 @@ static void __hogp_reconnect_low_timeout_handle(void)
         ble_gatt_server_adv_enable(0);
         hogp_pair_info.direct_adv_cnt = 0;
         hogp_adv_config_set();
+#if RCSP_BTMATE_EN
+        sys_timeout_add(NULL, wait_to_open_adv, 20);
+#else
         ble_gatt_server_adv_enable(1);
+#endif
     } else {
         /*其他情况，要取消定向广播*/
         log_info("Set Switch to ADV_IND Config\n");
@@ -1086,22 +1166,26 @@ void hogp_reconnect_adv_config_set(u8 adv_type, u32 adv_timeout)
         hogp_server_adv_config.adv_type = ADV_IND;/*强制切换可发现广播*/
     }
 
-    /* if (PAIR_RECONNECT_ADV_EN && hogp_pair_info.pair_flag && hogp_pair_info.direct_adv_cnt) { */
-    memcpy(hogp_server_adv_config.direct_address_info, &hogp_pair_info.peer_address_info, 7);
-    log_info("RECONNECT_ADV2= %02x, address:", adv_type);
-    put_buf(hogp_server_adv_config.direct_address_info, 7);
+    if (PAIR_RECONNECT_ADV_EN && hogp_pair_info.pair_flag) {
+        memcpy(hogp_server_adv_config.direct_address_info, &hogp_pair_info.peer_address_info, 7);
+        log_info("RECONNECT_ADV2= %02x, address:", adv_type);
+        put_buf(hogp_server_adv_config.direct_address_info, 7);
 
-    if (adv_type == ADV_DIRECT_IND) {
-        hogp_pair_info.direct_adv_cnt = (adv_timeout + 1279) / 1280; /*定向次数*/
-    } else {
-        if (adv_timeout) {
-            /*设置超时切换到无定向广播*/
-            if (hogp_adv_timeout_number) {
-                sys_timeout_del(hogp_adv_timeout_number);
-                hogp_adv_timeout_number = 0;
+        if (adv_type == ADV_DIRECT_IND) {
+            hogp_pair_info.direct_adv_cnt = (adv_timeout + 1279) / 1280; /*定向次数*/
+        } else {
+            if (adv_timeout) {
+                /*设置超时切换到无定向广播*/
+                if (hogp_adv_timeout_number) {
+                    sys_timeout_del(hogp_adv_timeout_number);
+                    hogp_adv_timeout_number = 0;
+                }
+                hogp_adv_timeout_number = sys_timeout_add(0, __hogp_reconnect_low_timeout_handle, adv_timeout);
             }
-            hogp_adv_timeout_number = sys_timeout_add(0, __hogp_reconnect_low_timeout_handle, adv_timeout);
         }
+    } else {
+        memset(hogp_server_adv_config.direct_address_info, 0, 7);
+        hogp_server_adv_config.adv_interval = ADV_INTERVAL_MIN;
     }
 
     log_info("adv_type:%d,channel=%02x\n", hogp_server_adv_config.adv_type, hogp_server_adv_config.adv_channel);
@@ -1151,6 +1235,78 @@ void bt_ble_before_start_init(void)
     ble_comm_init(&hogp_gatt_control_block);
 }
 
+/*************************************************************************************************/
+/*!
+ *  \brief      电量累计求平均计算方法
+ *
+ *  \param      [in]
+ *
+ *  \return vbat percent
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+static u8 hid_get_vbat_handle(void)
+{
+    if (!get_vbat_percent_call) {
+        return 0;
+    }
+
+    u8 cur_val, avg_val, val;
+
+    if (hid_battery_level_add_cnt > 10) {
+        /*超过10次，取平均值*/
+        hid_battery_level_add_sum = hid_battery_level_add_sum / hid_battery_level_add_cnt;
+        hid_battery_level_add_cnt = 1;
+    }
+
+    cur_val = get_vbat_percent_call();
+
+    if (hid_battery_level_add_cnt) {
+        avg_val = hid_battery_level_add_sum / hid_battery_level_add_cnt;
+        if (cur_val > (avg_val + 2) || (cur_val + 2) < avg_val) {
+            /*变化较大*/
+            hid_battery_level_add_sum = 0;
+            hid_battery_level_add_cnt = 0;
+        }
+    }
+
+    hid_battery_level_add_sum += cur_val;
+    hid_battery_level_add_cnt++;
+
+    /*简单的累加求平均值计算*/
+    val = (u8)(hid_battery_level_add_sum / hid_battery_level_add_cnt);
+    log_info("vbat: avg=%d,cur=%d,val=%d\n", avg_val, cur_val, val);
+    return val;
+}
+
+/*************************************************************************************************/
+/*!
+ *  \brief      定时检测电量变化，推送通知给主机
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+static void hid_battery_timer_handler(void *priev)
+{
+#if TCFG_SYS_LVD_EN
+    if (hogp_con_handle && get_vbat_percent_call) {
+        u8 tmp_val = hid_get_vbat_handle();
+        /* tmp_val = (tmp_val +10)%101; */
+        if (hid_battery_level != tmp_val) {
+            hid_battery_level = tmp_val;
+            if (ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a19_01_CLIENT_CONFIGURATION_HANDLE)) {
+                log_info("notify battery: %d\n", hid_battery_level);
+                ble_comm_att_send_data(hogp_con_handle, ATT_CHARACTERISTIC_2a19_01_VALUE_HANDLE, &hid_battery_level, 1, ATT_OP_AUTO_READ_CCC);
+            }
+        }
+    }
+#endif // TCFG_SYS_LVD_EN
+}
 
 /*************************************************************************************************/
 /*!
@@ -1173,6 +1329,13 @@ void bt_ble_init(void)
     if (hogp_pair_info.pair_flag) {
         hogp_pair_info.direct_adv_cnt = REPEAT_DIRECT_ADV_COUNT;
     }
+
+#if TCFG_SYS_LVD_EN
+    if (!hid_battery_notify_timer_id && HID_BATTERY_TIMER_SET) {
+        log_info("add hid_battery_notify_timer_id\n");
+        hid_battery_notify_timer_id = sys_timer_add((void *)0, hid_battery_timer_handler, HID_BATTERY_TIMER_SET);
+    }
+#endif // TCFG_SYS_LVD_EN
 
 #if DOUBLE_BT_SAME_NAME
     ble_comm_set_config_name(bt_get_local_name(), 0);
@@ -1206,6 +1369,14 @@ void bt_ble_exit(void)
         sys_s_hi_timer_del(ble_hid_timer_handle);
         ble_hid_timer_handle = 0;
     }
+
+#if TCFG_SYS_LVD_EN
+    if (hid_battery_notify_timer_id) {
+        sys_timer_del(hid_battery_notify_timer_id);
+        hid_battery_notify_timer_id = 0;
+    }
+#endif // TCFG_SYS_LVD_EN
+
     log_info("%s\n", __FUNCTION__);
     ble_module_enable(0);
     ble_comm_exit();
@@ -1391,6 +1562,23 @@ void le_hogp_set_adv_channel(int channel)
 
 /*************************************************************************************************/
 /*!
+ *  \brief      set PNP_PID
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+void le_hogp_set_PNP_info(const u8 *info)
+{
+    memcpy(PnP_ID, info, sizeof(PnP_ID));
+}
+
+
+/*************************************************************************************************/
+/*!
  *  \brief      is connect
  *
  *  \param      [in]
@@ -1551,11 +1739,45 @@ int ble_hid_transfer_channel_send(u8 *packet, u16 size)
  *  \note
  */
 /*************************************************************************************************/
+int ble_hid_transfer_channel_send1(u8 *packet, u16 size)
+{
+    /* log_info("transfer_tx(%d):", size); */
+    /* log_info_hexdump(packet, size); */
+    return ble_comm_att_send_data(hogp_con_handle, ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE, packet, size, ATT_OP_AUTO_READ_CCC);
+}
+
+/*************************************************************************************************/
+/*!
+ *  \brief
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
 void __attribute__((weak)) ble_hid_transfer_channel_recieve(u8 *packet, u16 size)
 {
     log_info("transfer_rx(%d):", size);
     log_info_hexdump(packet, size);
     //ble_hid_transfer_channel_send(packet,size);//for test
+}
+/*************************************************************************************************/
+/*!
+ *  \brief
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+void __attribute__((weak)) ble_hid_transfer_channel_recieve1(u8 *packet, u16 size)
+{
+    log_info("transfer_rx1(%d):", size);
+    log_info_hexdump(packet, size);
 }
 
 /*************************************************************************************************/

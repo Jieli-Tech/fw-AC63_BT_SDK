@@ -649,7 +649,17 @@ enum {
 /*
  *-------------------P3_ANA_CON13
  */
-#define WVDD_VOL_SEL_MAX	0xf
+
+#define WVDD_VOL_MIN		500
+#define VWDD_VOL_MAX		1250
+#define WVDD_VOL_STEP		50
+#define WVDD_LEVEL_MAX	    0xf
+#define WVDD_LEVEL_ERR      0xff
+#define WVDD_LEVEL_DEFAULT  ((WVDD_VOL_TRIM-WVDD_VOL_MIN)/WVDD_VOL_STEP + 2)
+
+#define WVDD_VOL_TRIM	    800
+
+#define WVDD_VOL_TRIM_LED   850
 
 #define PVD_HD_H_SEL(sel)      P33_CON_SET(P3_ANA_CON13, 4, 1, sel)
 
@@ -662,8 +672,16 @@ enum {
 /*
  *-------------------P3_PVDD1_AUTO
  */
+#define PVDD_VOL_MIN        500
+#define PVDD_VOL_MAX		1250
+#define PVDD_VOL_STEP       50
+#define PVDD_LEVEL_MAX      0xf
+#define PVDD_LEVEL_ERR		0xff
+#define PVDD_LEVEL_DEFAULT  0xc
 
-#define PVDD_VOL_SEL_MAX       0xf
+#define PVDD_VOL_TRIM                     1000//mV
+#define PVDD_VOL_TRIM_LOW 				  850 //mv, 如果出现异常, 可以抬高该电压值
+#define PVDD_LEVEL_TRIM_LOW 			  ((PVDD_VOL_TRIM - PVDD_VOL_TRIM_LOW) / PVDD_VOL_STEP)
 
 #define PVD_VOL_SEL(sel)       P33_CON_SET(P3_PVDD1_AUTO, 0, 4, sel)
 

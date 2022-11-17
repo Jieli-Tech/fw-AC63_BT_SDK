@@ -23,6 +23,9 @@
  *
  *  http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf
  */
+#include "app_config.h"
+
+#if (CONFIG_APP_TUYA)
 
 #define MBEDTLS_SHA256_C
 
@@ -598,3 +601,4 @@ exit:
 #endif /* MBEDTLS_SHA256_SELF_TEST */
 
 #endif /* MBEDTLS_SHA256_C */
+#endif /* CONFIG_APP_TUYA */

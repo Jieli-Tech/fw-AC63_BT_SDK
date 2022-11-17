@@ -103,11 +103,13 @@ extern void lmp_sniff_t_slot_attemp_reset(u16 slot, u16 attemp);
 extern const int sniff_support_reset_anchor_point;   //sniff状态下是否支持reset到最近一次通信点，用于HID
 void usb_hid_register_state_callback(void *callback);
 static void stdkb_usb_state_callback(u8 state);
+static void stdkb_usb_led_status_callback(u8 *buffer, u16 len);
 /* extern void hogp_direct_adv_config_set(u8 type); */
 extern void hogp_reconnect_adv_config_set(u8 adv_type, u32 adv_timeout);
 static key_timeout_flag = 0;
 extern void set_multi_devices_adv_flag(u8 adv_flag);
 u8 get_key_timeout_flag();
+static void stdkb_keyboard_irk_init(u8 bt_idx);
 static void set_key_timeout_flag(u8 kt_flag);
 
 #define KEYBOARD_ENTER_PAIR0    0x0
@@ -170,18 +172,22 @@ const u16 fn_remap_event[13 + 4] = {_KEY_CUSTOM_CTRL_HOME, _KEY_BRIGHTNESS_REDUC
 #define FN_COL                   (0)
 
 const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用来标识是否特殊键
-//  0                        1         2               3         4       5         6                7        8                9                         10            11 12 13    14     15                            16
-    {0,                     _KEY_Q,   _KEY_W,         _KEY_E,  _KEY_R,  _KEY_U,  _KEY_I,          _KEY_O,    _KEY_P,             0,                       0,          0, 0, 0,    0,   0},      //0
-    {0,                     _KEY_TAB, _KEY_CAPSLOCK, _KEY_F3, _KEY_T,  _KEY_Y,  _KEY_RIGHTBRACE, _KEY_F7,   _KEY_LEFTBRACE,     0,                 _KEY_BACKSPACE,   0, 0, 0,    0,   S_KEY(_KEY_MOD_LSHIFT), S_KEY(_KEY_MOD_LALT)},
-    {0,                     _KEY_A,   _KEY_S,         _KEY_D,  _KEY_F,  _KEY_J,  _KEY_K,          _KEY_L,    _KEY_SEMICOLON,  S_KEY(_KEY_MOD_LCTRL), _KEY_BACKSLASH,  0, 0, 0,    0,   S_KEY(_KEY_MOD_RSHIFT)},     //1
-    {
-        0,                     _KEY_ESC,    0,           _KEY_F4, _KEY_G,  _KEY_H,  _KEY_F6,            0,      _KEY_APOSTROPHE, _KEY_LEFTMETA,
-        0,          _KEY_SPACE, 0, 0, _KEY_UP
-    },
-    {S_KEY(_KEY_MOD_RALT),  _KEY_Z,   _KEY_X,         _KEY_C,  _KEY_V,  _KEY_M,  _KEY_COMMA,      _KEY_DOT,   0,                 0,                 _KEY_ENTER,      _KEY_F11, _KEY_MINUS},
-    {0,                       0,         0,             0,     _KEY_B,  _KEY_N,    0,                0,      _KEY_SLASH,     _KEY_RIGHTMETA,               0,          _KEY_DOWN,  _KEY_RIGHT, 0,   _KEY_LEFT},
-    {0,                     _KEY_GRAVE, _KEY_F1,       _KEY_F2, _KEY_5,  _KEY_6,  _KEY_EQUAL,      _KEY_F8,   _KEY_MINUS,         0,                _KEY_F9,       _KEY_DELETE},
-    {_KEY_F5,               _KEY_1,   _KEY_2,        _KEY_3,  _KEY_4,  _KEY_7,  _KEY_8,          _KEY_9,    _KEY_0,          _KEY_F12,             _KEY_F10},
+//   0                         1         2               3        4        5        6                7          8               9                      10             11         12       13     14      15                     16
+    /**/{0,                     _KEY_Q,   _KEY_W,         _KEY_E,  _KEY_R,  _KEY_U,  _KEY_I,          _KEY_O,    _KEY_P,             0,                     0,             0,         0,       0,    0,      0},
+
+    /**/{0,                     _KEY_TAB, _KEY_CAPSLOCK,  _KEY_F3, _KEY_T,  _KEY_Y,  _KEY_RIGHTBRACE, _KEY_F7,   _KEY_LEFTBRACE,     0,                  _KEY_BACKSPACE,   0,         0,       0,    0,  S_KEY(_KEY_MOD_LSHIFT), S_KEY(_KEY_MOD_LALT)},
+
+    /**/{0,                     _KEY_A,   _KEY_S,         _KEY_D,  _KEY_F,  _KEY_J,  _KEY_K,          _KEY_L,    _KEY_SEMICOLON,  S_KEY(_KEY_MOD_LCTRL), _KEY_BACKSLASH,   0,         0,       0,    0,  S_KEY(_KEY_MOD_RSHIFT)},
+
+    /**/{0,                     _KEY_ESC,    0,           _KEY_F4, _KEY_G,  _KEY_H,  _KEY_F6,            0,      _KEY_APOSTROPHE, _KEY_LEFTMETA,            0,          _KEY_SPACE,   0,       0, _KEY_UP},
+
+    /**/{S_KEY(_KEY_MOD_RALT),  _KEY_Z,   _KEY_X,         _KEY_C,  _KEY_V,  _KEY_M,  _KEY_COMMA,      _KEY_DOT,     0,               0,                  _KEY_ENTER,    _KEY_F11,  _KEY_MINUS},
+
+    /**/{0,                       0,         0,             0,     _KEY_B,  _KEY_N,    0,                0,      _KEY_SLASH,      _KEY_RIGHTMETA,           0,          _KEY_DOWN, _KEY_RIGHT, 0, _KEY_LEFT},
+
+    /**/{0,                     _KEY_GRAVE, _KEY_F1,      _KEY_F2, _KEY_5,  _KEY_6,  _KEY_EQUAL,      _KEY_F8,   _KEY_MINUS,         0,                  _KEY_F9,       _KEY_DELETE},
+
+    {_KEY_F5,               _KEY_1,   _KEY_2,         _KEY_3,  _KEY_4,  _KEY_7,  _KEY_8,          _KEY_9,    _KEY_0,          _KEY_F12,              _KEY_F10},
 };
 //bd19+ad15键值对应----打开之后需要将fn_remap_key中的F3和F7 col设置为2 && 同时将matrix_keyboard.h中的COL_MAX 设置为16
 /* const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用来标识是否特殊键 */
@@ -222,6 +228,59 @@ const u16 matrix_key_table[ROW_MAX][COL_MAX] = {                //高八位用�
     {0,                     _KEY_GRAVE, _KEY_F1,       _KEY_F2, _KEY_5,  _KEY_6,  _KEY_EQUAL,      _KEY_F8,   _KEY_MINUS,         0,                _KEY_F9,        _KEY_SCROLLLOCK},
     {_KEY_F5,               _KEY_1,   _KEY_2,         _KEY_3,  _KEY_4,  _KEY_7,  _KEY_8,          _KEY_9,    _KEY_0,          _KEY_F12,             _KEY_F10},
 };*/
+
+#if TCFG_MATRIX_KEY_CORE == 1
+special_key fn_remap_key[15 + 4 + 4 + 4] = {
+    {.row = 3, .col = 1},       //ESC
+    {.row = 6, .col = 2},       //F1
+    {.row = 6, .col = 3},       //F2
+    {.row = 1, .col = 3},       //F3
+    {.row = 3, .col = 3},       //F4
+    {.row = 7, .col = 0},       //F5
+    {.row = 3, .col = 6},       //F6
+    {.row = 1, .col = 7},       //F7
+    {.row = 6, .col = 7},       //F8
+    {.row = 6, .col = 10},      //F9
+    {.row = 7, .col = 10},      //F10
+    {.row = 4, .col = 11},      //F11
+    {.row = 7, .col = 9},       //F12
+
+    {.row = 2, .col = 9},      //Control 虚拟键盘
+    {.row = 3, .col = 11},     //Key_Space 语言切换
+
+    {.row = 3, .col = 14},      //↑PageUp
+    {.row = 5, .col = 11},      //↓PageDn
+    {.row = 5, .col = 14},      //←home
+    {.row = 5, .col = 12},      //→end
+
+    {.row = 0, .col = 1, .is_user_key = 1},       //q
+    {.row = 0, .col = 2, .is_user_key = 1},       //w
+    {.row = 0, .col = 3, .is_user_key = 1},       //e
+    {.row = 7, .col = 1, .is_user_key = 1},       //1
+    {.row = 7, .col = 2, .is_user_key = 1},       //2
+    {.row = 7, .col = 3, .is_user_key = 1},       //3
+    {.row = 7, .col = 4, .is_user_key = 1},       //4
+};
+
+const u16 fn_remap_event[15 + 4 + 4 + 4] = {_KEY_CUSTOM_ESC, _KEY_CUSTOM_CTRL_RETURN, _KEY_CUSTOM_CTRL_SEARCH, _KEY_CUSTOM_SELECT_ALL_TEST, _KEY_CUSTOM_COPY_TEST, \
+                                            _KEY_CUSTOM_PASTE_TEST, _KEY_CUSTOM_CUT_TEST,  _KEY_CUSTOM_CTRL_BACK,  _KEY_CUSTOM_CTRL_STOP, \
+                                            _KEY_CUSTOM_CTRL_FORWARD, _KEY_CUSTOM_CTRL_VOL_DOWN, _KEY_CUSTOM_CTRL_VOL_UP,  \
+                                            _KEY_CUSTOM_LOCK,
+                                            _KEY_VIRTUAL_KEYBBOARD, _KEY_CHANGE_LANGUAGE_TEST,
+                                            _KEY_PAGEUP, _KEY_PAGEDOWN, _KEY_HOME, _KEY_END,
+                                            KEYBOARD_SYSTEM_ARD, KEYBOARD_SYSTEM_WIN, KEYBOARD_SYSTEM_IOS,
+                                            KEYBOARD_ENTER_PAIR0, KEYBOARD_ENTER_PAIR1, KEYBOARD_ENTER_PAIR2, KEYBOARD_ENTER_PAIR3,
+                                           };
+const u16 fn_remap_ios_event[15 + 4 + 4 + 4] = {_KEY_CUSTOM_ESC, _KEY_CUSTOM_CTRL_RETURN, _KEY_CUSTOM_CTRL_SEARCH, _KEY_CUSTOM_SELECT_ALL_TEST, _KEY_CUSTOM_COPY_TEST, \
+                                                _KEY_CUSTOM_PASTE_TEST, _KEY_CUSTOM_CUT_TEST,  _KEY_CUSTOM_CTRL_BACK,  _KEY_CUSTOM_CTRL_STOP, \
+                                                _KEY_CUSTOM_CTRL_FORWARD, _KEY_CUSTOM_CTRL_VOL_DOWN, _KEY_CUSTOM_CTRL_VOL_UP,  \
+                                                _KEY_CUSTOM_LOCK,
+                                                _KEY_VIRTUAL_KEYBBOARD, _KEY_CHANGE_LANGUAGE_TEST,
+                                                _KEY_PAGEUP, _KEY_PAGEDOWN, _KEY_HOME, _KEY_END,
+                                                KEYBOARD_SYSTEM_ARD, KEYBOARD_SYSTEM_WIN, KEYBOARD_SYSTEM_IOS,
+                                                KEYBOARD_ENTER_PAIR0, KEYBOARD_ENTER_PAIR1, KEYBOARD_ENTER_PAIR2, KEYBOARD_ENTER_PAIR3,
+                                               };
+#elif TCFG_MATRIX_KEY_CORE == 0
 special_key fn_remap_key[14 + 4 + 4] = {
     {.row = 3, .col = 1},       //ESC
     {.row = 6, .col = 2},       //F1
@@ -267,6 +326,7 @@ const u16 fn_remap_event[12 + 4] = {_KEY_CUSTOM_CTRL_HOME, _KEY_CUSTOM_CTRL_EMAI
                                     KEYBOARD_ENTER_PAIR0, KEYBOARD_ENTER_PAIR1, KEYBOARD_ENTER_PAIR2, KEYBOARD_ENTER_PAIR3,
                                    };*/
 #endif
+#endif
 
 
 static special_key other_key[] = {
@@ -291,9 +351,9 @@ static bt_mode_e bt_hid_mode = HID_MODE_NULL;
 
 static volatile u8 is_stdkb_active = 0;//1-临界点,系统不允许进入低功耗，0-系统可以进入低功耗
 
-#define KEYBOARD_REPORT_ID          0x1
-#define COUSTOM_CONTROL_REPORT_ID   0x2
-#define MOUSE_POINT_REPORT_ID       0x3
+#define KEYBOARD_REPORT_ID          0x4//默认report_data修改为4/5/6
+#define COUSTOM_CONTROL_REPORT_ID   0x5
+#define MOUSE_POINT_REPORT_ID       0x6
 
 
 const static u8  kb_hid_report_map[] = {
@@ -414,8 +474,10 @@ static const edr_init_cfg_t hidkey_edr_config = {
 
 #if SUPPORT_USER_PASSKEY
     .io_capabilities = 2,
+    .passkey_enable = 1,
 #else
     .io_capabilities = 3,
+    .passkey_enable = 0,
 #endif
 
     .authentication_req = 2,
@@ -427,7 +489,7 @@ static const edr_init_cfg_t hidkey_edr_config = {
 };
 
 //----------------------------------
-static const ble_init_cfg_t hidkey_ble_config = {
+static const ble_init_cfg_t standard_keyboard_ble_config = {
     .same_address = 0,
     .appearance = BLE_APPEARANCE_HID_KEYBOARD,
     .report_map = kb_hid_report_map,
@@ -580,6 +642,12 @@ void edr_reconnect()
 static void ble_reset_addr(u8 *new_addr)
 {
 #if TCFG_USER_BLE_ENABLE
+    uint8_t irk[16];
+
+    syscfg_read(CFG_BLE_IRK_NUMBER + cur_bt_idx, irk, 16);//设置对应通道的irk
+    sm_test_set_irk(irk);
+    put_buf(irk, 16);
+
     ble_module_enable(0);
     log_info("new ble address:");
     put_buf(new_addr, 6);
@@ -715,7 +783,11 @@ static void user_key_deal(u16 user_key, u8 timeout)
             syscfg_write(CFG_BLE_ADDRESS_BEGIN + cur_bt_idx, tmp_ble_addr, 6);
             vm_hid_mode = HID_MODE_NULL;
             syscfg_write(CFG_HID_MODE_BEGIN + cur_bt_idx, &vm_hid_mode, 1);
-            set_key_timeout_flag(1);
+
+            if (cur_bt_idx == CFG_RF_24G_CODE_CHANNEL) {
+                kb_24g_mode_set(CFG_RF_24G_CODE_ID);
+            }
+
             if (state != BLE_ST_IDLE && state != BLE_ST_DISCONN && state != BLE_ST_INIT_OK) {
                 ble_gatt_server_adv_enable(0);
             }
@@ -759,6 +831,7 @@ static void user_key_deal(u16 user_key, u8 timeout)
             if (state != BLE_ST_IDLE && state != BLE_ST_DISCONN && state != BLE_ST_INIT_OK) {
                 ble_gatt_server_adv_enable(0);
             }
+
             ble_reset_addr(tmp_ble_addr);
             return;
         } else if ((ret == 1) && (vm_hid_mode == HID_MODE_BLE_24G)) {
@@ -792,7 +865,7 @@ static void user_key_deal(u16 user_key, u8 timeout)
             get_random_number(tmp_ble_addr, 6);
             syscfg_write(CFG_BLE_ADDRESS_BEGIN + cur_bt_idx, tmp_ble_addr, 6);
         }
-        if (cur_bt_idx == 0x4) {
+        if (cur_bt_idx == CFG_RF_24G_CODE_CHANNEL) {
 
             r_printf("24G_mode_set\n");
             kb_24g_mode_set(CFG_RF_24G_CODE_ID);
@@ -825,7 +898,7 @@ static void hid_report_send(u8 report_id, u8 *data, u16 len)
 
 #if (TCFG_PC_ENABLE )
         u8 packet[9];
-        packet[0] = 1;
+        packet[0] = KEYBOARD_REPORT_ID;
         memcpy(&packet[1], data, len);
         put_buf(packet, sizeof(packet));
         hid_send_data(packet, sizeof(packet));
@@ -952,10 +1025,12 @@ static void user_key_timeout(void *priv)
     user_key_timer_hdl = 0;
 }
 
+static u8 select_send_report_id = 0;
 static u8 special_key_deal(u8 *map, special_key *key_tab, u8 key_tab_size, u16 *remap_event_tab, u8 is_fn_remap_deal)
 {
     static u8 special_key_press = 0;
     static u16 last_user_key = 0xff;
+    static u8 fn_contral_key[] = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     u8 i = 0;
 
     if (map[FN_COL] & BIT(FN_ROW) || !is_fn_remap_deal) {        //判断fn键是否按下
@@ -974,7 +1049,22 @@ static u8 special_key_deal(u8 *map, special_key *key_tab, u8 key_tab_size, u16 *
                     last_user_key = remap_event;
                 } else {
                     log_info("last_event:0x%x\n", remap_event);
-                    hid_report_send(COUSTOM_CONTROL_REPORT_ID, &remap_event, 2);
+                    if (remap_event == _KEY_CUSTOM_SELECT_ALL_TEST || remap_event == _KEY_CUSTOM_COPY_TEST || remap_event == _KEY_CUSTOM_PASTE_TEST || \
+                        remap_event == _KEY_CUSTOM_CUT_TEST || remap_event == _KEY_CHANGE_LANGUAGE_TEST || remap_event == _KEY_PAGEUP || remap_event == _KEY_PAGEDOWN \
+                        || remap_event == _KEY_HOME || remap_event == _KEY_END) {
+                        fn_contral_key[2] = remap_event / 256;
+                        fn_contral_key[3] = remap_event % 256;
+                        hid_report_send(KEYBOARD_REPORT_ID, &fn_contral_key, 8);
+                        select_send_report_id = 1;
+                    } else {
+                        log_info("last_event_test:%d\n", select_send_report_id);
+                        if (select_send_report_id == 1) {
+                            hid_report_send(KEYBOARD_REPORT_ID, &remap_event, 8);
+                            select_send_report_id = 0;
+                        } else {
+                            hid_report_send(COUSTOM_CONTROL_REPORT_ID, &remap_event, 2);
+                        }
+                    }
                 }
                 return 1;
             } else {
@@ -995,7 +1085,15 @@ static u8 special_key_deal(u8 *map, special_key *key_tab, u8 key_tab_size, u16 *
         }
         special_key_press = 0;
         remap_event = 0;
-        hid_report_send(COUSTOM_CONTROL_REPORT_ID, &remap_event, 2);
+
+        log_info("last_event_test:%d\n", select_send_report_id);
+        if (select_send_report_id == 1) {
+            memset(&fn_contral_key[1], 0, 7);
+            hid_report_send(KEYBOARD_REPORT_ID, &fn_contral_key, 8);
+            select_send_report_id = 0;
+        } else {
+            hid_report_send(COUSTOM_CONTROL_REPORT_ID, &remap_event, 2);
+        }
         last_user_key = 0xff;
         return 1;
     }
@@ -1145,10 +1243,13 @@ static void stdkb_app_start()
     usb_connect_ok = 0;
     void usb_start();
     void usb_hid_set_repport_map(const u8 * map, int size);
+    void usb_hid_set_output_callback(void *cb);
     usb_hid_register_state_callback(stdkb_usb_state_callback);
     usb_hid_set_repport_map(kb_hid_report_map, sizeof(kb_hid_report_map));
+    usb_hid_set_output_callback(stdkb_usb_led_status_callback);
     usb_start();
 #endif
+
 #if(TCFG_USER_BLE_ENABLE)
     set_multi_devices_adv_flag(1);
 #endif
@@ -1186,7 +1287,7 @@ static void stdkb_app_start()
     log_info("use cur_ble_idx:%d\n", cur_bt_idx);
 
 #if TCFG_USER_BLE_ENABLE
-    btstack_ble_start_before_init(&hidkey_ble_config, 0);
+    btstack_ble_start_before_init(&standard_keyboard_ble_config, 0);
     {
         u8 tmp_ble_addr[6];
 
@@ -1275,15 +1376,17 @@ static void stdkb_hogp_ble_status_callback(ble_state_e status, u8 reason)
         break;
     case BLE_ST_CONNECT:
         is_stdkb_active = 0;
-        if (cur_bt_idx == 0x3) {
+        if (cur_bt_idx == CFG_RF_24G_CODE_CHANNEL) {
             r_printf("write 24g mode\n");
             bt_hid_mode = HID_MODE_BLE_24G;
             syscfg_write(CFG_HID_MODE_BEGIN + cur_bt_idx, &bt_hid_mode, 1);
+            stdkb_keyboard_irk_init(cur_bt_idx);//如果是第一次上电把所有通道irk设置完毕并将通道0的irk地址设置好
 
         } else {
             r_printf("write ble mode\n");
             bt_hid_mode = HID_MODE_BLE;
             syscfg_write(CFG_HID_MODE_BEGIN + cur_bt_idx, &bt_hid_mode, 1);         //保存当前HID模式
+            stdkb_keyboard_irk_init(cur_bt_idx);//如果是第一次上电把所有通道irk设置完毕并将通道0的irk地址设置好
 
         }
 
@@ -1418,9 +1521,24 @@ static int stdkb_bt_hci_event_handler(struct bt_event *bt)
     return 0;
 }
 
+static void stdkb_usb_led_status_callback(u8 *buffer, u16 len)
+{
+    log_info("%s,len=%d", __FUNCTION__, len);
+    put_buf(buffer, len);
+    if (buffer[1] & BIT(1)) {   //CAP灯的状态
+        log_info("enter usb led callback......on");
+        /* gpio_set_output_value(CAP_LED_PIN, CAP_LED_ON_VALUE); */
+        gpio_direction_output(CAP_LED_PIN, CAP_LED_ON_VALUE);
+    } else {
+        log_info("enter usb led callback......off");
+        /* gpio_set_output_value(CAP_LED_PIN, !CAP_LED_ON_VALUE); */
+        gpio_direction_output(CAP_LED_PIN, !CAP_LED_ON_VALUE);
+    }
+}
+
 static void stdkb_ble_led_status_callback(u8 *buffer, u16 len)
 {
-    r_printf("%s,len=%d", __FUNCTION__, len);
+    log_info("%s,len=%d", __FUNCTION__, len);
     put_buf(buffer, len);
     if (buffer[0] & BIT(1)) {   //CAP灯的状态
         r_printf("enter bble callback......\n");
@@ -1434,7 +1552,7 @@ static void stdkb_ble_led_status_callback(u8 *buffer, u16 len)
 
 static void stdkb_edr_led_status_callback(u8 *buffer, u16 len, u16 channel)
 {
-    r_printf("%s,chl=%d,len=%d", __FUNCTION__, channel, len);
+    log_info("%s,chl=%d,len=%d", __FUNCTION__, channel, len);
     put_buf(buffer, len);
 
     if (buffer[0] == 0xA2 || buffer[0] == 0x52) {    //SET_REPORT && Output
@@ -1449,6 +1567,36 @@ static void stdkb_edr_led_status_callback(u8 *buffer, u16 len, u16 channel)
                 gpio_direction_output(CAP_LED_PIN, !CAP_LED_ON_VALUE);
             }
         }
+    }
+}
+
+#define STAND_KEYBOARD_CHANNEL      4
+static void stdkb_keyboard_irk_init(u8 bt_idx)
+{
+    uint8_t irk[16];
+    u8 i;
+
+    int ret = syscfg_read(CFG_BLE_IRK_NUMBER + i, irk, 16);//检查第一个通道irk是否存在
+
+    if (ret < 0) {
+
+        for (i = 0; i < STAND_KEYBOARD_CHANNEL; i++) {
+            get_random_number(irk, 16);
+            syscfg_write(CFG_BLE_IRK_NUMBER + i, irk, 16);
+        }
+
+        syscfg_read(CFG_BLE_IRK_NUMBER + bt_idx, irk, 16);
+        sm_test_set_irk(irk);
+        log_info("stdkb_keyboard_irk_init: %d", bt_idx);
+        put_buf(irk, 16);
+
+    } else {
+
+        syscfg_read(CFG_BLE_IRK_NUMBER + bt_idx, irk, 16);
+        sm_test_set_irk(irk);
+        log_info("stdkb_keyboard_irk_init: %d", bt_idx);
+        put_buf(irk, 16);
+
     }
 }
 

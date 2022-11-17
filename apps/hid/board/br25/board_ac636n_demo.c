@@ -11,6 +11,7 @@
 #ifdef CONFIG_LITE_AUDIO
 #include "media/includes.h"
 #endif/*CONFIG_LITE_AUDIO*/
+#include "asm/power/power_port.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -103,6 +104,13 @@ const struct adkey_platform_data adkey_data = {
         TCFG_ADKEY_VALUE8,
         TCFG_ADKEY_VALUE9,
     },
+};
+#endif
+
+#if TCFG_IRKEY_ENABLE
+const struct irkey_platform_data irkey_data = {
+	    .enable = TCFG_IRKEY_ENABLE,                              //IR按键使能
+	    .port = TCFG_IRKEY_PORT,                                       //IR按键口
 };
 #endif
 
@@ -275,7 +283,7 @@ static void board_devices_init(void)
    pwm_led_init(&pwm_led_data);
 #endif
 
-#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
+#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_IRKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
 	key_driver_init();
 #endif
 }
@@ -317,19 +325,7 @@ void board_init()
 	}
 
 }
-enum {
-    PORTA_GROUP = 0,
-    PORTB_GROUP,
-    PORTC_GROUP,
-};
 
-static void port_protect(u16 *port_group, u32 port_num)
-{
-    if (port_num == NO_CONFIG_PORT) {
-        return;
-    }
-    port_group[port_num / IO_GROUP_NUM] &= ~BIT(port_num % IO_GROUP_NUM);
-}
 
 /*进软关机之前默认将IO口都设置成高阻状态，需要保留原来状态的请修改该函数*/
 static void close_gpio(u8 is_softoff)
@@ -458,11 +454,77 @@ static void keep_set_io_input(int io_sel,u8 pull_up_en,u8 pull_down_en)
 extern void dac_power_off(void);
 void board_set_soft_poweroff(void)
 {
+    u16 port_group[] = {
+        [PORTA_GROUP] = 0xffff,
+        [PORTB_GROUP] = 0xffff,
+        [PORTC_GROUP] = 0xffff,
+		[PORTD_GROUP] = 0Xffff,
+    };
+
 	if(TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15){
 		power_set_mode(PWR_LDO15);
 	}
 
-	close_gpio(1);
+	/* port_protect(port_group, IO_PORTC_04); */
+
+	//flash电源
+	if(spi_get_port()==0){
+		port_protect(port_group, SPI0_PWR_A);
+		port_protect(port_group, SPI0_CS_A);
+		port_protect(port_group, SPI0_CLK_A);
+		port_protect(port_group, SPI0_DO_D0_A);
+		port_protect(port_group, SPI0_DI_D1_A);
+		if(get_sfc_bit_mode()==4){
+			port_protect(port_group, SPI0_WP_D2_A);
+			port_protect(port_group, SPI0_HOLD_D3_A);
+		}
+	}else{
+		port_protect(port_group, SPI0_PWR_B);
+		port_protect(port_group, SPI0_CS_B);
+		port_protect(port_group, SPI0_CLK_B);
+		port_protect(port_group, SPI0_DO_D0_B);
+		port_protect(port_group, SPI0_DI_D1_B);
+		if(get_sfc_bit_mode()==4){
+			port_protect(port_group, SPI0_WP_D2_B);
+			port_protect(port_group, SPI0_HOLD_D3_B);
+		}
+	}
+
+//adkey / io可以作为唤醒口保留
+#if TCFG_IOKEY_ENABLE
+	port_protect(port_group, TCFG_IOKEY_POWER_ONE_PORT);
+#endif
+
+#if TCFG_ADKEY_ENABLE
+    port_protect(port_group,TCFG_ADKEY_PORT);
+#endif
+
+    //< close gpio
+    gpio_dir(GPIOA, 0, 16, port_group[PORTA_GROUP], GPIO_OR);
+    gpio_set_pu(GPIOA, 0, 16, ~port_group[PORTA_GROUP], GPIO_AND);
+    gpio_set_pd(GPIOA, 0, 16, ~port_group[PORTA_GROUP], GPIO_AND);
+    gpio_die(GPIOA, 0, 16, ~port_group[PORTA_GROUP], GPIO_AND);
+    gpio_dieh(GPIOA, 0, 16, ~port_group[PORTA_GROUP], GPIO_AND);
+
+    gpio_dir(GPIOB, 0, 16, port_group[PORTB_GROUP], GPIO_OR);
+    gpio_set_pu(GPIOB, 0, 16, ~port_group[PORTB_GROUP], GPIO_AND);
+    gpio_set_pd(GPIOB, 0, 16, ~port_group[PORTB_GROUP], GPIO_AND);
+    gpio_die(GPIOB, 0, 16, ~port_group[PORTB_GROUP], GPIO_AND);
+    gpio_dieh(GPIOB, 0, 16, ~port_group[PORTB_GROUP], GPIO_AND);
+
+    gpio_dir(GPIOC, 0, 16, port_group[PORTC_GROUP], GPIO_OR);
+    gpio_set_pu(GPIOC, 0, 16, ~port_group[PORTC_GROUP], GPIO_AND);
+    gpio_set_pd(GPIOC, 0, 16, ~port_group[PORTC_GROUP], GPIO_AND);
+    gpio_die(GPIOC, 0, 16, ~port_group[PORTC_GROUP], GPIO_AND);
+    gpio_dieh(GPIOC, 0, 16, ~port_group[PORTC_GROUP], GPIO_AND);
+
+	gpio_dir(GPIOD, 0, 16, port_group[PORTD_GROUP], GPIO_OR);
+    gpio_set_pu(GPIOD, 0, 16, ~port_group[PORTD_GROUP], GPIO_AND);
+    gpio_set_pd(GPIOD, 0, 16, ~port_group[PORTD_GROUP], GPIO_AND);
+    gpio_die(GPIOD, 0, 16, ~port_group[PORTD_GROUP], GPIO_AND);
+    gpio_dieh(GPIOD, 0, 16, ~port_group[PORTD_GROUP], GPIO_AND);
+
+    usb_iomode(1);
 
     gpio_set_pull_up(IO_PORT_DP, 0);
     gpio_set_pull_down(IO_PORT_DP, 0);

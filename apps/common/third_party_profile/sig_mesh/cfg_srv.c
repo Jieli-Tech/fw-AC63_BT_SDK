@@ -46,6 +46,8 @@
 
 static struct bt_mesh_cfg_srv *conf;
 
+static void (*mesh_app_key_add_callback)(u16_t app_key);
+
 static struct label {
     u16_t ref;
     u16_t addr;
@@ -371,6 +373,11 @@ static u8_t mod_bind(struct bt_mesh_model *model, u16_t key_idx)
     return STATUS_INSUFF_RESOURCES;
 }
 
+u8_t mesh_mod_bind(struct bt_mesh_model *model, u16_t key_idx)
+{
+    mod_bind(model, key_idx);
+}
+
 static u8_t mod_unbind(struct bt_mesh_model *model, u16_t key_idx, bool store)
 {
     int i;
@@ -506,6 +513,20 @@ static u8_t app_key_set(u16_t net_idx, u16_t app_idx, const u8_t val[16],
     return STATUS_SUCCESS;
 }
 
+void mesh_app_key_add_callback_register(void (*handler)(u16_t app_key))
+{
+    mesh_app_key_add_callback = handler;
+}
+
+static void mesh_app_key_add_callback_action(u16_t app_key)
+{
+    if (mesh_app_key_add_callback) {
+        log_info("mesh_app_key_add_callback");
+        return mesh_app_key_add_callback(app_key);
+    }
+    return;
+}
+
 static void app_key_add(struct bt_mesh_model *model,
                         struct bt_mesh_msg_ctx *ctx,
                         struct net_buf_simple *buf)
@@ -528,6 +549,9 @@ static void app_key_add(struct bt_mesh_model *model,
 
     if (bt_mesh_model_send(model, ctx, &msg, NULL, NULL)) {
         BT_ERR("Unable to send App Key Status response");
+    }
+    if (status == STATUS_SUCCESS) {
+        mesh_app_key_add_callback_action(key_app_idx);
     }
 }
 
@@ -1427,7 +1451,7 @@ static void mod_sub_add(struct bt_mesh_model *model,
 
     elem_addr = net_buf_simple_pull_le16(buf);
     if (!BT_MESH_ADDR_IS_UNICAST(elem_addr)) {
-        BT_WARN("Prohibited element address");
+        BT_WARN("Prohibited element address 0x%x", elem_addr);
         return;
     }
 
@@ -3319,7 +3343,7 @@ int bt_mesh_cfg_srv_init(struct bt_mesh_model *model, bool primary)
     }
 
     /* Configuration Model security is device-key based */
-    model->keys[0] = BT_MESH_KEY_DEV;
+    model->keys[0] = BT_MESH_KEY_DEV_LOCAL;
 
     if (!(IS_ENABLED(CONFIG_BT_MESH_RELAY) &&
           BT_MESH_FEATURES_IS_SUPPORT(BT_MESH_FEAT_RELAY))) {

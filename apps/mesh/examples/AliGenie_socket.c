@@ -31,6 +31,8 @@ extern void pseudo_random_genrate(uint8_t *dest, unsigned size);
  */
 /*-----------------------------------------------------------*/
 #define BT_MESH_FEAT_SUPPORTED_TEMP         ( \
+                                                BT_MESH_FEAT_RELAY | \
+                                                BT_MESH_FEAT_PROXY | \
                                                 0 \
                                             )
 #include "feature_correct.h"
@@ -88,6 +90,9 @@ void get_mesh_adv_name(u8 *len, u8 **data)
 #define CUR_DEVICE_MAC_ADDR        	0x28fa7a42bf14
 #define PRODUCT_ID                  6001957
 #define DEVICE_SECRET               "e3a3d73b8ebf93619cdd56ce469d3cb9"
+
+#define ALIGENIE_SUB_ADDR_1   0xc002
+#define ALIGENIE_SUB_ADDR_2   0xcfff
 
 /*
  * @brief Publication Declarations
@@ -385,7 +390,7 @@ void comfirm_check(struct __comfirm_check_param *param)
         }
         printf("indicate_flag[ %d ] = %d\r\n", param->indicate_tid, indicate_flag[param->indicate_tid]);
         printf("\n  param->buf.tid = %d, timer_cnt = %d \n", ((struct __onoff_repo *)(param->buf))->TID, param->timer_cnt);
-        vendor_attr_status_send(&vendor_server_models[1], &ctx, param->buf, param->len);
+        vendor_attr_status_send(&vendor_server_models[0], &ctx, param->buf, param->len);
     } else {
         sys_timer_remove(timer_index[param->timer_cnt]);
     }
@@ -452,7 +457,7 @@ static void gen_onoff_set_unack(struct bt_mesh_model *model,
 
     printf("\n  set unack tid = %d, timer_cnt = %d, param.tid = %d  \n", onoff_repo_set[onoff_repo_set_cnt].TID, timer_cnt, comfirm_check_param[timer_cnt].indicate_tid);
 
-    vendor_attr_status_send(&vendor_server_models[1], ctx, &onoff_repo_set[onoff_repo_set_cnt], sizeof(onoff_repo_set[onoff_repo_set_cnt]));
+    vendor_attr_status_send(&vendor_server_models[0], ctx, &onoff_repo_set[onoff_repo_set_cnt], sizeof(onoff_repo_set[onoff_repo_set_cnt]));
     timer_index[timer_cnt] = sys_timer_add(&comfirm_check_param[timer_cnt], comfirm_check, 400);
 
 }
@@ -507,7 +512,7 @@ static void timer_handler(struct __timer_param *param)
     comfirm_check_param[timer_cnt].indicate_tid = indicate_tid;
     comfirm_check_param[timer_cnt].buf = &timer_success;
     comfirm_check_param[timer_cnt].len = sizeof(timer_success);
-    vendor_attr_status_send(&vendor_server_models[1], &ctx, &timer_success, sizeof(timer_success));
+    vendor_attr_status_send(&vendor_server_models[0], &ctx, &timer_success, sizeof(timer_success));
     timer_index[timer_cnt] = sys_timer_add(&comfirm_check_param[timer_cnt], comfirm_check, 400);
 
     //onoff_state msg send and check comfirm
@@ -517,7 +522,7 @@ static void timer_handler(struct __timer_param *param)
     comfirm_check_param[timer_cnt].indicate_tid = indicate_tid;
     comfirm_check_param[timer_cnt].buf = &onoff_repo_handle;
     comfirm_check_param[timer_cnt].len = sizeof(onoff_repo_handle);
-    vendor_attr_status_send(&vendor_server_models[1], &ctx, &onoff_repo_handle, sizeof(onoff_repo_handle));
+    vendor_attr_status_send(&vendor_server_models[0], &ctx, &onoff_repo_handle, sizeof(onoff_repo_handle));
     timer_index[timer_cnt] = sys_timer_add(&comfirm_check_param[timer_cnt], comfirm_check, 400);
 }
 
@@ -707,7 +712,6 @@ static struct bt_mesh_model root_models[] = {
 };
 
 static struct bt_mesh_model vendor_server_models[] = {
-    BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_CLI, vendor_srv_op, NULL, NULL),
     BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_SRV, vendor_srv_op, NULL, &onoff_state[0]),
 };
 
@@ -745,7 +749,7 @@ static u8 dev_uuid[16] = {
     0x01 | BIT(4) | BIT(6), // PID
     PID_TO_LITTLE_ENDIAN(PRODUCT_ID), // ProductID
     MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR), // MAC
-    0x00, //BIT(1),  FeatureFlag
+    BIT(1),  //FeatureFlag
     0x00, 0x00 // RFU
 };
 
@@ -910,9 +914,9 @@ void led_set(void)
     comfirm_check_param[timer_cnt].buf = &onoff_repo;
     comfirm_check_param[timer_cnt].len = sizeof(onoff_repo);
 
-    printf(" vendor &model = 0x%x, vendor model = 0x%x", &vendor_server_models[1], vendor_server_models[1]);
+    printf(" vendor &model = 0x%x, vendor model = 0x%x", &vendor_server_models[0], vendor_server_models[0]);
 
-    vendor_attr_status_send(&vendor_server_models[1], &ctx, &onoff_repo, sizeof(onoff_repo));
+    vendor_attr_status_send(&vendor_server_models[0], &ctx, &onoff_repo, sizeof(onoff_repo));
     timer_index[timer_cnt] = sys_timer_add(&comfirm_check_param[timer_cnt], comfirm_check, 400);
 }
 
@@ -953,7 +957,7 @@ void input_key_handler(u8 key_status, u8 key_number)
         struct bt_mesh_msg_ctx ctx = {
             .addr = 0xf000,
         };
-        vendor_attr_status_send(&vendor_server_models[1], &ctx, &HardReset_msg, sizeof(HardReset_msg));
+        vendor_attr_status_send(&vendor_server_models[0], &ctx, &HardReset_msg, sizeof(HardReset_msg));
         blink_id = sys_timer_add(NULL, led_blink, 300);
         sys_timer_add(NULL, iot_reset, 1000 * 3);
 
@@ -1004,7 +1008,7 @@ static void period_msg(void *empty)
     };
 
     if (bt_mesh_is_provisioned()) {
-        vendor_attr_status_send(&vendor_server_models[1], &ctx, &period_indicat, sizeof(period_indicat));
+        vendor_attr_status_send(&vendor_server_models[0], &ctx, &period_indicat, sizeof(period_indicat));
     }
 }
 
@@ -1021,7 +1025,7 @@ void iot_init()
             .Attr_Type = 0x0100,    //设备开关状态，与generic onoff绑定
             .OnOff = led_flag,
         };
-        vendor_attr_status_send(&vendor_server_models[1], &ctx, &state_msg, sizeof(state_msg));
+        vendor_attr_status_send(&vendor_server_models[0], &ctx, &state_msg, sizeof(state_msg));
 
         indicate_tid_get(&indicate_tid);
         struct __indicate_msg indicate_msg = {
@@ -1030,9 +1034,44 @@ void iot_init()
             .Attr_Type  = 0xf009,
             .Event      = 0x03,
         };
-        vendor_attr_status_send(&vendor_server_models[1], &ctx, &indicate_msg, sizeof(indicate_msg));
+        vendor_attr_status_send(&vendor_server_models[0], &ctx, &indicate_msg, sizeof(indicate_msg));
     }
     sys_timer_add(NULL, period_msg, 180 * 1000);
+}
+
+static void aligenie_app_key_set(u16_t app_key)
+{
+    log_info("aligenie_app_key_set");
+    mesh_mod_bind(root_models[1], app_key);
+    mesh_mod_bind(vendor_server_models[0], app_key);
+}
+
+static void aligenie_sub_set(struct bt_mesh_model *mod, u16_t sub_addr)
+{
+    int i = 0;
+    for (i = 0; i < ARRAY_SIZE(mod->groups); i++) {
+        if (mod->groups[i] == BT_MESH_ADDR_UNASSIGNED) {
+            mod->groups[i] = sub_addr;
+            break;
+        }
+    }
+
+    if (i != ARRAY_SIZE(mod->groups)) {
+        if (IS_ENABLED(CONFIG_BT_SETTINGS)) {
+            bt_mesh_store_mod_sub(mod);
+        }
+        if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER)) {
+            bt_mesh_lpn_group_add(sub_addr);
+        }
+    }
+}
+
+static void aligenie_configuration()
+{
+    aligenie_sub_set(&root_models[1], ALIGENIE_SUB_ADDR_1);
+    aligenie_sub_set(&vendor_server_models[0], ALIGENIE_SUB_ADDR_1);
+    aligenie_sub_set(&root_models[1], ALIGENIE_SUB_ADDR_2);
+    aligenie_sub_set(&vendor_server_models[0], ALIGENIE_SUB_ADDR_2);
 }
 
 /*
@@ -1056,6 +1095,10 @@ static void mesh_init(void)
     settings_load();
 
     bt_mesh_prov_enable(BT_MESH_PROV_GATT | BT_MESH_PROV_ADV);
+
+    mesh_app_key_add_callback_register(aligenie_app_key_set);
+
+    aligenie_configuration();
 
     iot_init();     //indicate_state
 }

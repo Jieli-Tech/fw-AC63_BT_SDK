@@ -869,6 +869,7 @@ static void JL_rcsp_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
             JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, NULL, 0);
         }
 #if RCSP_UPDATE_EN
+        os_time_dly(10);
         if (get_jl_update_flag()) {
 #if 0//CONFIG_HID_CASE_ENABLE
             void rcsp_update_jump_for_hid_device();
@@ -879,8 +880,16 @@ static void JL_rcsp_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
             if (RCSP_BLE == JL_get_cur_bt_channel_sel()) {
                 rcsp_printf("BLE_ CON START DISCON\n");
                 rcsp_msg_post(MSG_JL_DEV_DISCONNECT, 0);
-            } else {
+            } else if (RCSP_SPP == JL_get_cur_bt_channel_sel()) {
                 rcsp_printf("WAIT_FOR_SPP_DISCON\n");
+#if CONFIG_APP_OTA_ENABLE
+            } else {
+                rcsp_printf("RCSP HID DISCON\n");
+                void set_curr_update_type(u8 type);
+                set_curr_update_type(RCSP_HID);
+                void rcsp_update_jump_for_hid_device();
+                sys_timeout_add(NULL, rcsp_update_jump_for_hid_device, 200);
+#endif
             }
 #endif
         }
@@ -1070,6 +1079,60 @@ static void rcsp_ble_callback_set(void (*resume)(void), void (*recieve)(void *, 
     __this->rcsp_ble->regist_recieve_cbk(NULL, recieve);
     __this->rcsp_ble->regist_state_cbk(NULL, status);
 }
+
+#if CONFIG_APP_OTA_ENABLE
+
+static void JL_rcsp_hid_status_callback(u8 status)
+{
+
+}
+
+static int JL_rcsp_hid_data_send(void *priv, u8 *data, u16 len)
+{
+    rcsp_printf("### rcsp_hid_data_send %d\n", len);
+    int err = 0;
+    if (__this->rcsp_hid != NULL) {
+        err = __this->rcsp_hid->send_data(NULL, data, len);
+    }
+    return err;
+}
+
+static s32 JL_rcsp_hid_send(void *priv, void *buf, u16 len)
+{
+    if (len < 128) {
+        rcsp_printf("send: \n");
+        rcsp_printf_buf(buf, (u32)len);
+    }
+    if ((__this->rcsp_hid != NULL) && (JL_rcsp_hid_fw_ready(NULL))) {
+        return __this->rcsp_hid->send_data(NULL, buf, len);
+    } else {
+        rcsp_printf("send err -1 !!\n");
+    }
+    return -1;
+}
+
+static const JL_PRO_CB JL_pro_HID_callback = {
+    .priv              = NULL,
+    .fw_ready          = JL_rcsp_hid_fw_ready,
+    .fw_send           = JL_rcsp_hid_send,
+    .CMD_resp          = JL_rcsp_cmd_resp,
+    .DATA_resp         = JL_rcsp_data_resp,
+    .CMD_no_resp       = JL_rcsp_cmd_no_resp,
+    .DATA_no_resp      = JL_rcsp_data_no_resp,
+    .CMD_recieve_resp  = JL_rcsp_cmd_recieve_resp,
+    .DATA_recieve_resp = JL_rcsp_data_recieve_resp,
+    .wait_resp_timeout = JL_rcsp_wait_resp_timeout,
+};
+
+static void rcsp_hid_callback_set(void (*recieve)(void *, void *, u16), void (*status)(u8))
+{
+    printf("----0x%x   0x%x   0x%x\n", __this->rcsp_hid, __this->rcsp_hid->regist_recieve_cbk, __this->rcsp_hid->regist_state_cbk);
+    __this->rcsp_hid->regist_recieve_cbk(NULL, recieve);
+    __this->rcsp_hid->regist_state_cbk(NULL, status);
+}
+
+#endif
+
 #if RCSP_UPDATE_EN
 u8 JL_get_cur_bt_channel_sel(void)
 {
@@ -1199,7 +1262,8 @@ void rcsp_dev_select_v1(u8 type)
 #if RCSP_UPDATE_EN
     set_jl_update_flag(0);
 #endif
-    if (type == RCSP_BLE) {
+    switch (type) {
+    case RCSP_BLE:
 #if RCSP_UPDATE_EN
         JL_bt_chl = RCSP_BLE;
 #endif
@@ -1208,7 +1272,8 @@ void rcsp_dev_select_v1(u8 type)
         rcsp_ble_callback_set(JL_protocol_resume, JL_rcsp_recieve_handle, JL_ble_status_callback);
         JL_protocol_dev_switch(&JL_pro_BLE_callback);
         JL_rcsp_auth_init(rcsp_ble_data_send, (u8 *)link_key_data, NULL);
-    } else {
+        break;
+    case RCSP_SPP:
 #if RCSP_UPDATE_EN
         JL_bt_chl = RCSP_SPP;
 #endif
@@ -1217,6 +1282,22 @@ void rcsp_dev_select_v1(u8 type)
         rcsp_ble_callback_set(NULL, NULL, NULL);
         JL_protocol_dev_switch(&JL_pro_SPP_callback);
         JL_rcsp_auth_init(rcsp_spp_data_send, (u8 *)link_key_data, NULL);
+        break;
+
+#if CONFIG_APP_OTA_ENABLE
+    case RCSP_HID:
+#if RCSP_UPDATE_EN
+        JL_bt_chl = RCSP_HID;
+        set_curr_update_type(RCSP_HID);
+#endif
+        rcsp_printf("------RCSP_HID-----\n");
+        rcsp_ble_callback_set(NULL, NULL, NULL);
+        rcsp_hid_callback_set(JL_rcsp_recieve_handle, JL_rcsp_hid_status_callback);
+        JL_protocol_dev_switch(&JL_pro_HID_callback);
+        JL_rcsp_auth_init(JL_rcsp_hid_data_send, NULL, NULL);
+        break;
+#endif
+
     }
 }
 
@@ -1262,6 +1343,7 @@ void rcsp_init()
     /* __this->stop_speech = stop_speech; */
     //__this->rcsp_user = (struct __rcsp_user_var *)get_user_rcsp_opt();
 
+    rcsp_hid_get_operation_table(&__this->rcsp_hid);
     ble_get_server_operation_table(&__this->rcsp_ble);
     //spp_get_operation_table(&__this->rcsp_spp);
 
@@ -1281,7 +1363,11 @@ void rcsp_init()
     int err = task_create(rcsp_process_task, NULL, "rcsp_task");
 
     //default use ble , can switch spp anytime
+#if CONFIG_APP_DONGLE
+    rcsp_dev_select_v1(RCSP_HID);
+#else
     rcsp_dev_select_v1(RCSP_BLE);
+#endif
 
     __this->rcsp_run_flag = 1;
 #if (0 != BT_CONNECTION_VERIFY)
@@ -1289,6 +1375,15 @@ void rcsp_init()
 #endif
 }
 
+#if CONFIG_APP_DONGLE
+#include "system/init.h"
+int rcsp_hid_late_init(void)
+{
+    rcsp_init();
+    return 0;
+}
+late_initcall(rcsp_hid_late_init);
+#endif
 
 void rcsp_exit(void)
 {

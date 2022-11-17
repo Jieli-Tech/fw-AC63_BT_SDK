@@ -95,6 +95,13 @@ const struct adkey_platform_data adkey_data = {
 };
 #endif
 
+#if TCFG_IRKEY_ENABLE
+const struct irkey_platform_data irkey_data = {
+	    .enable = TCFG_IRKEY_ENABLE,                              //IR按键使能
+	    .port = TCFG_IRKEY_PORT,                                       //IR按键口
+};
+#endif
+
 /************************** IO KEY ****************************/
 #if TCFG_IOKEY_ENABLE
 const struct iokey_port iokey_list[] = {
@@ -229,7 +236,7 @@ static void board_devices_init(void)
 //    pwm_led_init(&pwm_led_data);
 #endif
 
-#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
+#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_IRKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
 	key_driver_init();
 #endif
 

@@ -60,7 +60,7 @@ static u16 g_auto_shutdown_timer = 0;
 #define SNIFF_MIN_INTERVALSLOT        16
 #define SNIFF_ATTEMPT_SLOT            2
 #define SNIFF_TIMEOUT_SLOT            1
-#define SNIFF_CHECK_TIMER_PERIOD      100
+#define SNIFF_CHECK_TIMER_PERIOD      200
 #else
 
 #define SNIFF_MODE_TYPE               SNIFF_MODE_DEF
@@ -273,6 +273,7 @@ static const edr_init_cfg_t keypage_edr_config = {
     .page_timeout = 8000,
     .super_timeout = 8000,
     .io_capabilities = 3,
+    .passkey_enable = 0,
     .authentication_req = 2,
     .oob_data = 0,
     .sniff_param = &keypage_sniff_param,

@@ -171,6 +171,50 @@
 #define TCFG_IRKEY_ENABLE                   DISABLE_THIS_MOUDLE//是否使能AD按键
 #define TCFG_IRKEY_PORT                     IO_PORTA_06        //IR按键端口
 
+//*********************************************************************************//
+//                             lp tocuh key 配置                                   //
+//*********************************************************************************//
+#define TCFG_LP_TOUCH_KEY_ENABLE 			DISABLE_THIS_MOUDLE     //是否使能触摸按键
+#define TCFG_LP_EARTCH_KEY_ENABLE 			DISABLE_THIS_MOUDLE 	//是否使能CH1
+//内置触摸灵敏度调试工具使能, 使能后可以通过连接PC端上位机通过SPP调试,
+//打开该宏需要确保同时打开宏:
+//1.USER_SUPPORT_PROFILE_SPP
+//2.APP_ONLINE_DEBUG
+//可以针对每款样机校准灵敏度参数表(在lp_touch_key.c ch_sensitivity_table), 详细使用方法请参考《低功耗内置触摸介绍》文档.
+#define TCFG_LP_TOUCH_KEY_BT_TOOL_ENABLE 	DISABLE //是否使能内置触摸调试功能
+
+//电容检测灵敏度级数配置(范围: 0 ~ 9)
+//该参数配置与触摸时电容变化量有关, 触摸时电容变化量跟模具厚度, 触摸片材质, 面积等有关,
+//触摸时电容变化量越小, 推荐选择灵敏度级数越大,
+//触摸时电容变化量越大, 推荐选择灵敏度级数越小,
+//用户可以从灵敏度级数为0开始调试, 级数逐渐增大, 直到选择一个合适的灵敏度配置值.
+#define TCFG_LP_TOUCH_KEY_SENSITIVITY 			5 	//触摸按键电容检测灵敏度配置(级数0 ~ 9)
+#define TCFG_EARIN_TOUCH_KEY_SENSITIVITY 		5 	//触摸按键电容检测灵敏度配置(级数0 ~ 9)
+
+#if TCFG_LP_TOUCH_KEY_ENABLE
+//取消外置触摸的一些宏定义
+#ifdef TCFG_IOKEY_ENABLE
+#undef TCFG_IOKEY_ENABLE
+#define TCFG_IOKEY_ENABLE 					DISABLE_THIS_MOUDLE
+#endif /* #ifdef TCFG_IOKEY_ENABLE */
+
+#ifdef TCFG_ADKEY_ENABLE
+#undef TCFG_ADKEY_ENABLE
+#define TCFG_ADKEY_ENABLE                   DISABLE_THIS_MOUDLE
+#endif /* #ifdef TCFG_ADKEY_ENABLE */
+
+#endif /* #if TCFG_LP_TOUCH_KEY_ENABLE */
+
+#if TCFG_LP_EARTCH_KEY_ENABLE
+
+#ifdef TCFG_EARTCH_EVENT_HANDLE_ENABLE
+#undef TCFG_EARTCH_EVENT_HANDLE_ENABLE
+#endif /* #ifdef TCFG_EARTCH_EVENT_HANDLE_ENABLE */
+
+#define TCFG_EARTCH_EVENT_HANDLE_ENABLE 	ENABLE_THIS_MOUDLE 		//入耳检测事件APP流程处理使能
+
+#endif /* #if TCFG_LP_EARTCH_KEY_ENABLE */
+
 
 //*********************************************************************************//
 //                                 Audio配置                                       //
@@ -367,7 +411,8 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 //                                  低功耗配置                                     //
 //*********************************************************************************//
-#define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15//PWR_DCDC15                    //电源模式设置，可选DCDC和LDO
+// #define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15                    //电源模式设置，可选DCDC和LDO
+#define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15                    //电源模式设置，可选DCDC和LDO
 #define TCFG_LOWPOWER_BTOSC_DISABLE			0                            //低功耗模式下BTOSC是否保持
 #define TCFG_LOWPOWER_LOWPOWER_SEL			1   //芯片是否进入powerdown
 /*强VDDIO等级配置,可选：
@@ -393,7 +438,7 @@ DAC硬件上的连接方式,可选的配置：
 //                                  系统配置                                         //
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
-#define TCFG_SYS_LVD_EN						      0   //电量检测使能
+#define TCFG_SYS_LVD_EN						      1   //电量检测使能
 #define TCFG_POWER_ON_NEED_KEY				      0	  //是否需要按按键开机配置
 #define TCFG_HID_AUTO_SHUTDOWN_TIME             (0 * 60)      //HID无操作自动关机(单位：秒)
 #define AUDIO_OUT_MIXER_ENABLE					  1	  // AUIDO输出使用mixer
@@ -414,6 +459,10 @@ DAC硬件上的连接方式,可选的配置：
 #define USER_SUPPORT_PROFILE_PNP    1
 #define USER_SUPPORT_PROFILE_PBAP   0
 #endif
+
+#define APP_ONLINE_DEBUG            0//在线APP调试,发布默认不开
+
+
 
 #if TCFG_USER_TWS_ENABLE
 #define TCFG_BD_NUM						          1   //连接设备个数配置

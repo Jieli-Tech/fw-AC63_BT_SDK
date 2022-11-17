@@ -170,6 +170,24 @@ struct device_event {
     int value;
 };
 
+struct notify_433 {
+    u8 event;
+    u8 *packet;
+    u8 size;
+};
+
+struct notify_nfc {
+    u8 event;
+    u8 *packet;
+    u8 size;
+};
+
+struct notify_onepa {
+    u8 event;
+    u8 *packet;
+    u8 size;
+};
+
 struct chargestore_event {
     u8 event;
     u8 *packet;
@@ -177,6 +195,12 @@ struct chargestore_event {
 };
 
 struct testbox_event {
+    u8 event;
+    u8 *packet;
+    u8 size;
+};
+
+struct dg_ota_event {
     u8 event;
     u8 *packet;
     u8 size;
@@ -273,6 +297,9 @@ struct sys_event {
         struct touch_event 	touch;
 #endif
         struct device_event dev;
+        struct notify_433   nf4;
+        struct notify_nfc   nfn;
+        struct notify_onepa nfo;
         struct net_event 	net;
         struct bt_event 	bt;
         struct msg_event 	msg;
@@ -285,6 +312,7 @@ struct sys_event {
         struct ear_event    ear;
         struct rcsp_event	rcsp;
         struct chargebox_event chargebox;
+        struct dg_ota_event dg_ota;
         struct testbox_event testbox;
         struct umidigi_chargestore_event umidigi_chargestore;
         struct ancbox_event ancbox;

@@ -33,6 +33,7 @@ SECTIONS
 
         btctler_data_end = .;
 
+		. = ALIGN(4);
     } > ram0
 
     .bss (NOLOAD) :ALIGN(4)
@@ -96,6 +97,8 @@ SECTIONS
         BTCTLER_CL_BSS_SIZE = ABSOLUTE(. - BTCTLER_CL_BSS_START);
 
         btctler_bss_end = .;
+
+		. = ALIGN(4);
     } > ram0
 
     .text : ALIGN(4)
@@ -159,6 +162,7 @@ SECTIONS
 
         btctler_code_end = .;
 
+		. = ALIGN(4);
     } > code0
 
 

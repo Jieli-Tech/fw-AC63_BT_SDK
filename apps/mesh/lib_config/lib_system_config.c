@@ -47,6 +47,16 @@ const int device_bulk_read_async_enable = 0;
 //================================================//
 const int ENABLE_LUA_VIRTUAL_MACHINE = 0;
 
+//================================================//
+//        不可屏蔽中断使能配置(UNMASK_IRQ)        //
+//================================================//
+const int CONFIG_CPU_UNMASK_IRQ_ENABLE = 0;
+
+//================================================//
+//0:使用timer0 delay; 1:使用mpwm3 delay,释放timer0//
+//               only supprt: bd19	              //
+//================================================//
+const int set_to_close_timer0_delay = 0;
 
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)

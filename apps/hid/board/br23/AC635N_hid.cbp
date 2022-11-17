@@ -97,6 +97,7 @@
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data" />
+<Add directory="../../../../apps/common/third_party_profile/jieli/online_db" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/trans_data_demo" />
 <Add directory="../../../../apps/common/third_party_profile/common" />
 <Add directory="../../../../apps/common/device" />
@@ -108,6 +109,7 @@
 <Add directory="../../../../apps/common/code_switch/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include" />
 <Add directory="../../../../apps/common/device/touch_pad" />
+<Add directory="../../../../apps/common/ui/led" />
 <Add directory="../../../../apps/common/audio" />
 <Add directory="../../../../cpu/br23/audio_dec" />
 <Add directory="../../../../cpu/br23/audio_enc" />
@@ -161,6 +163,8 @@
 <Add option="../../../../cpu/br23/liba/wtg_dec_lib.a" />
 <Add option="../../../../cpu/br23/liba/wtgv2_dec_lib.a" />
 <Add option="../../../../cpu/br23/liba/wav_dec_lib.a " />
+<Add option="../../../../cpu/br23/liba/mp3_dec_lib.a" />
+<Add option="../../../../cpu/br23/liba/lib_dns.a" />
 <Add option="../../../../cpu/br23/liba/lib_midi_dec.a" />
 <Add option="../../../../cpu/br23/liba/update.a" />
 <Add option="--end-group" />
@@ -192,6 +196,7 @@
 <Unit filename="../../../../apps/common/device/key/adkey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/key/ctmu_touch_key.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/key/iokey.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/key/irkey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/key/key_driver.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/key/matrix_keyboard.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/key/matrix_keyboard_ex_mcu.c"><Option compilerVer="CC"/></Unit>
@@ -208,6 +213,7 @@
 <Unit filename="../../../../apps/common/device/usb/device/cdc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/usb/device/cdc.h" />
 <Unit filename="../../../../apps/common/device/usb/device/cdc_defs.h" />
+<Unit filename="../../../../apps/common/device/usb/device/custom_hid.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/usb/device/descriptor.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/usb/device/hid.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/usb/device/msd.c"><Option compilerVer="CC"/></Unit>
@@ -256,6 +262,8 @@
 <Unit filename="../../../../apps/common/third_party_profile/common/3th_profile_api.h" />
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.h" />
+<Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data/rcsp_hid_inter.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data/rcsp_hid_inter.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_bluetooth.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_msg.h" />
@@ -268,7 +276,19 @@
 <Unit filename="../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_server.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_client_demo.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/le_common.h" />
+<Unit filename="../../../../apps/common/third_party_profile/jieli/online_db/online_db_deal.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/jieli/online_db/online_db_deal.h" />
+<Unit filename="../../../../apps/common/third_party_profile/jieli/online_db/spp_online_db.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/third_party_profile/jieli/online_db/spp_online_db.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.h" />
+<Unit filename="../../../../apps/common/ui/led/led_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/ui/led/led_api.h" />
+<Unit filename="../../../../apps/common/ui/led/led_driver.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/ui/led/led_driver.h" />
+<Unit filename="../../../../apps/common/ui/led/led_ui_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/ui/led/tm162x.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/ui/led/ui_api.h" />
+<Unit filename="../../../../apps/common/ui/led/ui_common.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/testbox_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/uart_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/uart_update_master.c"><Option compilerVer="CC"/></Unit>
@@ -289,6 +309,7 @@
 <Unit filename="../../../../apps/hid/config/lib_system_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/config/lib_update_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/config/log_config.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/hid/examples/electrocar/electrocar.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/examples/gamebox/app_gamebox.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/examples/gamebox/gamebox.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/examples/gamebox/key_mapping.c"><Option compilerVer="CC"/></Unit>
@@ -443,9 +464,11 @@
 <Unit filename="../../../../include_lib/driver/cpu/br23/asm/pap.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br23/asm/plcnt.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br23/asm/power/p33.h" />
+<Unit filename="../../../../include_lib/driver/cpu/br23/asm/power/power_port.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br23/asm/power_interface.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br23/asm/pwm_led.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br23/asm/rdec.h" />
+<Unit filename="../../../../include_lib/driver/cpu/br23/asm/rtc.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br23/asm/spi.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br23/asm/spiflash.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br23/asm/timer.h" />
@@ -459,6 +482,7 @@
 <Unit filename="../../../../include_lib/driver/device/spiflash.h" />
 <Unit filename="../../../../include_lib/driver/device/uart.h" />
 <Unit filename="../../../../include_lib/driver/device/usb/ch9.h" />
+<Unit filename="../../../../include_lib/driver/device/usb/device/custom_hid.h" />
 <Unit filename="../../../../include_lib/driver/device/usb/device/descriptor.h" />
 <Unit filename="../../../../include_lib/driver/device/usb/device/hid.h" />
 <Unit filename="../../../../include_lib/driver/device/usb/device/msd.h" />

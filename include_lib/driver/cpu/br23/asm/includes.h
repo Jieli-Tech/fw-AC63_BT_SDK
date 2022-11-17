@@ -13,6 +13,7 @@
 #include "asm/efuse.h"
 #include "asm/wdt.h"
 #include "asm/timer.h"
+#include "asm/rtc.h"
 
 
 

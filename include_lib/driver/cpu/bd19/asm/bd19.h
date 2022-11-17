@@ -100,6 +100,18 @@ typedef struct {
 
 
 //............. 0x1500 - 0x15ff............ for eq
+typedef struct {
+    __RW __u32 CON0;
+    __RW __u32 CON1;
+    __RW __u32 DATAI_ADR;
+    __RW __u32 DATAO_ADR;
+    __RW __u32 DATA_LEN;
+    __RW __u32 FLT_ADR;
+
+} JL_EQ_TypeDef;
+
+#define JL_EQ_BASE                      (hs_base + map_adr(0x15, 0x00))
+#define JL_EQ                           ((JL_EQ_TypeDef			*)JL_EQ_BASE)
 
 
 //............. 0x2100 - 0x21ff............ for wireless
@@ -232,6 +244,29 @@ typedef struct {
 
 
 //............. 0x1400 - 0x17ff............
+//............. 0x1600 - 0x16ff............ for src
+typedef struct {
+    __RW __u32 CON0;
+    __RW __u32 CON1;
+    __RW __u32 CON2;
+    __RW __u32 CON3;
+    __RW __u32 IDAT_ADR;
+    __RW __u32 IDAT_LEN;
+    __RW __u32 ODAT_ADR;
+    __RW __u32 ODAT_LEN;
+    __RW __u32 FLTB_ADR;
+    __WO __u32 ODAT_ADR_START;
+    __WO __u32 ODAT_ADR_END;
+    __WO __u32 STOP_FLAG;
+#ifdef CONFIG_BR30_C_VERSION
+    __RW __u32 INSR;
+    __RW __u32 OUTSR;
+    __RW __u32 PHASE;
+#endif
+} JL_SRC_TypeDef;
+
+#define JL_SRC_BASE                     (hs_base + map_adr(0x16, 0x00))
+#define JL_SRC                          ((JL_SRC_TypeDef			*)JL_SRC_BASE)
 
 //............. 0x1800 - 0x18ff............
 typedef struct {
@@ -316,6 +351,19 @@ typedef struct {
 #define JL_WLA                          ((JL_WLA_TypeDef       *)JL_WLA_BASE)
 
 //............. 0x1a00 - 0x1aff............
+typedef struct {
+    __RW __u32 CON;
+    __RW __u32 CADR;
+    __RW __u32 ACC0L;
+    __RW __u32 ACC0H;
+    __RW __u32 ACC1L;
+    __RW __u32 ACC1H;
+    __RW __u32 TEST0;
+    __RW __u32 TEST1;
+} JL_FFT_TypeDef;
+
+#define JL_FFT_BASE                  (hs_base + map_adr(0x1a, 0x00))
+#define JL_FFT                       ((JL_FFT_TypeDef *)JL_FFT_BASE)
 
 //............. 0x1c00 - 0x1eff............
 typedef struct {
@@ -371,6 +419,33 @@ typedef struct {
 
 #define JL_IIC_BASE                     (ls_base + map_adr(0x24, 0x00))
 #define JL_IIC                          ((JL_IIC_TypeDef       *)JL_IIC_BASE)
+//............. 0x2600 - 0x26ff............ for src_sync
+typedef struct {
+    __RW __u32 CON0;
+#ifdef CONFIG_BR30_C_VERSION
+    __RW __u32 RESERVE;
+#else
+    __RW __u32 CON1;
+#endif /* #ifdef CONFIG_BR30_C_VERSION */
+    __RW __u32 CON2;
+    __RW __u32 CON3;
+    __RW __u32 IDAT_ADR;
+    __RW __u32 IDAT_LEN;
+    __RW __u32 ODAT_ADR;
+    __RW __u32 ODAT_LEN;
+    __RW __u32 FLTB_ADR;
+    __WO __u32 ODAT_ADR_START;
+    __WO __u32 ODAT_ADR_END;
+    __RW __u32 STOP_FLAG;
+#ifdef CONFIG_BR30_C_VERSION
+    __RW __u32 INSR;
+    __RW __u32 OUTSR;
+    __RW __u32 PHASE;
+#endif /* #ifdef CONFIG_BR30_C_VERSION */
+} JL_SRC_SYNC_TypeDef;
+
+#define JL_SRC_SYNC_BASE                     (hs_base + map_adr(0x26, 0x00))
+#define JL_SRC_SYNC                          ((JL_SRC_SYNC_TypeDef *)JL_SRC_SYNC_BASE)
 
 //............. 0x2700 - 0x27ff............
 typedef struct {

@@ -46,17 +46,19 @@
 #define trace_run_debug_val(x)   //log_info("\n## %s: %d,  0x%04x ##\n",__FUNCTION__,__LINE__,x)
 
 //2.4G模式: 0---ble, 非0---2.4G配对码
-#define CFG_RF_24G_CODE_ID       (0) //<=24bits
+#define CFG_RF_24G_CODE_ID         (0x239a) //<=24bits
 /* #define CFG_RF_24G_CODE_ID       (0x23) //<=24bits */
 
-//切换控制,可自己修改按键方式
-#define SWITCH_MODE_BLE_24G_EDR    1   //BLE,2.4G,EDR ; 3个模式切换, 要使能 EDR BLE 模块
-#define MIDDLE_KEY_SWITCH          1   //中键长按数秒切换 edr & ble , or 2.4g & ble, or ble & 2.4g & edr
+//模式(edr,ble,24g)切换控制,可自己修改按键方式
+#define MIDDLE_KEY_SWITCH          1   //左按键+中键,长按数秒切换 edr & ble , or 2.4g & ble, or ble & 2.4g & edr
 #define MIDDLE_KEY_HOLD_CNT       (4)  //长按中键计算次数 >= 4s
+//配置支持的切换模式
+#define SWITCH_MODE_EDR_ENABLE     (1 & TCFG_USER_EDR_ENABLE)  //使能EDR模式
+#define SWITCH_MODE_BLE_ENABLE     (1 & TCFG_USER_BLE_ENABLE)  //使能BLE模式
+#define SWITCH_MODE_24G_ENABLE     (1 & (CFG_RF_24G_CODE_ID != 0) & TCFG_USER_BLE_ENABLE)//使能24G模式
 
-
-//使能开配对管理，BLE & 2.4g 鼠标只绑定1个主机,可自己修改按键方式
-#define DOUBLE_KEY_HOLD_PAIR      (0 & CFG_RF_24G_CODE_ID)  //中键+右键 长按数秒,进入2.4G配对模式
+//使能开配对管理,可自己修改按键方式
+#define DOUBLE_KEY_HOLD_PAIR      (1)  //中键+右按键 长按数秒,进入当前蓝牙模块的配对模式
 #define DOUBLE_KEY_HOLD_CNT       (4)  //长按中键计算次数 >= 4s
 
 /*配置发送周期和sniff周期匹配*/
@@ -68,8 +70,6 @@
 #define MO_IO_DEBUG_0(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT &= ~BIT(x);}
 #define MO_IO_DEBUG_1(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT |= BIT(x);}
 #define MO_IO_DEBUG_TOGGLE(i,x)  //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT ^= BIT(x);}
-
-
 
 /*
    定时器模拟sensor发数使能
@@ -99,6 +99,7 @@ typedef enum {
     HID_MODE_NULL = 0,
     HID_MODE_EDR,
     HID_MODE_BLE,
+    HID_MODE_24G,/*ble's 24g*/
     HID_MODE_INIT = 0xff
 } bt_mode_e;
 static bt_mode_e bt_hid_mode;
@@ -215,7 +216,7 @@ static const u8 mouse_report_map[] = {
 #define SNIFF_MIN_INTERVALSLOT        EDR_SET_SNIFF_SLOTS
 #define SNIFF_ATTEMPT_SLOT            2
 #define SNIFF_TIMEOUT_SLOT            1
-#define SNIFF_CHECK_TIMER_PERIOD      100
+#define SNIFF_CHECK_TIMER_PERIOD      200
 #else
 
 #define SNIFF_MODE_TYPE               SNIFF_MODE_DEF
@@ -243,6 +244,7 @@ static const edr_init_cfg_t mouse_edr_config = {
     .page_timeout = 8000,
     .super_timeout = 8000,
     .io_capabilities = 3,
+    .passkey_enable = 0,
     .authentication_req = 2,
     .oob_data = 0,
     .sniff_param = &mouse_sniff_param,
@@ -357,72 +359,89 @@ static void power_set_soft_reset(void)
     while (1);
 }
 
+/*根据配置好的模式切换*/
 static void mode_switch_handler(void)
 {
     log_info("mode_switch_handler");
-#if (TCFG_USER_EDR_ENABLE && TCFG_USER_BLE_ENABLE)
+    int switch_sucess = 0;
 
-    if (edr_hid_is_connected() || ble_hid_is_connected()) {
-        log_info("fail, disconnect bt firstly!!!\n");
-        return;
-    }
+    /* if (edr_hid_is_connected() || ble_hid_is_connected()) { */
+    /* log_info("fail, disconnect bt firstly!!!\n"); */
+    /* return; */
+    /* } */
 
+    //切换的顺序loop:ble->edr->24g
     is_hid_active = 1;
     if (HID_MODE_BLE == bt_hid_mode) {
-        mouse_select_btmode(HID_MODE_EDR);
-    } else {
-        mouse_select_btmode(HID_MODE_BLE);
-    }
-    sys_timeout_add(NULL, power_set_soft_reset, WAIT_DISCONN_TIME_MS);
-#endif
-
-}
-
-static void mode_switch_24g(void)
-{
-    /* log_info("mode_switch_24g"); */
+#if (SWITCH_MODE_EDR_ENABLE || SWITCH_MODE_24G_ENABLE)
 
 #if TCFG_USER_BLE_ENABLE
-    ble_module_enable(0);
-    if (ble_24g_code) {
-        ble_24g_code = 0;
-        log_info("##switch to ble_mode: %04x", ble_24g_code);
-    } else {
-        ble_24g_code = CFG_RF_24G_CODE_ID;
-        log_info("##switch to 24g_mode: %04x", ble_24g_code);
-    }
-    rf_set_24g_hackable_coded(ble_24g_code);
-    mouse_vm_deal(1);
-    ble_module_enable(1);
-#endif
-}
-
-static void mode_switch_ble_24g_edr(void)
-{
-    /* log_info("mode_switch_ble_24g_edr"); */
-
-    if (bt_hid_mode == HID_MODE_EDR) {
-        ble_24g_code = 0;
-        rf_set_24g_hackable_coded(ble_24g_code);
-        mouse_vm_deal(1);
-        log_info("##switch to ble_mode\n");
-        mode_switch_handler();//switch to ble
-    } else {
-        if (CFG_RF_24G_CODE_ID && ble_24g_code == 0) {
-            log_info("##switch to 24g_mode\n");
-            mode_switch_24g();//switch to 2.4g
-        } else {
-            log_info("##switch to edr_mode\n");
-            mode_switch_handler();//switch to edr
+        if (ble_hid_is_connected()) {
+            log_info("disconnect ble\n");
+            ble_module_enable(0);
+            os_time_dly(10);
         }
+#endif
+        switch_sucess = 1;
+
+#if SWITCH_MODE_EDR_ENABLE
+        mouse_select_btmode(HID_MODE_EDR);
+#else
+        mouse_select_btmode(HID_MODE_24G);
+#endif
+
+#endif
+    } else if (HID_MODE_EDR == bt_hid_mode) {
+
+#if (SWITCH_MODE_BLE_ENABLE || SWITCH_MODE_24G_ENABLE)
+#if TCFG_USER_EDR_ENABLE
+        if (edr_hid_is_connected()) {
+            log_info("disconnect edr\n");
+            user_hid_disconnect();
+            os_time_dly(20);
+        }
+#endif
+        switch_sucess = 1;
+
+        if (SWITCH_MODE_24G_ENABLE) { /**/
+            mouse_select_btmode(HID_MODE_24G);
+        } else {
+            mouse_select_btmode(HID_MODE_BLE);
+        }
+#endif
+
+    } else if (HID_MODE_24G == bt_hid_mode) {
+#if (SWITCH_MODE_BLE_ENABLE || SWITCH_MODE_EDR_ENABLE)
+#if TCFG_USER_BLE_ENABLE
+        if (ble_hid_is_connected()) {
+            log_info("disconnect 24g\n");
+            ble_module_enable(0);
+            os_time_dly(10);
+        }
+#endif
+        switch_sucess = 1;
+
+#if (SWITCH_MODE_BLE_ENABLE)
+        mouse_select_btmode(HID_MODE_BLE);
+#elif(SWITCH_MODE_EDR_ENABLE)
+        mouse_select_btmode(HID_MODE_EDR);
+#endif
+#endif
+
     }
+
+    if (switch_sucess) {
+        log_info("switch success\n");
+        sys_timeout_add(NULL, power_set_soft_reset, WAIT_DISCONN_TIME_MS);
+    } else {
+        log_info("switch fail\n");
+        is_hid_active = 0;
+    }
+
 }
-
-
 
 static void app_code_sw_event_handler(struct sys_event *event)
 {
-
     static s8 sw_val = 0;
 
     if (wheel_send_flag) {
@@ -432,7 +451,7 @@ static void app_code_sw_event_handler(struct sys_event *event)
     if (event->u.codesw.event == 0) {
         /* log_info("sw_val = %d\n", event->u.codesw.value); */
         sw_val += event->u.codesw.value;
-        first_packet.data[WHEEL_IDX] = sw_val;
+        first_packet.data[WHEEL_IDX] = -sw_val;
     }
 
     wheel_send_flag = 0;
@@ -458,7 +477,7 @@ static void app_optical_sensor_event_handler(struct sys_event *event)
         }
 
 
-#if 0
+#if 1
         delta_x += event->u.axis.x;
         delta_y += event->u.axis.y;
 #else
@@ -488,7 +507,6 @@ typedef struct {
     u16  head_tag;
     u8   mode;
     u8   res;
-    u32  ble_24g_code;
 } hid_vm_cfg_t;
 
 #define	HID_VM_HEAD_TAG (0x3AA3)
@@ -514,37 +532,45 @@ static void mouse_vm_deal(u8 rw_flag)
                 log_info("-exist--\n");
                 log_info_hexdump((u8 *)&info, vm_len);
                 bt_hid_mode = info.mode;
-                ble_24g_code = info.ble_24g_code;
             }
         }
 
         if (HID_MODE_NULL == bt_hid_mode) {
-#if TCFG_USER_BLE_ENABLE
+            /*第一次上电，默认模式优先顺序*/
+#if SWITCH_MODE_BLE_ENABLE
             bt_hid_mode = HID_MODE_BLE;
-            ble_24g_code = CFG_RF_24G_CODE_ID;
-#else
+#elif SWITCH_MODE_EDR_ENABLE
             bt_hid_mode = HID_MODE_EDR;
+#else
+            bt_hid_mode = HID_MODE_24G;
 #endif
         } else {
-            if (!TCFG_USER_BLE_ENABLE) {
-                bt_hid_mode = HID_MODE_EDR;
-            }
-
-            if (!TCFG_USER_EDR_ENABLE) {
+            /*修改模式后，判断VM记录的模式是否还存在*/
+            if (0 == SWITCH_MODE_24G_ENABLE && bt_hid_mode == HID_MODE_24G) {
                 bt_hid_mode = HID_MODE_BLE;
             }
 
-            if (bt_hid_mode != info.mode) {
-                log_info("-write00--\n");
-                info.mode = bt_hid_mode;
-                info.ble_24g_code = ble_24g_code;
-                syscfg_write(CFG_AAP_MODE_INFO, (u8 *)&info, vm_len);
+            if (0 == SWITCH_MODE_BLE_ENABLE && bt_hid_mode == HID_MODE_BLE) {
+                bt_hid_mode = HID_MODE_EDR;
+            }
+
+            if (0 == SWITCH_MODE_EDR_ENABLE && bt_hid_mode == HID_MODE_EDR) {
+#if SWITCH_MODE_BLE_ENABLE
+                bt_hid_mode = HID_MODE_BLE;
+#else
+                bt_hid_mode = HID_MODE_24G;
+#endif
             }
         }
-    } else {
 
+        if (bt_hid_mode != info.mode) {
+            log_info("-write00,mdy mode--\n");
+            info.mode = bt_hid_mode;
+            syscfg_write(CFG_AAP_MODE_INFO, (u8 *)&info, vm_len);
+        }
+    } else {
+        //wm write
         info.mode = bt_hid_mode;
-        info.ble_24g_code = ble_24g_code;
         info.head_tag = HID_VM_HEAD_TAG;
         info.res = 0;
 
@@ -553,13 +579,12 @@ static void mouse_vm_deal(u8 rw_flag)
 
         if (memcmp(&tmp_info, &info, vm_len)) {
             syscfg_write(CFG_AAP_MODE_INFO, (u8 *)&info, vm_len);
-            log_info("-write11--\n");
+            log_info("-write11,new mode--\n");
             log_info_hexdump((u8 *)&info, vm_len);
         }
 
     }
 }
-
 
 
 void mouse_set_soft_poweroff(void)
@@ -588,8 +613,6 @@ static void mouse_timer_handle_test(void)
     log_info("not_bt");
 }
 
-
-
 extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
 static void mouse_app_start()
 {
@@ -610,6 +633,7 @@ static void mouse_app_start()
 
 #if TCFG_USER_BLE_ENABLE
     btstack_ble_start_before_init(&mouse_ble_config, 0);
+    le_hogp_set_reconnect_adv_cfg(ADV_IND, 5000);
 #endif
 
     btstack_init();
@@ -677,7 +701,6 @@ static int mouse_bt_hci_event_handler(struct bt_event *bt)
     bt_comm_ble_hci_event_handler(bt);
 #endif
 
-
     return 0;
 }
 
@@ -698,24 +721,30 @@ static int mouse_bt_connction_status_event_handler(struct bt_event *bt)
         //read vm first
         mouse_vm_deal(0);//bt_hid_mode read for VM
 
-
 #if TCFG_USER_BLE_ENABLE
 
 #if DOUBLE_KEY_HOLD_PAIR
-        //2.4g 配对管理，默认只绑定1个配对设备
-        le_hogp_set_pair_config(1, 0);
+        //2.4g&ble 配对管理，默认绑定配对设备
+        le_hogp_set_pair_config(10, 1);
 #endif
 
-        log_info("##init_24g_code: %04x", ble_24g_code);
-        rf_set_24g_hackable_coded(ble_24g_code);
-
-        /* bt_ble_init(); */
+        ble_24g_code = CFG_RF_24G_CODE_ID;
+        log_info("##config_24g_code: %04x", CFG_RF_24G_CODE_ID);
+        ble_set_fix_pwr(9);//range:0~9
 #endif
 
-        if (bt_hid_mode == HID_MODE_BLE) {
+        if (bt_hid_mode == HID_MODE_BLE || bt_hid_mode == HID_MODE_24G) {
+            if (bt_hid_mode == HID_MODE_BLE) {
+                rf_set_24g_hackable_coded(0);
+            } else {
+                log_info("##init_24g_code: %04x", ble_24g_code);
+                rf_set_24g_hackable_coded(ble_24g_code);
+            }
+
 #if TCFG_USER_BLE_ENABLE
-            btstack_ble_start_after_init(0);
+            btstack_ble_start_after_init(0);/*auto call ble_module_enable(1)*/
 #endif
+
         } else {
 #if TCFG_USER_EDR_ENABLE
             btstack_edr_start_after_init(0);
@@ -724,13 +753,18 @@ static int mouse_bt_connction_status_event_handler(struct bt_event *bt)
 
         mouse_select_btmode(HID_MODE_INIT);//
 
-        if (bt_hid_mode == HID_MODE_BLE) {
+        if (bt_hid_mode == HID_MODE_BLE || bt_hid_mode == HID_MODE_24G) {
 #if TCFG_USER_BLE_ENABLE
             ble_hid_timer_handle = sys_s_hi_timer_add((void *)0, ble_mouse_timer_handler, 10);
+            /* ble_module_enable(1); */
 #endif
         } else {
 #if TCFG_USER_EDR_ENABLE
             edr_hid_timer_handle = sys_s_hi_timer_add((void *)0, edr_mouse_timer_handler, EDR_SET_TIMER_VALUE);
+            user_hid_enable(1);
+            if (!bt_connect_phone_back_start()) {
+                bt_wait_phone_connect_control(1);
+            }
 #endif
         }
         break;
@@ -776,6 +810,40 @@ static int mouse_bt_common_event_handler(struct bt_event *bt)
     return 0;
 }
 
+/*清配对表，重新可以连接可发现*/
+static void mouse_bt_pair_start(void)
+{
+    if (bt_hid_mode == HID_MODE_EDR) {
+#if TCFG_USER_EDR_ENABLE
+        if (edr_hid_is_connected()) {
+            log_info("disconnect edr\n");
+            user_hid_disconnect();
+            user_send_cmd_prepare(USER_CTRL_DEL_ALL_REMOTE_INFO, 0, NULL);
+        }
+        log_info("#edr enter wait pair....");
+#endif
+    } else {
+#if TCFG_USER_BLE_ENABLE
+        if (ble_hid_is_connected()) {
+            log_info("disconnect ble\n");
+            ble_module_enable(0);
+            os_time_dly(10);
+        } else {
+            ble_module_enable(0);
+        }
+
+        if (bt_hid_mode == HID_MODE_24G) {
+            log_info("#2.4g enter wait pair....");
+        } else {
+            log_info("#ble enter wait pair....");
+        }
+
+        ble_set_fix_pwr(6);//range:0~9
+        le_hogp_set_pair_allow();
+        ble_module_enable(1);
+#endif
+    }
+}
 
 static void mouse_key_event_handler(struct sys_event *event)
 {
@@ -795,93 +863,40 @@ static void mouse_key_event_handler(struct sys_event *event)
 
         event_type = event->u.key.event;
 
-        first_packet.data[BUTTONS_IDX] = 0;
+//中键+left键切换模式,长按数秒进入
+#if MIDDLE_KEY_SWITCH
+        if (5 == event->u.key.value && event_type == KEY_EVENT_LONG) {
+            log_info("switch:double_key5 hold:%d", switch_key_long_cnt);
+            if (++switch_key_long_cnt >= MIDDLE_KEY_HOLD_CNT) {
+                mode_switch_handler();
+                switch_key_long_cnt = 0;
+            }
+            return;
+        } else {
+            switch_key_long_cnt = 0;
+        }
+#endif
 
+//中键+right键, 长按数秒进入
+#if (DOUBLE_KEY_HOLD_PAIR)
+        if (6 == event->u.key.value && event_type == KEY_EVENT_LONG) {
+            log_info("pair_start:double key6 hold:%d", double_key_long_cnt);
+            if (++double_key_long_cnt >= DOUBLE_KEY_HOLD_CNT) {
+                mouse_bt_pair_start();
+                double_key_long_cnt = 0;
+            }
+            return;
+        } else {
+            double_key_long_cnt = 0;
+        }
+#endif
+
+        first_packet.data[BUTTONS_IDX] = 0;
         if (event_type == KEY_EVENT_CLICK || \
             event_type == KEY_EVENT_LONG || \
             event_type == KEY_EVENT_HOLD) {
             first_packet.data[BUTTONS_IDX] |= event->u.key.value;
         }
-
-//中键+右键 长按数秒进入
-#if (TCFG_USER_BLE_ENABLE && DOUBLE_KEY_HOLD_PAIR)
-        if (bt_hid_mode == HID_MODE_BLE && 2 == event->u.key.value && event_type == KEY_EVENT_LONG) {
-            if (ONE_PORT_TO_LOW == gpio_read(TCFG_IOKEY_MOUSE_HK_PORT)) {
-                log_info("double key hold1:%d", double_key_long_cnt);
-                if (++double_key_long_cnt >= DOUBLE_KEY_HOLD_CNT) {
-                    if (ble_hid_is_connected()) {
-                        log_info("device disconnect firstly!!!");
-                        return;
-                    }
-
-                    if (ble_24g_code) {
-                        log_info("#2.4g enter wait pair....");
-                    } else {
-                        log_info("#ble enter wait pair....");
-                    }
-
-                    ble_module_enable(0);
-                    ble_set_fix_pwr(6);//range:0~9
-                    le_hogp_set_pair_allow();
-                    ble_module_enable(1);
-                    double_key_long_cnt = 0;
-                }
-                return;
-            }
-        } else {
-            if (bt_hid_mode == HID_MODE_BLE && 1 == event->u.key.value && event_type == KEY_EVENT_LONG) {
-                if (ONE_PORT_TO_LOW == gpio_read(TCFG_IOKEY_MOUSE_RK_PORT)) {
-                    log_info("double key hold2:%d", double_key_long_cnt);
-                    if (++double_key_long_cnt >= DOUBLE_KEY_HOLD_CNT) {
-                        if (ble_hid_is_connected()) {
-                            log_info("device disconnect firstly!!!");
-                            return;
-                        }
-
-                        if (ble_24g_code) {
-                            log_info("#2.4g enter wait pair....");
-                        } else {
-                            log_info("#ble enter wait pair....");
-                        }
-
-                        ble_module_enable(0);
-                        ble_set_fix_pwr(6);//range:0~9
-                        le_hogp_set_pair_allow();
-                        ble_module_enable(1);
-                        double_key_long_cnt = 0;
-                    }
-                    return;
-                }
-            }
-        }
-        double_key_long_cnt = 0;
-#endif
-
-
-//中键长按数秒切换 edr & ble , or 2.4g & ble, or ble & 2.4g & edr
-#if MIDDLE_KEY_SWITCH
-        if (4 == event->u.key.value && event_type == KEY_EVENT_LONG) {
-            log_info("key_value4 long hold:%d", switch_key_long_cnt);
-            if (++switch_key_long_cnt >= MIDDLE_KEY_HOLD_CNT) {
-                if (TCFG_USER_BLE_ENABLE && CFG_RF_24G_CODE_ID) {
-
-#if SWITCH_MODE_BLE_24G_EDR && TCFG_USER_EDR_ENABLE
-                    //定义2.4g,ble 2.4g和ble切换
-                    mode_switch_ble_24g_edr();
-#else
-                    //定义2.4g,默认2.4g和ble切换
-                    mode_switch_24g();
-#endif
-                } else {
-                    //edr和ble切换
-                    mode_switch_handler();
-                }
-                switch_key_long_cnt = 0;
-            }
-        } else {
-            switch_key_long_cnt = 0;
-        }
-#endif
 
     }
 
@@ -889,8 +904,6 @@ static void mouse_key_event_handler(struct sys_event *event)
         button_send_flag = 0;
     }
 }
-
-
 
 
 static int mouse_event_handler(struct application *app, struct sys_event *event)
@@ -960,16 +973,23 @@ static void mouse_select_btmode(u8 mode)
         }
         bt_hid_mode = mode;
     } else {
-        //init start
+        //init start,上电初始化
     }
-
 
     log_info("###### %s: %d,%d\n", __FUNCTION__, mode, bt_hid_mode);
 
+    if (bt_hid_mode == HID_MODE_BLE || bt_hid_mode == HID_MODE_24G) {
 
-    if (bt_hid_mode == HID_MODE_BLE) {
+        if (bt_hid_mode == HID_MODE_BLE) {
+            log_info("---------app select ble--------\n");
+            rf_set_24g_hackable_coded(0);
+        } else {
+            log_info("---------app select 24g--------\n");
+            log_info("set_24g_code: %04x", ble_24g_code);
+            rf_set_24g_hackable_coded(ble_24g_code);
+        }
+
         //ble
-        log_info("---------app select ble--------\n");
         if (!STACK_MODULES_IS_SUPPORT(BT_BTSTACK_LE) || !BT_MODULES_IS_SUPPORT(BT_MODULE_LE)) {
             log_info("not surpport ble,make sure config !!!\n");
             ASSERT(0);
@@ -980,12 +1000,6 @@ static void mouse_select_btmode(u8 mode)
         bt_wait_phone_connect_control(0);
 #endif
 
-#if TCFG_USER_BLE_ENABLE
-        if (mode == HID_MODE_INIT) {
-            ble_module_enable(1);
-        }
-#endif
-
 #if TCFG_USER_EDR_ENABLE
         //close edr
 #ifndef CONFIG_NEW_BREDR_ENABLE
@@ -994,6 +1008,7 @@ static void mouse_select_btmode(u8 mode)
         bredr_power_put();
         sys_auto_sniff_controle(0, NULL);
 #endif
+
     } else {
         //edr
         log_info("---------app select edr--------\n");
@@ -1008,15 +1023,6 @@ static void mouse_select_btmode(u8 mode)
 #if TCFG_USER_BLE_ENABLE
         //close ble
         ble_module_enable(0);
-#endif
-
-#if TCFG_USER_EDR_ENABLE
-        if (mode == HID_MODE_INIT) {
-            user_hid_enable(1);
-            if (!bt_connect_phone_back_start()) {
-                bt_wait_phone_connect_control(1);
-            }
-        }
 #endif
 
     }

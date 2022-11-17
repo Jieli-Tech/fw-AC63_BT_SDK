@@ -19,7 +19,6 @@
 #include "jl_kws/jl_kws_api.h"
 #endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE */
 
-
 #define LOG_TAG_CONST       APP
 #define LOG_TAG             "[APP]"
 #define LOG_ERROR_ENABLE
@@ -59,7 +58,9 @@ const struct task_info task_info_table[] = {
 #if (TUYA_DEMO_EN)
     {"user_deal",           7,     0,   512,   512  },//定义线程 tuya任务调度
 #endif
-
+#if (CONFIG_APP_HILINK)
+    {"hilink_task",         2,     0,   1024,   0},//定义线程 hilink任务调度
+#endif
     {0, 0},
 };
 
@@ -120,6 +121,7 @@ void app_main()
     }
 
     printf(">>>>>>>>>>>>>>>>>app_main...\n");
+    printf(">>> v220,2022-11-11 >>>\n");
 
     if (get_charge_online_flag()) {
 #if(TCFG_SYS_LVD_EN == 1)
@@ -166,6 +168,10 @@ void app_main()
     it.name = "nonconn_24g";
     it.action = ACTION_NOCONN_24G_MAIN;
 
+#elif CONFIG_APP_HILINK
+    it.name = "hilink";
+    it.action = ACTION_HILINK_MAIN;
+
 #elif CONFIG_APP_LL_SYNC
     it.name = "ll_sync";
     it.action = ACTION_LL_SYNC;
@@ -193,6 +199,9 @@ void app_main()
 #elif CONFIG_APP_CONN_24G
     it.name = "conn_24g";
     it.action = ACTION_CONN_24G_MAIN;
+#elif(CONFIG_APP_ELECTROCAR)
+    it.name = "electrocar";
+    it.action = ACTION_ELECTROCAR;
 
 #else
     while (1) {

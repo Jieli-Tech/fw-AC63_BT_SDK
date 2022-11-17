@@ -17,6 +17,7 @@
 #define     MIC_CLASS           0x00000004
 #define     HID_CLASS           0x00000008
 #define     CDC_CLASS           0x00000010
+#define     CUSTOM_HID_CLASS    0x00000020
 
 #define     AUDIO_CLASS         (SPEAKER_CLASS|MIC_CLASS)
 
@@ -65,6 +66,9 @@
 #endif
 #ifndef TCFG_TYPE_C_ENABLE      //应用于type-c场景
 #define TCFG_TYPE_C_ENABLE  0
+#endif
+#ifndef TCFG_USB_CUSTOM_HID_ENABLE
+#define TCFG_USB_CUSTOM_HID_ENABLE  0
 #endif
 
 /********************************/

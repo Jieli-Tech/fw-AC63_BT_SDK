@@ -916,21 +916,31 @@ void uart1_flow_ctl_init(u8 rts_io, u8 cts_io)
     }
 }
 
-void uart1_flow_ctl_rts_suspend(void)
+void uart1_flow_ctl_rts_suspend(void)  //忙碌，硬件停止接收
 {
-    if (!(JL_UART1->CON1 & BIT(0))) {
-        gpio_write(_rts_io, 1);      //告诉对方，自己忙碌
+    if (JL_UART1->CON1 & BIT(0)) {
+        JL_UART1->CON1 |= BIT(4);  //RX_disable
+        JL_UART1->CON1 |= BIT(1);  //RTS_DMAEN ///强制本地端RTS为高
     }
-    JL_UART1->CON1 |= BIT(4);   //硬件停止接收
+
+    /* if (!(JL_UART1->CON1 & BIT(0))) { */
+    /* gpio_write(_rts_io, 1);      //告诉对方，自己忙碌 */
+    /* } */
+    /* JL_UART1->CON1 |= BIT(4);   //硬件停止接收 */
 }
 
-void uart1_flow_ctl_rts_resume(void)
+void uart1_flow_ctl_rts_resume(void) //空闲，表示可以继续接收数据
 {
-    JL_UART1->CON1 &= ~BIT(4);  //硬件可以接收
     if (JL_UART1->CON1 & BIT(0)) {
-        JL_UART1->CON1 |= BIT(13);
-    } else {
-        gpio_write(_rts_io, 0);      //表示可以继续接收数据
+        JL_UART1->CON1 &= ~BIT(4); //RX_enable
+        JL_UART1->CON1 &= ~BIT(1); //RTS_DMAEN  ///RTS可以硬件拉低
     }
+
+    /* JL_UART1->CON1 &= ~BIT(4);  //硬件可以接收 */
+    /* if (JL_UART1->CON1 & BIT(0)) { */
+    /* JL_UART1->CON1 |= BIT(13); */
+    /* } else { */
+    /* gpio_write(_rts_io, 0);      //表示可以继续接收数据 */
+    /* } */
 }
 

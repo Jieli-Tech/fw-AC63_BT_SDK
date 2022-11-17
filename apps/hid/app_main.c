@@ -172,6 +172,10 @@ void app_main()
 #elif(CONFIG_APP_IDLE)
     it.name = "idle";
     it.action = ACTION_IDLE_MAIN;
+#elif(CONFIG_APP_ELECTROCAR)
+    it.name = "electrocar";
+    it.action = ACTION_ELECTROCAR;
+
 
 #else
     while (1) {

@@ -11,6 +11,7 @@
 #include "media/includes.h"
 #endif/*CONFIG_LITE_AUDIO*/
 
+#include "rtc_alarm.h"
 #include "asm/power/power_port.h"
 
 #define LOG_TAG_CONST       BOARD
@@ -43,6 +44,9 @@ const struct low_power_param power_param = {
     .vddiow_lev     = TCFG_LOWPOWER_VDDIOW_LEVEL,          //弱VDDIO等级,可选：2.1V  2.4V  2.8V  3.2V
     .osc_type       = OSC_TYPE_LRC,
     .dcdc_port      = TCFG_DCDC_PORT_SEL,
+#if TCFG_RTC_ALARM_ENABLE
+    .rtc_clk    	= CLK_SEL_32K,
+#endif
 };
 
 
@@ -117,6 +121,13 @@ const struct adkey_platform_data adkey_data = {
 };
 #endif
 
+#if TCFG_IRKEY_ENABLE
+const struct irkey_platform_data irkey_data = {
+	    .enable = TCFG_IRKEY_ENABLE,                              //IR按键使能
+	    .port = TCFG_IRKEY_PORT,                                       //IR按键口
+};
+#endif
+
 /************************** IO KEY ****************************/
 #if TCFG_IOKEY_ENABLE
 const struct iokey_port iokey_list[] = {
@@ -162,6 +173,34 @@ const struct key_remap_data iokey_remap_data = {
 #endif
 
 #endif
+
+#if TCFG_RTC_ALARM_ENABLE
+const struct sys_time def_sys_time = {  //初始一下当前时间
+    .year = 2020,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+const struct sys_time def_alarm = {     //初始一下目标时间，即闹钟时间
+    .year = 2020,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 7,
+};
+
+extern void alarm_isr_user_cbfun(u8 index);
+RTC_DEV_PLATFORM_DATA_BEGIN(rtc_data)
+	.default_sys_time = &def_sys_time,
+	.default_alarm = &def_alarm,
+    /* .cbfun = NULL,                      //闹钟中断的回调函数,用户自行定义 */
+    .cbfun = alarm_isr_user_cbfun,
+RTC_DEV_PLATFORM_DATA_END()
+#endif
+
 void debug_uart_init(const struct uart_platform_data *data)
 {
 #if TCFG_UART0_ENABLE
@@ -172,6 +211,7 @@ void debug_uart_init(const struct uart_platform_data *data)
     }
 #endif
 }
+
 
 /*其他封装板级，移该函数*/
 u8 get_power_on_status(void)
@@ -207,8 +247,12 @@ static void board_devices_init(void)
     pwm_led_init(&pwm_led_data);
 #endif
 
-#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
+#if (TCFG_IOKEY_ENABLE || TCFG_ADKEY_ENABLE || TCFG_IRKEY_ENABLE || TCFG_TOUCH_KEY_ENABLE)
 	key_driver_init();
+#endif
+
+#if TCFG_RTC_ALARM_ENABLE
+    alarm_init(&rtc_data);
 #endif
 }
 

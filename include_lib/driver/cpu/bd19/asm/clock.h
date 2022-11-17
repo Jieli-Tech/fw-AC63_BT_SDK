@@ -77,6 +77,25 @@ enum CLK_OUT_SOURCE {
     PLL_75M_CLK_OUT,
 };
 
+typedef enum {
+    CLK_DIV_1,
+    CLK_DIV_4,
+    CLK_DIV_16,
+    CLK_DIV_64,
+    CLK_DIV_2,
+    CLK_DIV_8,
+    CLK_DIV_32,
+    CLK_DIV_128,
+    CLK_DIV_256,
+    CLK_DIV_1024,
+    CLK_DIV_4096,
+    CLK_DIV_16384,
+    CLK_DIV_512,
+    CLK_DIV_2048,
+    CLK_DIV_8192,
+    CLK_DIV_32768,
+} CLK_DIV_4bit;
+
 void clk_out(u8 gpio, enum CLK_OUT_SOURCE clk);
 
 void clock_dump(void);

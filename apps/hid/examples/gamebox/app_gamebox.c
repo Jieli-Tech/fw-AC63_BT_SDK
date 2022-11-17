@@ -237,6 +237,8 @@ static int gamebox_bt_hci_event_handler(struct bt_event *bt)
     return 0;
 }
 
+extern void le_hogp_set_PNP_info(const u8 *info);
+static const u8 gambox_PnP_ID[] = {0x02, 0x17, 0x27, 0x40, 0x00, 0x23, 0x00};
 static int gamebox_bt_connction_status_event_handler(struct bt_event *bt)
 {
     log_info("----%s %d", __FUNCTION__, bt->event);
@@ -250,6 +252,9 @@ static int gamebox_bt_connction_status_event_handler(struct bt_event *bt)
          * 蓝牙初始化完成
          */
         log_info("BT_STATUS_INIT_OK\n");
+
+        log_info("set gamebox pnp\n");
+        le_hogp_set_PNP_info(gambox_PnP_ID);
 
         ble_module_enable(1);
         ble_hid_timer_handle = sys_s_hi_timer_add((void *)0, gamebox_ble_mouse_timer_handler, 10);

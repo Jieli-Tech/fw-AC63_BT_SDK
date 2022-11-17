@@ -327,6 +327,7 @@ struct mouse_point_t {
 #define _KEY_CUSTOM_CTRL_SEARCH         0x0221
 #define _KEY_CUSTOM_CTRL_EMAIL          0x018A
 #define _KEY_CUSTOM_CTRL_HOME           0x0223
+#define _KEY_CUSTOM_CTRL_RETURN         0x0224
 #define _KEY_BRIGHTNESS_INCREASE        0x006F
 #define _KEY_BRIGHTNESS_REDUCTION       0x0070
 #define _KEY_ZOOM_IN                    0x022D
@@ -345,6 +346,15 @@ struct mouse_point_t {
 #define _KEY_CUSTOM_PROCESS             0x023a
 
 #define _KEY_CUSTOM_SET                 0x029b
+
+#define _KEY_VIRTUAL_KEYBBOARD          0x0307
+
+#define _KEY_CUSTOM_SELECT_ALL_TEST     0x0004
+#define _KEY_CUSTOM_COPY_TEST           0x0006
+#define _KEY_CUSTOM_PASTE_TEST          0x0019
+#define _KEY_CUSTOM_CUT_TEST            0x001B
+#define _KEY_CHANGE_LANGUAGE_TEST       0x2C00
+
 
 #define LED_NUM_LOCK     0x01
 #define LED_CAPS_LOCK    0x02

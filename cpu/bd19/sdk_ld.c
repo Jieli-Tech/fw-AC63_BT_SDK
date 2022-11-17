@@ -132,6 +132,72 @@ SECTIONS
 		/********maskrom arithmetic end****/
 
         . = ALIGN(4);
+		*(.audio_decoder_code)
+		*(.audio_decoder_const)
+		*(.audio_encoder_code)
+		*(.audio_encoder_const)
+		*(.audio_codec_code)
+		. = ALIGN(4);
+		*(.media.audio_decoder.text)
+		*(.media.audio_encoder.text)
+        . = ALIGN(4);
+		*(.usbc_encoder_code)
+		*(.usbc_decoder_code)
+        *(.resample_fastcal_const)
+        *(.resample_fastcal_code)
+        *(.resample_fastcal_sparse_code)
+#if (TCFG_ENC_USBC_ENABLE || TCFG_DEC_USBC_ENABLE)
+		*(.usbc_codec_code)
+		*(.usbc_codec_const)
+#endif
+        *(.adpcm_encode_sparse_code)
+        *(.adpcm_encode_code)
+        *(.adpcm_encode_const)
+        *(.pcm_code)
+        . = ALIGN(4);
+		*(.wav_code)
+		*(.wav_const)
+		*(.wav_dec_sparse_code)
+		*(.wav_dec_const)
+		*(.wav_dec_code)
+	    *(.wtgv2_code)
+		*(.wtgv2_const)
+		*(.wtgv2dec_code)
+		*(.wtgv2dec_const)
+		*(.wtgv2dec_str)
+		*(.wtg_decv2_sparse_code)
+		*(.lc3_decoder_code)
+        *(.audio_pwm_code)
+		*(.opus_code)
+	    *(.opus_encoder_code)
+		*(.opus_encoder_const)
+		*(.opus_enc_const)
+		*(.opus_enc_code)
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_const)
+		*(.lc3_codec_c_const)
+		*(.lc3_codec_c_sparse_code)
+		*(.lc3_codec_d_code)
+		*(.lc3_codec_c_code)
+		*(.lc3_codec_e_code)
+		*(.lc3_codec_ari_c_code)
+		*(.lc3_codec_t16k_code)
+#endif
+
+		. = ALIGN(4);
+    	_audio_decoder_begin = .;
+    	PROVIDE(audio_decoder_begin = .);
+    	    KEEP(*(.audio_decoder))
+    	_audio_decoder_end = .;
+    	PROVIDE(audio_decoder_end = .);
+
+    	_audio_encoder_begin = .;
+    	PROVIDE(audio_encoder_begin = .);
+    	    KEEP(*(.audio_encoder))
+    	_audio_encoder_end = .;
+    	PROVIDE(audio_encoder_end = .);
+
+        . = ALIGN(4);
         __VERSION_BEGIN = .;
         KEEP(*(.sys.version))
         __VERSION_END = .;
@@ -171,6 +237,24 @@ SECTIONS
 		. = ALIGN(4);
 		#include "system/system_lib_data.ld"
 		. = ALIGN(4);
+		*(.wav_data)
+		*(.usbc_encoder_data)
+		*(.usbc_decoder_data)
+        *(.resample_fastcal_data)
+	    *(.wtgv2_data)
+		*(.wtgv2dec_data)
+		*(.opus_encoder_data)
+        *(.opus_enc_data)
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_data)
+		*(.lc3_codec_c_data)
+#endif
+		. = ALIGN(4);
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+		*(.lc3_codec_ari_c_data)
+		*(.lc3_codec_c_data)
+#endif
+		. = ALIGN(4);
 	} > ram0
 
 	.irq_stack ALIGN(32):
@@ -203,6 +287,19 @@ SECTIONS
             *(.uac_var)
             *(.usb_config_var)
             *(.cdc_var)
+        . = ALIGN(4);
+	        *(.wav_bss)
+			*(.wtgv2_bss)
+			*(.wtgv2dec_bss)
+			*(.opus_encoder_bss)
+			*(.opus_enc_bss)
+            *(.resample_fastcal_bss)
+
+
+#if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
+	*(.lc3_codec_ari_c_bss)
+	*(.lc3_codec_c_bss)
+#endif
         . = ALIGN(4);
 		#include "btstack/btstack_lib_bss.ld"
         . = ALIGN(4);
@@ -508,17 +605,21 @@ SECTIONS
 text_begin  = ADDR(.text);
 text_size   = SIZEOF(.text);
 text_end    = text_begin + text_size;
+ASSERT((text_size % 4) == 0,"!!! text_size Not Align 4 Bytes !!!");
 
 bss_begin = ADDR(.bss);
 bss_size  = SIZEOF(.bss);
 bss_end    = bss_begin + bss_size;
+ASSERT((bss_size % 4) == 0,"!!! bss_size Not Align 4 Bytes !!!");
 
 nvbss_begin = NVRAM_DATA_START;
 nvbss_size  = NVRAM_LIMIT - nvbss_begin;
+ASSERT((nvbss_size % 4) == 0,"!!! nvbss_size Not Align 4 Bytes !!!");
 
 data_addr = ADDR(.data);
 data_begin = text_begin + text_size;
 data_size =  SIZEOF(.data);
+ASSERT((data_size % 4) == 0,"!!! data_size Not Align 4 Bytes !!!");
 
 /* moveable_slot_addr = ADDR(.moveable_slot); */
 /* moveable_slot_begin = data_begin + data_size; */
@@ -527,6 +628,7 @@ data_size =  SIZEOF(.data);
 data_code_addr = ADDR(.data_code);
 data_code_begin = data_begin + data_size;
 data_code_size =  SIZEOF(.data_code);
+ASSERT((data_code_size % 4) == 0,"!!! data_code_size Not Align 4 Bytes !!!");
 
 //================ OVERLAY Code Info Export ==================//
 aec_addr = ADDR(.overlay_aec);

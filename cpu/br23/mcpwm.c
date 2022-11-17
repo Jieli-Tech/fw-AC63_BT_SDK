@@ -123,7 +123,7 @@ void mcpwm_set_frequency(pwm_timer_num_type ch, pwm_aligned_mode_type align, u32
         }
     }
 
-    reg->tmr_con |= (i << 4); //div 2^i
+    reg->tmr_con |= (i << 3); //div 2^i
 
     mcpwm_div_clk = clk / _pow(2, i);
 

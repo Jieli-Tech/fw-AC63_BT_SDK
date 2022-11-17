@@ -18,6 +18,10 @@
 #include "update.h"
 #include "update_loader_download.h"
 #include "asm/charge.h"
+#if TCFG_AUDIO_ENABLE
+/* #include "audio_encode.h" */
+/* #include "audio_decode.h" */
+#endif/*TCFG_AUDIO_ENABLE*/
 
 #define LOG_TAG_CONST       APP
 #define LOG_TAG             "[APP]"
@@ -34,7 +38,7 @@ const struct task_info task_info_table[] = {
     {"sys_event",           7,     0,   256,   0    },
     {"btctrler",            4,     0,   512,   256  },
     {"btencry",             1,     0,   512,   128  },
-    {"btstack",             3,     0,   768,   768},
+    {"btstack",             3,     0,   1024,   768},
     {"systimer",		    7,	   0,   128,   0    },
     {"update",				1,	   0,   512,   0    },
     {"dw_update",		 	2,	   0,   256,   128  },

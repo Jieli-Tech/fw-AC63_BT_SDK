@@ -44,6 +44,14 @@
 #include "apple_dock/iAP.h"
 #endif
 
+#if (TCFG_SOUNDBOX_TOOL_ENABLE || TCFG_EFFECT_TOOL_ENABLE)
+#include "app_sound_box_tool.h"
+#endif
+
+#if TCFG_USB_CUSTOM_HID_ENABLE
+#include "usb/device/custom_hid.h"
+#endif
+
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB_TASK]"
 #define LOG_ERROR_ENABLE
@@ -179,6 +187,15 @@ static void usb_cdc_wakeup(struct usb_device_t *usb_device)
 }
 #endif
 
+#if TCFG_USB_CUSTOM_HID_ENABLE
+static void custom_hid_rx_handler(void *priv, u8 *buf, u32 len)
+{
+    printf("%s,%d,\n", __func__, __LINE__);
+    put_buf(buf, len);
+    custom_hid_tx_data(0, buf, len);
+}
+#endif
+
 void usb_start()
 {
 
@@ -220,6 +237,11 @@ void usb_start()
 
 #if TCFG_USB_SLAVE_CDC_ENABLE
     cdc_set_wakeup_handler(usb_cdc_wakeup);
+#endif
+
+#if TCFG_USB_CUSTOM_HID_ENABLE
+    custom_hid_set_rx_hook(NULL, custom_hid_rx_handler);
+    printf("custom_hid rx_hook\n");
 #endif
 }
 static void usb_remove_disk()

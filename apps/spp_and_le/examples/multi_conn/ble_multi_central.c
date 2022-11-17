@@ -499,6 +499,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
 
 
     case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE:
+        log_info("con_handle= %02x, ATT MTU = %u\n", little_endian_read_16(packet, 0), little_endian_read_16(packet, 2));
         break;
 
     case GATT_COMM_EVENT_GATT_SEARCH_PROFILE_COMPLETE:

@@ -122,6 +122,9 @@ const int config_bt_temperature_pll_trim = 0;
 /*security check*/
 const int config_bt_security_vulnerability = 0;
 
+//DUT使用哪种模式通信: 0: HCI 1:2_wire
+const int config_dut_protocol_mode = 0;
+
 #if CONFIG_APP_STANDARD_KEYBOARD
 const int config_delete_link_key          = 0;           //配置是否连接失败返回PIN or Link Key Missing时删除linkKey
 #else
@@ -157,12 +160,18 @@ const int config_btctler_le_afh_en = 0;
 const int config_btctler_le_master_multilink = 0;
 #endif
 
+#if CONFIG_BLE_HIGH_SPEED
+const uint64_t config_btctler_le_features = SET_ENCRYPTION_CFG | SET_SELECT_PHY_CFG | LE_DATA_PACKET_LENGTH_EXTENSION | LE_2M_PHY;
+const int config_btctler_le_acl_packet_length = 251;
+#else
 const uint64_t config_btctler_le_features = SET_ENCRYPTION_CFG | SET_SELECT_PHY_CFG;
+const int config_btctler_le_acl_packet_length = 27;
+#endif
+
 const int config_btctler_le_roles    = SET_SLAVE_ROLS_CFG | SET_MASTER_ROLS_CFG;
 const int config_btctler_le_hw_nums = CONFIG_BT_GATT_CONNECTION_NUM;
 const int config_btctler_le_rx_nums = (CONFIG_BT_GATT_CONNECTION_NUM * 3) + 2;
-const int config_btctler_le_acl_packet_length = 27;
-const int config_btctler_le_acl_total_nums = (CONFIG_BT_GATT_CONNECTION_NUM * 3);
+const int config_btctler_le_acl_total_nums = (CONFIG_BT_GATT_CONNECTION_NUM * 3) + 1;
 
 #else
 //no support ble
@@ -226,9 +235,9 @@ const char log_tag_const_d_HCI_LMP AT(.LOG_TAG_CONST)  = CONFIG_DEBUG_LIB(0);
 const char log_tag_const_w_HCI_LMP AT(.LOG_TAG_CONST)  = CONFIG_DEBUG_LIB(1);
 const char log_tag_const_e_HCI_LMP AT(.LOG_TAG_CONST)  = CONFIG_DEBUG_LIB(1);
 
-const char log_tag_const_v_LMP AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(1);
+const char log_tag_const_v_LMP AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(0);
 const char log_tag_const_i_LMP AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(1);
-const char log_tag_const_d_LMP AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(1);
+const char log_tag_const_d_LMP AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(0);
 const char log_tag_const_w_LMP AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(1);
 const char log_tag_const_e_LMP AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIB(1);
 

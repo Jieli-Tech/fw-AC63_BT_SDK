@@ -16,7 +16,6 @@
 #include "app_chargestore.h"
 #include "app_power_manage.h"
 #include "le_client_demo.h"
-#include "multi_demo/le_multi_common.h"
 #include "app_comm_bt.h"
 
 #define LOG_TAG_CONST       MULTI_CONN

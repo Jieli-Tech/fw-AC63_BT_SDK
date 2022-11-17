@@ -19,7 +19,7 @@ const int support_norflash_update_en  = 0;
 const int support_norflash_ufw_update_en = 0;
 
 //是否支持升级之后保留vm数据
-const int support_vm_data_keep = 0;
+const int support_vm_data_keep = 1;
 
 #if OTA_TWS_SAME_TIME_NEW       //使用新的同步升级流程
 const int support_ota_tws_same_time_new =  1;

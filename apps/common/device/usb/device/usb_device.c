@@ -3,6 +3,7 @@
 #include "usb/device/msd.h"
 #include "usb/scsi.h"
 #include "usb/device/hid.h"
+#include "usb/device/custom_hid.h"
 #include "usb/device/uac_audio.h"
 #include "usb/device/cdc.h"
 #include "irq.h"
@@ -131,6 +132,14 @@ int usb_device_mode(const usb_dev usb_id, const u32 class)
     }
 #endif
 
+#if TCFG_USB_CUSTOM_HID_ENABLE
+    if ((class & CUSTOM_HID_CLASS) == CUSTOM_HID_CLASS) {
+        log_info("add desc std custom_hid");
+        custom_hid_register(usb_id);
+        usb_add_desc_config(usb_id, class_index++, custom_hid_desc_config);
+    }
+#endif
+
 #if TCFG_USB_SLAVE_HID_ENABLE
     if ((class & HID_CLASS) == HID_CLASS) {
         log_info("add desc std hid");
@@ -144,6 +153,7 @@ int usb_device_mode(const usb_dev usb_id, const u32 class)
 #endif
     }
 #endif
+
 
 #if TCFG_USB_SLAVE_CDC_ENABLE
     if ((class & CDC_CLASS) == CDC_CLASS) {

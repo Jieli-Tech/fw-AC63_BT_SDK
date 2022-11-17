@@ -121,7 +121,7 @@ static char gap_device_name[BT_NAME_LEN_MAX] = "BR2262e-s";
 static u8 gap_device_name_len = 0;
 static u8 ble_work_state = 0;
 static u8 adv_ctrl_en;
-static u8 auto_adv_enable = 0;    //默认广播配置
+static u8 auto_adv_enable = 0;    //set 1,默认广播配置,上电&断开后开启广播
 static u16 adv_interval_value = ADV_INTERVAL_MIN;
 
 static void (*app_recieve_callback)(void *priv, void *buf, u16 len) = NULL;
@@ -320,9 +320,11 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     u8 status;
     u8 peer_addr[6] = {0};
 
+#if CONFIG_BT_GATT_CLIENT_NUM
     if (client_cbk_packet_handler(packet_type, channel, packet, size)) {
         return;
     }
+#endif
 
     switch (packet_type) {
     case HCI_EVENT_PACKET:
@@ -748,18 +750,21 @@ void ble_profile_init(void)
 #endif
     }
 
+#if CONFIG_BT_GATT_SERVER_NUM
     /* setup ATT server */
     att_server_init(at_char_profile_data, att_read_callback, att_write_callback);
     att_server_register_packet_handler(cbk_packet_handler);
     /* gatt_client_register_packet_handler(packet_cbk); */
-
+#endif
     // register for HCI events
     hci_event_callback_set(&cbk_packet_handler);
     /* ble_l2cap_register_packet_handler(packet_cbk); */
     /* sm_event_packet_handler_register(packet_cbk); */
     le_l2cap_register_packet_handler(&cbk_packet_handler);
 
+#if CONFIG_BT_GATT_CLIENT_NUM
     ble_client_profile_init();
+#endif
 
     ble_vendor_set_default_att_mtu(ATT_LOCAL_MTU_SIZE);
 }
@@ -925,7 +930,7 @@ extern void bt_ble_client_init(void);
 extern void bt_ble_client_exit(void);
 
 //------------------------new
-extern char const device_name_default[];
+/* extern char const device_name_default[]; */
 void bt_ble_init(void)
 {
     log_info("***** ble_init******\n");
@@ -933,15 +938,20 @@ void bt_ble_init(void)
 
     ble_op_multi_att_send_init(att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_MTU_SIZE);
 
-    gap_device_name_len = strlen(device_name_default);
-    memcpy(gap_device_name, device_name_default, gap_device_name_len + 1);
-    log_info("ble name(%d): %s \n", gap_device_name_len, gap_device_name);
+    /* gap_device_name_len = strlen(device_name_default); */
+    /* memcpy(gap_device_name, device_name_default, gap_device_name_len + 1); */
 
+#if CONFIG_BT_GATT_SERVER_NUM
     ble_test_auto_adv(0);
     set_ble_work_state(BLE_ST_INIT_OK);
-
     ble_module_enable(1);
+#endif
+
+    log_info("ble name(%d): %s \n", gap_device_name_len, gap_device_name);
+
+#if CONFIG_BT_GATT_CLIENT_NUM
     bt_ble_client_init();
+#endif
 }
 
 void bt_ble_exit(void)
@@ -949,7 +959,9 @@ void bt_ble_exit(void)
     log_info("***** ble_exit******\n");
 
     ble_module_enable(0);
+#if CONFIG_BT_GATT_CLIENT_NUM
     bt_ble_client_exit();
+#endif
 }
 
 void ble_app_disconnect(void)
@@ -1187,6 +1199,7 @@ void ble_test_auto_adv(u8 en)
     ble_at_set_adv_data(test_adv_data, sizeof(test_adv_data));
     ble_at_set_rsp_data(test_rsp_data, sizeof(test_rsp_data));
     /* ble_at_set_rsp_data(0,0); */
+    ble_at_set_name(&test_rsp_data[2], 11);
     ble_at_adv_enable(en);
 }
 

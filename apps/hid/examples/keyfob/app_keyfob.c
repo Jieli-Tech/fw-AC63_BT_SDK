@@ -108,7 +108,7 @@ static const u8 keyfob_report_map[] = {
 #define SNIFF_MIN_INTERVALSLOT        16
 #define SNIFF_ATTEMPT_SLOT            2
 #define SNIFF_TIMEOUT_SLOT            1
-#define SNIFF_CHECK_TIMER_PERIOD      100
+#define SNIFF_CHECK_TIMER_PERIOD      200
 #else
 
 #define SNIFF_MODE_TYPE               SNIFF_MODE_DEF
@@ -138,6 +138,7 @@ static const edr_init_cfg_t keyfob_edr_config = {
     .page_timeout = 8000,
     .super_timeout = 8000,
     .io_capabilities = 3,
+    .passkey_enable = 0,
     .authentication_req = 2,
     .oob_data = 0,
     .sniff_param = &keyfob_sniff_param,
@@ -330,7 +331,13 @@ static void led_on_off(u8 state, u8 res)
             led_timeout_count = 1;//
             led_timer_start(300);
 #if TCFG_USER_EDR_ENABLE
-            if (edr_hid_is_connected() || (ble_connect != 0)) {
+            if (edr_hid_is_connected()) {
+                led_next_state = LED_CLOSE;
+            } else {
+                led_next_state = LED_WAIT_CONNECT;
+            }
+#else
+            if ((ble_connect != 0)) {
                 led_next_state = LED_CLOSE;
             } else {
                 led_next_state = LED_WAIT_CONNECT;
@@ -798,6 +805,11 @@ static int keyfob_bt_connction_status_event_handler(struct bt_event *bt)
 
     default:
 #if TCFG_USER_EDR_ENABLE
+        if (bt->event == BT_STATUS_FIRST_CONNECTED) {
+            led_on_off(LED_CLOSE, 0);
+        } else if (bt->event == BT_STATUS_FIRST_DISCONNECT) {
+            led_on_off(LED_WAIT_CONNECT, 0);
+        }
         bt_comm_edr_status_event_handler(bt);
 #endif
 

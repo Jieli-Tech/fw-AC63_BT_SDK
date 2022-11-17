@@ -61,8 +61,12 @@
 
 #define TEST_TRANS_CHANNEL_DATA      0 /*测试记录收发数据速度*/
 #define TEST_TRANS_NOTIFY_HANDLE     ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE /*主动发送hanlde,为空则不测试发数*/
+#if CONFIG_BLE_HIGH_SPEED
+#define TEST_TRANS_TIMER_MS          5
+#else
 #define TEST_TRANS_TIMER_MS          500
-#define TEST_PAYLOAD_LEN            (256)
+#endif
+#define TEST_PAYLOAD_LEN            (244)/*发送配PDU长度是251的包*/
 
 static u32 trans_recieve_test_count;
 static u32 trans_send_test_count;
@@ -71,9 +75,14 @@ static u32 trans_send_test_count;
 //连接参数更新请求设置
 //是否使能参数请求更新,0--disable, 1--enable
 static uint8_t trans_connection_update_enable = 1; ///0--disable, 1--enable
-//当前请求的参数表index
-//参数表
+
+//请求的参数数组表,排队方式请求;哪组对方接受就用那组
 static const struct conn_update_param_t trans_connection_param_table[] = {
+
+#if CONFIG_BLE_HIGH_SPEED
+    {6, 12,  10, 400},// ios fast
+#endif
+
     {16, 24, 10, 600},//11
     {12, 28, 10, 600},//3.7
     {8,  20, 10, 600},
@@ -85,6 +94,14 @@ static const struct conn_update_param_t trans_connection_param_table[] = {
 #define EIR_TAG_STRING   0xd6, 0x05, 0x08, 0x00, 'J', 'L', 'A', 'I', 'S', 'D','K'
 static const char user_tag_string[] = {EIR_TAG_STRING};
 
+//定义的产品信息,for test
+#define  PNP_VID_SOURCE   0x02
+#define  PNP_VID          0x05ac //0x05d6
+#define  PNP_PID          0x022C //
+#define  PNP_PID_VERSION  0x011b //1.1.11
+
+static const u8 trans_PNP_ID[] = {PNP_VID_SOURCE, PNP_VID & 0xFF, PNP_VID >> 8, PNP_PID & 0xFF, PNP_PID >> 8, PNP_PID_VERSION & 0xFF, PNP_PID_VERSION >> 8};
+
 static u8  trans_adv_data[ADV_RSP_PACKET_MAX];//max is 31
 static u8  trans_scan_rsp_data[ADV_RSP_PACKET_MAX];//max is 31
 static u8  trans_test_read_write_buf[4];
@@ -95,6 +112,8 @@ static uint16_t trans_att_read_callback(hci_con_handle_t connection_handle, uint
 static int trans_att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static int trans_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_param);
 extern void uart_db_regiest_recieve_callback(void *rx_cb);
+//-------------------------------------------------------------------------------------
+
 //-------------------------------------------------------------------------------------
 //输入passkey 加密
 #define PASSKEY_ENABLE                     0
@@ -134,7 +153,11 @@ static gatt_ctrl_t trans_gatt_control_block = {
     .server_config = NULL,
 #endif
 
+#if CONFIG_BT_GATT_CLIENT_NUM
+    .client_config = &trans_client_init_cfg,
+#else
     .client_config = NULL,
+#endif
 
 #if CONFIG_BT_SM_SUPPORT_ENABLE
     .sm_config = &trans_sm_init_config,
@@ -335,11 +358,20 @@ static int trans_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
         //for test 串口数据直通到蓝牙
         uart_db_regiest_recieve_callback(trans_uart_rx_to_ble);
 #endif
+
+#if CONFIG_BT_GATT_CLIENT_NUM
+#if CONFIG_BT_SM_SUPPORT_ENABLE == 0
+        trans_client_search_remote_profile(trans_con_handle);
+#endif
+#endif
         break;
 
     case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
         log_info("disconnect_handle:%04x,reason= %02x\n", little_endian_read_16(packet, 0), packet[2]);
         if (trans_con_handle == little_endian_read_16(packet, 0)) {
+#if CONFIG_BT_GATT_CLIENT_NUM
+            trans_client_search_remote_stop(trans_con_handle);
+#endif
             trans_con_handle = 0;
         }
         break;
@@ -349,6 +381,10 @@ static int trans_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
         if (packet[3] == LINK_ENCRYPTION_RECONNECT) {
             trans_resume_all_ccc_enable(little_endian_read_16(packet, 0), 1);
         }
+
+#if CONFIG_BT_GATT_CLIENT_NUM
+        trans_client_search_remote_profile(trans_con_handle);
+#endif
         break;
 
     case GATT_COMM_EVENT_CONNECTION_UPDATE_COMPLETE:
@@ -359,7 +395,10 @@ static int trans_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
         break;
 
     case GATT_COMM_EVENT_CONNECTION_UPDATE_REQUEST_RESULT:
+        break;
+
     case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE:
+        log_info("con_handle= %02x, ATT MTU = %u\n", little_endian_read_16(packet, 0), little_endian_read_16(packet, 2));
         break;
 
     case GATT_COMM_EVENT_SERVER_STATE:
@@ -445,6 +484,18 @@ static uint16_t trans_att_read_callback(hci_con_handle_t connection_handle, uint
             buffer[1] = 0;
         }
         att_value_len = 2;
+        break;
+
+    case ATT_CHARACTERISTIC_2a50_01_VALUE_HANDLE:
+        log_info("read PnP_ID\n");
+        att_value_len = sizeof(trans_PNP_ID);
+        if ((offset >= att_value_len) || (offset + buffer_size) > att_value_len) {
+            break;
+        }
+        if (buffer) {
+            memcpy(buffer, &trans_PNP_ID[offset], buffer_size);
+            att_value_len = buffer_size;
+        }
         break;
 
     default:
@@ -781,14 +832,18 @@ static void trans_test_send_data(void)
     send_index++;
 
 #if TEST_TRANS_NOTIFY_HANDLE
-    count++;
-    if (ble_comm_att_check_send(trans_con_handle, send_len) && ble_gatt_server_characteristic_ccc_get(trans_con_handle, TEST_TRANS_NOTIFY_HANDLE + 1)) {
-        ret = ble_comm_att_send_data(trans_con_handle, TEST_TRANS_NOTIFY_HANDLE, &count, send_len, ATT_OP_AUTO_READ_CCC);
-        if (!ret) {
-            /* putchar('T'); */
-            trans_send_test_count += send_len;
+    do {
+        if (ble_comm_att_check_send(trans_con_handle, send_len) && ble_gatt_server_characteristic_ccc_get(trans_con_handle, TEST_TRANS_NOTIFY_HANDLE + 1)) {
+            count++;
+            ret = ble_comm_att_send_data(trans_con_handle, TEST_TRANS_NOTIFY_HANDLE, &count, send_len, ATT_OP_AUTO_READ_CCC);
+            if (!ret) {
+                /* putchar('T'); */
+                trans_send_test_count += send_len;
+            }
+        } else {
+            break;
         }
-    }
+    } while (ret == 0);
 #endif
 
     if (send_index >= time_index_max) {
@@ -831,11 +886,20 @@ void bt_ble_init(void)
 #endif
     trans_con_handle = 0;
     trans_server_init();
+
+#if CONFIG_BT_GATT_CLIENT_NUM
+    trans_client_init();
+#endif
+
+#if CONFIG_BT_GATT_CLIENT_NUM && CONFIG_BT_SM_SUPPORT_ENABLE
+    trans_ios_services_init();
+#endif
+
     ble_module_enable(1);
 
 #if TEST_TRANS_CHANNEL_DATA
     if (TEST_TRANS_TIMER_MS < 10) {
-        sys_hi_timer_add(0, trans_test_send_data, TEST_TRANS_TIMER_MS);
+        sys_s_hi_timer_add(0, trans_test_send_data, TEST_TRANS_TIMER_MS);
     } else {
         sys_timer_add(0, trans_test_send_data, TEST_TRANS_TIMER_MS);
     }
@@ -857,6 +921,15 @@ void bt_ble_init(void)
 void bt_ble_exit(void)
 {
     log_info("%s\n", __FUNCTION__);
+
+#if CONFIG_BT_GATT_CLIENT_NUM
+    trans_client_exit();
+#endif
+
+#if CONFIG_BT_GATT_CLIENT_NUM && CONFIG_BT_SM_SUPPORT_ENABLE
+    trans_ios_services_exit();
+#endif
+
     ble_module_enable(0);
     ble_comm_exit();
 }
