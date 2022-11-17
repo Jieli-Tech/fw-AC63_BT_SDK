@@ -15,6 +15,7 @@ Getting Started
 
 Welcome to JL open source! See the `Introduction to SDK` for a high-level overview,
 and the documentation's `Getting Started Guide` to start developing.
+Project Documentation：https://doc.zh-jieli.com/vue/#/docs/ac63
 
 Toolchain
 ------------
