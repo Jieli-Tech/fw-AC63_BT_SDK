@@ -107,7 +107,6 @@
 <Add directory="../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo" />
 <Add directory="../../../../apps/spp_and_le/examples/ll_sync" />
 <Add directory="../../../../apps/common/cJSON" />
-<Add directory="../../../../apps/common/ui/led" />
 <Add directory="../../../../apps/common/third_party_profile/tuya_protocol" />
 <Add directory="../../../../apps/common/third_party_profile/tuya_protocol/app/demo" />
 <Add directory="../../../../apps/common/third_party_profile/tuya_protocol/app/product_test" />
@@ -125,6 +124,7 @@
 <Add directory="../../../../apps/spp_and_le/examples/hilink" />
 <Add directory="../../../../cpu/bd19/audio_encode" />
 <Add directory="../../../../cpu/bd19/audio_decode" />
+<Add directory="../../../../apps/common/audio" />
 <Add directory="../../../../apps/common/device/usb" />
 <Add directory="../../../../apps/common/device/usb/device" />
 <Add directory="../../../../apps/common/device/usb/host" />
@@ -172,6 +172,8 @@
 </ExtraCommands>
 </Target>
 </Build>
+<Unit filename="../../../../apps/common/audio/audio_digital_vol.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/audio/audio_digital_vol.h" />
 <Unit filename="../../../../apps/common/bt_common/bt_test_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/cJSON/cJSON.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/cJSON/cJSON.h" />
@@ -488,11 +490,6 @@
 <Unit filename="../../../../apps/spp_and_le/examples/dongle/ota_dg_central.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/dongle/usb_hid_devices.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/dongle/usb_second_hid_devices.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/spp_and_le/examples/electrocar/electrocar.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/spp_and_le/examples/electrocar/electrocar.h" />
-<Unit filename="../../../../apps/spp_and_le/examples/electrocar/electrocar_le_trans.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/spp_and_le/examples/electrocar/electrocar_le_trans.h" />
-<Unit filename="../../../../apps/spp_and_le/examples/electrocar/electrocar_le_trans_profile.h" />
 <Unit filename="../../../../apps/spp_and_le/examples/hilink/app_hilink.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/hilink/hilink_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/hilink/hilink_demo.h" />
@@ -566,9 +563,6 @@
 <Unit filename="../../../../cpu/bd19/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/iic_soft.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/irflt.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../cpu/bd19/irflt_433.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../cpu/bd19/irflt_nrf.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../cpu/bd19/irflt_oneparse.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/ledc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/ledc_test.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/mcpwm.c"><Option compilerVer="CC"/></Unit>

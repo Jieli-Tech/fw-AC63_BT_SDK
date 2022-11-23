@@ -109,7 +109,6 @@
 <Add directory="../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo" />
 <Add directory="../../../../apps/spp_and_le/examples/ll_sync" />
 <Add directory="../../../../apps/common/cJSON" />
-<Add directory="../../../../apps/common/ui/led" />
 <Add directory="../../../../apps/common/third_party_profile/tuya_protocol" />
 <Add directory="../../../../apps/common/third_party_profile/tuya_protocol/app/demo" />
 <Add directory="../../../../apps/common/third_party_profile/tuya_protocol/app/product_test" />
@@ -493,11 +492,6 @@
 <Unit filename="../../../../apps/spp_and_le/examples/dongle/ota_dg_central.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/dongle/usb_hid_devices.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/dongle/usb_second_hid_devices.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/spp_and_le/examples/electrocar/electrocar.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/spp_and_le/examples/electrocar/electrocar.h" />
-<Unit filename="../../../../apps/spp_and_le/examples/electrocar/electrocar_le_trans.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/spp_and_le/examples/electrocar/electrocar_le_trans.h" />
-<Unit filename="../../../../apps/spp_and_le/examples/electrocar/electrocar_le_trans_profile.h" />
 <Unit filename="../../../../apps/spp_and_le/examples/hilink/app_hilink.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/hilink/hilink_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/hilink/hilink_demo.h" />

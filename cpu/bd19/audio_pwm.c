@@ -39,6 +39,7 @@ u16 pcm_to_pwm_scale = 0;           // 16bit pcm数据 转成 占空比分辨率
 u32 audio_pwm_zero = 0;             // PCM 数据 0 的时候对应的 PWM 值
 u32 half_wave_limit = 0;
 volatile u8 pwm_need_resume = 0;
+static OS_SEM pwm_need_resume_sem ;
 static void (*pwm_resume_handler)(void *) = NULL;
 static u8  drop_flag = 0;
 
@@ -51,7 +52,22 @@ void state_printf(void)
 
 void set_state(u8 state)
 {
-    audio_pwm_state = state;
+    if (state == STATE_STOP) { //要设置pwm 停止需要等cbuffer 里面的数据播完
+        u8 err_cnt = 0;
+        while (abs(wptr - rptr) > 1) {
+            delay(3000);
+            err_cnt++;
+            if (err_cnt > 500) {
+                printf("wptr:%x,rptr:%x!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", wptr, rptr);
+                break;
+            }
+        }
+        audio_pwm_state = state;
+        pwm_is_closed = 1;
+    } else {
+        audio_pwm_state = state;
+        pwm_is_closed = 0;
+    }
 }
 
 #if (AUDIO_PWM_SOURCE == 0) // timer
@@ -464,6 +480,10 @@ static void audio_pwm_task(void *param)
             } else {
                 /* putchar('N'); */
             }
+        } else {
+            /* printf("enter audio_pwm.c %d\n",__LINE__); */
+            os_sem_pend(&pwm_need_resume_sem, 0); //在不需要跑任务的时候pend住，避免任务频繁起来
+            /* printf("enter audio_pwm.c %d\n",__LINE__); */
         }
         os_time_dly(1);
     }
@@ -478,13 +498,17 @@ void audio_pwm_open(void)
 {
     printf("audio_pwm_open\n");
     clk_set("sys", 96 * 1000000L);
+    os_sem_create(&pwm_need_resume_sem, 0);
     os_task_create(audio_pwm_task, NULL, 2, 1024, 128, "audio_pwm_task");
 #if (AUDIO_PWM_SOURCE == 0) // timer
     usr_pwm_timer_init();
 #elif (AUDIO_PWM_SOURCE == 1) // mcpwm
     usr_mcpwm_init();
 #endif  //  timer of mcpwm
-    pwm_is_closed = 0;
+    //开机进低功耗要把输出清0，不然有杂声
+    JL_MCPWM->CH3_CMPH = PWM_DEAD_AREA;                 // P
+    JL_MCPWM->CH3_CMPL = PWM_DEAD_AREA;                 // N
+    /* pwm_is_closed = 0; */
 }
 
 void audio_pwm_close(void)
@@ -566,9 +590,11 @@ int audio_pwm_write(s16 *data, u32 len)
     if (wlen != len) {
         /* putchar('S'); */
         pwm_need_resume = 1;
+        os_sem_post(&pwm_need_resume_sem);
     } else {
         /* putchar('W'); */
         pwm_need_resume = 0;
+        os_sem_set(&pwm_need_resume_sem, 0);
     }
     return wlen;
 }

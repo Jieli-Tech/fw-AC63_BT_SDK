@@ -57,11 +57,7 @@ const int CONFIG_CPU_UNMASK_IRQ_ENABLE = 0;
 //0:使用timer0 delay; 1:使用mpwm3 delay,释放timer0//
 //               only supprt: bd19	              //
 //================================================//
-#if CONFIG_APP_ELECTROCAR
-const int set_to_close_timer0_delay = 1;
-#else
 const int set_to_close_timer0_delay = 0;
-#endif
 
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)

@@ -107,7 +107,6 @@
 <Add directory="../../../../apps/common/code_switch/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include" />
 <Add directory="../../../../apps/common/device/touch_pad" />
-<Add directory="../../../../apps/common/ui/led" />
 <Add directory="../../../../cpu/bd19/audio_encode" />
 <Add directory="../../../../cpu/bd19/audio_decode" />
 <Add directory="../../../../apps/common/audio" />
@@ -156,6 +155,8 @@
 </ExtraCommands>
 </Target>
 </Build>
+<Unit filename="../../../../apps/common/audio/audio_digital_vol.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/audio/audio_digital_vol.h" />
 <Unit filename="../../../../apps/common/code_switch/code_switch.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/code_switch/include/code_switch.h" />
 <Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
@@ -296,7 +297,6 @@
 <Unit filename="../../../../apps/hid/config/lib_system_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/config/lib_update_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/config/log_config.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/hid/examples/electrocar/electrocar.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/examples/gamebox/app_gamebox.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/examples/gamebox/gamebox.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/examples/gamebox/key_mapping.c"><Option compilerVer="CC"/></Unit>
@@ -354,9 +354,6 @@
 <Unit filename="../../../../cpu/bd19/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/iic_soft.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/irflt.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../cpu/bd19/irflt_433.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../cpu/bd19/irflt_nrf.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../cpu/bd19/irflt_oneparse.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/ledc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/ledc_test.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/mcpwm.c"><Option compilerVer="CC"/></Unit>

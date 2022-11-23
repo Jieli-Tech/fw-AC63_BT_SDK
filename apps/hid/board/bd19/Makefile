@@ -185,7 +185,6 @@ INCLUDES := \
 	-I../../../../apps/common/code_switch/include \
 	-I../../../../apps/common/device/optical_mouse_sensor/include \
 	-I../../../../apps/common/device/touch_pad \
-	-I../../../../apps/common/ui/led \
 	-I../../../../cpu/bd19/audio_encode \
 	-I../../../../cpu/bd19/audio_decode \
 	-I../../../../apps/common/audio \
@@ -196,6 +195,7 @@ INCLUDES := \
 
 # 需要编译的 .c 文件
 c_SRC_FILES := \
+	../../../../apps/common/audio/audio_digital_vol.c \
 	../../../../apps/common/code_switch/code_switch.c \
 	../../../../apps/common/debug/debug.c \
 	../../../../apps/common/device/key/adkey.c \
@@ -274,7 +274,6 @@ c_SRC_FILES := \
 	../../../../apps/hid/config/lib_system_config.c \
 	../../../../apps/hid/config/lib_update_config.c \
 	../../../../apps/hid/config/log_config.c \
-	../../../../apps/hid/examples/electrocar/electrocar.c \
 	../../../../apps/hid/examples/gamebox/app_gamebox.c \
 	../../../../apps/hid/examples/gamebox/gamebox.c \
 	../../../../apps/hid/examples/gamebox/key_mapping.c \
@@ -311,9 +310,6 @@ c_SRC_FILES := \
 	../../../../cpu/bd19/iic_hw.c \
 	../../../../cpu/bd19/iic_soft.c \
 	../../../../cpu/bd19/irflt.c \
-	../../../../cpu/bd19/irflt_433.c \
-	../../../../cpu/bd19/irflt_nrf.c \
-	../../../../cpu/bd19/irflt_oneparse.c \
 	../../../../cpu/bd19/ledc.c \
 	../../../../cpu/bd19/ledc_test.c \
 	../../../../cpu/bd19/mcpwm.c \

@@ -281,18 +281,6 @@
 #define TCFG_PWMLED_PIN						IO_PORTB_06					//LED使用的IO口
 
 //*********************************************************************************//
-//                                  LED UI                                         //
-//*********************************************************************************//
-#define LED_UI_EN                           DISABLE
-#define LED_162X_EN                         DISABLE
-#define LED_UI_COMMON                       DISABLE
-#define LED_TM162X_DIO                      IO_PORTA_02
-#define LED_TM162X_CLK                      IO_PORTA_03
-#define LED_TM162X_STB                      IO_PORTA_04
-
-#define LED_IO_DRVIER                       DISABLE
-
-//*********************************************************************************//
 //                                  时钟配置                                       //
 //*********************************************************************************//
 #define TCFG_CLOCK_SYS_SRC					SYS_CLOCK_INPUT_PLL_BT_OSC   //系统时钟源选择

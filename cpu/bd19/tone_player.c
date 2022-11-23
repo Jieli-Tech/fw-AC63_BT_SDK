@@ -7,6 +7,8 @@
 #include "aec_user.h"
 /* #include "audio_digital_vol.h" */
 #include "audio_codec_clock.h"
+#include "board_config.h"
+#include "audio_digital_vol.h"
 
 #if TCFG_APP_FM_EMITTER_EN
 #include "fm_emitter/fm_emitter_manage.h"
@@ -53,7 +55,10 @@
 #define TONE_FILE_DEC_MIX			0
 #endif
 
-#define SYS_VOL_TYPE                0xffff  //bd19不用调音量的接口
+//软件数字音量(调节解码输出数据的音量),选择此音量类型需要把audio_digital_vol.h中BG_DVOL_FADE_ENABLE	这个宏置0
+#define VOL_TYPE_DIGITAL		0
+#define VOL_TYPE_NULL           1  //不使用音量
+#define SYS_VOL_TYPE            VOL_TYPE_NULL
 
 static OS_MUTEX tone_mutex;
 struct tone_file_handle {
@@ -600,6 +605,12 @@ static int tone_dec_probe_handler(struct audio_decoder *decoder)
 static int tone_final_output_handler(struct tone_file_handle *dec, s16 *data, int len)
 {
 #if 1
+
+#if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
+    if (file_dec->dvol) {
+        audio_digital_vol_run(file_dec->dvol, data, len);
+    }
+#endif
     u32 wlen = audio_pwm_write(data, len);
     if (wlen != len) {
         /* putchar('W'); */
@@ -822,7 +833,7 @@ __dec_start:
 
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
     if ((tone_input.coding_type == AUDIO_CODING_WAV) && (tone_dec->preemption == 0)) {
-        audio_digital_vol_bg_fade(1);
+        /* audio_digital_vol_bg_fade(1); */
     }
     file_dec->dvol = audio_digital_vol_open(SYS_DEFAULT_TONE_VOL, SYS_MAX_VOL, 20);
 #endif/*VOL_TYPE_DIGITAL*/

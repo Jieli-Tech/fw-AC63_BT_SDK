@@ -114,7 +114,6 @@
 <Add directory="../../../../apps/common/code_switch/include" />
 <Add directory="../../../../apps/common/device/optical_mouse_sensor/include" />
 <Add directory="../../../../apps/common/device/touch_pad" />
-<Add directory="../../../../apps/common/ui/led" />
 <Add directory="../../../../apps/common/audio" />
 <Add directory="../../../../cpu/br30/audio_dec" />
 <Add directory="../../../../cpu/br30/audio_enc" />
@@ -335,7 +334,6 @@
 <Unit filename="../../../../apps/hid/config/lib_system_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/config/lib_update_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/config/log_config.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/hid/examples/electrocar/electrocar.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/examples/gamebox/app_gamebox.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/examples/gamebox/gamebox.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/hid/examples/gamebox/key_mapping.c"><Option compilerVer="CC"/></Unit>

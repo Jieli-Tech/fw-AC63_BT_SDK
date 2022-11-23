@@ -121,7 +121,7 @@ void app_main()
     }
 
     printf(">>>>>>>>>>>>>>>>>app_main...\n");
-    printf(">>> v220,2022-11-11 >>>\n");
+    printf(">>> v220,2022-11-23 >>>\n");
 
     if (get_charge_online_flag()) {
 #if(TCFG_SYS_LVD_EN == 1)
@@ -199,10 +199,6 @@ void app_main()
 #elif CONFIG_APP_CONN_24G
     it.name = "conn_24g";
     it.action = ACTION_CONN_24G_MAIN;
-#elif(CONFIG_APP_ELECTROCAR)
-    it.name = "electrocar";
-    it.action = ACTION_ELECTROCAR;
-
 #else
     while (1) {
         printf("no app!!!");

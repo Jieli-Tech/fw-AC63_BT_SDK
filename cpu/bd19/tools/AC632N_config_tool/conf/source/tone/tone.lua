@@ -1,4 +1,6 @@
-
+if enable_moudles["tone"] == false then
+    return;
+else
 local tone_defaults =  {
 	{"数字0",     srcdir .. '/tone_file/0.wtg'}, --- 名称，默认文件路径
 	{"数字1",     srcdir .. '/tone_file/1.wtg'},
@@ -13,13 +15,20 @@ local tone_defaults =  {
 	{"蓝牙模式",  srcdir .. '/tone_file/bt.wtg'},
 	{"连接成功",  srcdir .. '/tone_file/bt_conn.wtg'},
 	{"断开连接",  srcdir .. '/tone_file/bt_dconn.wtg'},
-    {"对耳连接成功",  srcdir .. '/tone_file/tws_conn.wtg'},
-	{"对耳断开连接",  srcdir .. '/tone_file/tws_dconn.wtg'},
+    {"对箱连接成功",  srcdir .. '/tone_file/tws_conn.wtg'},
+	{"对箱断开连接",  srcdir .. '/tone_file/tws_dconn.wtg'},
 	{"低电提示音",srcdir .. '/tone_file/low_power.wtg'},
 	{"关机",      srcdir .. '/tone_file/power_off.wtg'},
 	{"开机",      srcdir .. '/tone_file/power_on.wtg'},
 	{"来电",      srcdir .. '/tone_file/ring.wtg'},
 	{"最大音量",  srcdir .. '/tone_file/vol_max.wtg'},
+	{"配对模式",  srcdir .. '/tone_file/paired.wtg'},
+	{"linein模式",  srcdir .. '/tone_file/linein.wtg'},
+	{"music模式",  srcdir .. '/tone_file/music.wtg'},
+	{"fm模式",  srcdir .. '/tone_file/fm.wtg'},
+	{"record模式",  srcdir .. '/tone_file/record.wtg'},
+	{"rtc模式",  srcdir .. '/tone_file/rtc.wtg'},
+	{"pc模式",  srcdir .. '/tone_file/pc.wtg'},
 };
 
 -- 设置中文名称对应的文件名
@@ -37,13 +46,20 @@ cfg:addToneNameMap{
 	{"蓝牙模式",        "bt"},
 	{"连接成功",        "bt_conn"},
 	{"断开连接",        "bt_dconn"},
-    {"对耳连接成功",    "tws_conn"},
-	{"对耳断开连接",    "tws_dconn"},
+    {"对箱连接成功",    "tws_conn"},
+	{"对箱断开连接",    "tws_dconn"},
 	{"低电提示音",      "low_power"},
 	{"关机",            "power_off"},
 	{"开机",            "power_on"},
 	{"来电",            "ring"},
 	{"最大音量",        "vol_max"},
+	{"配对模式",  		"paired"},	
+	{"linein模式",		"linein"},
+	{"music模式", 		"music"},
+	{"fm模式",  		"fm"},
+	{"record模式",		"record"},
+	{"rtc模式",  		"rtc"},
+	{"pc模式", 			"pc"},
 	-- 添加更多
 	-- 如果没有，就会使用文件名
 };
@@ -70,6 +86,13 @@ cfg:addToneNameMapLang("en", {
 	{"power on",          "power_on"},
 	{"ringing",           "ring"},
 	{"max volume",        "vol_max"},
+	{"paired",			  "paired"},
+	{"linein",            "linein"},
+	{"music",             "music"},
+	{"fm",                "fm"},
+	{"record",            "record"},
+	{"rtc",               "rtc"},
+	{"pc",                "pc"},
 	-- 添加更多
 	-- 如果没有，就会使用文件名
 });
@@ -78,21 +101,18 @@ cfg:addToneNameMapLang("en", {
 local tone_file_list = cfg:tones("提示音", tone_defaults);
 
 --tone_file_list:setBinInfer(false);
-local tv = cfg:tonesView(tone_file_list, {"aac", "mp3", "wav", "wtg", "wts", "msbc", "sbc", "mty", "*"});
+local tv = cfg:tonesView(tone_file_list, {"mp3", "wav", "wtg", "msbc", "sbc", "mty"});
 if open_by_program == "fw_edit" then
 	-- 如果在 fw 编辑中打开，则不要添加提示音等功能
 	tv:setFlags{"no-load", "no-add", "no-edit-name", "no-delete"};
 end
 -- tv:setMainFormat("wtg");
 tv:setMainFormatSelector({
-	-- {"aac",          "aac"},
-	-- {"wtg (低音质)", "wtg"},
-	{"wts (低音质)", "wts"},
-	-- {"msbc(中音质)", "msbc"},
-	-- {"sbc (高音质)", "sbc"},
-	-- {"sin (正弦波)", "sin"},
-	-- {"mty (全音质) 请设置输出采样率和码率", "mty"},
-	{"保留原来格式", "*"},
+	{"wtg (低音质)", "wtg"},
+	{"msbc(中音质)", "msbc"},
+	{"sbc (高音质)", "sbc"},
+	{"sin (正弦波)", "sin"},
+	{"mty (全音质) 请设置输出采样率和码率", "mty"},
 });
 
 local tone_list_view = cfg:vBox{
@@ -136,37 +156,23 @@ cfg:addFirmwareFile("tone",
 
 cfg:setTonesExtraDir(cfg.projDir .. '/conf/output/extra_tones'); -- 加载提示音的时候，需要释放tone.cfg的内容，这个是释放的目录
 
-local make_chain_cvt = function (funs)
-	return function (frompath, topath)
-		if #funs == 1 then return funs[1] end
-		
-		local fs = {}
-		fs[1] = frompath;
-		for i = 1, #funs-1 do
-			fs[#fs+1] = os.tmpname();
-		end
-		fs[#fs+1] = topath;
-		for i, cvt in ipairs(funs) do
-			print(fs[i], '->', fs[i+1]);
-			cvt(fs[i], fs[i+1]);
-		end
-		for i = 1, #funs-1 do
-			print('remove: ', fs[i+1]);
-			os.remove(fs[i+1]);
-		end
-		return true
-	end
-end
-
--- .wtg format convertor
-
 local wtg_to_wav_format = function(frompath, topath)
 	local pcmtmp = os.tmpname();
 	cfg:runProg{srcdir .. '/tone/wtg_decode.exe', frompath, pcmtmp};
-	cfg:runProg{cfg.rootDir .. "/3rd/ffmpeg.exe", "-f", "s16le", "-v", "8", "-y", "-ar", "8000", "-ac", "1", "-i", pcmtmp, "-f", "wav", topath};
+	cfg:runProg{cfg.rootDir .. "/3rd/ffmpeg.exe", "-f", "s16le", "-v", "8", "-y", "-ar", "8000", "-ac", "1", "-i", pcmtmp, topath};
 	os.remove(pcmtmp);
 	return true; -- good
 end;
+
+local msbc_to_wav_format = function (frompath, topath)
+	cfg:runProg{srcdir .. '/tone/msbc_decode.exe', frompath, topath};
+	return true; -- good
+end;
+
+local sbc_to_wav_format = function (frompath, topath)
+	cfg:runProg{srcdir .. '/tone/sbc_decode.exe', frompath, topath};
+	return true; -- good
+end
 
 local to_wtg_format = function (frompath, topath)
 	local pcmtmp = os.tmpname();
@@ -179,32 +185,6 @@ local to_wtg_format = function (frompath, topath)
 	return true; -- good
 end; 
 
--- wtgv2 (wts) format convertor
-
-local wts_to_wav_format = function(frompath, topath)
-	cfg:runProg{srcdir .. '/tone/wtgv2_decode.exe', frompath, topath, srcdir .. '/tone/wtgv2_icdftabs.rbin'};
-	return true;
-end;
-
-local to_wts_format = function(frompath, topath)
-	local pcmtmp = os.tmpname();
-	local pcmtmp2 = os.tmpname();
-	
-	cfg:runProg{cfg.rootDir .. '/3rd/ffmpeg', '-i', frompath, '-ar', math.floor(tv:getFormatSampleRate() * 2), '-ac', '1', '-f', 's16le', '-acodec', 'pcm_s16le', pcmtmp};
-	cfg:runProg{srcdir .. '/tone/wtgv2_resample.exe', pcmtmp, pcmtmp2};
-	cfg:runProg{srcdir .. '/tone/wtgv2_encode.exe', pcmtmp2, topath, "o.raw", math.floor(tv:getFormatSampleRate()), math.floor(tv:getFormatBitRate()), '20', '0.35'};
-	os.remove(pcmtmp);
-	os.remove(pcmtmp2);
-	return true;
-end;
-
--- .msbc format convertor
-
-local msbc_to_wav_format = function (frompath, topath)
-	cfg:runProg{srcdir .. '/tone/msbc_decode.exe', frompath, topath};
-	return true; -- good
-end;
-
 local to_msbc_format = function (frompath, topath)
 	local pcmtmp = os.tmpname();
 	cfg:runProg{cfg.rootDir .. "/3rd/ffmpeg.exe", "-i", frompath,  "-ar", "16000", "-ac", "1" , "-f", "wav", pcmtmp};
@@ -213,43 +193,108 @@ local to_msbc_format = function (frompath, topath)
 	return true; -- good
 end;
 
--- .sbc format convertor
-
-local sbc_to_wav_format = function (frompath, topath)
-	cfg:runProg{srcdir .. '/tone/sbc_decode.exe', frompath, topath};
-	return true; -- good
-end
-
 local to_sbc_format = function (frompath, topath)
 	local pcmtmp = os.tmpname();
 	cfg:runProg{cfg.rootDir .. "/3rd/ffmpeg.exe", "-i", frompath,  "-ar", "48000", "-ac", "1" , "-f", "wav", pcmtmp};
 	cfg:runProg{srcdir .. "/tone/sbc_encode.exe", pcmtmp, topath, "35"};
-	os.remove(pcmtmp);
+	--os.remove(pcmtmp);
 	return true; -- good
 end;
 
--- .aac format convertor
-local aac_to_wav_format = function (frompath, topath)
-	local pcmtmp = os.tmpname();
-	cfg:runProg{srcdir .. '/tone/BTAAC_DECODE.exe', frompath, pcmtmp};
+cfg:setFormatConverter("wtg", "wav", -- 设置 wtg 转换为 wav 的方式，用于播放
+	wtg_to_wav_format);
 
-	cfg:runProg{srcdir .. '/tone/BTAAC_DECODE.exe', frompath, topath};
-	return true;
-end
+cfg:setFormatConverter("msbc", "wav", -- 设置 msbc 转换为 wav 的方式，用于播放
+	msbc_to_wav_format);
 
-local to_aac_format = function (frompath, topath)
+cfg:setFormatConverter("sbc", "wav", -- 设置 sbc 转换为 wav 的方式，用于播放
+	sbc_to_wav_format);
+
+cfg:setFormatConverter("mp3", "wtg", -- 设置 mp3 转换为 wtg 的方式
+	to_wtg_format);
+
+cfg:setFormatConverter("wav", "wtg", -- 设置 wav 转换为 wtg 的方式
+	to_wtg_format);
+
+cfg:setFormatConverter("msbc", "wtg", -- 设置 msbc 转换为 wtg 的方式
+function (frompath, topath)
 	local pcmtmp = os.tmpname();
-	cfg:runProg{cfg.rootDir .. "/3rd/ffmpeg.exe", "-i", frompath,  "-ar", "32000", "-ac", "1" , "-f", "wav", pcmtmp};
-	cfg:runProg{srcdir .. '/tone/BTAAC_ENCODE.exe', '-stdf', '0', '-if', pcmtmp, '-of', topath, '-br', '8000'};
+	msbc_to_wav_format(frompath, pcmtmp);
+	to_wtg_format(pcmtmp, topath);
 	os.remove(pcmtmp);
 	return true;
-end;
+end);
 
--- sin
-local sin_to_wav_format = function (frompath, topath)
-	cfg:runProg{srcdir .. "/tone/sintonecvt.exe", frompath, topath, "16"};
+cfg:setFormatConverter("sbc", "wtg", -- 设置 sbc 转换为 wtg 的方式
+function (frompath, topath)
+	local pcmtmp = os.tmpname();
+	sbc_to_wav_format(frompath, pcmtmp);
+	to_wtg_format(pcmtmp, topath);
+	os.remove(pcmtmp);
 	return true;
-end
+end);
+
+
+cfg:setFormatConverter("mp3", "msbc", -- 设置 mp3 转换为 msbc 的方式
+	to_msbc_format);
+
+cfg:setFormatConverter("wav", "msbc", -- 设置 wav 转换为 msbc 的方式
+	to_msbc_format);
+
+cfg:setFormatConverter("wtg", "msbc", -- 设置 wtg 转换为 msbc 的方式
+function (frompath, topath)
+	local pcmtmp = os.tmpname();
+
+	wtg_to_wav_format(frompath, pcmtmp);
+	to_msbc_format(pcmtmp, topath);
+
+	os.remove(pcmtmp);
+	return true; -- good
+
+end);
+
+cfg:setFormatConverter("sbc", "msbc", -- 设置 sbc 转换为 msbc 的方式
+function (frompath, topath)
+	local pcmtmp = os.tmpname();
+
+	sbc_to_wav_format(frompath, pcmtmp);
+	to_msbc_format(pcmtmp, topath);
+
+	os.remove(pcmtmp);
+	return true; -- good
+
+end);
+
+
+cfg:setFormatConverter("mp3", "sbc", -- 设置 mp3 转换为 sbc 的方式
+	to_sbc_format);
+
+cfg:setFormatConverter("wav", "sbc", -- 设置 wav 转换为 sbc 的方式
+	to_sbc_format);
+
+cfg:setFormatConverter("wtg", "sbc", -- 设置 wtg 转换为 sbc 的方式
+function (frompath, topath)
+	local pcmtmp = os.tmpname();
+
+	wtg_to_wav_format(frompath, pcmtmp);
+	to_sbc_format(pcmtmp, topath);
+
+	os.remove(pcmtmp);
+	return true; -- good
+
+end);
+
+cfg:setFormatConverter("msbc", "sbc", -- 设置 msbc 转换为 sbc 的方式
+function (frompath, topath)
+	local pcmtmp = os.tmpname();
+
+	sbc_to_wav_format(frompath, pcmtmp);
+	to_sbc_format(pcmtmp, topath);
+
+	os.remove(pcmtmp);
+	return true; -- good
+
+end);
 
 --[[===================================================================================
 ==================================== mty 音质选择 =====================================
@@ -271,18 +316,6 @@ tv:setFormatSampleRateList("mty", {
     {44100, {48, 56, 64, 80, 96, 112, 128}},
     {48000, {48, 56, 64, 80, 96, 112, 128}},
 });
-
-tv:setFormatSampleRateRange("wts", {
--- {sr_out, {val, min, max}},
-    { 8000, { 8000, 5000, 60000}},
-    {11025, {11000, 5000, 60000}},
-    {12000, {12000, 5000, 60000}},
-
-    {16000, {16000, 5000, 60000}},
-    {22050, {20000, 5000, 60000}},
-    {24000, {22000, 5000, 60000}},
-});
-
 ---------------------- mty - >wav, 播放
 local mty_to_wav_format = function(frompath, topath)
     cfg:runProg{srcdir .. "/tone/mty2wav.exe", frompath, topath};
@@ -307,61 +340,95 @@ local wav_to_mty_format = function(frompath, topath)
 	return true; -- good
 end
 
--- 转换成 wav，用于播放
-cfg:setFormatConverter("sin",  "wav", sin_to_wav_format);
-cfg:setFormatConverter("wtg",  "wav", wtg_to_wav_format);
-cfg:setFormatConverter("wts",  "wav", wts_to_wav_format);
-cfg:setFormatConverter("msbc", "wav", msbc_to_wav_format);
-cfg:setFormatConverter("sbc",  "wav", sbc_to_wav_format);
-cfg:setFormatConverter("mty",  "wav", mty_to_wav_format);
-cfg:setFormatConverter("aac",  "wav", aac_to_wav_format);
+---------------------- msbc -> mty, 用于存储
+local msbc_to_mty_format = function(frompath, topath)
+	local wavtmp = os.tmpname() .. ".wav";
+    msbc_to_wav_format(frompath, wavtmp);
+    wav_to_mty_format(wavtmp, topath);
+	os.remove(wavtmp);
+	return true; -- good
+end
 
--- 格式互相转换
-cfg:setFormatConverter("mp3",  "mty", mp3_to_mty_format);
-cfg:setFormatConverter("wav",  "mty", wav_to_mty_format);
-cfg:setFormatConverter("sbc",  "mty", make_chain_cvt{ sbc_to_wav_format, wav_to_mty_format});
-cfg:setFormatConverter("wtg",  "mty", make_chain_cvt{ wtg_to_wav_format, wav_to_mty_format});
-cfg:setFormatConverter("wts",  "mty", make_chain_cvt{ wts_to_wav_format, wav_to_mty_format});
-cfg:setFormatConverter("aac",  "mty", make_chain_cvt{ aac_to_wav_format, wav_to_mty_format});
-cfg:setFormatConverter("msbc", "mty", make_chain_cvt{msbc_to_wav_format, wav_to_mty_format});
+---------------------- sbc -> mty, 用于存储
+local sbc_to_mty_format = function(frompath, topath)
+	local wavtmp = os.tmpname() .. ".wav";
+    sbc_to_wav_format(frompath, wavtmp);
+    wav_to_mty_format(wavtmp, topath);
+	os.remove(wavtmp);
+	return true; -- good
+end
 
-cfg:setFormatConverter("mp3",  "wtg", to_wtg_format);
-cfg:setFormatConverter("wav",  "wtg", to_wtg_format);
-cfg:setFormatConverter("mty",  "wtg", make_chain_cvt{ mty_to_wav_format, to_wtg_format});
-cfg:setFormatConverter("sbc",  "wtg", make_chain_cvt{ sbc_to_wav_format, to_wtg_format});
-cfg:setFormatConverter("aac",  "wtg", make_chain_cvt{ aac_to_wav_format, to_wtg_format});
-cfg:setFormatConverter("msbc", "wtg", make_chain_cvt{msbc_to_wav_format, to_wtg_format});
-cfg:setFormatConverter("wts",  "wtg", make_chain_cvt{ wts_to_wav_format, to_wtg_format});
+---------------------- wtg -> mty, 用于存储
+local wtg_to_mty_format = function(frompath, topath)
+	local wavtmp = os.tmpname() .. ".wav";
+    wtg_to_wav_format(frompath, wavtmp);
+    wav_to_mty_format(wavtmp, topath);
+	os.remove(wavtmp);
+	return true; -- good
+end
+
+---------------------- wty -> msbc, 用于存储
+local mty_to_msbc_format = function(frompath, topath)
+	local wavtmp = os.tmpname() .. ".wav";
+    mty_to_wav_format(frompath, wavtmp);
+    to_msbc_format(wavtmp, topath);
+	os.remove(wavtmp);
+	return true; -- good
+end
+
+---------------------- wty -> sbc, 用于存储
+local mty_to_sbc_format = function(frompath, topath)
+	local wavtmp = os.tmpname() .. ".wav";
+    mty_to_wav_format(frompath, wavtmp);
+    to_sbc_format(wavtmp, topath);
+	os.remove(wavtmp);
+	return true; -- good
+end
+
+---------------------- wty -> wtg, 用于存储
+local mty_to_wtg_format = function(frompath, topath)
+	local wavtmp = os.tmpname() .. ".wav";
+    mty_to_wav_format(frompath, wavtmp);
+    to_wtg_format(wavtmp, topath);
+	os.remove(wavtmp);
+	return true; -- good
+end
+
+cfg:setFormatConverter("mp3", "mty", -- 设置 mp3 转换为 mty 的方式
+    mp3_to_mty_format);
+
+cfg:setFormatConverter("mty", "wav", -- 设置 mty 转换为 wav 的方式，用于播放
+	mty_to_wav_format);
+
+cfg:setFormatConverter("wav", "mty", -- 设置 wav 转换为 mty 的方式
+	wav_to_mty_format);
+
+cfg:setFormatConverter("msbc", "mty", -- 设置 msbc 转换为 mty 的方式
+	msbc_to_mty_format);
+
+cfg:setFormatConverter("sbc", "mty", -- 设置 sbc 转换为 mty 的方式
+	sbc_to_mty_format);
+
+cfg:setFormatConverter("wtg", "mty", -- 设置 wtg 转换为 mty 的方式
+	wtg_to_mty_format);
+
+cfg:setFormatConverter("mty", "msbc", -- 设置 mty 转换为 msbc 的方式
+	mty_to_msbc_format);
+
+cfg:setFormatConverter("mty", "sbc", -- 设置 mty 转换为 sbc 的方式
+	mty_to_sbc_format);
+
+cfg:setFormatConverter("mty", "wtg", -- 设置 mty 转换为 wtg 的方式
+	mty_to_wtg_format);
 
 
-cfg:setFormatConverter("mp3",  "wts", to_wts_format);
-cfg:setFormatConverter("wav",  "wts", to_wts_format);
-cfg:setFormatConverter("mty",  "wts", make_chain_cvt{ mty_to_wav_format, to_wts_format});
-cfg:setFormatConverter("sbc",  "wts", make_chain_cvt{ sbc_to_wav_format, to_wts_format});
-cfg:setFormatConverter("aac",  "wts", make_chain_cvt{ aac_to_wav_format, to_wts_format});
-cfg:setFormatConverter("msbc", "wts", make_chain_cvt{msbc_to_wav_format, to_wts_format});
-cfg:setFormatConverter("wtg",  "wts", make_chain_cvt{ wtg_to_wav_format, to_wts_format});
+cfg:setFormatConverter("sin", "wav", -- 设置 sin 转换为 wav 的方式
+function (frompath, topath)
+	print(frompath);
+	print(topath);
+	cfg:runProg{srcdir .. "/tone/sintonecvt.exe", frompath, topath, "16"};
+	return true;
+end);
 
-cfg:setFormatConverter("mp3", "msbc", to_msbc_format);
-cfg:setFormatConverter("wav", "msbc", to_msbc_format);
-cfg:setFormatConverter("mty", "msbc", make_chain_cvt{mty_to_wav_format, to_msbc_format});
-cfg:setFormatConverter("wtg", "msbc", make_chain_cvt{wtg_to_wav_format, to_msbc_format});
-cfg:setFormatConverter("sbc", "msbc", make_chain_cvt{sbc_to_wav_format, to_msbc_format});
-cfg:setFormatConverter("aac", "msbc", make_chain_cvt{aac_to_wav_format, to_msbc_format});
-cfg:setFormatConverter("wts", "msbc", make_chain_cvt{wts_to_wav_format, to_msbc_format});
+end
 
-cfg:setFormatConverter("mp3",  "sbc", to_sbc_format);
-cfg:setFormatConverter("wav",  "sbc", to_sbc_format);
-cfg:setFormatConverter("mty",  "sbc", make_chain_cvt{ mty_to_wav_format, to_sbc_format});
-cfg:setFormatConverter("wtg",  "sbc", make_chain_cvt{ wtg_to_wav_format, to_sbc_format});
-cfg:setFormatConverter("aac",  "sbc", make_chain_cvt{ aac_to_wav_format, to_sbc_format});
-cfg:setFormatConverter("msbc", "sbc", make_chain_cvt{msbc_to_wav_format, to_sbc_format});
-cfg:setFormatConverter("wts",  "sbc", make_chain_cvt{ wts_to_wav_format, to_sbc_format});
-
-cfg:setFormatConverter("mp3", "aac", to_aac_format);
-cfg:setFormatConverter("wav", "aac", to_aac_format);
-cfg:setFormatConverter("wtg", "aac", make_chain_cvt{ wtg_to_wav_format, to_aac_format});
-cfg:setFormatConverter("sbc", "aac", make_chain_cvt{ sbc_to_wav_format, to_aac_format});
-cfg:setFormatConverter("mty", "aac", make_chain_cvt{ mty_to_wav_format, to_aac_format});
-cfg:setFormatConverter("msbc","aac", make_chain_cvt{msbc_to_wav_format, to_aac_format});
-cfg:setFormatConverter("wts", "aac", make_chain_cvt{ wts_to_wav_format, to_aac_format});

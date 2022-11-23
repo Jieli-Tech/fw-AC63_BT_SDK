@@ -178,7 +178,6 @@ INCLUDES := \
 	-I../../../../apps/common/code_switch/include \
 	-I../../../../apps/common/device/optical_mouse_sensor/include \
 	-I../../../../apps/common/device/touch_pad \
-	-I../../../../apps/common/ui/led \
 	-I../../../../apps/common/device/usb/device \
 	-I../../../../apps/common/device/usb/host \
 	-I$(SYS_INC_DIR) \
@@ -251,7 +250,6 @@ c_SRC_FILES := \
 	../../../../apps/hid/config/lib_system_config.c \
 	../../../../apps/hid/config/lib_update_config.c \
 	../../../../apps/hid/config/log_config.c \
-	../../../../apps/hid/examples/electrocar/electrocar.c \
 	../../../../apps/hid/examples/gamebox/app_gamebox.c \
 	../../../../apps/hid/examples/gamebox/gamebox.c \
 	../../../../apps/hid/examples/gamebox/key_mapping.c \

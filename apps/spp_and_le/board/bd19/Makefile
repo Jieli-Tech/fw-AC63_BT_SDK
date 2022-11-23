@@ -185,7 +185,6 @@ INCLUDES := \
 	-I../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo \
 	-I../../../../apps/spp_and_le/examples/ll_sync \
 	-I../../../../apps/common/cJSON \
-	-I../../../../apps/common/ui/led \
 	-I../../../../apps/common/third_party_profile/tuya_protocol \
 	-I../../../../apps/common/third_party_profile/tuya_protocol/app/demo \
 	-I../../../../apps/common/third_party_profile/tuya_protocol/app/product_test \
@@ -203,6 +202,7 @@ INCLUDES := \
 	-I../../../../apps/spp_and_le/examples/hilink \
 	-I../../../../cpu/bd19/audio_encode \
 	-I../../../../cpu/bd19/audio_decode \
+	-I../../../../apps/common/audio \
 	-I../../../../apps/common/device/usb \
 	-I../../../../apps/common/device/usb/device \
 	-I../../../../apps/common/device/usb/host \
@@ -211,6 +211,7 @@ INCLUDES := \
 
 # 需要编译的 .c 文件
 c_SRC_FILES := \
+	../../../../apps/common/audio/audio_digital_vol.c \
 	../../../../apps/common/bt_common/bt_test_api.c \
 	../../../../apps/common/cJSON/cJSON.c \
 	../../../../apps/common/debug/debug.c \
@@ -372,8 +373,6 @@ c_SRC_FILES := \
 	../../../../apps/spp_and_le/examples/dongle/ota_dg_central.c \
 	../../../../apps/spp_and_le/examples/dongle/usb_hid_devices.c \
 	../../../../apps/spp_and_le/examples/dongle/usb_second_hid_devices.c \
-	../../../../apps/spp_and_le/examples/electrocar/electrocar.c \
-	../../../../apps/spp_and_le/examples/electrocar/electrocar_le_trans.c \
 	../../../../apps/spp_and_le/examples/hilink/app_hilink.c \
 	../../../../apps/spp_and_le/examples/hilink/hilink_demo.c \
 	../../../../apps/spp_and_le/examples/idle/app_idle.c \
@@ -415,9 +414,6 @@ c_SRC_FILES := \
 	../../../../cpu/bd19/iic_hw.c \
 	../../../../cpu/bd19/iic_soft.c \
 	../../../../cpu/bd19/irflt.c \
-	../../../../cpu/bd19/irflt_433.c \
-	../../../../cpu/bd19/irflt_nrf.c \
-	../../../../cpu/bd19/irflt_oneparse.c \
 	../../../../cpu/bd19/ledc.c \
 	../../../../cpu/bd19/ledc_test.c \
 	../../../../cpu/bd19/mcpwm.c \

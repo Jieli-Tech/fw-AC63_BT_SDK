@@ -25,29 +25,12 @@
 #define CONFIG_APP_GAMEBOX                  0//吃鸡王座
 #define CONFIG_APP_REMOTE_CONTROL           0//语音遥控
 #define CONFIG_APP_IDLE                     0//IDLE
-#define CONFIG_APP_ELECTROCAR               0//电车项目,注意将板级处ADKEY以及别的IO占用失能, 关闭低功耗:TCFG_LOWPOWER_LOWPOWER_SEL设置为0
 
 //edr sniff模式选择; sniff参数需要调整,移植可具体参考app_keyboard.c
 #if CONFIG_APP_MOUSE_SINGLE || CONFIG_APP_MOUSE_DUAL || CONFIG_APP_STANDARD_KEYBOARD || CONFIG_APP_REMOTE_CONTROL //|| CONFIG_APP_KEYBOARD
 #define SNIFF_MODE_RESET_ANCHOR             1//键盘鼠标sniff模式,固定小周期发包,多按键响应快
 #else
 #define SNIFF_MODE_RESET_ANCHOR             0//待机固定500ms sniff周期,待机功耗较低,按键唤醒有延时
-#endif
-
-#if CONFIG_APP_ELECTROCAR
-//暂时只有bd19(AC632N)支持433/nrf/一键通
-//                                          433 配置                                 //
-#define TCFG_433_ENABLE                     DISABLE_THIS_MOUDLE
-#define TCFG_433_PORT                       IO_PORTB_00
-#define TCFG_433_IO_TEST                    ENABLE_THIS_MOUDLE//通过IO捕获433输入数据
-//                                          nrf 配置                                 //
-#define TCFG_NFC_ENABLE                     DISABLE_THIS_MOUDLE
-#define TCFG_NFC_PORT                       IO_PORTB_01
-#define TCFG_NFC_IO_TEST                    ENABLE_THIS_MOUDLE//通过IO捕获433输入数据
-//                                          一键通 配置                              //
-#define TCFG_ONE_PARSE_ENABLE               DISABLE_THIS_MOUDLE
-#define TCFG_ONE_PARSE_PORT                 IO_PORTB_03
-#define TCFG_ONE_PARSE_IO_TEST              ENABLE_THIS_MOUDLE//通过IO捕获433输入数据
 #endif
 
 #define CONFIG_HOGP_COMMON_ENABLE          1 //公共的hogp

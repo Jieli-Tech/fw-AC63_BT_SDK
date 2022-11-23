@@ -154,6 +154,8 @@
 </ExtraCommands>
 </Target>
 </Build>
+<Unit filename="../../../../apps/common/audio/audio_digital_vol.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/audio/audio_digital_vol.h" />
 <Unit filename="../../../../apps/common/bt_common/bt_test_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/config/include/bt_profile_cfg.h" />
 <Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
@@ -350,9 +352,6 @@
 <Unit filename="../../../../cpu/bd19/iic_hw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/iic_soft.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/irflt.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../cpu/bd19/irflt_433.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../cpu/bd19/irflt_nrf.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../cpu/bd19/irflt_oneparse.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/ledc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/ledc_test.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../cpu/bd19/mcpwm.c"><Option compilerVer="CC"/></Unit>

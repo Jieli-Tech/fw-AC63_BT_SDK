@@ -194,6 +194,7 @@ INCLUDES := \
 
 # 需要编译的 .c 文件
 c_SRC_FILES := \
+	../../../../apps/common/audio/audio_digital_vol.c \
 	../../../../apps/common/bt_common/bt_test_api.c \
 	../../../../apps/common/debug/debug.c \
 	../../../../apps/common/device/key/adkey.c \
@@ -300,9 +301,6 @@ c_SRC_FILES := \
 	../../../../cpu/bd19/iic_hw.c \
 	../../../../cpu/bd19/iic_soft.c \
 	../../../../cpu/bd19/irflt.c \
-	../../../../cpu/bd19/irflt_433.c \
-	../../../../cpu/bd19/irflt_nrf.c \
-	../../../../cpu/bd19/irflt_oneparse.c \
 	../../../../cpu/bd19/ledc.c \
 	../../../../cpu/bd19/ledc_test.c \
 	../../../../cpu/bd19/mcpwm.c \
