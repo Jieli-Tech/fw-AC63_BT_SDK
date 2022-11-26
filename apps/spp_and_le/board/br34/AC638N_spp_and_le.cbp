@@ -441,14 +441,6 @@
 <Unit filename="../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_utils.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/tuya_protocol/tuya_ble_config.h" />
 <Unit filename="../../../../apps/common/third_party_profile/tuya_protocol/tuya_ble_sdk_version.h" />
-<Unit filename="../../../../apps/common/ui/led/led_api.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/ui/led/led_api.h" />
-<Unit filename="../../../../apps/common/ui/led/led_driver.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/ui/led/led_driver.h" />
-<Unit filename="../../../../apps/common/ui/led/led_ui_api.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/ui/led/tm162x.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/ui/led/ui_api.h" />
-<Unit filename="../../../../apps/common/ui/led/ui_common.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/testbox_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/uart_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/uart_update_master.c"><Option compilerVer="CC"/></Unit>

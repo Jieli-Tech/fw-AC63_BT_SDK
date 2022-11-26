@@ -242,14 +242,6 @@
 <Unit filename="../../../../apps/common/third_party_profile/jieli/online_db/spp_online_db.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/jieli/online_db/spp_online_db.h" />
 <Unit filename="../../../../apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.h" />
-<Unit filename="../../../../apps/common/ui/led/led_api.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/ui/led/led_api.h" />
-<Unit filename="../../../../apps/common/ui/led/led_driver.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/ui/led/led_driver.h" />
-<Unit filename="../../../../apps/common/ui/led/led_ui_api.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/ui/led/tm162x.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/ui/led/ui_api.h" />
-<Unit filename="../../../../apps/common/ui/led/ui_common.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/testbox_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/uart_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/update/uart_update_master.c"><Option compilerVer="CC"/></Unit>

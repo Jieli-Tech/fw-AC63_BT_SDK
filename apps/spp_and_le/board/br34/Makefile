@@ -334,11 +334,6 @@ c_SRC_FILES := \
 	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_storage.c \
 	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_unix_time.c \
 	../../../../apps/common/third_party_profile/tuya_protocol/sdk/src/tuya_ble_utils.c \
-	../../../../apps/common/ui/led/led_api.c \
-	../../../../apps/common/ui/led/led_driver.c \
-	../../../../apps/common/ui/led/led_ui_api.c \
-	../../../../apps/common/ui/led/tm162x.c \
-	../../../../apps/common/ui/led/ui_common.c \
 	../../../../apps/common/update/testbox_update.c \
 	../../../../apps/common/update/uart_update.c \
 	../../../../apps/common/update/uart_update_master.c \

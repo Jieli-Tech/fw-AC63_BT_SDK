@@ -245,11 +245,6 @@ c_SRC_FILES := \
 	../../../../apps/common/third_party_profile/jieli/gatt_common/le_gatt_server.c \
 	../../../../apps/common/third_party_profile/jieli/online_db/online_db_deal.c \
 	../../../../apps/common/third_party_profile/jieli/online_db/spp_online_db.c \
-	../../../../apps/common/ui/led/led_api.c \
-	../../../../apps/common/ui/led/led_driver.c \
-	../../../../apps/common/ui/led/led_ui_api.c \
-	../../../../apps/common/ui/led/tm162x.c \
-	../../../../apps/common/ui/led/ui_common.c \
 	../../../../apps/common/update/testbox_update.c \
 	../../../../apps/common/update/uart_update.c \
 	../../../../apps/common/update/uart_update_master.c \
