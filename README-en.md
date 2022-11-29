@@ -23,9 +23,9 @@ Toolchain
 
 How to get the `JL Toolchain` and setup the build enviroment,see below
 
-* Complie Tool ：install the JL [complie tool](./doc/toolchain_guide.pdf) to setup the build enviroment, [download link](https://pan.baidu.com/s/1f5pK7ZaBNnvbflD-7R22zA) code: `ukgx`
+* Compile Tool ：install the JL [compile tool](./doc/toolchain_guide_EN.pdf) to setup the build enviroment, [download link](https://pan.baidu.com/s/1f5pK7ZaBNnvbflD-7R22zA) code: `ukgx` or visit the following website: https://doc.zh-jieli.com/AC63/zh-cn/master/index.html
 
-* USB updater : program flash tool to download the `hex` file to the target board, please accquire the tool form the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.5.504d246bXKwyeH&id=620295020803) and check the related configuration and [document](.doc/stuff/ISD_CONFIG.INI配置文件说明.pdf)
+* USB updater : program flash tool to download the `hex` file to the target board, please accquire the tool form the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.5.504d246bXKwyeH&id=620295020803) and check the related configuration and [document](doc/stuff/ISD_CONFIG_file_descrip_EN.pdf)
 
 
 Documentation
@@ -33,11 +33,11 @@ Documentation
 
 * Chipset brief : [SoC datasheet](./doc)
 
-* SDK Version: [SDK History](doc/AC630N_bt_data_transfer_sdk_发布版本信息.pdf)
+* SDK Version: [SDK Version History](/doc/AC630N_bt_data_transfer_sdk_version_info_EN.pdf)  
 
-* SDK introduction : [SDK quick start guide](./doc/AC630N_bt_data_transfer_sdk介绍.pdf)
+* SDK introduction : [SDK quick start guide](/doc/AC630N_bt_data_transfer_sdk_introduce_EN.pdf)   
 
-* SDK architure : [SDK module architure ](./doc/architure)
+* SDK architure : [SDK module architure ](/doc/architure)
 
 Build
 -------------
