@@ -16,26 +16,25 @@ Getting Started
 Welcome to JL open source! See the `Introduction to SDK` for a high-level overview,
 and the documentation's `Getting Started Guide` to start developing.
 
-Project Documentation：https://doc.zh-jieli.com/vue/#/docs/ac63
 
 Toolchain
 ------------
 
 How to get the `JL Toolchain` and setup the build enviroment,see below
 
-* Complie Tool ：install the JL [complie tool](./doc/toolchain_guide.pdf) to setup the build enviroment, [download link](https://pan.baidu.com/s/1f5pK7ZaBNnvbflD-7R22zA) code: `ukgx`
+* Complie Tool ：install the JL complie tool to setup the build enviroment, [download link](https://doc.zh-jieli.com/Tools/zh-cn/dev_tools/dev_env/index.html) 
 
-* USB updater : program flash tool to download the `hex` file to the target board, please accquire the tool form the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.5.504d246bXKwyeH&id=620295020803) and check the related configuration and [document](.doc/stuff/ISD_CONFIG.INI配置文件说明.pdf)
+* USB updater : program flash tool to download the `hex` file to the target board, please accquire the tool form the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.5.504d246bXKwyeH&id=620295020803) and check the related configuration and [document](https://doc.zh-jieli.com/AC63/zh-cn/master/getting_started/project_download/INI_config.html)
 
 
 Documentation
 ------------
 
-* Chipset brief : [SoC datasheet](./doc)
+* Chipset brief : [SoC datasheet](https://doc.zh-jieli.com/vue/#/docs/ac63), [download link](.doc/datasheet)
 
-* SDK Version: [SDK History](doc/AC630N_bt_data_transfer_sdk_发布版本信息.pdf)
+* SDK Version: [SDK History](https://doc.zh-jieli.com/AC63/zh-cn/master/other/version/index.html)
 
-* SDK introduction : [SDK quick start guide](./doc/AC630N_bt_data_transfer_sdk介绍.pdf)
+* SDK introduction : [SDK quick start guide](https://doc.zh-jieli.com/AC63/zh-cn/master/index.html)
 
 * SDK architure : [SDK module architure ](./doc/architure)
 
@@ -43,11 +42,11 @@ Build
 -------------
 Select a project to build. The following folders contains buildable projects:
 
-* APP_Bluetooth : [SPP_LE](./apps/spp_and_le), usage: data transfer, centeral devices, boardcast devices, beacon, multi-link, Dongle(usb / bt)
+* APP_Bluetooth : [SPP_LE](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/spple/index.html), usage: data transfer, centeral devices, boardcast devices, beacon, multi-link, Dongle(usb / bt)
 
-* APP_Bluetooth : [HID](./apps/hid), usage: remote control, keyboard, mouse, game box, Voice remote control
+* APP_Bluetooth : [HID](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/hid/index.html), usage: remote control, keyboard, mouse, game box, Voice remote control
 
-* APP_Bluetooth : [Mesh](./apps/mesh), usage: Mesh nodes
+* APP_Bluetooth : [Mesh](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/mesh/index.html), usage: Mesh nodes
 
 Comming Soon：
 
@@ -63,7 +62,7 @@ SDK support Codeblock & Make to build to project,make sure you already setup the
 
   `before build the project make sure the USB updater is connect and enter the update mode correctly`
 
-* Bluetooth OTA : [OTA](./doc/固件升级介绍.md) , usage: Single/Double bank bluetooth update.
+* Bluetooth OTA : [OTA](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/ota/index.html) , usage: Single/Double bank bluetooth update.
 
 Certification
 -------------
@@ -78,11 +77,11 @@ Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.0/5
 Hardware
 -------------
 
-* EV Board ：(https://shop321455197.taobao.com/?spm=a230r.7195193.1997079397.2.2a6d391d3n5udo)
+* EV Board ：[link](https://shop321455197.taobao.com/?spm=a230r.7195193.1997079397.2.2a6d391d3n5udo)
 
 * Production Tool : massive prodution and program the SoC, please accquire the tool from the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.8.504d246bXKwyeH&id=620941819219) and check the releated [doc](./doc/stuff/烧写器使用说明文档.pdf)
 
-* Wireless Tester : Over the air update/RF Calibration/Fast production test, please accuire the tool from the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511),check [doc](./doc/stuff/AC690x_1T2测试盒使用说明.pdf) for more infomation.
+* Wireless Tester : Over the air update/RF Calibration/Fast production test, please accuire the tool from the [link](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511),check [doc](https://doc.zh-jieli.com/Tools/zh-cn/mass_prod_tools/testbox_1tuo2/index.html) for more infomation.
 
 
 Community
@@ -90,7 +89,7 @@ Community
 
 * [Dingtalk Group] ID: `31691148`
 
-* [Q&A](./doc/stuff/AC630X软件问题整理.pdf)
+* [Q&A](./doc/stuff)
 
 Disclaimer
 ------------
