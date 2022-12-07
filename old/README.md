@@ -17,25 +17,25 @@ AC63 系列通用蓝牙SDK 固件程序
 
 欢迎使用杰理开源项目，在开始进入项目之前，请详细阅读SDK 介绍文档，
 从而获得对杰理系列芯片和SDK 的大概认识，并且可以通过快速开始介绍来进行开发.
-
+项目文档：https://doc.zh-jieli.com/vue/#/docs/ac63
 
 工具链
 ------------
 
 关于如何获取`杰理工具链` 和 如何进行环境搭建，请阅读以下内容：
 
-* 编译工具 ：请安装杰理编译工具来搭建起编译环境, [下载链接](https://doc.zh-jieli.com/Tools/zh-cn/dev_tools/dev_env/index.html) 
+* 编译工具 ：请安装杰理[编译工具](./doc/toolchain_guide.pdf)来搭建起编译环境, [下载链接](https://pan.baidu.com/s/1f5pK7ZaBNnvbflD-7R22zA) 提取码: `ukgx`
 
-* USB 升级工具 : 在开发完成后，需要使用杰理烧写工具将对应的`hex`文件烧录到目标板，进行开发调试, 关于如何获取工具请进入申请 [链接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.5.504d246bXKwyeH&id=620295020803) 并详细阅读对应的[文档](https://doc.zh-jieli.com/Tools/zh-cn/dev_tools/forced_upgrade/index.html)，以及相关下载脚本[配置](https://doc.zh-jieli.com/AC63/zh-cn/master/getting_started/project_download/INI_config.html)
+* USB 升级工具 : 在开发完成后，需要使用杰理烧写工具将对应的`hex`文件烧录到目标板，进行开发调试, 关于如何获取工具请进入申请 [链接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.5.504d246bXKwyeH&id=620295020803) 并详细阅读对应的[文档](doc/stuff/usb%20updater.pdf)，以及相关下载脚本[配置](doc/stuff/ISD_CONFIG.INI配置文件说明.pdf)
 
 介绍文档
 ------------
 
-* 芯片简介 : [SoC 数据手册扼要](https://doc.zh-jieli.com/vue/#/docs/ac63), [下载链接](./doc/datasheet)
+* 芯片简介 : [SoC 数据手册扼要](./doc)
 
-* SDK 版本信息 : [SDK 历史版本](https://doc.zh-jieli.com/AC63/zh-cn/master/other/version/index.html)
+* SDK 版本信息 : [SDK 历史版本](./doc/AC630N_bt_data_transfer_sdk_发布版本信息.pdf)
 
-* SDK 介绍文档 : [SDK 快速开始简介](https://doc.zh-jieli.com/AC63/zh-cn/master/index.html)
+* SDK 介绍文档 : [SDK 快速开始简介](./doc/AC630N_bt_data_transfer_sdk介绍.pdf)
 
 * SDK 结构文档 : [SDK 模块结构](./doc/architure)
 
@@ -43,11 +43,11 @@ AC63 系列通用蓝牙SDK 固件程序
 -------------
 请选择以下一个工程进行编译，下列目录包含了便于开发的工程文件：
 
-* 蓝牙应用 : [SPP_LE](./apps/spp_and_le), 适用领域：透传, 数传, 扫描设备, 广播设备, 信标, 多机连接. Dongle(usb / bt). [文档链接](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/spple/index.html)
+* 蓝牙应用 : [SPP_LE](./apps/spp_and_le) , 适用领域：透传, 数传, 扫描设备, 广播设备, 信标, 多机连接, Dongle(usb / bt)
 
-* 蓝牙应用 : [HID](./apps/hid), 适用领域：遥控器, 自拍器, 键盘, 鼠标, 吃鸡王座, 语音遥控器. [文档链接](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/hid/index.html)
+* 蓝牙应用 : [HID](./apps/hid), 适用领域：遥控器, 自拍器, 键盘, 鼠标, 吃鸡王座, 语音遥控器
 
-* 蓝牙应用 : [Mesh](./apps/mesh), 适用领域：物联网节点, 天猫精灵接入, 自组网应用. [文档链接](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/mesh/index.html)
+* 蓝牙应用 : [Mesh](./apps/mesh), 适用领域：物联网节点, 天猫精灵接入, 自组网应用
 
 即将发布：
 
@@ -63,7 +63,7 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 
   `在编译下载代码前，请确保USB 升级工具正确连接并且进入编程模式`
   
-* 蓝牙OTA : [OTA](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/ota/index.html) , 适用领域：单备份，双备份蓝牙升级
+* 蓝牙OTA : [OTA](./doc/固件升级介绍.md) , 适用领域：单备份，双备份蓝牙升级
 
 蓝牙官方认证
 -------------
@@ -80,9 +80,9 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 
 * 开发评估板 ：开发板申请入口[链接](https://shop321455197.taobao.com/?spm=a230r.7195193.1997079397.2.2a6d391d3n5udo)
 
-* 生产烧写工具 : 为量产和裸片烧写而设计, 申请入口 [链接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.8.504d246bXKwyeH&id=620941819219) 并仔细阅读相关 [文档](https://doc.zh-jieli.com/Tools/zh-cn/mass_prod_tools/burner_1tuo2/index.html)
+* 生产烧写工具 : 为量产和裸片烧写而设计, 申请入口 [链接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.8.504d246bXKwyeH&id=620941819219) 并仔细阅读相关 [文档](./doc/stuff/烧写器使用说明文档.pdf)
 
-* 无线测试盒 : 为空中升级/射频标定/快速产品测试而设计, 申请入口 [链接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511), 阅读[文档](https://doc.zh-jieli.com/Tools/zh-cn/mass_prod_tools/testbox_1tuo2/index.html) 获取更多详细信息.
+* 无线测试盒 : 为空中升级/射频标定/快速产品测试而设计, 申请入口 [链接](https://item.taobao.com/item.htm?spm=a1z10.1-c-s.w4004-22883854875.10.504d246bXKwyeH&id=620942507511), 阅读[文档](./doc/stuff/AC690x_1T2测试盒使用说明.pdf) 获取更多详细信息.
 
 
 社区
@@ -90,7 +90,7 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 
 * 技术交流群，钉钉群 ID: `31691148`
 
-* 常见问题集合[链接](./doc/stuff)
+* 常见问题集合[链接](./doc/stuff/AC630X软件问题整理.pdf)
 
 免责声明
 ------------
