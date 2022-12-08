@@ -89,7 +89,7 @@ Community
 
 * [Dingtalk Group] ID: `31691148`
 
-* [Q&A](./doc/stuff)
+* [Q&A](./doc/FAQ)
 
 Disclaimer
 ------------
