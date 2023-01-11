@@ -87,7 +87,7 @@ Hardware
 Community
 --------------
 
-* [Dingtalk Group] ID: `31691148`
+* [Dingtalk Group] ID: `3375034077`
 
 * [Q&A](./doc/FAQ)
 
