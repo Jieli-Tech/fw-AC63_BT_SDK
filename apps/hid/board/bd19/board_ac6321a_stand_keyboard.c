@@ -260,9 +260,10 @@ REGISTER_DEVICES(device_table) = {
 };
 
 /**************************rtc_pr_out config*************************/
-void rtc_port_pr_out(u8 port, bool on)
+int rtc_port_pr_out(u8 port, bool on)
 {
     //bd19没有pr,但是app_stand_keyboard.c有调用,再次定义一个空函数以供兼容br23
+    return 0;
 }
 
 void debug_uart_init(const struct uart_platform_data *data)

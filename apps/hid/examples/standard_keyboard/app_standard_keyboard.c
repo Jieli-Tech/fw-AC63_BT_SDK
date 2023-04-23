@@ -59,7 +59,8 @@
 //2.4G模式： 0---ble ,非0 2.4G配对码
 #define CFG_RF_24G_CODE_ID  (0)
 /* #define CFG_RF_24G_CODE_ID  (0x23) */
-
+#define CFG_RF_24G_CODE_CHANNEL            0x4//2.4g对应的通道                                         
+                                         
 typedef enum {
     EDR_OPERATION_NULL = 0,
     EDR_OPERATION_RECONN,
@@ -502,7 +503,7 @@ static const ble_init_cfg_t standard_keyboard_ble_config = {
 #define LED_OFF() gpio_direction_output(CONNECT_LED_PIN,0);
 //==========================================================
 //上电亮灯
-extern void rtc_port_pr_out(u8 port, bool on);
+extern int rtc_port_pr_out(u8 port, bool on);
 
 static void power_led_on_handler(void *arg)
 {
