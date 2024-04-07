@@ -311,7 +311,12 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 //                                  时钟配置                                       //
 //*********************************************************************************//
-#define TCFG_CLOCK_SYS_SRC					SYS_CLOCK_INPUT_PLL_BT_OSC   //系统时钟源选择
+#if CONFIG_PLL_SOURCE_USING_LRC
+#define TCFG_CLOCK_SYS_SRC     SYS_CLOCK_INPUT_PLL_RCL   //系统时钟源选择
+#else
+#define TCFG_CLOCK_SYS_SRC     SYS_CLOCK_INPUT_PLL_BT_OSC   //系统时钟源选择
+#endif
+
 // #define TCFG_CLOCK_SYS_HZ					12000000                     //系统时钟设置
 // #define TCFG_CLOCK_SYS_HZ					16000000                     //系统时钟设置
 #define TCFG_CLOCK_SYS_HZ					24000000                     //系统时钟设置
@@ -405,7 +410,7 @@ DAC硬件上的连接方式,可选的配置：
 
 #define TCFG_BT_SUPPORT_AAC                       0   //AAC格式支持
 #define TCFG_BT_SUPPORT_G729                      0   //G729格式支持
-
+#if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    1
 #define USER_SUPPORT_PROFILE_HFP    0
 #define USER_SUPPORT_PROFILE_A2DP   0
@@ -413,6 +418,7 @@ DAC硬件上的连接方式,可选的配置：
 #define USER_SUPPORT_PROFILE_HID    0
 #define USER_SUPPORT_PROFILE_PNP    0
 #define USER_SUPPORT_PROFILE_PBAP   0
+#endif
 
 #if TCFG_USER_TWS_ENABLE
 #define TCFG_BD_NUM						          1   //连接设备个数配置

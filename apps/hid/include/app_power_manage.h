@@ -18,6 +18,7 @@ enum {
     POWER_EVENT_POWER_CHANGE,
     POWER_EVENT_SYNC_TWS_VBAT_LEVEL,
     POWER_EVENT_POWER_CHARGE,
+    POWER_EVENT_POWER_SOFTOFF
 };
 
 // int app_power_event_handler(struct device_event *dev);

@@ -47,13 +47,14 @@ enum {
     OSC_TYPE_BT_OSC,
 };
 
-enum {
-    PWR_NO_CHANGE = 0,
-    PWR_LDO33,
-    PWR_LDO15,
-    PWR_DCDC15,
-    PWR_DCDC15_FOR_CHARGE,
-};
+//修改支持预编译方式定义
+#ifndef   PWR_NO_CHANGE
+#define   PWR_NO_CHANGE             0
+#define   PWR_LDO33                 1
+#define   PWR_LDO15                 2
+#define   PWR_DCDC15                3
+#define   PWR_DCDC15_FOR_CHARGE     4
+#endif
 
 enum {
     LONG_4S_RESET = 0,

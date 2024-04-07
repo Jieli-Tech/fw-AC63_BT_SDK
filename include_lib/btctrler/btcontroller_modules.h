@@ -94,11 +94,31 @@ extern const int ESCO_FORWARD_ENABLE;
 /**
  * @brief rf_set_24g_hackable_coded
  *
- * @param coded                 2.4G 配对码
+ *  \param      [in] coded         设置coded码,输入32bits，0101分布需要相对均匀.
+ *  \return     [out]              设置是否正常:1->fail;0->succ;
  */
 /* ----------------------------------------------------------------------------*/
-void rf_set_24g_hackable_coded(int coded);
+u8 rf_set_24g_hackable_coded(u32 coded);
 
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief rf_set_adv_24g_hackable_coded
+ *
+ *  \param      [in] coded         设置coded码,输入32bits，0101分布需要相对均匀.
+ *  \return     [out]              设置是否正常:1->fail;0->succ;
+ */
+/* ----------------------------------------------------------------------------*/
+u8 rf_set_adv_24g_hackable_coded(u32 coded);
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief rf_set_scan_24g_hackable_coded
+ *
+ *  \param      [in] coded         设置coded码,输入32bits，0101分布需要相对均匀.
+ *  \return     [out]              设置是否正常:1->fail;0->succ;
+ */
+/* ----------------------------------------------------------------------------*/
+u8 rf_set_scan_24g_hackable_coded(u32 coded);
 
 /* --------------------------------------------------------------------------*/
 /**
@@ -224,12 +244,34 @@ void bredr_set_fix_pwr(u8 fix);
 /**
  * @brief ble_rf_vendor_fixed_channel
  *
- * @param channel_index: 指定信道定频:          range 0~39 fixed freq, or 0xff --close fixed,default 37、38、39
- * @param pktcnt:        adv方式,1次发包的个数: range 1~3
+ * @param channel_index: 指定信道定频:  range 0~39 fixed freq, or 0xff --close fixed,default 37、38、39
+ * @param pktcnt:        adv方式,1次发包的个数,range 1~3; 做scan,init的时候该参数noused
  * 配置ble 的 adv、scan、init 状态定频
  */
 /* ----------------------------------------------------------------------------*/
 bool ble_rf_vendor_fixed_channel(u8 channel_index, u8 pktcnt);
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief ble_adv_rf_vendor_fixed_channel
+ *
+ * @param channel_index: adv指定信道定频:  range 0~39 fixed freq, or 0xff --close fixed,default 37、38、39
+ * @param pktcnt:        1次发包的个数,range 1~3
+ * 配置ble 的adv状态定频
+ */
+/* ----------------------------------------------------------------------------*/
+bool ble_adv_rf_vendor_fixed_channel(u8 channel_index, u8 pktcnt);
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief ble_scan_rf_vendor_fixed_channel
+ *
+ * @param channel_index: scan指定信道定频:  range 0~39 fixed freq, or 0xff --close fixed,default 37、38、39
+ * @param pktcnt:        scan,init的时候该参数noused
+ * 配置ble 的scan、init 状态定频
+ */
+/* ----------------------------------------------------------------------------*/
+bool ble_scan_rf_vendor_fixed_channel(u8 channel_index, u8 pktcnt);
 
 /* --------------------------------------------------------------------------*/
 /**

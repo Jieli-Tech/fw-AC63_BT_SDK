@@ -110,7 +110,7 @@ void set_ir_clk(void)
     if (IR_IRQ_TIME_IDX == IRQ_TIME3_IDX) {
         bit_clr_ie(IRQ_TIME3_IDX);
     }
-    request_irq(IR_IRQ_TIME_IDX, 5, timer_ir_isr, 0);
+    request_irq(IR_IRQ_TIME_IDX, 3, timer_ir_isr, 0);
     IR_TIME_REG->CON = ((6 << 10) | (index << 4) | BIT(2) | BIT(1) | BIT(0));
 }
 

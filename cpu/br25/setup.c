@@ -35,6 +35,12 @@ int __crc16_mutex_init();
 
 extern int __crc16_mutex_init();
 
+#if TCFG_USE_VIRTUAL_RTC
+extern void get_lp_timer1_status(void);
+extern void vir_set_vm_id(u8 rtc_vm_id, u8 alm_vm_id, u8 sec_vm_id);
+#endif
+
+
 #define DEBUG_SINGAL_IDLE(x)        //if (x) IO_DEBUG_1(A, 7) else IO_DEBUG_0(A, 7)
 #define DEBUG_SINGAL_1S(x)          //if (x) IO_DEBUG_1(A, 6) else IO_DEBUG_0(A, 6)
 
@@ -230,7 +236,6 @@ void setup_arch()
     log_i("         setup_arch %s %s", __DATE__, __TIME__);
     log_i("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
-
     clock_dump();
 
     power_sanity_check();
@@ -242,6 +247,11 @@ void setup_arch()
     reset_source_dump();
 
     power_reset_src = power_reset_source_dump();
+
+#if TCFG_USE_VIRTUAL_RTC
+    vir_set_vm_id(VM_VIR_RTC_TIME, VM_VIR_ALM_TIME, VM_VIR_SUM_NSEC);
+    get_lp_timer1_status();
+#endif
 
     //Register debugger interrupt
     request_irq(0, 2, exception_irq_handler, 0);

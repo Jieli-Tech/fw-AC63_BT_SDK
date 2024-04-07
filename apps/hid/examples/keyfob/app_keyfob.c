@@ -167,7 +167,8 @@ static void keyfob_auto_shutdown_disable(void)
 
 extern void ble_module_enable(u8 en);
 extern void p33_soft_reset(void);
-void keyfob_set_soft_poweroff(void);
+static void keyfob_set_soft_poweroff(void);
+void keyfob_power_event_to_user(u8 event);
 
 enum {
     LED_NULL = 0,
@@ -383,7 +384,7 @@ static void led_on_off(u8 state, u8 res)
             KEYF_LED_OFF();
             led_timeout_count = 0;
             led_timer_stop();
-            keyfob_set_soft_poweroff();
+            keyfob_power_event_to_user(POWER_EVENT_POWER_SOFTOFF);
             if (io_check_timer) {
                 sys_s_hi_timer_del(io_check_timer);
                 io_check_timer = 0;
@@ -623,7 +624,17 @@ static void keyfob_vm_deal(u8 rw_flag)
     }
 }
 
-void keyfob_set_soft_poweroff(void)
+void keyfob_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
+
+static void keyfob_set_soft_poweroff(void)
 {
     log_info("keyfob_set_soft_poweroff\n");
     is_hid_active = 1;
@@ -685,7 +696,7 @@ static void keyfob_app_start()
 
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //无操作定时软关机
-    g_auto_shutdown_timer = sys_timeout_add(NULL, keyfob_set_soft_poweroff, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    g_auto_shutdown_timer = sys_timeout_add((void *)POWER_EVENT_POWER_SOFTOFF, keyfob_power_event_to_user, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
 #endif
     bredr_set_fix_pwr(7);
 }

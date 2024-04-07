@@ -538,9 +538,6 @@ void board_init()
 
 	board_devices_init();
 
-    extern void temp_pll_trim_init(void);
-    temp_pll_trim_init();  //温度trim调用接口
-
 
 	if(get_charge_online_flag()){
     	power_set_mode(PWR_LDO15);

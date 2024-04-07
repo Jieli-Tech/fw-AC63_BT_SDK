@@ -160,8 +160,9 @@ static void testbox_ble_update_state_cbk(int type, u32 state, void *priv)
         } else {
             if ((0 == ret_code->stu) && (0 == ret_code->err_code)) {
 #if TCFG_USER_BLE_ENABLE && (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_NULL) \
-        &&(TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_ADV || defined(CONFIG_MESH_CASE_ENABLE))\
-		&& (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_CLIENT)
+                    &&(TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_ADV)        \
+                    && (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_CLIENT)    \
+                    || defined(CONFIG_MESH_CASE_ENABLE)
 
                 ble_update_ready_jump_flag = 1;
                 /* ble_app_disconnect(); */

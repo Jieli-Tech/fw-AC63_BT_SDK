@@ -46,7 +46,17 @@ extern void at_cmd_init(void);
 extern void set_at_uart_wakeup(void);
 //---------------------------------------------------------------------
 
-void atchar_set_soft_poweroff(void)
+void atchar_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
+
+static void atchar_set_soft_poweroff(void)
 {
     log_info("set_soft_poweroff\n");
     is_app_atchar_active = 1;
@@ -62,7 +72,7 @@ void atchar_set_soft_poweroff(void)
 #endif
 }
 
-void at_set_soft_poweroff(void)
+static void at_set_soft_poweroff(void)
 {
     atchar_set_soft_poweroff();
 }
@@ -228,7 +238,7 @@ static void atchar_key_event_handler(struct sys_event *event)
         if (event_type == KEY_EVENT_TRIPLE_CLICK
             && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {
             //for test
-            atchar_set_soft_poweroff();
+            atchar_power_event_to_user(POWER_EVENT_POWER_SOFTOFF);
             return;
         }
 

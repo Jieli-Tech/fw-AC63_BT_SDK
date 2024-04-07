@@ -46,7 +46,7 @@ int tecent_ll_task_init(void)
     __this->tecent_ll_buf = malloc(malloc_size);
     memset(__this->tecent_ll_buf, 0x0, malloc_size);
     cbuf_init(&(__this->cbuf), __this->tecent_ll_buf, malloc_size);
-    os_task_create(tecent_ll_task, NULL, 31, 512, 0, "tecent_ll_task");
+    os_task_create(tecent_ll_task, NULL, 1, 512, 0, "tecent_ll_task");
     return 0;
 }
 

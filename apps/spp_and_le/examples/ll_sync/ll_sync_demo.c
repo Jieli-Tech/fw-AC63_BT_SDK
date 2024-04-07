@@ -39,7 +39,7 @@
 
 #if CONFIG_APP_LL_SYNC
 
-#if LE_DEBUG_PRINT_EN
+#if 1
 #define log_info(x, ...)  printf("[BLE_llsync]" x " ", ## __VA_ARGS__)
 #define log_info_hexdump  put_buf
 
@@ -154,6 +154,7 @@ static int llsync_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_
     case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
         log_info("disconnect_handle:%04x,reason= %02x\n", little_endian_read_16(packet, 0), packet[2]);
         llsync_con_handle = 0;
+        ble_qiot_advertising_start();
         ble_module_enable(1);
         log_info("llsync_ble_disconnection_handler\n");
         break;

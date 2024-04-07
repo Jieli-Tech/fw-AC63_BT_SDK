@@ -15,6 +15,7 @@
 #include "system/includes.h"
 #include "btcontroller_config.h"
 #include "bt_common.h"
+#include "le_common.h"
 
 /**
  * @brief Bluetooth Module
@@ -117,7 +118,12 @@ const int ESCO_FORWARD_ENABLE = 0;
 const int config_bt_function  =  0;
 
 ///bredr 强制 做 maseter
+#if EDR_EMITTER_EN
+const int config_btctler_bredr_master = 1;
+#else
 const int config_btctler_bredr_master = 0;
+#endif
+
 const int config_btctler_dual_a2dp  = 0;
 
 ///afh maseter 使用app设置的map 通过USER_CTRL_AFH_CHANNEL 设置
@@ -140,10 +146,26 @@ const int config_delete_link_key          = 1;           //配置是否连接失
  */
 #if (TCFG_USER_BLE_ENABLE)
 
-#if CONFIG_APP_CONN_24G
-#define SET_SELECT_PHY_CFG   LE_2M_PHY|LE_CODED_PHY
-#else
+#if (CONFIG_BLE_PHY_SET == CONFIG_SET_1M_PHY)
 #define SET_SELECT_PHY_CFG   0
+const int config_btctler_coded_type = CONN_SET_PHY_OPTIONS_S2;
+#elif (CONFIG_BLE_PHY_SET == CONFIG_SET_2M_PHY)
+#define SET_SELECT_PHY_CFG   LE_2M_PHY
+const int config_btctler_coded_type = CONN_SET_PHY_OPTIONS_S2;
+#elif (CONFIG_BLE_PHY_SET == CONFIG_SET_CODED_S2_PHY)
+#define SET_SELECT_PHY_CFG   LE_CODED_PHY
+const int config_btctler_coded_type = CONN_SET_PHY_OPTIONS_S2;
+#elif (CONFIG_BLE_PHY_SET == CONFIG_SET_CODED_S8_PHY)
+#define SET_SELECT_PHY_CFG   LE_CODED_PHY
+const int config_btctler_coded_type = CONN_SET_PHY_OPTIONS_S8;
+#endif
+
+#if CONFIG_BT_EXT_ADV_MODE
+#define EXT_ADV_CFG          LE_EXTENDED_ADVERTISING | LE_PERIODIC_ADVERTISING | CHANNEL_SELECTION_ALGORITHM_2
+#define EXT_ADV_CFG_HW       2// ext adv/ scan + creat_conn
+#else
+#define EXT_ADV_CFG          0
+#define EXT_ADV_CFG_HW       0
 #endif
 
 #if CONFIG_BT_SM_SUPPORT_ENABLE
@@ -166,7 +188,23 @@ const int config_btctler_le_afh_en = 1;
 const int config_btctler_le_afh_en = 0;
 #endif
 
-const int config_btctler_le_master_multilink = ((CONFIG_BT_GATT_CLIENT_NUM + CONFIG_BT_GATT_SERVER_NUM) > 1) ? 1 : 0;
+//master  multi-link
+#if (CONFIG_BT_GATT_CLIENT_NUM > 1)
+const int config_btctler_le_master_multilink = 1;
+#else
+#if ((CONFIG_BT_GATT_SERVER_NUM == 1) && (CONFIG_BT_GATT_CLIENT_NUM == 1))
+const int config_btctler_le_master_multilink = 1;
+#else
+const int config_btctler_le_master_multilink = 0;
+#endif
+#endif
+
+// Slave multi-link
+#if (CONFIG_BT_GATT_SERVER_NUM > 1)
+const int config_btctler_le_slave_multilink = 1;
+#else
+const int config_btctler_le_slave_multilink = 0;
+#endif
 
 #if CONFIG_APP_NONCONN_24G
 const uint64_t config_btctler_le_features = 0;
@@ -186,17 +224,23 @@ const int config_btctler_le_acl_total_nums = 3;
 #else
 
 #if CONFIG_BLE_HIGH_SPEED
-const uint64_t config_btctler_le_features = SET_ENCRYPTION_CFG | SET_SELECT_PHY_CFG | LE_DATA_PACKET_LENGTH_EXTENSION | LE_2M_PHY;
+const uint64_t config_btctler_le_features = SET_ENCRYPTION_CFG | SET_SELECT_PHY_CFG | LE_DATA_PACKET_LENGTH_EXTENSION | LE_2M_PHY | EXT_ADV_CFG;
 const int config_btctler_le_acl_packet_length = 251;
 #else
-const uint64_t config_btctler_le_features = SET_ENCRYPTION_CFG | SET_SELECT_PHY_CFG;
+const uint64_t config_btctler_le_features = SET_ENCRYPTION_CFG | SET_SELECT_PHY_CFG | EXT_ADV_CFG;
 const int config_btctler_le_acl_packet_length = 27;
 #endif
 
 const int config_btctler_le_roles    = SET_SLAVE_ROLS_CFG | SET_MASTER_ROLS_CFG;
-const int config_btctler_le_hw_nums = CONFIG_BT_GATT_CONNECTION_NUM;
-const int config_btctler_le_rx_nums = (CONFIG_BT_GATT_CONNECTION_NUM * 3) + 4;
-const int config_btctler_le_acl_total_nums = (CONFIG_BT_GATT_CONNECTION_NUM * 3) + 4;
+const int config_btctler_le_hw_nums = CONFIG_BT_GATT_CONNECTION_NUM + EXT_ADV_CFG_HW;
+
+#if CONFIG_APP_FINDMY
+const int config_btctler_le_rx_nums = ((CONFIG_BT_GATT_CONNECTION_NUM + EXT_ADV_CFG_HW) * 3);
+const int config_btctler_le_acl_total_nums = ((CONFIG_BT_GATT_CONNECTION_NUM + EXT_ADV_CFG_HW) * 3);
+#else
+const int config_btctler_le_rx_nums = ((CONFIG_BT_GATT_CONNECTION_NUM + EXT_ADV_CFG_HW) * 3) + 4;
+const int config_btctler_le_acl_total_nums = ((CONFIG_BT_GATT_CONNECTION_NUM + EXT_ADV_CFG_HW) * 3) + 4;
+#endif
 
 #endif
 
@@ -209,14 +253,15 @@ const int config_btctler_le_rx_nums = 0;
 const int config_btctler_le_acl_packet_length = 0;
 const int config_btctler_le_acl_total_nums = 0;
 const int config_btctler_le_master_multilink = 0;
+const int config_btctler_le_slave_multilink = 0;
 #endif
 
 // LE
-const int config_btctler_le_slave_conn_update_winden = 1000;//range:100 to 2500
+const int config_btctler_le_slave_conn_update_winden = 500;//range:100 to 2500
 
 // LE vendor baseband
-const u32 config_vendor_le_bb = 0;
-/* const u32 config_vendor_le_bb = VENDOR_BB_MD_CLOSE | VENDOR_BB_CONNECT_SLOT; */
+u32 config_vendor_le_bb = 0;
+/* u32 config_vendor_le_bb = VENDOR_BB_MD_CLOSE | VENDOR_BB_CONNECT_SLOT; */
 
 /*-----------------------------------------------------------*/
 /**

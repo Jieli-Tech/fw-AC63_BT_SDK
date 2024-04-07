@@ -156,7 +156,6 @@ SECTIONS
         *(.fat_data_code_ex)
 
 #if  (!TCFG_LED7_RUN_RAM)
-        *(.gpio_ram)
         *(.LED_code)
         *(.LED_const)
 		. = ALIGN(4);
@@ -312,11 +311,12 @@ SECTIONS
 #endif
 
 #if  (TCFG_LED7_RUN_RAM)
-        *(.gpio_ram)
         *(.LED_code)
         *(.LED_const)
 		. = ALIGN(4);
 #endif
+        *(.gpio_ram)
+		. = ALIGN(4);
 
 #if (TCFG_CODE_RUN_RAM_FM_MODE)
  	    *(.usr_timer_const)

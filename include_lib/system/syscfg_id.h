@@ -217,6 +217,8 @@ u8 *syscfg_ptr_read(u16 item_id, u16 *len);
 #define     VM_BLE_REMOTE_DB_08         126
 #define     VM_BLE_REMOTE_DB_09         127
 
+#define     VM_MESH_NODE_INFO_START     176 //(+72)
+
 #define     CFG_ONLINE_EQ_DRC_DATA_ID   254//在线调试保存参数的id
 #define     CFG_ONLINE_SAVE_ID          255//在线保存文件大小的id
 

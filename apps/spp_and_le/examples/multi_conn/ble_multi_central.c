@@ -53,7 +53,7 @@
 
 //连接周期
 #define BASE_INTERVAL_MIN   (6)//最小的interval
-#define SET_CONN_INTERVAL   (BASE_INTERVAL_MIN*8) //(unit:1.25ms)
+#define SET_CONN_INTERVAL   (BASE_INTERVAL_MIN*4) //(unit:1.25ms)
 //连接latency
 #define SET_CONN_LATENCY    0  //(unit:conn_interval)
 //连接超时
@@ -96,7 +96,9 @@ const gatt_client_cfg_t mul_client_init_cfg = {
 static scan_conn_cfg_t multi_client_scan_cfg;
 static u16 multi_ble_client_write_handle;
 
-#define MULTI_TEST_WRITE_SEND_DATA            1 //测试发数
+#define MULTI_TEST_WRITE_SEND_DATA            0 //测试发数
+
+#define MULTI_TEST_WRITE_UUID                 0xae03
 //---------------------------------------------------------------------------
 //指定搜索uuid
 //指定搜索uuid
@@ -144,7 +146,7 @@ static const target_uuid_t  jl_multi_search_uuid_table[] = {
 };
 
 //配置多个扫描匹配设备
-static const u8 cetl_test_remoter_name1[] = "AC897N_MX(BLE)";//
+static const u8 cetl_test_remoter_name1[] = "AC637N_MX(BLE)";//
 static const client_match_cfg_t multi_match_device_table[] = {
     {
         .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
@@ -452,6 +454,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         put_buf(&packet[1], 6);
         if (packet[8] == 2) {
             log_info("is TEST_BOX\n");
+            break;
         }
         client_match_cfg_t *match_cfg = ext_param;
         if (match_cfg) {
@@ -490,7 +493,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
                  opt_hdl->search_uuid->services_uuid16, opt_hdl->search_uuid->characteristic_uuid16, opt_hdl->value_handle);
 #if MULTI_TEST_WRITE_SEND_DATA
         //for test
-        if (opt_hdl->search_uuid->characteristic_uuid16 == 0xae01) {
+        if (opt_hdl->search_uuid->characteristic_uuid16 == MULTI_TEST_WRITE_UUID) {
             multi_ble_client_write_handle = opt_hdl->value_handle;
         }
 #endif

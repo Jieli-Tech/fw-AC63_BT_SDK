@@ -34,7 +34,17 @@
 
 static u8 is_app_tuya_active = 0;
 //---------------------------------------------------------------------
-void tuya_set_soft_poweroff(void)
+void tuya_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
+
+static void tuya_set_soft_poweroff(void)
 {
     log_info("set_soft_poweroff\n");
     is_app_tuya_active = 1;
@@ -133,7 +143,7 @@ static void tuya_key_event_handler(struct sys_event *event)
 
         if (event_type == KEY_EVENT_TRIPLE_CLICK
             && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {
-            tuya_set_soft_poweroff();
+            tuya_power_event_to_user(POWER_EVENT_POWER_SOFTOFF);
             return;
         }
 

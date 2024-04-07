@@ -35,6 +35,18 @@ const struct low_power_param power_param = {
     .dcdc_port      = TCFG_DCDC_PORT_SEL,
 };
 
+#if TCFG_USE_VIRTUAL_RTC
+const struct virtual_rtc_param vir_rtc_param = {
+    .osc_type       = OSC_TYPE_LRC,
+#if TCFG_USE_VIRTUAL_RTC
+    .virtual_rtc  = 1,
+    .vir_rtc_trim_time  = 60 * 20,                         //ms,虚拟时钟起中断间隔
+#else
+    .user_nv_timer_en  = 0,
+#endif
+    .nv_timer_interval = 500,                           //s,lp_timer中断间隔
+};
+#endif
 
 /************************** KEY MSG****************************/
 /*各个按键的消息设置，如果USER_CFG中设置了USE_CONFIG_KEY_SETTING为1，则会从配置文件读取对应的配置来填充改结构体*/
@@ -120,21 +132,21 @@ const struct iokey_port iokey_list[] = {
 	{
 		.connect_way = TCFG_IOKEY_POWER_CONNECT_WAY,          //IO按键的连接方式
 		.key_type.one_io.port = TCFG_IOKEY_POWER_ONE_PORT,    //IO按键对应的引脚
-		.key_value = 0,                                       //按键值
+		.key_value = TCFG_IOKEY_POWER_ONE_PORT_VALUE,         //按键值
 	},
 
 #if(!TCFG_UART0_ENABLE || TCFG_UART0_TX_PORT !=	IO_PORT_DP)
 	{
 		.connect_way = TCFG_IOKEY_PREV_CONNECT_WAY,
 		.key_type.one_io.port = TCFG_IOKEY_PREV_ONE_PORT,
-		.key_value = 1,
+		.key_value = TCFG_IOKEY_PREV_ONE_PORT_VALUE,
 	},
 #endif
 
 	{
 		.connect_way = TCFG_IOKEY_NEXT_CONNECT_WAY,
 		.key_type.one_io.port = TCFG_IOKEY_NEXT_ONE_PORT,
-		.key_value = 2,
+		.key_value = TCFG_IOKEY_NEXT_ONE_PORT_VALUE,
 	},
 };
 const struct iokey_platform_data iokey_data = {
@@ -502,6 +514,10 @@ void board_power_init(void)
     /* p33_and_1byte(P3_PINR_CON, 0); */
 
     power_init(&power_param);
+
+#if TCFG_USE_VIRTUAL_RTC
+    virtual_rtc_clk_init(&vir_rtc_param);
+#endif
 
     gpio_longpress_pin0_reset_config(IO_PORTB_01, 0, 0);
     gpio_shortpress_reset_config(0);//1--enable 0--disable

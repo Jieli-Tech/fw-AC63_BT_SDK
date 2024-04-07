@@ -39,6 +39,7 @@
 /* #include "rcsp_bluetooth.h" */
 /* #include "JL_rcsp_api.h" */
 #include "custom_cfg.h"
+#include "le_gatt_common.h"
 
 #if CONFIG_APP_NONCONN_24G
 
@@ -52,7 +53,7 @@ extern void printf_buf(u8 *buf, u32 len);
 #endif
 
 //------------------------------------------------------
-#define CFG_RF_24G_CODE_ID        0x13 // 24g 识别码(24bit),发送接收都要匹配
+#define CFG_RF_24G_CODE_ID        0x5555AAAA // 24g 识别码(32bit),发送接收都要匹配:!!!初始化之后任意非连接时刻修改配对码API:rf_set_conn_24g_coded
 
 //配置收发角色
 #define CONFIG_TX_MODE_ENABLE     1 //发射器
@@ -200,6 +201,14 @@ static void ble_rx_report_handle(adv_report_t *report_pt, u16 len)
     /* r_printf("rx data:%d",report_pt->length); */
     /* put_buf(report_pt->data,report_pt->length);	 */
 
+    if (report_pt == NULL) {
+        return;
+    }
+
+    if (0 == report_pt->length) {
+        return;
+    }
+
     u8 data_len = report_pt->length - 1;
 
     if (!data_len) {
@@ -317,6 +326,28 @@ void bt_ble_init(void)
     ble_rx_enable(1);
 #endif
 
+}
+
+/*************************************************************************************************/
+/*!
+ *  \brief      修改2.4G CODED码
+ *  \param      [in] coded         设置coded码为<=24bits.
+ *  \param      [in] channel       设置广播(GATT_ROLE_SERVER) or 扫描(GATT_ROLE_CLIENT)
+ *
+ *  \note       在初始化完成后任意非连接时刻修改CODED码
+ */
+/*************************************************************************************************/
+void rf_set_conn_24g_coded(u32 coded, u8 channel)
+{
+    if (channel == GATT_ROLE_CLIENT) {
+        ble_rx_enable(0);
+        rf_set_scan_24g_hackable_coded(coded);
+        ble_rx_enable(1);
+    } else {
+        ble_tx_enable(0);
+        rf_set_adv_24g_hackable_coded(coded);
+        ble_tx_enable(1);
+    }
 }
 
 void bt_ble_exit(void)

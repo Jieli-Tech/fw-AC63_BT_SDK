@@ -18,7 +18,7 @@ TOOL_DIR := C:/JL/pi32/bin
 CC    := clang.exe
 CXX   := clang.exe
 LD    := pi32v2-lto-wrapper.exe
-AR    := pi32v2-lto-ar.exe
+AR    := llvm-ar.exe
 MKDIR := mkdir_win -p
 RM    := rm -rf
 
@@ -29,13 +29,13 @@ export PATH:=$(TOOL_DIR);$(PATH)
 
 ## 后处理脚本
 FIXBAT          := ..\..\..\..\tools\utils\fixbat.exe # 用于处理 utf8->gbk 编码问题
-POST_SCRIPT     := ..\..\..\..\cpu\br34\tools\download.bat
-RUN_POST_SCRIPT := $(POST_SCRIPT)
+POST_SCRIPT     := ../../../../cpu/br34/tools/download.bat
+RUN_POST_SCRIPT := ..\..\..\..\cpu\br34\tools\download.bat
 else
 # Linux 下工具链位置
 TOOL_DIR := /opt/jieli/pi32v2/bin
 CC    := clang
-CXX   := clang++
+CXX   := clang
 LD    := lto-wrapper
 AR    := lto-ar
 MKDIR := mkdir -p
@@ -126,12 +126,14 @@ DEFINES := \
 	-DCONFIG_EVENT_KEY_MAP_ENABLE=0 \
 	-DTIMER_POOL_NUM_CONFIG=10 \
 	-DAPP_ASYNC_POOL_NUM_CONFIG=0 \
+	-DSDK_VERSION_CFG_DEFINE=0x230003 \
+	-DSDK_VERSION_DATE_DEFINE=20240331 \
 	-DVFS_ENABLE=1 \
 	-DUSE_SDFILE_NEW=1 \
 	-DVFS_FILE_POOL_NUM_CONFIG=0 \
 	-DSDFILE_VERSION=0x020000 \
 	-DVM_MAX_SIZE_CONFIG=16*1024 \
-	-DVM_ITEM_MAX_NUM=128 \
+	-DVM_ITEM_MAX_NUM=256 \
 	-DCONFIG_TWS_ENABLE \
 	-DCONFIG_HID_CASE_ENABLE \
 	-DCONFIG_TRANSFER_ENABLE \
@@ -146,7 +148,6 @@ DEFINES := \
 	-DCONFIG_ITEM_FORMAT_VM \
 	-DTCFG_APP_BT_EN=1 \
 	-DUSB_PC_NO_APP_MODE \
-	-D__LD__ \
 
 
 DEFINES += $(EXT_CFLAGS) # 额外的一些定义
@@ -162,6 +163,7 @@ INCLUDES := \
 	-I../../../../include_lib/system/device \
 	-I../../../../include_lib/system/fs \
 	-I../../../../include_lib/system/ui \
+	-I../../../../include_lib/system/math/cpu/br34 \
 	-I../../../../include_lib/btctrler \
 	-I../../../../include_lib/btctrler/port/br34 \
 	-I../../../../include_lib/update \
@@ -180,6 +182,7 @@ INCLUDES := \
 	-I../../../../apps/common/third_party_profile/jieli/JL_rcsp \
 	-I../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata \
 	-I../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data \
+	-I../../../../apps/common/third_party_profile/jieli/gatt_common \
 	-I../../../../apps/common/third_party_profile/jieli/online_db \
 	-I../../../../apps/common/third_party_profile/jieli/trans_data_demo \
 	-I../../../../apps/common/third_party_profile/common \
@@ -205,6 +208,7 @@ c_SRC_FILES := \
 	../../../../apps/common/audio/audio_utils.c \
 	../../../../apps/common/audio/decode/decode.c \
 	../../../../apps/common/audio/sine_make.c \
+	../../../../apps/common/bt_common/bt_test_api.c \
 	../../../../apps/common/code_switch/code_switch.c \
 	../../../../apps/common/debug/debug.c \
 	../../../../apps/common/device/key/adkey.c \
@@ -246,7 +250,6 @@ c_SRC_FILES := \
 	../../../../apps/common/jl_kws/jl_kws_audio.c \
 	../../../../apps/common/jl_kws/jl_kws_event.c \
 	../../../../apps/common/jl_kws/jl_kws_main.c \
-	../../../../apps/common/temp_trim/adc_dtemp_alog.c \
 	../../../../apps/common/temp_trim/dtemp_pll_trim.c \
 	../../../../apps/common/third_party_profile/common/custom_cfg.c \
 	../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data/rcsp_hid_inter.c \
@@ -451,11 +454,11 @@ all: pre_build $(OUT_ELF)
 
 pre_build:
 	$(info +PRE-BUILD)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br34/sdk_used_list.c -o ../../../../cpu/br34/sdk_used_list.used
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br34/sdk_ld.c -o ../../../../cpu/br34/sdk.ld
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br34/tools/download.c -o $(POST_SCRIPT)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/br34/sdk_used_list.c -o ../../../../cpu/br34/sdk_used_list.used
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/br34/sdk_ld.c -o ../../../../cpu/br34/sdk.ld
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/br34/tools/download.c -o $(POST_SCRIPT)
 	$(QUITE) $(FIXBAT) $(POST_SCRIPT)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br34/tools/isd_config_rule.c -o ../../../../cpu/br34/tools/isd_config.ini
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/br34/tools/isd_config_rule.c -o ../../../../cpu/br34/tools/isd_config.ini
 
 clean:
 	$(QUITE) $(RM) $(OUT_ELF)
@@ -479,38 +482,38 @@ endif
 
 $(BUILD_DIR)/%.c.o : $(ROOT_PREFIX)/%.c
 	$(info +CC $<)
-	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.S.o : $(ROOT_PREFIX)/%.S
 	$(info +AS $<)
-	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.s.o : $(ROOT_PREFIX)/%.s
 	$(info +AS $<)
-	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cpp.o : $(ROOT_PREFIX)/%.cpp
 	$(info +CXX $<)
-	@$(MKDIR) $(@D)
-	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cxx.o : $(ROOT_PREFIX)/%.cxx
 	$(info +CXX $<)
-	@$(MKDIR) $(@D)
-	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cc.o : $(ROOT_PREFIX)/%.cc
 	$(info +CXX $<)
-	@$(MKDIR) $(@D)
-	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 -include $(DEP_FILES)

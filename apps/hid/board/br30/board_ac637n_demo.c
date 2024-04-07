@@ -509,13 +509,6 @@ void board_init()
     devices_init();
 
 	board_devices_init();
-    //温度trim调用接口
-    extern void temp_pll_trim_init(void);
-    temp_pll_trim_init();
-
-
-    extern void temp_pll_trim_init(void);
-    temp_pll_trim_init();  //温度trim调用接口
 
 
 #if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE

@@ -122,6 +122,19 @@
 #define KEY_NUM                            	3
 
 #define MULT_KEY_ENABLE						DISABLE 		//是否使能组合按键消息, 使能后需要配置组合按键映射表
+
+//*********************************************************************************//
+//                         softoff wakeup key_driver 配置                          //
+//*********************************************************************************//
+#define TCFG_SOFTOFF_WAKEUP_KEY_DRIVER_ENABLE       DISABLE_THIS_MOUDLE  //软关机唤醒按键不丢键使能, 目前只支持IOKEY
+
+//请根据board.c中的wakeup_param列表填写
+#define TCFG_WAKEUP_PORT_POWER_SRC          BIT(1)  //唤醒口port[1]
+#define TCFG_WAKEUP_PORT_PREV_SRC           BIT(2)  //唤醒口port[2]
+#define TCFG_WAKEUP_PORT_NEXT_SRC           BIT(3)  //唤醒口port[3]
+
+#define TCFG_LONGKEY_SUPPLEMENT_TIME        15  //长按补充时间,请根据实际测量(power_on——key_init)时间填写 15*10ms(scan_time)=150ms
+
 //*********************************************************************************//
 //                                 iokey 配置                                      //
 //*********************************************************************************//
@@ -130,12 +143,15 @@
 #define TCFG_IOKEY_POWER_CONNECT_WAY		ONE_PORT_TO_LOW    //按键一端接低电平一端接IO
 
 #define TCFG_IOKEY_POWER_ONE_PORT			IO_PORTB_01        //IO按键端口
+#define TCFG_IOKEY_POWER_ONE_PORT_VALUE		0x1                //power port键值，不能设为0,key_value初始化为0,会误推keep事件
 
 #define TCFG_IOKEY_PREV_CONNECT_WAY			ONE_PORT_TO_LOW  //按键一端接低电平一端接IO
 #define TCFG_IOKEY_PREV_ONE_PORT			IO_PORTB_00
+#define TCFG_IOKEY_PREV_ONE_PORT_VALUE		0x2              //prev port键值
 
 #define TCFG_IOKEY_NEXT_CONNECT_WAY 		ONE_PORT_TO_LOW  //按键一端接低电平一端接IO
 #define TCFG_IOKEY_NEXT_ONE_PORT			IO_PORTB_02
+#define TCFG_IOKEY_NEXT_ONE_PORT_VALUE		0x3              //next port键值
 
 //*********************************************************************************//
 //                                 adkey 配置                                      //
@@ -407,7 +423,11 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 //                                  时钟配置                                       //
 //*********************************************************************************//
-#define TCFG_CLOCK_SYS_SRC					SYS_CLOCK_INPUT_PLL_BT_OSC   //系统时钟源选择
+#if CONFIG_PLL_SOURCE_USING_LRC
+#define TCFG_CLOCK_SYS_SRC     SYS_CLOCK_INPUT_PLL_RCL   //系统时钟源选择
+#else
+#define TCFG_CLOCK_SYS_SRC     SYS_CLOCK_INPUT_PLL_BT_OSC   //系统时钟源选择
+#endif
 #define TCFG_CLOCK_SYS_HZ					24000000                     //系统时钟设置
 #define TCFG_CLOCK_OSC_HZ					24000000                     //外界晶振频率设置
 #define TCFG_CLOCK_MODE                     CLOCK_MODE_ADAPTIVE

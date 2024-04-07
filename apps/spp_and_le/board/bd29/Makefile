@@ -18,7 +18,7 @@ TOOL_DIR := C:/JL/pi32/bin
 CC    := clang.exe
 CXX   := clang.exe
 LD    := q32s-lto-wrapper.exe
-AR    := q32s-lto-ar.exe
+AR    := llvm-ar.exe
 MKDIR := mkdir_win -p
 RM    := rm -rf
 
@@ -29,13 +29,13 @@ export PATH:=$(TOOL_DIR);$(PATH)
 
 ## 后处理脚本
 FIXBAT          := ..\..\..\..\tools\utils\fixbat.exe # 用于处理 utf8->gbk 编码问题
-POST_SCRIPT     := ..\..\..\..\cpu\bd29\tools\download.bat
-RUN_POST_SCRIPT := $(POST_SCRIPT)
+POST_SCRIPT     := ../../../../cpu/bd29/tools/download.bat
+RUN_POST_SCRIPT := ..\..\..\..\cpu\bd29\tools\download.bat
 else
 # Linux 下工具链位置
 TOOL_DIR := /opt/jieli/q32s/bin
 CC    := clang
-CXX   := clang++
+CXX   := clang
 LD    := lto-wrapper
 AR    := lto-ar
 MKDIR := mkdir -p
@@ -112,12 +112,14 @@ DEFINES := \
 	-DCONFIG_EVENT_KEY_MAP_ENABLE=0 \
 	-DTIMER_POOL_NUM_CONFIG=10 \
 	-DAPP_ASYNC_POOL_NUM_CONFIG=0 \
+	-DSDK_VERSION_CFG_DEFINE=0x230003 \
+	-DSDK_VERSION_DATE_DEFINE=20240331 \
 	-DVFS_ENABLE=1 \
 	-DUSE_SDFILE_NEW=1 \
 	-DVFS_FILE_POOL_NUM_CONFIG=0 \
 	-DSDFILE_VERSION=0x020000 \
 	-DVM_MAX_SIZE_CONFIG=16*1024 \
-	-DVM_ITEM_MAX_NUM=128 \
+	-DVM_ITEM_MAX_NUM=256 \
 	-DCONFIG_TWS_ENABLE \
 	-DCONFIG_SPP_AND_LE_CASE_ENABLE \
 	-DCONFIG_TRANSFER_ENABLE \
@@ -131,7 +133,6 @@ DEFINES := \
 	-DCONFIG_ITEM_FORMAT_VM \
 	-DTCFG_APP_BT_EN=1 \
 	-DUSB_PC_NO_APP_MODE \
-	-D__LD__ \
 
 
 DEFINES += $(EXT_CFLAGS) # 额外的一些定义
@@ -147,6 +148,7 @@ INCLUDES := \
 	-I../../../../include_lib/system/device \
 	-I../../../../include_lib/system/fs \
 	-I../../../../include_lib/system/ui \
+	-I../../../../include_lib/system/math/cpu/bd29 \
 	-I../../../../include_lib/btctrler \
 	-I../../../../include_lib/btctrler/port/bd29 \
 	-I../../../../include_lib/update \
@@ -204,6 +206,12 @@ c_SRC_FILES := \
 	../../../../apps/common/bt_common/bt_test_api.c \
 	../../../../apps/common/cJSON/cJSON.c \
 	../../../../apps/common/debug/debug.c \
+	../../../../apps/common/device/gSensor/fmy/SC7A20_E.c \
+	../../../../apps/common/device/gSensor/fmy/SC7A20_TR.c \
+	../../../../apps/common/device/gSensor/fmy/gSensor_manage.c \
+	../../../../apps/common/device/gSensor/fmy/gsensor_api.c \
+	../../../../apps/common/device/gSensor/fmy/msa310.c \
+	../../../../apps/common/device/gSensor/fmy/msa310_function.c \
 	../../../../apps/common/device/key/adkey.c \
 	../../../../apps/common/device/key/iokey.c \
 	../../../../apps/common/device/key/irkey.c \
@@ -232,6 +240,7 @@ c_SRC_FILES := \
 	../../../../apps/common/device/usb/host/usb_storage.c \
 	../../../../apps/common/device/usb/usb_config.c \
 	../../../../apps/common/device/usb/usb_host_config.c \
+	../../../../apps/common/temp_trim/dtemp_pll_trim.c \
 	../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo/ll_task.c \
 	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_import.c \
 	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_llsync_data.c \
@@ -346,6 +355,11 @@ c_SRC_FILES := \
 	../../../../apps/spp_and_le/examples/dongle/ota_dg_central.c \
 	../../../../apps/spp_and_le/examples/dongle/usb_hid_devices.c \
 	../../../../apps/spp_and_le/examples/dongle/usb_second_hid_devices.c \
+	../../../../apps/spp_and_le/examples/findmy/app_fmy.c \
+	../../../../apps/spp_and_le/examples/findmy/ble_fmy.c \
+	../../../../apps/spp_and_le/examples/findmy/ble_fmy_fmna.c \
+	../../../../apps/spp_and_le/examples/findmy/ble_fmy_ota.c \
+	../../../../apps/spp_and_le/examples/findmy/ble_fmy_sensor_uart.c \
 	../../../../apps/spp_and_le/examples/hilink/app_hilink.c \
 	../../../../apps/spp_and_le/examples/hilink/hilink_demo.c \
 	../../../../apps/spp_and_le/examples/idle/app_idle.c \
@@ -493,11 +507,11 @@ all: pre_build $(OUT_ELF)
 
 pre_build:
 	$(info +PRE-BUILD)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/bd29/sdk_used_list.c -o ../../../../cpu/bd29/sdk_used_list.used
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/bd29/sdk_ld.c -o ../../../../cpu/bd29/sdk.ld
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/bd29/tools/download.c -o $(POST_SCRIPT)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/bd29/sdk_used_list.c -o ../../../../cpu/bd29/sdk_used_list.used
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/bd29/sdk_ld.c -o ../../../../cpu/bd29/sdk.ld
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/bd29/tools/download.c -o $(POST_SCRIPT)
 	$(QUITE) $(FIXBAT) $(POST_SCRIPT)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/bd29/tools/isd_config_rule.c -o ../../../../cpu/bd29/tools/isd_config.ini
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/bd29/tools/isd_config_rule.c -o ../../../../cpu/bd29/tools/isd_config.ini
 
 clean:
 	$(QUITE) $(RM) $(OUT_ELF)
@@ -521,38 +535,38 @@ endif
 
 $(BUILD_DIR)/%.c.o : $(ROOT_PREFIX)/%.c
 	$(info +CC $<)
-	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.S.o : $(ROOT_PREFIX)/%.S
 	$(info +AS $<)
-	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.s.o : $(ROOT_PREFIX)/%.s
 	$(info +AS $<)
-	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cpp.o : $(ROOT_PREFIX)/%.cpp
 	$(info +CXX $<)
-	@$(MKDIR) $(@D)
-	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cxx.o : $(ROOT_PREFIX)/%.cxx
 	$(info +CXX $<)
-	@$(MKDIR) $(@D)
-	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cc.o : $(ROOT_PREFIX)/%.cc
 	$(info +CXX $<)
-	@$(MKDIR) $(@D)
-	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 -include $(DEP_FILES)

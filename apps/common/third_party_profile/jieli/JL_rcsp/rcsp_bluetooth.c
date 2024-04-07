@@ -379,11 +379,13 @@ static u32 JL_opcode_get_target_info(void *priv, u8 OpCode, u8 OpCode_SN, u8 *da
 
     if (mask & BIT(ATTR_TEYP_BLE_ADDR)) {
         rcsp_printf(" ATTR_TEYP_BLE_ADDR\n");
-        extern void lib_make_ble_address(u8 * ble_address, u8 * edr_address);
+        /* extern void lib_make_ble_address(u8 * ble_address, u8 * edr_address); */
+        extern int le_controller_get_mac(void *addr);
         extern const u8 *bt_get_mac_addr();
         u8 taddr_buf[7];
         taddr_buf[0] = 0;
-        lib_make_ble_address(taddr_buf + 1, (void *)bt_get_mac_addr());
+        /* lib_make_ble_address(taddr_buf + 1, (void *)bt_get_mac_addr()); */
+        le_controller_get_mac(taddr_buf + 1);
         for (u8 i = 0; i < (6 / 2); i++) {
             taddr_buf[i + 1] ^= taddr_buf[7 - i - 1];
             taddr_buf[7 - i - 1] ^= taddr_buf[i + 1];
@@ -841,6 +843,15 @@ static void JL_rcsp_resend_timer_opt(u8 flag, u32 usec)
 static void JL_rcsp_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len)
 {
     rcsp_printf("JL_ble_cmd_resp op = %d\n", OpCode);
+
+    if (__this->JL_ble_status != BLE_ST_NOTIFY_IDICATE) {
+        /*从机多机处理部分,同步深圳办的修改，2022-12-29*/
+        if (__this->rcsp_ble && __this->rcsp_ble->adv_enable) {
+            __this->rcsp_ble->adv_enable(NULL, 0);
+        }
+        rcsp_printf("%s[__this->JL_ble_status:%d]", __func__, __this->JL_ble_status);
+        __this->JL_ble_status = BLE_ST_NOTIFY_IDICATE;
+    }
 
     switch (OpCode) {
     case JL_OPCODE_GET_TARGET_FEATURE:

@@ -55,9 +55,8 @@ int app_power_event_handler(struct device_event *dev, void (*set_soft_poweroff_c
 {
     int ret = false;
 
-#if(TCFG_SYS_LVD_EN == 1)
-
     switch (dev->event) {
+#if(TCFG_SYS_LVD_EN == 1)
     case POWER_EVENT_POWER_NORMAL:
         break;
     case POWER_EVENT_POWER_WARNING:
@@ -89,11 +88,12 @@ int app_power_event_handler(struct device_event *dev, void (*set_soft_poweroff_c
             lowpower_timer = 0 ;
         }
         break;
+#endif
+    case POWER_EVENT_POWER_SOFTOFF:
+        set_soft_poweroff_call();
     default:
         break;
     }
-#endif
-
     return ret;
 }
 

@@ -166,7 +166,13 @@
 #define __BANK_CLOCK
 #endif
 
-
+#ifdef CONFIG_BANK_NUM_HCRP
+#define __BANK_HCRP_ENTRY   __BANK_ENTRY(CONFIG_BANK_NUM_HCRP)
+#define __BANK_HCRP         __BANK_NUM(CONFIG_BANK_NUM_HCRP)
+#else
+#define __BANK_HCRP_ENTRY
+#define __BANK_HCRP
+#endif
 
 void load_overlay_code(int num);
 void bank_syscall_entry(void);

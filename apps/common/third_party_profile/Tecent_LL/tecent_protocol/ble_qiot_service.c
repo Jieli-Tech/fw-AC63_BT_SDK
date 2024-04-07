@@ -406,7 +406,6 @@ int ble_device_info_msg_handle(const char *in_buf, int in_len)
         ble_qiot_log_i("get msg connect success");
         llsync_connection_state_set(E_LLSYNC_CONNECTED);
         ret = ble_event_report_device_info();
-        //llsync_device_state_sync();
         break;
     case E_DEV_MSG_CONN_FAIL:
         ble_qiot_log_i("get msg connect fail");
@@ -454,7 +453,6 @@ int ble_device_info_msg_handle(const char *in_buf, int in_len)
 #endif
     case E_DEV_MSG_SET_MTU_RESULT:
         ble_inform_mtu_result(p_data + 1, p_data_len - 1);
-        llsync_device_state_sync();
         break;
     default:
         ble_qiot_log_e("unknow type %d", ch);

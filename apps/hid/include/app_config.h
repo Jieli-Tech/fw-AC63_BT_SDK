@@ -33,6 +33,9 @@
 #define SNIFF_MODE_RESET_ANCHOR             0//待机固定500ms sniff周期,待机功耗较低,按键唤醒有延时
 #endif
 
+//V5.0 扩展广播/扫描使能
+#define CONFIG_BT_EXT_ADV_MODE            0
+
 #define CONFIG_HOGP_COMMON_ENABLE          1 //公共的hogp
 
 //蓝牙BLE配置
@@ -47,6 +50,8 @@
 #error "SUPPORT MAX IS 8 !!!"
 #endif
 
+//BLE做主机，使能是否支持搜索连接JL的测试盒
+#define SUPPORT_TEST_BOX_BLE_MASTER_TEST_EN	   0
 
 //APP应用默认配置
 #define TCFG_AEC_ENABLE                     1
@@ -63,13 +68,22 @@
 
 #define APP_PRIVATE_PROFILE_CFG
 
+#if CONFIG_BT_EXT_ADV_MODE
+#define APP_TO_ALLOW_EXT_ADV
+#endif
+
 #if (CONFIG_BT_MODE == BT_NORMAL)
 //enable dut mode,need disable sleep(TCFG_LOWPOWER_LOWPOWER_SEL = 0)
 #define TCFG_NORMAL_SET_DUT_MODE                  0
 #if TCFG_NORMAL_SET_DUT_MODE
 #undef  TCFG_LOWPOWER_LOWPOWER_SEL
 #define TCFG_LOWPOWER_LOWPOWER_SEL                0
+#if TCFG_USER_EDR_ENABLE && TCFG_USER_BLE_ENABLE
+//不支持同时打开
+#error "dut need disable one bt!!!"
 #endif
+
+#endif//if TCFG_NORMAL_SET_DUT_MODE
 
 #else
 

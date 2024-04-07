@@ -23,12 +23,16 @@
 #include "debug.h"
 
 /*对应bt的tx功率挡位,SDK默认使用接近 0 dbm 功率挡位*/
+#if FMY_FMCA_TEST_MODE
+#define  SET_BLE_TX_POWER_LEVEL        (10)// set >=4 dbm
+#else
 #if (defined CONFIG_CPU_BR30)
 #define  SET_BLE_TX_POWER_LEVEL        (4)
 #elif (defined CONFIG_CPU_BR34)
 #define  SET_BLE_TX_POWER_LEVEL        (7)
 #else
 #define  SET_BLE_TX_POWER_LEVEL        (6)
+#endif
 #endif
 
 void lp_winsize_init(struct lp_ws_t *lp);
@@ -217,9 +221,16 @@ void cfg_file_parse(u8 idx)
         log_debug("read rf err\n");
         app_var.rf_power = 10;
     }
+
+#if TCFG_NORMAL_SET_DUT_MODE
+    log_info("===rf dut level");
+    bt_max_pwr_set(10, 5, 8, 10);//set max level
+#else
     bt_max_pwr_set(app_var.rf_power, 5, 8, SET_BLE_TX_POWER_LEVEL);
+#endif
+
     /* g_printf("rf config:%d\n", app_var.rf_power); */
-    log_info("rf config:%d\n", app_var.rf_power);
+    log_info("rf config:%d,%d\n", app_var.rf_power, SET_BLE_TX_POWER_LEVEL);
 
     app_var.music_volume = 14;
     app_var.wtone_volume = 14;

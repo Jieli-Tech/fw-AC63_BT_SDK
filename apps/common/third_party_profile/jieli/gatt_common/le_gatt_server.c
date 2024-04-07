@@ -51,8 +51,6 @@
 /* #define log_info_hexdump  put_buf */
 /* #endif */
 
-#define EXT_ADV_MODE_EN              0
-
 //----------------------------------------------------------------------------------------
 typedef struct {
     gatt_server_cfg_t *server_config; //server 配置
@@ -265,16 +263,23 @@ void ble_gatt_server_passkey_input(u32 *key, u16 conn_handle)
 void ble_gatt_server_sm_packet(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
     sm_just_event_t *event = (void *)packet;
-    u32 tmp32;
+    u32 tmp32, ret;
     switch (packet_type) {
     case HCI_EVENT_PACKET:
         switch (hci_event_packet_get_type(packet)) {
         case SM_EVENT_JUST_WORKS_REQUEST:
             //发送接受配对命令sm_just_works_confirm,否则不发
             sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
-            log_info("first pair, %04x->Just Works Confirmed.\n", event->con_handle);
             __this->server_encrypt_process = LINK_ENCRYPTION_PAIR_JUST_WORKS;
-            __gatt_server_event_callback_handler(GATT_COMM_EVENT_ENCRYPTION_REQUEST, &event->con_handle, 2, &__this->server_encrypt_process);
+
+            ret = __gatt_server_event_callback_handler(GATT_COMM_EVENT_ENCRYPTION_REQUEST, &event->con_handle, 2, &__this->server_encrypt_process);
+            if (ret) {
+                log_info("first pair, %04x->Just decline.\n", event->con_handle);
+                sm_bonding_decline(sm_event_just_works_request_get_handle(packet));
+            } else {
+                log_info("first pair, %04x->Just Works Confirmed.\n", event->con_handle);
+                sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            }
             break;
 
         case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
@@ -298,6 +303,7 @@ void ble_gatt_server_sm_packet(uint8_t packet_type, uint16_t channel, uint8_t *p
             switch (event->data[0]) {
             case SM_EVENT_PAIR_SUB_RECONNECT_START:
                 __this->server_encrypt_process = LINK_ENCRYPTION_RECONNECT;
+                __gatt_server_event_callback_handler(GATT_COMM_EVENT_ENCRYPTION_REQUEST, &event->con_handle, 2, &__this->server_encrypt_process);
                 log_info("reconnect start\n");
                 break;
 
@@ -580,7 +586,7 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
 }
 
 
-#if EXT_ADV_MODE_EN
+#if EXT_ADV_MODE_EN ||PERIODIC_ADV_MODE_EN
 
 #define EXT_ADV_NAME                    'J', 'L', '_', 'E', 'X', 'T', '_', 'A', 'D', 'V'
 /* #define EXT_ADV_NAME                    "JL_EXT_ADV" */
@@ -589,17 +595,22 @@ void ble_gatt_server_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
     0x03, 0x02, 0xF0, 0xFF, \
     BYTE_LEN(EXT_ADV_NAME) + 1, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, EXT_ADV_NAME
 
-const struct ext_advertising_param ext_adv_param = {
+const le_set_ext_adv_param_t ext_adv_param = {
     .Advertising_Handle = 0,
+#if PERIODIC_ADV_MODE_EN
+    .Advertising_Event_Properties = 0,
+#else
     .Advertising_Event_Properties = 1,
+#endif /*PERIODIC_ADV_MODE_EN*/
     .Primary_Advertising_Interval_Min = {30, 0, 0},
     .Primary_Advertising_Interval_Max = {30, 0, 0},
     .Primary_Advertising_Channel_Map = 7,
     .Primary_Advertising_PHY = ADV_SET_1M_PHY,
     .Secondary_Advertising_PHY = ADV_SET_1M_PHY,
+    .Advertising_SID  = CUR_ADVERTISING_SID,
 };
 
-const struct ext_advertising_data ext_adv_data = {
+const le_set_ext_adv_data_t ext_adv_data = {
     .Advertising_Handle = 0,
     .Operation = 3,
     .Fragment_Preference = 0,
@@ -607,7 +618,7 @@ const struct ext_advertising_data ext_adv_data = {
     .Advertising_Data = EXT_ADV_DATA,
 };
 
-const struct ext_advertising_enable ext_adv_enable = {
+const le_set_ext_adv_en_t ext_adv_enable = {
     .Enable = 1,
     .Number_of_Sets = 1,
     .Advertising_Handle = 0,
@@ -615,7 +626,7 @@ const struct ext_advertising_enable ext_adv_enable = {
     .Max_Extended_Advertising_Events = 0,
 };
 
-const struct ext_advertising_enable ext_adv_disable = {
+const le_set_ext_adv_en_t ext_adv_disable = {
     .Enable = 0,
     .Number_of_Sets = 1,
     .Advertising_Handle = 0,
@@ -625,6 +636,40 @@ const struct ext_advertising_enable ext_adv_disable = {
 
 #endif /* EXT_ADV_MODE_EN */
 
+#if PERIODIC_ADV_MODE_EN
+
+#if CHAIN_DATA_TEST_EN
+#define PERIODIC_ADV_DATA                    \
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+#else
+#define PERIODIC_ADV_DATA               EXT_ADV_DATA
+#endif /* CHAIN_DATA_TEST_EN */
+
+static const struct periodic_advertising_param periodic_adv_param = {
+    .Advertising_Handle = CUR_ADV_HANDLE,
+    .Periodic_Advertising_Interval_Min = 50,
+    .Periodic_Advertising_Interval_Max = 50,
+    .Periodic_Advertising_Properties = 0,
+};
+
+static const struct periodic_advertising_data periodic_adv_data = {
+    .Advertising_Handle = CUR_ADV_HANDLE,
+    .Operation = 3,
+    .Advertising_Data_Length = BYTE_LEN(PERIODIC_ADV_DATA),
+    .Advertising_Data = PERIODIC_ADV_DATA,
+};
+
+static const struct periodic_advertising_enable periodic_adv_enable = {
+    .Enable = 1,
+    .Advertising_Handle = CUR_ADV_HANDLE,
+};
+
+static const struct periodic_advertising_enable periodic_adv_disable = {
+    .Enable = 0,
+    .Advertising_Handle = CUR_ADV_HANDLE,
+};
+
+#endif 	/*PERIODIC_ADV_MODE_EN*/
 /*************************************************************************************************/
 /*!
  *  \brief      检查是否自动开广播
@@ -731,11 +776,21 @@ int ble_gatt_server_adv_enable(u32 en)
 #if EXT_ADV_MODE_EN
     if (en) {
         ble_op_set_ext_adv_param(&ext_adv_param, sizeof(ext_adv_param));
-        log_info_hexdump(&ext_adv_data, sizeof(ext_adv_data));
         ble_op_set_ext_adv_data(&ext_adv_data, sizeof(ext_adv_data));
         ble_op_set_ext_adv_enable(&ext_adv_enable, sizeof(ext_adv_enable));
     } else {
         ble_op_set_ext_adv_enable(&ext_adv_disable, sizeof(ext_adv_disable));
+    }
+#elif PERIODIC_ADV_MODE_EN
+    if (en) {
+        ble_op_set_ext_adv_param(&ext_adv_param, sizeof(ext_adv_param));
+        ble_user_cmd_prepare(BLE_CMD_PERIODIC_ADV_PARAM, 2, &periodic_adv_param, sizeof(periodic_adv_param));
+        ble_user_cmd_prepare(BLE_CMD_PERIODIC_ADV_DATA, 2, &periodic_adv_data, sizeof(periodic_adv_data));
+        ble_user_cmd_prepare(BLE_CMD_PERIODIC_ADV_ENABLE, 2, &periodic_adv_enable, sizeof(periodic_adv_enable));
+        ble_op_set_ext_adv_enable(&ext_adv_enable, sizeof(ext_adv_enable));
+    } else {
+        ble_op_set_ext_adv_enable(&ext_adv_disable, sizeof(ext_adv_disable));
+        ble_user_cmd_prepare(BLE_CMD_PERIODIC_ADV_ENABLE, 2, &periodic_adv_disable, sizeof(periodic_adv_disable));
     }
 #else
     if (en) {

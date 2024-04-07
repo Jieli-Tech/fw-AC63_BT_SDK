@@ -18,7 +18,7 @@ TOOL_DIR := C:/JL/pi32/bin
 CC    := clang.exe
 CXX   := clang.exe
 LD    := pi32v2-lto-wrapper.exe
-AR    := pi32v2-lto-ar.exe
+AR    := llvm-ar.exe
 MKDIR := mkdir_win -p
 RM    := rm -rf
 
@@ -29,13 +29,13 @@ export PATH:=$(TOOL_DIR);$(PATH)
 
 ## 后处理脚本
 FIXBAT          := ..\..\..\..\tools\utils\fixbat.exe # 用于处理 utf8->gbk 编码问题
-POST_SCRIPT     := ..\..\..\..\cpu\br25\tools\download.bat
-RUN_POST_SCRIPT := $(POST_SCRIPT)
+POST_SCRIPT     := ../../../../cpu/br25/tools/download.bat
+RUN_POST_SCRIPT := ..\..\..\..\cpu\br25\tools\download.bat
 else
 # Linux 下工具链位置
 TOOL_DIR := /opt/jieli/pi32v2/bin
 CC    := clang
-CXX   := clang++
+CXX   := clang
 LD    := lto-wrapper
 AR    := lto-ar
 MKDIR := mkdir -p
@@ -119,12 +119,14 @@ DEFINES := \
 	-DCONFIG_EVENT_KEY_MAP_ENABLE=0 \
 	-DTIMER_POOL_NUM_CONFIG=10 \
 	-DAPP_ASYNC_POOL_NUM_CONFIG=0 \
+	-DSDK_VERSION_CFG_DEFINE=0x230003 \
+	-DSDK_VERSION_DATE_DEFINE=20240331 \
 	-DVFS_ENABLE=1 \
 	-DUSE_SDFILE_NEW=1 \
 	-DVFS_FILE_POOL_NUM_CONFIG=0 \
 	-DSDFILE_VERSION=0x020000 \
 	-DVM_MAX_SIZE_CONFIG=16*1024 \
-	-DVM_ITEM_MAX_NUM=128 \
+	-DVM_ITEM_MAX_NUM=256 \
 	-DCONFIG_TWS_ENABLE \
 	-DCONFIG_SPP_AND_LE_CASE_ENABLE \
 	-DCONFIG_TRANSFER_ENABLE \
@@ -139,7 +141,6 @@ DEFINES := \
 	-DCONFIG_ITEM_FORMAT_VM \
 	-DTCFG_APP_BT_EN=1 \
 	-DUSB_PC_NO_APP_MODE \
-	-D__LD__ \
 
 
 DEFINES += $(EXT_CFLAGS) # 额外的一些定义
@@ -155,6 +156,7 @@ INCLUDES := \
 	-I../../../../include_lib/system/device \
 	-I../../../../include_lib/system/fs \
 	-I../../../../include_lib/system/ui \
+	-I../../../../include_lib/system/math/cpu/br25 \
 	-I../../../../include_lib/btctrler \
 	-I../../../../include_lib/btctrler/port/br25 \
 	-I../../../../include_lib/update \
@@ -217,6 +219,12 @@ c_SRC_FILES := \
 	../../../../apps/common/bt_common/bt_test_api.c \
 	../../../../apps/common/cJSON/cJSON.c \
 	../../../../apps/common/debug/debug.c \
+	../../../../apps/common/device/gSensor/fmy/SC7A20_E.c \
+	../../../../apps/common/device/gSensor/fmy/SC7A20_TR.c \
+	../../../../apps/common/device/gSensor/fmy/gSensor_manage.c \
+	../../../../apps/common/device/gSensor/fmy/gsensor_api.c \
+	../../../../apps/common/device/gSensor/fmy/msa310.c \
+	../../../../apps/common/device/gSensor/fmy/msa310_function.c \
 	../../../../apps/common/device/key/adkey.c \
 	../../../../apps/common/device/key/iokey.c \
 	../../../../apps/common/device/key/irkey.c \
@@ -249,6 +257,7 @@ c_SRC_FILES := \
 	../../../../apps/common/jl_kws/jl_kws_audio.c \
 	../../../../apps/common/jl_kws/jl_kws_event.c \
 	../../../../apps/common/jl_kws/jl_kws_main.c \
+	../../../../apps/common/temp_trim/dtemp_pll_trim.c \
 	../../../../apps/common/third_party_profile/Tecent_LL/tecent_ll_demo/ll_task.c \
 	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_import.c \
 	../../../../apps/common/third_party_profile/Tecent_LL/tecent_protocol/ble_qiot_llsync_data.c \
@@ -337,6 +346,7 @@ c_SRC_FILES := \
 	../../../../apps/spp_and_le/board/br25/board_ac6369c_demo.c \
 	../../../../apps/spp_and_le/board/br25/board_ac6369f_demo.c \
 	../../../../apps/spp_and_le/board/br25/board_ac636n_demo.c \
+	../../../../apps/spp_and_le/board/br25/board_ac636n_fmy.c \
 	../../../../apps/spp_and_le/config/lib_btctrler_config.c \
 	../../../../apps/spp_and_le/config/lib_btstack_config.c \
 	../../../../apps/spp_and_le/config/lib_driver_config.c \
@@ -370,6 +380,11 @@ c_SRC_FILES := \
 	../../../../apps/spp_and_le/examples/dongle/ota_dg_central.c \
 	../../../../apps/spp_and_le/examples/dongle/usb_hid_devices.c \
 	../../../../apps/spp_and_le/examples/dongle/usb_second_hid_devices.c \
+	../../../../apps/spp_and_le/examples/findmy/app_fmy.c \
+	../../../../apps/spp_and_le/examples/findmy/ble_fmy.c \
+	../../../../apps/spp_and_le/examples/findmy/ble_fmy_fmna.c \
+	../../../../apps/spp_and_le/examples/findmy/ble_fmy_ota.c \
+	../../../../apps/spp_and_le/examples/findmy/ble_fmy_sensor_uart.c \
 	../../../../apps/spp_and_le/examples/hilink/app_hilink.c \
 	../../../../apps/spp_and_le/examples/hilink/hilink_demo.c \
 	../../../../apps/spp_and_le/examples/idle/app_idle.c \
@@ -398,6 +413,7 @@ c_SRC_FILES := \
 	../../../../apps/spp_and_le/modules/power/app_power_manage.c \
 	../../../../apps/spp_and_le/modules/rtc_alarm.c \
 	../../../../apps/spp_and_le/modules/user_cfg.c \
+	../../../../apps/spp_and_le/modules/virtual_rtc_demo.c \
 	../../../../apps/spp_and_le/version.c \
 	../../../../cpu/br25/adc_api.c \
 	../../../../cpu/br25/audio_common/app_audio.c \
@@ -408,6 +424,8 @@ c_SRC_FILES := \
 	../../../../cpu/br25/audio_dec/audio_dec_tone.c \
 	../../../../cpu/br25/audio_dec/audio_usb_mic.c \
 	../../../../cpu/br25/audio_dec/tone_player.c \
+	../../../../cpu/br25/audio_demo/audio_dac_io_demo.c \
+	../../../../cpu/br25/audio_demo/audio_fft_demo.c \
 	../../../../cpu/br25/audio_enc/audio_adc_demo.c \
 	../../../../cpu/br25/audio_enc/audio_enc.c \
 	../../../../cpu/br25/audio_enc/audio_mic_codec.c \
@@ -483,7 +501,10 @@ LFLAGS := \
 	../../../../cpu/br25/liba/rcsp_stack.a \
 	../../../../cpu/br25/liba/JL_Phone_Call.a \
 	../../../../cpu/br25/liba/math.a \
+	../../../../cpu/br25/liba/fmna_stack.a \
+	../../../../cpu/br25/liba/fmna_auth.a \
 	../../../../apps/common/third_party_profile/tuya_protocol/sdk/lib/libtuya_lib.a \
+	../../../../cpu/br25/liba/MotionDetection.a \
 	../../../../cpu/br25/liba/media.a \
 	../../../../cpu/br25/liba/media_app.a \
 	../../../../cpu/br25/liba/opus_enc_lib.a \
@@ -554,11 +575,11 @@ all: pre_build $(OUT_ELF)
 
 pre_build:
 	$(info +PRE-BUILD)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br25/sdk_used_list.c -o ../../../../cpu/br25/sdk_used_list.used
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br25/sdk_ld.c -o ../../../../cpu/br25/sdk.ld
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br25/tools/download.c -o $(POST_SCRIPT)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/br25/sdk_used_list.c -o ../../../../cpu/br25/sdk_used_list.used
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/br25/sdk_ld.c -o ../../../../cpu/br25/sdk.ld
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/br25/tools/download.c -o $(POST_SCRIPT)
 	$(QUITE) $(FIXBAT) $(POST_SCRIPT)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -E -P ../../../../cpu/br25/tools/isd_config_rule.c -o ../../../../cpu/br25/tools/isd_config.ini
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P ../../../../cpu/br25/tools/isd_config_rule.c -o ../../../../cpu/br25/tools/isd_config.ini
 
 clean:
 	$(QUITE) $(RM) $(OUT_ELF)
@@ -582,38 +603,38 @@ endif
 
 $(BUILD_DIR)/%.c.o : $(ROOT_PREFIX)/%.c
 	$(info +CC $<)
-	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.S.o : $(ROOT_PREFIX)/%.S
 	$(info +AS $<)
-	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.s.o : $(ROOT_PREFIX)/%.s
 	$(info +AS $<)
-	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cpp.o : $(ROOT_PREFIX)/%.cpp
 	$(info +CXX $<)
-	@$(MKDIR) $(@D)
-	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cxx.o : $(ROOT_PREFIX)/%.cxx
 	$(info +CXX $<)
-	@$(MKDIR) $(@D)
-	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/%.cc.o : $(ROOT_PREFIX)/%.cc
 	$(info +CXX $<)
-	@$(MKDIR) $(@D)
-	@$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
 	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
 
 -include $(DEP_FILES)

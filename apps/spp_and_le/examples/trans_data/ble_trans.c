@@ -44,8 +44,20 @@
 #define log_info_hexdump(...)
 #endif
 
+/*
+ 打开流控使能后,确定使能接口 att_server_flow_enable 被调用
+ 然后使用过程 通过接口 att_server_flow_hold 来控制流控开关
+ 注意:流控只能控制对方使用带响应READ/WRITE等命令方式
+ 例如:ATT_WRITE_REQUEST = 0x12
+ */
+#define ATT_DATA_RECIEVT_FLOW      0//流控功能使能
+
+
 //测试NRF连接,工具不会主动发起交换流程,需要手动操作; 但设备可配置主动发起MTU长度交换请求
 #define ATT_MTU_REQUEST_ENALBE     0    /*配置1,就是设备端主动发起交换*/
+
+//检测对方的系统类型，ios or 非ios
+#define ATT_CHECK_REMOTE_REQUEST_ENALBE     0    /*配置1,就是设备端主动检查*/
 
 //ATT发送的包长,    note: 23 <=need >= MTU
 #define ATT_LOCAL_MTU_SIZE        (512) /*一般是主机发起交换,如果主机没有发起,设备端也可以主动发起(ATT_MTU_REQUEST_ENALBE set 1)*/
@@ -307,6 +319,28 @@ static void trans_resume_all_ccc_enable(u16 conn_handle, u8 update_request)
     }
 }
 
+/*************************************************************************************************/
+/*!
+ *  \brief      反馈检查对方的操作系统
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note 参考识别手机系统
+ */
+/*************************************************************************************************/
+static void trans_check_remote_result(u16 con_handle, remote_type_e remote_type)
+{
+    char *str;
+    if (REMOTE_TYPE_IOS == remote_type) {
+        str = "is";
+    } else {
+        str = "not";
+    }
+
+    log_info("trans_check %02x:remote_type= %02x, %s ios", con_handle, remote_type, str);
+}
 
 /*************************************************************************************************/
 /*!
@@ -363,6 +397,10 @@ static int trans_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_p
 #if CONFIG_BT_SM_SUPPORT_ENABLE == 0
         trans_client_search_remote_profile(trans_con_handle);
 #endif
+#endif
+
+#if ATT_CHECK_REMOTE_REQUEST_ENALBE
+        att_server_set_check_remote(trans_con_handle, trans_check_remote_result);
 #endif
         break;
 
@@ -560,6 +598,8 @@ static int trans_att_write_callback(hci_con_handle_t connection_handle, uint16_t
             break;
         }
         memcpy(&trans_test_read_write_buf[offset], buffer, buffer_size);
+        log_info("\n-ae10_rx(%d):", buffer_size);
+        put_buf(buffer, buffer_size);
         break;
 
     case ATT_CHARACTERISTIC_ae01_01_VALUE_HANDLE:
@@ -860,8 +900,41 @@ static void trans_test_send_data(void)
     }
 #endif
 }
+/*************************************************************************************************/
+/*!
+ *  \brief      控制应答对方READ/WRITE行为的响应包RESPONSE的回复
+ *
+ *  \param      [in]流控使能 en: 1-停止收数 or 0-继续收数
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+int ble_trans_flow_enable(u8 en)
+{
+    int ret = -1;
 
+#if ATT_DATA_RECIEVT_FLOW
+    if (trans_con_handle) {
+        att_server_flow_hold(trans_con_handle, en);
+        ret = 0;
+        log_info("ble_trans_flow_enable:%d\n", en);
+    }
+#endif
 
+    return ret;
+}
+
+//for test
+static void timer_trans_flow_test(void)
+{
+    static u8 sw = 0;
+    if (trans_con_handle) {
+        sw = !sw;
+        ble_trans_flow_enable(sw);
+    }
+}
 
 /*************************************************************************************************/
 /*!
@@ -893,6 +966,12 @@ void bt_ble_init(void)
 
 #if CONFIG_BT_GATT_CLIENT_NUM && CONFIG_BT_SM_SUPPORT_ENABLE
     trans_ios_services_init();
+#endif
+
+#if ATT_DATA_RECIEVT_FLOW
+    log_info("att_server_flow_enable\n");
+    att_server_flow_enable(1);
+//    sys_timer_add(0, timer_trans_flow_test, 5000);
 #endif
 
     ble_module_enable(1);

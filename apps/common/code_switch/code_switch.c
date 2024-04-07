@@ -289,8 +289,8 @@ void code_switch_init(SW_PLATFORM_DATA *priv)
     /* JL_IOMAP->CON1 &= ~BIT(12);  //RDES_IOSO = PB4 */
     /* JL_IOMAP->CON1 &= ~BIT(13);  //RDES_IOS1 = PB5 */
 
-    JL_IOMAP->CON1 |= BIT(12);
-    JL_IOMAP->CON1 |= BIT(13);
+    /* JL_IOMAP->CON1 |= BIT(12); */
+    /* JL_IOMAP->CON1 |= BIT(13); */
 
     /* INPUT_CHANNLE6_SRC_SEL(sw_pdata->a_phase_io); */
     /* INPUT_CHANNLE7_SRC_SEL(sw_pdata->b_phase_io); */

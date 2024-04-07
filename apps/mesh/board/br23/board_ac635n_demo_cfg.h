@@ -98,6 +98,10 @@
 #define TCFG_SD1_DET_IO_LEVEL				0//IO检查，0：低电平检测到卡。 1：高电平(外部电源)检测到卡。 2：高电平(SD卡电源)检测到卡。
 #define TCFG_SD1_CLK						(3000000*4L)
 
+//*********************************************************************************//
+//                                  RTC_ALARM配置                                  //
+//*********************************************************************************//
+#define TCFG_RTC_ALARM_ENABLE               DISABLE_THIS_MOUDLE
 
 //*********************************************************************************//
 //                                 key 配置                                        //
@@ -392,7 +396,12 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 //                                  时钟配置                                       //
 //*********************************************************************************//
-#define TCFG_CLOCK_SYS_SRC					SYS_CLOCK_INPUT_PLL_BT_OSC   //系统时钟源选择
+#if CONFIG_PLL_SOURCE_USING_LRC
+#define TCFG_CLOCK_SYS_SRC     SYS_CLOCK_INPUT_PLL_RCL   //系统时钟源选择
+#else
+#define TCFG_CLOCK_SYS_SRC     SYS_CLOCK_INPUT_PLL_BT_OSC   //系统时钟源选择
+#endif
+
 #define TCFG_CLOCK_SYS_HZ					24000000                     //系统时钟设置
 #define TCFG_CLOCK_OSC_HZ					24000000                     //外界晶振频率设置
 #define TCFG_CLOCK_MODE                     CLOCK_MODE_ADAPTIVE
@@ -471,6 +480,7 @@ DAC硬件上的连接方式,可选的配置：
 #define USER_SUPPORT_PROFILE_HID    0
 #define USER_SUPPORT_PROFILE_PNP    0
 #define USER_SUPPORT_PROFILE_PBAP   0
+#define USER_SUPPORT_PROFILE_HCRP   0
 #endif
 
 #if TCFG_USER_TWS_ENABLE

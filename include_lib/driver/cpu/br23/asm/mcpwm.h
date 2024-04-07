@@ -68,6 +68,9 @@ typedef enum {
     falling_edge_trigger,       //下降沿触发
 } trigger_mode_type;
 
+void mcpwm_ch_open_or_close(pwm_ch_num_type pwm_ch, u8 enable);
+void mcpwm_init(struct pwm_platform_data *arg);
+
 typedef void (*IO_ISR_FUNC)(void);
 
 extern void io_ext_interrupt_init(u8 port, trigger_mode_type trigger_mode, IO_ISR_FUNC cbfun);

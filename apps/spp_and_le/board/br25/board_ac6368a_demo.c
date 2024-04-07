@@ -414,12 +414,6 @@ void sleep_enter_callback(u8  step)
 
         close_gpio();
 
-        gpio_set_pull_up(IO_PORTA_03, 0);
-        gpio_set_pull_down(IO_PORTA_03, 0);
-        gpio_set_direction(IO_PORTA_03, 1);
-
-        usb_iomode(1);
-
         gpio_set_pull_up(IO_PORT_DP, 0);
         gpio_set_pull_down(IO_PORT_DP, 0);
         gpio_set_direction(IO_PORT_DP, 1);

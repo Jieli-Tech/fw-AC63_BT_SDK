@@ -42,10 +42,17 @@ const int config_rcsp_stack_enable = 1;
 const int config_rcsp_stack_enable = 0;
 #endif
 
+#define CONFIG_BT_SM_SUPPORT_ENABLE      0
 //le 配置,可以优化代码和RAM
 const int config_le_hci_connection_num = 1;//支持同时连接个数
-const int config_le_sm_support_enable = 0; //是否支持加密配对
+const int config_le_sm_support_enable = CONFIG_BT_SM_SUPPORT_ENABLE; //是否支持加密配对
 const int config_le_gatt_server_num = 1;   //支持server角色个数
 const int config_le_gatt_client_num = 0;   //支持client角色个数
+
+/*config_le_sm_sub_sc_enable: SC加密模式使能,need config_le_sm_support_enable = 1*/
+const int config_le_sm_sub_sc_enable = CONFIG_BT_SM_SUPPORT_ENABLE & 0;
+
+const int config_le_sm_sub_sc_bridge_edr_enable = 0; /*default 0*/
+
 
 

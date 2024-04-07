@@ -444,10 +444,7 @@ void board_init()
 
 	board_devices_init();
 
-    extern void temp_pll_trim_init(void);
-    temp_pll_trim_init();  //温度trim调用接口
-
-#if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
+    #if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
     if(get_charge_online_flag()){
         handshake_app_start(0, NULL);
     }

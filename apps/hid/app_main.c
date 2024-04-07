@@ -21,6 +21,7 @@
 #include "app_power_manage.h"
 #include "asm/charge.h"
 
+
 #if TCFG_KWS_VOICE_RECOGNITION_ENABLE
 #include "jl_kws/jl_kws_api.h"
 #endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE *//

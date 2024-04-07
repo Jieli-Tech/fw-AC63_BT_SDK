@@ -36,8 +36,17 @@
 #define     CFG_RCSP_ADV_KEY_SETTING         27
 #define     CFG_AAP_MODE_INFO                28
 #define     CFG_DONGLE_PAIR_INFO             29
+
 #define     CFG_BLE_BONDING_REMOTE_INFO      30
 #define     CFG_BLE_BONDING_REMOTE_INFO2     31
 
+//findmy,id 复用
+#define     CFG_FMNA_BLE_ADDRESS_INFO        30
+#define     CFG_FMNA_SOFTWARE_AUTH_START     31
+#define     CFG_FMNA_SOFTWARE_AUTH_END       (CFG_FMNA_SOFTWARE_AUTH_START + 4)
+#define     CFG_FMY_INFO                     36
 
+#define     VM_VIR_RTC_TIME             47
+#define     VM_VIR_ALM_TIME             48
+#define     VM_VIR_SUM_NSEC             49
 #endif /* #ifndef _USER_CFG_ID_H_ */

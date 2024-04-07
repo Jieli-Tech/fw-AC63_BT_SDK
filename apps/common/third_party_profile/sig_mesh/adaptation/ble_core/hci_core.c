@@ -81,6 +81,9 @@ extern void handle_scan_callback(uint8_t *packet, uint16_t size);
 extern void mesh_can_send_now_wakeup(void);
 extern void mesh_set_ble_work_state(ble_state_e state);
 
+//read key 是否自动提高时钟频率，默认1,可通过接口 ll_mesh_auto_clock_up_enable 传0关掉
+extern void ll_mesh_auto_clock_up_enable(u8 enable);
+
 void ble_read_local_p256_public_key(void)
 {
 #if CMD_DIRECT_TO_BTCTRLER_TASK_EN

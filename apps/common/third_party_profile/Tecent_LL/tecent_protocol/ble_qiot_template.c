@@ -15,69 +15,46 @@ extern "C" {
 
 #include "ble_qiot_template.h"
 
-#include <printf.h>
+#include <stdio.h>
 //#include <stdbool.h>
 #include <string.h>
 
 #include "ble_qiot_export.h"
 #include "ble_qiot_common.h"
 #include "ble_qiot_param_check.h"
-#include "ble_qiot_llsync_event.h"
-#include "ble_qiot_service.h"
-#include "ble_qiot_llsync_device.h"
-#include "gpio.h"
 
-static uint8_t LL_led = 0;
-#define LLSYNC_SWITCH_PIN IO_PORTA_01
-static int ble_property_power_switch_set(const char *data, uint16_t len)
+static int ble_property_battery_value_set(const char *data, uint16_t len)
 {
-    printf("ble_property_power_switch_set led to %d\n", data[0]);
-    LL_led = data[0];
-    gpio_write(LLSYNC_SWITCH_PIN, LL_led);
+    printf("ble_property_battery_value_set, len:%d", len);
+    put_buf(data, len);
     return 0;
 }
 
-static int ble_property_power_switch_get(char *data, uint16_t buf_len)
+static int ble_property_battery_value_get(char *data, uint16_t buf_len)
 {
-    printf("ble_property_power_switch_get, led state is %d\n", LL_led);
-    data[0] = LL_led;
-    return sizeof(uint8_t);
+    printf("ble_property_battery_value_get, len:%d", buf_len);
+    put_buf(data, buf_len);
+    return sizeof(uint32_t);
+}
+
+static int ble_property_signal_strength_set(const char *data, uint16_t len)
+{
+    printf("ble_property_signal_strength_set, len:%d", len);
+    put_buf(data, len);
+    return 0;
+}
+
+static int ble_property_signal_strength_get(char *data, uint16_t buf_len)
+{
+    printf("ble_property_signal_strength_get, len:%d", buf_len);
+    put_buf(data, buf_len);
+    return sizeof(uint32_t);
 }
 
 static ble_property_t sg_ble_property_array[BLE_QIOT_PROPERTY_ID_BUTT] = {
-    {ble_property_power_switch_set, ble_property_power_switch_get, BLE_QIOT_PROPERTY_AUTH_RW, BLE_QIOT_DATA_TYPE_BOOL},
+    {ble_property_battery_value_set, ble_property_battery_value_get, BLE_QIOT_PROPERTY_AUTH_READ, BLE_QIOT_DATA_TYPE_INT},
+    {ble_property_signal_strength_set, ble_property_signal_strength_get, BLE_QIOT_PROPERTY_AUTH_RW, BLE_QIOT_DATA_TYPE_INT},
 };
-
-ble_qiot_ret_status_t ble_event_report_device_switch_state(u8 led_state)
-{
-    char device_info[2] = {0};
-
-    device_info[0] = BLE_QIOT_PROPERTY_ID_POWER_SWITCH;
-    device_info[1] = led_state;
-
-    return ble_event_notify(BLE_QIOT_EVENT_UP_PROPERTY_REPORT, NULL, 0, device_info, sizeof(device_info));
-}
-
-void ll_sync_led_switch(void)
-{
-    LL_led = !LL_led;
-
-    printf("ll_sync set led to %d\n", LL_led);
-    gpio_write(LLSYNC_SWITCH_PIN, LL_led);
-    ble_event_report_device_switch_state(LL_led);
-}
-
-void ll_sync_unbind(void)
-{
-    printf("ll_sync factory data reset\n");
-    ble_unbind_write_result();
-}
-
-void llsync_device_state_sync(void)
-{
-    printf("llsync_device_state_sync, led = %d\n", LL_led);
-    ble_event_report_device_switch_state(LL_led);
-}
 
 static bool ble_check_space_enough_by_type(uint8_t type, uint16_t left_size)
 {
@@ -258,7 +235,211 @@ int ble_user_property_struct_get_data(char *in_buf, uint16_t buf_len, ble_proper
     return data_len;
 }
 
+static int ble_event_get_loss_notice_record_time(char *data, uint16_t buf_len)
+{
+    return sizeof(uint32_t);
+}
+
+static ble_event_param sg_ble_event_loss_notice_array[BLE_QIOT_EVENT_LOSS_NOTICE_PARAM_ID_BUTT] = {
+    {ble_event_get_loss_notice_record_time,  BLE_QIOT_DATA_TYPE_TIME},
+};
+
+static ble_event_t sg_ble_event_array[BLE_QIOT_EVENT_ID_BUTT] = {
+    {sg_ble_event_loss_notice_array,  sizeof(sg_ble_event_loss_notice_array) / sizeof(ble_event_param)},
+};
+
+int ble_event_get_id_array_size(uint8_t event_id)
+{
+    if (event_id >= BLE_QIOT_EVENT_ID_BUTT) {
+        ble_qiot_log_e("invalid event id %d", event_id);
+        return -1;
+    }
+
+    return sg_ble_event_array[event_id].array_size;
+}
+
+uint8_t ble_event_get_param_id_type(uint8_t event_id, uint8_t param_id)
+{
+    if (event_id >= BLE_QIOT_EVENT_ID_BUTT) {
+        ble_qiot_log_e("invalid event id %d", event_id);
+        return BLE_QIOT_DATA_TYPE_BUTT;
+    }
+    if (param_id >= sg_ble_event_array[event_id].array_size) {
+        ble_qiot_log_e("invalid param id %d", param_id);
+        return BLE_QIOT_DATA_TYPE_BUTT;
+    }
+
+    return sg_ble_event_array[event_id].event_array[param_id].type;
+}
+
+int ble_event_get_data_by_id(uint8_t event_id, uint8_t param_id, char *out_buf, uint16_t buf_len)
+{
+    int ret_len = 0;
+
+    if (event_id >= BLE_QIOT_EVENT_ID_BUTT) {
+        ble_qiot_log_e("invalid event id %d", event_id);
+        return -1;
+    }
+    if (param_id >= sg_ble_event_array[event_id].array_size) {
+        ble_qiot_log_e("invalid param id %d", param_id);
+        return -1;
+    }
+    if (NULL == sg_ble_event_array[event_id].event_array[param_id].get_cb) {
+        ble_qiot_log_e("invalid callback, event id %d, param id %d", event_id, param_id);
+        return 0;
+    }
+
+    if (!ble_check_space_enough_by_type(sg_ble_event_array[event_id].event_array[param_id].type, buf_len)) {
+        ble_qiot_log_e("not enough space get data, event id %d, param id %d", event_id, param_id);
+        return -1;
+    }
+    ret_len = sg_ble_event_array[event_id].event_array[param_id].get_cb(out_buf, buf_len);
+    if (ret_len < 0) {
+        ble_qiot_log_e("get event data failed, event id %d, param id %d", event_id, param_id);
+        return -1;
+    } else {
+        if (ble_check_ret_value_by_type(sg_ble_event_array[event_id].event_array[param_id].type, buf_len, ret_len)) {
+            return ret_len;
+        } else {
+            ble_qiot_log_e("evnet data length invalid, event id %d, param id %d", event_id, param_id);
+            return -1;
+        }
+    }
+}
+
+int ble_user_event_reply_handle(uint8_t event_id, uint8_t result)
+{
+    ble_qiot_log_d("event id %d, reply result %d", event_id, result);
+
+    return BLE_QIOT_RS_OK;
+}
+
+static int ble_action_handle_sound_control_input_cb(e_ble_tlv *input_param_array, uint8_t input_array_size, uint8_t *output_id_array)
+{
+    return 0;
+}
+
+static int ble_action_handle_sound_control_output_cb(uint8_t output_id, char *buf, uint16_t buf_len)
+{
+    return buf_len;
+}
+
+static uint8_t sg_ble_action_sound_control_input_type_array[BLE_QIOT_ACTION_SOUND_CONTROL_INPUT_ID_BUTT] = {
+    BLE_QIOT_DATA_TYPE_INT,
+};
+
+static uint8_t sg_ble_action_sound_control_output_type_array[BLE_QIOT_ACTION_SOUND_CONTROL_OUTPUT_ID_BUTT] = {
+    BLE_QIOT_DATA_TYPE_BOOL,
+};
+
+static ble_action_t sg_ble_action_array[BLE_QIOT_ACTION_ID_BUTT] = {
+    {
+        ble_action_handle_sound_control_input_cb, ble_action_handle_sound_control_output_cb,
+        sg_ble_action_sound_control_input_type_array, sg_ble_action_sound_control_output_type_array,
+        sizeof(sg_ble_action_sound_control_input_type_array) / sizeof(uint8_t),
+        sizeof(sg_ble_action_sound_control_output_type_array) / sizeof(uint8_t)
+    },
+};
+
+uint8_t ble_action_get_intput_type_by_id(uint8_t action_id, uint8_t input_id)
+{
+    if (action_id >= BLE_QIOT_ACTION_ID_BUTT) {
+        ble_qiot_log_e("invalid action id %d", action_id);
+        return BLE_QIOT_DATA_TYPE_BUTT;
+    }
+    if (input_id >= sg_ble_event_array[action_id].array_size) {
+        ble_qiot_log_e("invalid input id %d", input_id);
+        return BLE_QIOT_DATA_TYPE_BUTT;
+    }
+
+    return sg_ble_action_array[action_id].input_type_array[input_id];
+}
+
+uint8_t ble_action_get_output_type_by_id(uint8_t action_id, uint8_t output_id)
+{
+    if (action_id >= BLE_QIOT_ACTION_ID_BUTT) {
+        ble_qiot_log_e("invalid action id %d", action_id);
+        return BLE_QIOT_DATA_TYPE_BUTT;
+    }
+    if (output_id >= sg_ble_event_array[action_id].array_size) {
+        ble_qiot_log_e("invalid output id %d", output_id);
+        return BLE_QIOT_DATA_TYPE_BUTT;
+    }
+
+    return sg_ble_action_array[action_id].output_type_array[output_id];
+}
+
+int ble_action_get_input_id_size(uint8_t action_id)
+{
+    if (action_id >= BLE_QIOT_ACTION_ID_BUTT) {
+        ble_qiot_log_e("invalid action id %d", action_id);
+        return -1;
+    }
+
+    return sg_ble_action_array[action_id].input_id_size;
+}
+
+int ble_action_get_output_id_size(uint8_t action_id)
+{
+    if (action_id >= BLE_QIOT_ACTION_ID_BUTT) {
+        ble_qiot_log_e("invalid action id %d", action_id);
+        return -1;
+    }
+
+    return sg_ble_action_array[action_id].output_id_size;
+}
+
+int ble_action_user_handle_input_param(uint8_t action_id, e_ble_tlv *input_param_array, uint8_t input_array_size, uint8_t *output_id_array)
+{
+    if (action_id >= BLE_QIOT_ACTION_ID_BUTT) {
+        ble_qiot_log_e("invalid action id %d", action_id);
+        return -1;
+    }
+
+    if (NULL != sg_ble_action_array[action_id].input_cb) {
+        if (0 != sg_ble_action_array[action_id].input_cb(input_param_array, input_array_size, output_id_array)) {
+            ble_qiot_log_e("input handle error");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int ble_action_user_handle_output_param(uint8_t action_id, uint8_t output_id, char *buf, uint16_t buf_len)
+{
+    int ret_len = 0;
+
+    if (action_id >= BLE_QIOT_ACTION_ID_BUTT) {
+        ble_qiot_log_e("invalid action id %d", action_id);
+        return -1;
+    }
+    if (NULL == sg_ble_action_array[action_id].output_cb) {
+        ble_qiot_log_e("invalid callback, action id %d", action_id);
+        return 0;
+    }
+
+    if (!ble_check_space_enough_by_type(sg_ble_action_array[action_id].output_type_array[output_id], buf_len)) {
+        ble_qiot_log_e("not enough space get data, action id %d, output id %d", action_id, output_id);
+        return -1;
+    }
+
+    ret_len = sg_ble_action_array[action_id].output_cb(output_id, buf, buf_len);
+    if (ret_len < 0) {
+        ble_qiot_log_e("get action data failed, action id %d, output id %d", action_id, output_id);
+        return -1;
+    } else {
+        if (ble_check_ret_value_by_type(sg_ble_action_array[action_id].output_type_array[output_id], buf_len, ret_len)) {
+            return ret_len;
+        } else {
+            ble_qiot_log_e("action data length invalid, action id %d, output id %d", action_id, output_id);
+            return -1;
+        }
+    }
+}
+
 
 #ifdef __cplusplus
 }
 #endif
+

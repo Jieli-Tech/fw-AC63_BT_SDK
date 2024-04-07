@@ -186,6 +186,7 @@ extern void p33_soft_reset(void);
 extern void ble_hid_key_deal_test(u16 key_msg);
 extern void ble_module_enable(u8 en);
 static void hidvrc_set_soft_poweroff(void);
+void hidvrc_power_event_to_user(u8 event);
 
 /*************************************************************************************************/
 /*!
@@ -383,7 +384,7 @@ static void hidvrc_app_key_deal_test(u8 key_type, u8 key_value)
 
     if (key_type == KEY_EVENT_TRIPLE_CLICK
         && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {
-        hidvrc_set_soft_poweroff();
+        hidvrc_power_event_to_user(POWER_EVENT_POWER_SOFTOFF);
         return;
     }
 
@@ -473,6 +474,27 @@ static void hidvrc_vm_deal(u8 rw_flag)
 
 /*************************************************************************************************/
 /*!
+ *  \brief      软关机消息处理
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+void hidvrc_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
+
+/*************************************************************************************************/
+/*!
  *  \brief      进入软关机
  *
  *  \param      [in]
@@ -555,7 +577,7 @@ static void hidvrc_app_start()
 
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //无操作定时软关机
-    g_auto_shutdown_timer = sys_timeout_add(NULL, hidvrc_set_soft_poweroff, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    g_auto_shutdown_timer = sys_timeout_add((void *)POWER_EVENT_POWER_SOFTOFF, hidvrc_power_event_to_user, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
 #endif
 }
 

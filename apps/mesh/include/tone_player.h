@@ -2,7 +2,10 @@
 #define _TONE_PLAYER_
 
 #include "app_config.h"
+
+#if (!defined CONFIG_CPU_BD29)
 #include "audio_config.h"
+#endif
 
 #if TCFG_NOR_FS && (TCFG_VIRFAT_FLASH_ENABLE == 0)
 #define NOR_FLASH_RES_ROOT_PATH	 "storage/res_nor/C/"

@@ -445,10 +445,6 @@ void board_init()
 	devices_init();
 
 	board_devices_init();
-    //温度trim调用接口
-    extern void temp_pll_trim_init(void);
-    temp_pll_trim_init();
-
 
 	gpio_set_die(TCFG_IOKEY_MOUSE_VBATP_PORT, 0);
 	gpio_set_direction(TCFG_IOKEY_MOUSE_VBATP_PORT, 1);

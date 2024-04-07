@@ -138,6 +138,48 @@ void sdp_decode_response_info_output(u16 service_uuid, u16 attribute_id, const u
     }
 }
 
+//pin code 轮询功能
+static const char pin_code_list[10][4] = {
+    {'0', '0', '0', '0'},
+    {'1', '2', '3', '4'},
+    {'8', '8', '8', '8'},
+    {'1', '3', '1', '4'},
+    {'4', '3', '2', '1'},
+    {'1', '1', '1', '1'},
+    {'2', '2', '2', '2'},
+    {'3', '3', '3', '3'},
+    {'5', '6', '7', '8'},
+    {'5', '5', '5', '5'}
+};
+
+/*----------------------------------------------------------------------------*/
+/**@brief    蓝牙发射链接pincode 轮询
+  @param    无
+  @return   无
+  @note
+ */
+/*----------------------------------------------------------------------------*/
+const char *bt_get_emitter_pin_code(u8 flag)
+{
+    static u8 index_flag = 0;
+    int pincode_num = sizeof(pin_code_list) / sizeof(pin_code_list[0]);
+    if (flag == 1) {
+        //reset index
+        index_flag = 0;
+    } else if (flag == 2) {
+        //查询是否要开始继续回连尝试pin code。
+        if (index_flag >= pincode_num) {
+            //之前已经遍历完了
+            return NULL;
+        } else {
+            index_flag++; //准备使用下一个
+        }
+    } else {
+        log_debug("get pin code index %d\n", index_flag);
+    }
+    return &pin_code_list[index_flag][0];
+}
+
 /*----------------------------------------------------------------------------*/
 /**@brief
    @param    无
@@ -160,6 +202,12 @@ static void __bt_search_device(void)
     __this->bt_search_busy = 1;
     u8 inquiry_length = 20;   // inquiry_length * 1.28s
     user_send_cmd_prepare(USER_CTRL_SEARCH_DEVICE, 1, &inquiry_length);
+
+#if EDR_EMITTER_EN && USER_SUPPORT_PROFILE_SPP
+    //spp 主机
+    set_start_search_spp_device(1);
+#endif
+
 }
 
 
@@ -379,13 +427,15 @@ void bt_emitter_init(void)
    @note
 */
 /*----------------------------------------------------------------------------*/
+
+#if (SEARCH_LIMITED_MODE == SEARCH_BD_NAME_LIMITED)
 void bt_emitter_set_match_name(const char *name_table, u8 name_count)
 {
     log_info("%s,bd_name_filt_nums= %d\n", __FUNCTION__, name_count);
     bd_name_filt = name_table;
     bd_name_filt_nums = name_count;
 }
-
+#endif
 
 /*----------------------------------------------------------------------------*/
 /**@brief    蓝牙搜索设备没有名字的设备，放进需要获取名字链表
@@ -424,8 +474,10 @@ void bt_emitter_search_noname(u8 status, u8 *addr, u8 *name)
         if (!memcmp(addr, remote->addr, 6)) {
             res = bt_emitter_search_result(name, strlen(name), addr, remote->class, remote->rssi);
             if (res) {
+                log_info("search_match to connect");
                 __this->read_name_start = 0;
                 remote->match = 1;
+                __this->bt_connect_start = 0;
                 user_send_cmd_prepare(USER_CTRL_INQUIRY_CANCEL, 0, NULL);
                 local_irq_enable();
                 return;
@@ -447,6 +499,9 @@ __find_next:
     if (remote) {
         __this->read_name_start = 1;
         user_send_cmd_prepare(USER_CTRL_READ_REMOTE_NAME, 6, remote->addr);
+    } else {
+        log_info("send cmd for restart to search");
+        user_send_cmd_prepare(USER_CTRL_INQUIRY_CANCEL, 0, NULL);
     }
 }
 
@@ -479,7 +534,12 @@ void bt_emitter_search_complete(u8 result)
     if (!result) {
         list_for_each_entry_safe(remote, n, &inquiry_noname_list, entry) {
             if (remote->match) {
+
+#if EDR_EMITTER_EN && USER_SUPPORT_PROFILE_SPP
+                user_send_cmd_prepare(USER_CTRL_START_CONNEC_SPP_VIA_ADDR, 6, remote->addr);
+#else
                 user_send_cmd_prepare(USER_CTRL_START_CONNEC_VIA_ADDR, 6, remote->addr);
+#endif
                 wait_connect_flag = 0;
             }
             list_del(&remote->entry);

@@ -154,7 +154,12 @@
 //*********************************************************************************//
 //                                  时钟配置                                       //
 //*********************************************************************************//
-#define TCFG_CLOCK_SYS_SRC					SYS_CLOCK_INPUT_PLL_BT_OSC
+#if CONFIG_PLL_SOURCE_USING_LRC
+#define TCFG_CLOCK_SYS_SRC     SYS_CLOCK_INPUT_PLL_RCL   //系统时钟源选择
+#else
+#define TCFG_CLOCK_SYS_SRC     SYS_CLOCK_INPUT_PLL_BT_OSC   //系统时钟源选择
+#endif
+
 #define TCFG_CLOCK_SYS_HZ					24000000
 #define TCFG_CLOCK_OSC_HZ					24000000
 #define TCFG_CLOCK_MODE                     CLOCK_MODE_ADAPTIVE
@@ -190,7 +195,7 @@
 //*********************************************************************************//
 #define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
-#define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
+#define TCFG_USER_EDR_ENABLE                      0   //EDR功能使能
 
 
 

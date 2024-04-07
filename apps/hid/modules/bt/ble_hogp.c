@@ -92,11 +92,11 @@ static uint8_t hogp_connection_update_enable = 1;
 
 //连接参数表,按顺序优先请求,主机接受了就中止
 static const struct conn_update_param_t Peripheral_Preferred_Connection_Parameters[] = {
-    {6, 9,  100, 300}, //android
+    {6, 9,  100, 600}, //android
     /* {7, 7,  20, 300}, //mosue */
     /* {20, 20,  20, 300}, //kb */
-    {12, 12, 30, 300}, //ios
-    {6,  12, 30, 400},// ios fast
+    {12, 12, 30, 600}, //ios
+    {6,  12, 30, 600},// ios fast
 };
 //共可用的参数组数
 #define CONN_PARAM_TABLE_CNT      (sizeof(Peripheral_Preferred_Connection_Parameters)/sizeof(struct conn_update_param_t))
@@ -125,7 +125,7 @@ static adv_cfg_t hogp_server_adv_config;
 static u8 pair_reconnect_adv_type = ADV_DIRECT_IND;
 
 //等待回连状态下的广播周期 (unit:0.625ms)
-#define PAIR_RECONNECT_ADV_INTERVAL     (20) /*>=32,  ADV_IND,ADV_DIRECT_IND_LOW,interval*/
+#define PAIR_RECONNECT_ADV_INTERVAL     (32) /*>=32,  ADV_IND,ADV_DIRECT_IND_LOW,interval*/
 static  u32 pair_reconnect_adv_timeout = 5000;/*回连广播持续时间,ms*/
 
 //广播通道设置置

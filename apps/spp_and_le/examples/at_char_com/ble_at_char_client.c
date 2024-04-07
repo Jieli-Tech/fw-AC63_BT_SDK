@@ -18,9 +18,7 @@
 
 #if  CONFIG_APP_AT_CHAR_COM && CONFIG_BT_GATT_CLIENT_NUM
 
-#define SUPPORT_TEST_BOX_BLE_MASTER_TEST_EN	   1
-
-#if 1
+#if LE_DEBUG_PRINT_EN
 //#define log_info            printf
 #define log_info(x, ...)    printf("[LE_AT_CHAR_CLI]" x " ", ## __VA_ARGS__)
 

@@ -15,6 +15,7 @@
 #define ACTION_CONN_24G_MAIN    0x000c
 #define ACTION_HILINK_MAIN      0x000d
 #define ACTION_ELECTROCAR       0x000e
+#define ACTION_FINDMY           0x000F
 
 
 #endif

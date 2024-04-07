@@ -81,6 +81,16 @@ typedef struct {
 //#define JL_PSRAM_BASE                   (hs_base + map_adr(0x05, 0x00))
 //#define JL_PSRAM                        ((JL_PSRAM_TypeDef  *)JL_PSRAM_BASE)
 
+//............. 0x1200 - 0x12ff............ for CORDIC
+typedef struct {
+    __RW __u32 CON;
+    __RW __u32 XDAT;
+    __RW __u32 YDAT;
+} JL_CORDIC_TypeDef;
+
+#define JL_CORDIC_BASE                     (hs_base + map_adr(0x12, 0x00))
+#define JL_CORDIC                          ((JL_CORDIC_TypeDef  *)JL_CORDIC_BASE)
+
 //............. 0x1300 - 0x13ff............ for dcp
 typedef struct {
     __RW __u32 CON;

@@ -6,12 +6,12 @@
 #include "device/key_driver.h"
 #include "asm/chargestore.h"
 #include "asm/charge.h"
-/* #include "rtc_alarm.h" */
+#include "asm/power/p33.h"
+#include "rtc_alarm.h"
 #include "asm/pwm_led.h"
 #include "user_cfg.h"
 #include "usb/otg.h"
 #include "norflash.h"
-#include "asm/power/p33.h"
 
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
@@ -33,7 +33,11 @@ const struct low_power_param power_param = {
     .vddiom_lev     = TCFG_LOWPOWER_VDDIOM_LEVEL,          //强VDDIO等级,可选：2.0V  2.2V  2.4V  2.6V  2.8V  3.0V  3.2V  3.6V
     .vddiow_lev     = TCFG_LOWPOWER_VDDIOW_LEVEL,          //弱VDDIO等级,可选：2.1V  2.4V  2.8V  3.2V
     .osc_type       = TCFG_LOWPOWER_OSC_TYPE,
+    .lpctmu_en 		= 0,
     .vd13_cap_en    = TCFG_VD13_CAP_EN,
+#if TCFG_RTC_ALARM_ENABLE
+    .rtc_clk        = 1,
+#endif
 };
 
 /************************** KEY MSG****************************/
@@ -124,6 +128,29 @@ const struct iokey_platform_data iokey_data = {
 	.port = iokey_list,                                       //IO按键参数表
 };
 
+#endif  /* #if TCFG_IO_KEY_ENABLE */
+
+/************************** TOUCH_KEY ****************************/
+#if TCFG_TOUCH_KEY_ENABLE
+const const struct touch_key_port touch_key_list[] = {
+    {
+	    .press_delta    = TCFG_TOUCH_KEY0_PRESS_DELTA,
+        .port           = TCFG_TOUCH_KEY0_PORT,
+        .key_value      = TCFG_TOUCH_KEY0_VALUE,
+    },
+    {
+	    .press_delta    = TCFG_TOUCH_KEY1_PRESS_DELTA,
+	    .port           = TCFG_TOUCH_KEY1_PORT,
+        .key_value      = TCFG_TOUCH_KEY1_VALUE,
+    },
+};
+
+const struct touch_key_platform_data touch_key_data = {
+    .num = ARRAY_SIZE(touch_key_list),
+    .port_list = touch_key_list,
+};
+#endif  /* #if TCFG_TOUCH_KEY_ENABLE */
+
 #if MULT_KEY_ENABLE
 //组合按键消息映射表
 //配置注意事项:单个按键按键值需要按照顺序编号,如power:0, prev:1, next:2
@@ -141,6 +168,34 @@ const struct key_remap_data iokey_remap_data = {
 };
 #endif
 
+
+#if TCFG_RTC_ALARM_ENABLE
+const struct sys_time def_sys_time = {  //初始一下当前时间
+    .year = 2020,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+const struct sys_time def_alarm = {     //初始一下目标时间，即闹钟时间
+    .year = 2050,
+    .month = 1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+
+extern void alarm_isr_user_cbfun(u8 index);
+RTC_DEV_PLATFORM_DATA_BEGIN(rtc_data)
+    .default_sys_time = &def_sys_time,
+    .default_alarm = &def_alarm,
+    .cbfun = NULL,                      //闹钟中断的回调函数,用户自行定义
+    /* .cbfun = alarm_isr_user_cbfun, */
+    .clk_sel = CLK_SEL_LRC,
+    .trim_t = 1,                        //软关机情况下，1min唤醒一次trim lrc
+RTC_DEV_PLATFORM_DATA_END()
 #endif
 
 /************************** PWM_LED ****************************/
@@ -201,6 +256,34 @@ void debug_uart_init(const struct uart_platform_data *data)
 #endif
 }
 
+/*其他封装板级，移该函数*/
+u8 get_power_on_status(void)
+{
+#if TCFG_IOKEY_ENABLE
+    struct iokey_port *power_io_list = NULL;
+    power_io_list = iokey_data.port;
+
+    if (iokey_data.enable) {
+        if (gpio_read(power_io_list->key_type.one_io.port) == power_io_list->connect_way){
+            return 1;
+        }
+    }
+#endif
+
+#if TCFG_ADKEY_ENABLE
+    if (adkey_data.enable) {
+    	return 1;
+    }
+#endif
+
+#if TCFG_LP_TOUCH_KEY_ENABLE
+	return lp_touch_key_power_on_status();
+#endif
+
+    return 0;
+}
+
+
 static void board_devices_init(void)
 {
 #if TCFG_PWMLED_ENABLE
@@ -258,10 +341,6 @@ void board_init()
 	devices_init();
     board_devices_init();
 
-    //温度trim调用接口
-    extern void temp_pll_trim_init(void);
-    temp_pll_trim_init();
-
 
 	if(get_charge_online_flag()) {
 		power_set_mode(PWR_LDO15);
@@ -294,7 +373,7 @@ static void port_protect(u16 *port_group, u32 port_num)
 
 void usb1_iomode(u32 enable);
 /*进软关机之前默认将IO口都设置成高阻状态，需要保留原来状态的请修改该函数*/
-static void close_gpio(void)
+static void close_gpio(u8 is_softoff)
 {
     u16 port_group[] = {
         [PORTA_GROUP] = 0x1ff,
@@ -474,7 +553,7 @@ void board_set_soft_poweroff(void)
 	power_wakeup_index_disable(2);
 #endif
 
-	close_gpio();
+	close_gpio(1);
 }
 
 #define     APP_IO_DEBUG_0(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT &= ~BIT(x);}
@@ -495,7 +574,7 @@ void sleep_enter_callback(u8  step)
 		APP_IO_DEBUG_1(A, 5);
 		/*dac_power_off();*/
 	} else {
-		close_gpio();
+		close_gpio(0);
 	}
 }
 

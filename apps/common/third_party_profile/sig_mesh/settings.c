@@ -13,6 +13,7 @@
 #include "proxy.h"
 #include "settings.h"
 #include "os/os_cpu.h"
+#include "system/syscfg_id.h"
 
 #define LOG_TAG             "[MESH-settings]"
 /* #define LOG_INFO_ENABLE */
@@ -38,9 +39,9 @@
 
 #define MAX_MODEL_NUMS      6
 
-typedef enum _NODE_INFO_SETTING_INDEX {
+typedef enum _NODE_INFO_SETTING_INDEX { //range= 72
     /* NODE_MAC_ADDR_INDEX = 0, */
-    NET_INDEX = 20,
+    NET_INDEX = VM_MESH_NODE_INFO_START,
     IV_INDEX,
     SEQ_INDEX,
     RPL_INDEX,
@@ -63,7 +64,7 @@ typedef enum _NODE_INFO_SETTING_INDEX {
     CDB_SUBNET_INDEX = CDB_APP_KEY_INDEX + CONFIG_BT_MESH_CDB_SUBNET_COUNT + CONFIG_BT_MESH_CDB_APP_KEY_COUNT,
     CDB_MAX_INDEX = CDB_SUBNET_INDEX + CONFIG_BT_MESH_CDB_SUBNET_COUNT + CONFIG_BT_MESH_CDB_APP_KEY_COUNT,
 #endif
-
+    //CDB_MAX_INDEX,need <256
 } NODE_INFO_SETTING_INDEX;
 
 /* Tracking of what storage changes are pending for App and Net Keys. We

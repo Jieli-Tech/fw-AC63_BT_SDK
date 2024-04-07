@@ -15,7 +15,7 @@
 #include "le_common.h"
 #include "ble_at_char_com.h"
 #include "ble_at_char_client.h"
-
+#include "app_power_manage.h"
 
 #define LOG_TAG_CONST       AT_CHAR_COM
 /* #define LOG_TAG             "[AT_CHAR_CMD]" */
@@ -71,7 +71,8 @@ cbuffer_t bt_to_uart_cbuf;
 int le_at_client_creat_cannel(void);
 void at_set_low_power_mode(u8 enable);
 u8 at_get_low_power_mode(void);
-void at_set_soft_poweroff(void);
+/* void at_set_soft_poweroff(void); */
+extern void atchar_power_event_to_user(u8 event);
 //------------------------------------------
 
 
@@ -679,7 +680,7 @@ at_cmd_parse_start:
         {
             AT_STRING_SEND("OK");
             // TODO ,需要返回错误码
-            sys_timeout_add(0, at_set_soft_poweroff, 100);
+            sys_timeout_add((void *)POWER_EVENT_POWER_SOFTOFF, atchar_power_event_to_user, 100);
         }
         break;
 

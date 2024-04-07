@@ -57,10 +57,10 @@
 #define CAP_LED_ON_VALUE                    1
 
 //2.4G模式： 0---ble ,非0 2.4G配对码
-#define CFG_RF_24G_CODE_ID  (0)
-/* #define CFG_RF_24G_CODE_ID  (0x23) */
-#define CFG_RF_24G_CODE_CHANNEL            0x4//2.4g对应的通道                                         
-                                         
+#define CFG_RF_24G_CODE_ID  (0)//32bits
+/* #define CFG_RF_24G_CODE_ID  (0x5555AAAA) */
+#define CFG_RF_24G_CODE_CHANNEL 0x4//2.4g对应的通道
+
 typedef enum {
     EDR_OPERATION_NULL = 0,
     EDR_OPERATION_RECONN,
@@ -435,7 +435,7 @@ const static u8  kb_hid_report_map[] = {
 };
 
 
-static void kb_24g_mode_set(u8 code_id)
+static void kb_24g_mode_set(u32 code_id)
 {
 #if TCFG_USER_BLE_ENABLE
     log_info("%s:%02x", __FUNCTION__, code_id);
@@ -1199,6 +1199,16 @@ static void stdkb_auto_shutdown_disable(void)
     }
 }
 
+void stdkb_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
+
 static void stdkb_set_soft_poweroff(void)
 {
     log_info("%s\n", __FUNCTION__);
@@ -1314,7 +1324,7 @@ static void stdkb_app_start()
 
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //无操作定时软关机
-    g_auto_shutdown_timer = sys_timeout_add(NULL, stdkb_set_soft_poweroff, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    g_auto_shutdown_timer = sys_timeout_add((void *)POWER_EVENT_POWER_SOFTOFF, stdkb_power_event_to_user, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
 #endif
 }
 

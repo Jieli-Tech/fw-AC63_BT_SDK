@@ -14,6 +14,7 @@
 #include "spp_at_trans.h"
 #include "ble_at_com.h"
 #include "ble_at_client.h"
+#include "app_power_manage.h"
 
 #define LOG_TAG_CONST       AT_COM
 #define LOG_TAG             "[AT_CMD]"
@@ -52,7 +53,8 @@ static u8 pAT_buffer_static[AT_BUFFER_SIZE];   //ci data path memory
 static u8 respond_buffer_static[32];   //ci data path memory
 
 void at_send_event(u8 opcode, const u8 *packet, int size);
-extern void at_set_soft_poweroff(void);
+/* extern void at_set_soft_poweroff(void); */
+extern void atcom_power_event_to_user(u8 event);
 extern void bt_max_pwr_set(u8 pwr, u8 pg_pwr, u8 iq_pwr, u8 ble_pwr);
 
 void bredr_set_fix_pwr(u8 fix);
@@ -282,7 +284,7 @@ static void at_com_packet_handler(const u8 *packet, int size)
 
     case AT_CMD_ENTER_SLEEP_MODE: {
         log_info("AT_CMD_ENTER_SLEEP_MODE");
-        at_set_soft_poweroff();
+        atcom_power_event_to_user(POWER_EVENT_POWER_SOFTOFF);
     }
     break;
 
@@ -482,7 +484,7 @@ static void at_client_packet_handler(const u8 *packet, int size)
 
     case AT_CMD_ENTER_SLEEP_MODE: {
         log_info("AT_CMD_ENTER_SLEEP_MODE");
-        at_set_soft_poweroff();
+        atcom_power_event_to_user(POWER_EVENT_POWER_SOFTOFF);
     }
     break;
 

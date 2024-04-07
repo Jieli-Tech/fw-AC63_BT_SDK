@@ -501,58 +501,28 @@ static u32 get_vdd_voltage(u32 ch)
 
 }
 
+u8 wvdd_efuse_level[4] = {WVDD_VOL_SEL_065V, WVDD_VOL_SEL_070V, WVDD_VOL_SEL_075V, WVDD_VOL_SEL_080V};
 static u8 wvdd_trim(u8 trim)
 {
     u8 wvdd_lev = 0;
-    u8 err = 0;
-    wvdd_lev = 0;
+    u8 wvdd_efuse_lev = ((p33_rd_page(1) >> 24) & 0x3);
     if (trim) {
-        P33_CON_SET(P3_ANA_CON13, 0, 4, wvdd_lev);
-        WVDD_LOAD_EN(1);
-        WLDO06_EN(1);
-        delay(2000);//1ms
-        do {
-            P33_CON_SET(P3_ANA_CON13, 0, 4, wvdd_lev);
-            delay(2000);//1ms * n
-            if (get_vdd_voltage(AD_CH_WVDD) > WVDD_VOL_TRIM) {
-                break;
-            }
-            wvdd_lev ++;
-        } while (wvdd_lev < WVDD_LEVEL_MAX);
-        WVDD_LOAD_EN(0);
-        WLDO06_EN(0);
+        wvdd_lev = wvdd_efuse_level[wvdd_efuse_lev];
 
-        //update_wvdd_trim_level(wvdd_lev);
     } else {
         wvdd_lev = get_wvdd_trim_level();
+
     }
-#if 0
-    printf("wvdd min: %d, max: %d, def_lev: %d\n", (WVDD_VOL_TRIM - WVDD_VOL_MIN) / WVDD_VOL_STEP - 2, \
-           (WVDD_VOL_TRIM - WVDD_VOL_MIN) / WVDD_VOL_STEP + 2, \
-           WVDD_LEVEL_DEFAULT);
-#endif
+
+    if (wvdd_lev < WVDD_VOL_SEL_065V) {
+        wvdd_lev = WVDD_VOL_SEL_080V;
+    }
 
     printf("trim: %d, wvdd_lev: %d\n", trim, wvdd_lev);
-
-    if (trim) {
-        u8 min = (WVDD_VOL_TRIM - WVDD_VOL_MIN) / WVDD_VOL_STEP - 2;
-        u8 max = (WVDD_VOL_TRIM - WVDD_VOL_MIN) / WVDD_VOL_STEP + 2;
-        if (!(wvdd_lev >= min && wvdd_lev <= max)) {
-            wvdd_lev = WVDD_LEVEL_DEFAULT;
-            err = 1;
-        }
-    }
-
-
-    /* power_set_wvdd(wvdd_lev); */
     M2P_WDVDD = wvdd_lev;
-
-    if (err) {
-        return WVDD_LEVEL_ERR;
-    }
-
     return wvdd_lev;
 }
+
 static u8 pvdd_trim(u8 trim)
 {
     u32 v = 0;

@@ -1,78 +1,91 @@
-
 #include "typedef.h"
 #include "asm/clock.h"
-#include "asm/adc_api.h"
 #include "timer.h"
-#include "init.h"
 #include "asm/efuse.h"
 #include "irq.h"
-#include "asm/power/p33.h"
-#include "asm/power/p11.h"
 #include "asm/power_interface.h"
 #include "jiffies.h"
 #include "app_config.h"
 #include "syscfg_id.h"
-#include "adc_dtemp_alog.h"
+#include "system/includes.h"
 
 
-//************************************************************
-// dtemp pll trim*********************************************
-//************************************************************
+//*******************************************
+// ****************dtemp pll trim************
+//*******************************************
 
-#define CHECK_TEMPERATURE_CYCLE             (500)   //
-#define BTOSC_TEMPERATURE_THRESHOLD         (10 * 5) //
 
-extern const int config_bt_temperature_pll_trim;
+#define     APP_IO_DEBUG_0(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT &= ~BIT(x);}
+#define     APP_IO_DEBUG_1(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT |= BIT(x);}
+
+
 
 extern void get_bta_pll_midbank_temp(void);   //ok
+extern const int config_bt_temperature_pll_trim;
+static u16 trim_timer_handle = 0;
+static u8 is_pll_trim_active = 0;
+#define CHECK_TEMPERATURE_CYCLE_INIT                  (1000 * 8)   //未连接检测周期
+/* #define CHECK_TEMPERATURE_CYCLE_CONNECTED             (1000 * 5 )    //连接蓝牙检测周期 */
 
-static u8 dtemp_data_change = 0;
+extern u8 btpll_status_det();
+
+extern u8 le_hw_check_all_instant_will_be_valid();
 
 
-void check_pll_trim_condition(TempSensor *tem, u8 en)
+static void btpll_trim_main()
 {
-    TempSensor *data = get_tempsensor_pivr();
-    int vaild = data->valid;
-    int stable = data->stable;
-    /* printf("vaild:%d,stable:%d\n",vaild,stable); */
-    if (vaild && stable) {
-        //比较
-        if ((data->ref > data->output) && ((data->ref - data->output) > BTOSC_TEMPERATURE_THRESHOLD)) {
-            tempsensor_update_ref(data, data->ref - BTOSC_TEMPERATURE_THRESHOLD);
-            dtemp_data_change = 1;
-        } else if ((data->ref < data->output) && ((data->output - data->ref) > BTOSC_TEMPERATURE_THRESHOLD)) {
-            tempsensor_update_ref(data, data->ref + BTOSC_TEMPERATURE_THRESHOLD);
-            dtemp_data_change = 1;
+    printf("midbank_trim>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
+    local_irq_disable();
+    is_pll_trim_active = 1;
+    local_irq_enable();
+    /* APP_IO_DEBUG_1(B,0); */
+
+    get_bta_pll_midbank_temp();
+
+    /* APP_IO_DEBUG_0(B,0); */
+    local_irq_disable();
+    is_pll_trim_active = 0;
+    local_irq_enable();
+
+}
+
+void temperature_plltrim_handle()
+{
+    int msg[3] = {0};
+    msg[0] = (int)btpll_trim_main;
+    msg[1] = 1;
+    msg[2] = 0;
+    int ret = os_taskq_post_type("app_core", Q_CALLBACK, 3, msg);
+
+}
+
+void trim_process()
+{
+    if (!le_hw_check_all_instant_will_be_valid() && btpll_status_det()) {
+        temperature_plltrim_handle();
+    }
+}
+
+
+void trim_timer_add()
+{
+    if (config_bt_temperature_pll_trim) {
+        if (!trim_timer_handle) {
+            trim_timer_handle = sys_s_hi_timer_add(NULL, trim_process, CHECK_TEMPERATURE_CYCLE_INIT);
         }
-
-    }
-    if (dtemp_data_change) {
-        dtemp_data_change = 0;
-        printf("midbank_trim\n");
-        get_bta_pll_midbank_temp();
     }
 }
 
-static void pll_trim_timer_handler(void *priv)
+
+static u8 pll_trim_idle_query(void)
 {
-    if (!config_bt_temperature_pll_trim) {
-        return;
-    }
-    u16 dtemp_voltage = adc_get_voltage(AD_CH_DTEMP);
-    tempsensor_process(get_tempsensor_pivr(), dtemp_voltage);
-
-    static s32 pll_bank_offset = 0;
-    check_pll_trim_condition(get_tempsensor_pivr(), 1);
+    return (!is_pll_trim_active);
 }
 
-void temp_pll_trim_init(void)
-{
-    if (!config_bt_temperature_pll_trim) {
-        return;
-    }
-    tempsensor_init(get_tempsensor_pivr());
-    sys_s_hi_timer_add(NULL, pll_trim_timer_handler, CHECK_TEMPERATURE_CYCLE);
-}
+REGISTER_LP_TARGET(plll_trim_lp_target) = {
+    .name = "pll_trim",
+    .is_idle = pll_trim_idle_query,
+};
 
 
-
+__initcall(trim_timer_add);

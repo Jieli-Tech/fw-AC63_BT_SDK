@@ -73,7 +73,7 @@ int transport_spp_send_data_check(u16 len)
     return 1;
 }
 
-static void transport_uart_rx_to_spp(u8 *packet, u32 size)
+void transport_uart_rx_to_spp(u8 *packet, u32 size)
 {
     if (SPP_USER_ST_CONNECT == spp_state && transport_spp_send_data_check(size)) {
         transport_spp_send_data(packet, size);

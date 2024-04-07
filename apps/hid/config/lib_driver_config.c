@@ -59,6 +59,8 @@ const int sdx_can_operate_mmc_card = 1;
 const int sdx_can_operate_mmc_card = 0;
 #endif
 
+const u8 lp_bt_sniff_use_btosc = 0;/*run xosc48m,AC632N*/
+
 /**
  * @brief Log (Verbose/Info/Debug/Warn/Error)
  */

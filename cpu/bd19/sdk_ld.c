@@ -167,6 +167,10 @@ SECTIONS
 		*(.wtgv2dec_str)
 		*(.wtg_decv2_sparse_code)
 		*(.lc3_decoder_code)
+		*(.msbc_codec_const)
+		*(.msbc_codec_code)
+		*(.msbc_const)
+		*(.msbc_code)
         *(.audio_pwm_code)
 		*(.opus_code)
 	    *(.opus_encoder_code)
@@ -249,6 +253,8 @@ SECTIONS
 		*(.lc3_codec_ari_c_data)
 		*(.lc3_codec_c_data)
 #endif
+        *(.msbc_data)
+        *(.msbc_codec_data)
 		. = ALIGN(4);
 #if (TCFG_ENC_LC3_ENABLE || TCFG_DEC_LC3_ENABLE)
 		*(.lc3_codec_ari_c_data)
@@ -300,6 +306,8 @@ SECTIONS
 	*(.lc3_codec_ari_c_bss)
 	*(.lc3_codec_c_bss)
 #endif
+        *(.msbc_bss)
+        *(.msbc_codec_bss)
         . = ALIGN(4);
 		#include "btstack/btstack_lib_bss.ld"
         . = ALIGN(4);

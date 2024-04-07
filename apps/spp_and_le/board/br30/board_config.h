@@ -6,6 +6,7 @@
  */
 
 #define CONFIG_BOARD_AC637N_DEMO
+// #define CONFIG_BOARD_AC637N_FMY
 // #define CONFIG_BOARD_AC6373B_DEMO
 // #define CONFIG_BOARD_AC6376F_DEMO
 // #define CONFIG_BOARD_AC6379B_DEMO
@@ -14,4 +15,5 @@
 #include "board_ac6373b_demo_cfg.h"
 #include "board_ac6376f_demo_cfg.h"
 #include "board_ac6379b_demo_cfg.h"
+#include "board_ac637n_fmy_cfg.h"
 #endif

@@ -45,8 +45,11 @@
 
 //ATT发送的包长,    note: 23 <=need >= MTU
 #define ATT_LOCAL_MTU_SIZE        (64)
+//ATT缓存的buffer支持缓存数据包个数
+#define ATT_PACKET_NUMS_MAX       (2)
+
 //ATT缓存的buffer大小,  note: need >= 23,可修改
-#define ATT_SEND_CBUF_SIZE        (30)
+#define ATT_SEND_CBUF_SIZE        (ATT_PACKET_NUMS_MAX * (ATT_PACKET_HEAD_SIZE + ATT_LOCAL_MTU_SIZE))
 
 //搜索类型
 #define SET_SCAN_TYPE       SCAN_ACTIVE
@@ -66,10 +69,10 @@
 //建立连接超时
 #define SET_CREAT_CONN_TIMEOUT    0 //(unit:ms)
 
-#define SEARCH_PROFILE_EN   0 //search profile enable
+#define SEARCH_PROFILE_EN         1 //search profile enable
 //---------------------------------------------------------------------------
 static scan_conn_cfg_t conn_24g_central_scan_cfg;//扫描连接配置
-static u16 conn_24g_handle;//2.4g连接handle
+static u16 conn_24g_handle = 0;//2.4g连接handle
 
 //配对信息
 //#define   CLIENT_PAIR_BOND_ENABLE    1 //可增加主机配对使能
@@ -111,7 +114,7 @@ static const sm_cfg_t sm_init_config = {
 //gatt 初始化gatt_client配置
 extern const gatt_client_cfg_t conn_24g_client_init_cfg;
 //gatt 控制模块初始化
-static gatt_ctrl_t conn_24g_gatt_control_block = {
+gatt_ctrl_t conn_24g_gatt_client_control_block = {
     //public
     .mtu_size = ATT_LOCAL_MTU_SIZE,
     .cbuffer_size = ATT_SEND_CBUF_SIZE,
@@ -168,40 +171,27 @@ static void __ble_state_to_user(u8 state, u8 reason)
 
 //连接之后,搜索指定uuid操作handle交互
 static const target_uuid_t  conn_24g_search_ble_uuid_table[] = {
-    /* { */
-    /* .services_uuid16 = 0x1800, */
-    /* .characteristic_uuid16 = 0x2a00, */
-    /* .opt_type = ATT_PROPERTY_READ, */
-    /* }, */
-
-    /* { */
-    /* .services_uuid16 = 0x1812, */
-    /* .characteristic_uuid16 = 0x2a4b, */
-    /* .opt_type = ATT_PROPERTY_READ, */
-    /* }, */
-
     {
-        .services_uuid16 = 0x1812,
-        .characteristic_uuid16 = 0x2a4d,//report
-        .opt_type = ATT_PROPERTY_NOTIFY,
+        .services_uuid16 = 0x1800,
+        .characteristic_uuid16 = 0x2a00,
+        .opt_type = ATT_PROPERTY_READ,
     },
 
     {
-        .services_uuid16 = 0x1812,
-        .characteristic_uuid16 = 0x2a33,//mouse input report
+        .services_uuid16 = 0xae30,
+        .characteristic_uuid16 = 0xae02,//charge service
         .opt_type = ATT_PROPERTY_NOTIFY,
     },
-
     {
-        .services_uuid16 = 0x1801,
-        .characteristic_uuid16 = 0x2a05,//charge service
-        .opt_type = ATT_PROPERTY_INDICATE,
+        .services_uuid16 = 0xae30,
+        .characteristic_uuid16 = 0xae04,//charge service
+        .opt_type = ATT_PROPERTY_NOTIFY,
     },
 
 };
 
 //配置多个扫描匹配设备
-static const u8 conn_24g_test_remoter_name1[] = "CONN_24G(BLE)";//
+static const u8 conn_24g_test_remoter_name1[] = "AC696X_1(BLE)";//"CONN_24G(BLE)";//
 static const u8 conn_24g_test_remoter_name2[] = "AC630N_mx(BLE)";//
 static const u8 user_config_tag_string[] = "abc123";
 static const client_match_cfg_t conn_24g_match_device_table[] = {
@@ -341,18 +331,18 @@ static void conn_24g_timer_handle(u32 priv)
 
 
 static const u16 conn_ccc_value = 0x0001;
-static const u16 conn_24g_notify_handle[3] = {0x0027, 0x002b, 0x002f};
+static const u16 conn_24g_notify_handle[2] = {0x0008, 0x000d};
 static void conn_24g_enable_notify_ccc(void)
 {
-    log_info("%s\n", __FUNCTION__);
+    log_info("%s:con_hanle:0x%x\n", __FUNCTION__, conn_24g_handle);
     ble_comm_att_send_data(conn_24g_handle, conn_24g_notify_handle[0] + 1, &conn_ccc_value, 2, ATT_OP_WRITE);
     ble_comm_att_send_data(conn_24g_handle, conn_24g_notify_handle[1] + 1, &conn_ccc_value, 2, ATT_OP_WRITE);
-    ble_comm_att_send_data(conn_24g_handle, conn_24g_notify_handle[2] + 1, &conn_ccc_value, 2, ATT_OP_WRITE);
+    /* ble_comm_att_send_data(conn_24g_handle, conn_24g_notify_handle[2] + 1, &conn_ccc_value, 2, ATT_OP_WRITE); */
 }
 
 //-------------------------------------------------------------------------------------
 //vm 绑定对方信息读写
-int conn_24g_pair_vm_do(u8 *info, u8 info_len, u8 rw_flag)
+int conn_24g_client_pair_vm_do(u8 *info, u8 info_len, u8 rw_flag)
 {
     int ret;
     int vm_len = info_len;
@@ -423,10 +413,11 @@ static int conn_24g_central_event_packet_handler(int event, u8 *packet, u16 size
         memcpy(&client_pair_bond_info[1], cur_peer_addr_info, 7);
         client_pair_bond_info[0] = PAIR_BOND_TAG;
         put_buf(&ext_param[7], 7);
-        conn_24g_pair_vm_do(client_pair_bond_info, sizeof(client_pair_bond_info), 1);
+        conn_24g_client_pair_vm_do(client_pair_bond_info, sizeof(client_pair_bond_info), 1);
         bt_connected = 1;
         //连接后识别定向广播,不然会导致从机一断开连接,主机马上又连接
         ble_gatt_client_set_search_config(&conn_24g_central_bond_config);
+        __ble_bt_evnet_post(SYS_BT_EVENT_BLE_STATUS, BLE_ST_CONNECT, NULL, conn_24g_handle);
         break;
 
     case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
@@ -444,7 +435,7 @@ static int conn_24g_central_event_packet_handler(int event, u8 *packet, u16 size
         } else {
             memcpy(&client_pair_bond_info[1], cur_peer_addr_info, 7);
             client_pair_bond_info[0] = PAIR_BOND_TAG;
-            conn_24g_pair_vm_do(client_pair_bond_info, sizeof(client_pair_bond_info), 1);
+            conn_24g_client_pair_vm_do(client_pair_bond_info, sizeof(client_pair_bond_info), 1);
             log_info("bonding remoter");
             put_buf(client_pair_bond_info, sizeof(client_pair_bond_info));
         }
@@ -460,6 +451,7 @@ static int conn_24g_central_event_packet_handler(int event, u8 *packet, u16 size
         put_buf(&packet[1], 6);//打印的是指针不是地址
         if (packet[8] == 2) {
             log_info("is TEST_BOX\n");
+            break;
         }
 
         client_match_cfg_t *match_cfg = ext_param;
@@ -489,7 +481,9 @@ static int conn_24g_central_event_packet_handler(int event, u8 *packet, u16 size
 
     case GATT_COMM_EVENT_GATT_SEARCH_PROFILE_COMPLETE:
         bt_connected = 2;
+#if !SEARCH_PROFILE_EN
         conn_24g_enable_notify_ccc();
+#endif
         break;
 
     case GATT_COMM_EVENT_CLIENT_STATE:
@@ -527,7 +521,7 @@ void conn_24g_central_init(void)
 {
     log_info("%s", __FUNCTION__);
 
-    if (0 == conn_24g_pair_vm_do(client_pair_bond_info, sizeof(client_pair_bond_info), 0)) {
+    if (0 == conn_24g_client_pair_vm_do(client_pair_bond_info, sizeof(client_pair_bond_info), 0)) {
         log_info("set connect set is bond!!");
         ble_gatt_client_set_search_config(&conn_24g_central_bond_config);
     } else {
@@ -536,41 +530,6 @@ void conn_24g_central_init(void)
     }
 
     conn_24g_scan_conn_config_set();
-}
-
-//-------------------------------------------------------------------------------------
-//协议栈开始之前初始化
-void bt_ble_before_start_init(void)
-{
-    log_info("%s", __FUNCTION__);
-    ble_comm_init(&conn_24g_gatt_control_block);
-}
-
-void bt_ble_init(void)
-{
-    log_info("%s\n", __FUNCTION__);
-    ble_comm_set_config_name(bt_get_local_name(), 1);
-    conn_24g_handle = 0;
-    bt_connected = 0;
-
-    conn_24g_central_init();//24g主机初始化
-
-    ble_module_enable(1);
-
-    ble_gatt_client_scan_enable(1);
-    log_info("just scan");
-}
-
-void bt_ble_exit(void)
-{
-    log_info("%s\n", __FUNCTION__);
-    ble_module_enable(0);
-    ble_comm_exit();
-}
-
-void ble_module_enable(u8 en)
-{
-    ble_comm_module_enable(en);
 }
 
 #endif

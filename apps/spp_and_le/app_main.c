@@ -15,6 +15,7 @@
 #include "app_power_manage.h"
 #include "asm/charge.h"
 
+
 #if TCFG_KWS_VOICE_RECOGNITION_ENABLE
 #include "jl_kws/jl_kws_api.h"
 #endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE */
@@ -28,9 +29,14 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
-/*任务列表 */
+/*任务列表   */
 const struct task_info task_info_table[] = {
+#if CONFIG_APP_FINDMY
+    {"app_core",            1,     0,   640 * 2,   128  },
+#else
     {"app_core",            1,     0,   640,   128  },
+#endif
+
     {"sys_event",           7,     0,   256,   0    },
     {"btctrler",            4,     0,   512,   256  },
     {"btencry",             1,     0,   512,   128  },
@@ -56,7 +62,7 @@ const struct task_info task_info_table[] = {
     {"kws",                 2,     0,   256,   64   },
 #endif /* #if TCFG_KWS_VOICE_RECOGNITION_ENABLE */
 #if (TUYA_DEMO_EN)
-    {"user_deal",           7,     0,   512,   512  },//定义线程 tuya任务调度
+    {"user_deal",           2,     0,   512,   512  },//定义线程 tuya任务调度
 #endif
 #if (CONFIG_APP_HILINK)
     {"hilink_task",         2,     0,   1024,   0},//定义线程 hilink任务调度
@@ -199,6 +205,11 @@ void app_main()
 #elif CONFIG_APP_CONN_24G
     it.name = "conn_24g";
     it.action = ACTION_CONN_24G_MAIN;
+
+#elif CONFIG_APP_FINDMY
+    it.name = "findmy";
+    it.action = ACTION_FINDMY;
+
 #else
     while (1) {
         printf("no app!!!");

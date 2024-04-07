@@ -59,9 +59,22 @@ typedef struct {
 
 // define property id
 enum {
-    BLE_QIOT_PROPERTY_ID_POWER_SWITCH = 0,
+    BLE_QIOT_PROPERTY_ID_BATTERY_VALUE = 0,
+    BLE_QIOT_PROPERTY_ID_SIGNAL_STRENGTH,
     BLE_QIOT_PROPERTY_ID_BUTT,
 };
+
+// define battery_value attributes
+#define	BLE_QIOT_PROPERTY_BATTERY_VALUE_MIN     	(0)
+#define	BLE_QIOT_PROPERTY_BATTERY_VALUE_MAX     	(100)
+#define	BLE_QIOT_PROPERTY_BATTERY_VALUE_START   	(0)
+#define	BLE_QIOT_PROPERTY_BATTERY_VALUE_STEP    	(1)
+
+// define signal_strength attributes
+#define	BLE_QIOT_PROPERTY_SIGNAL_STRENGTH_MIN   	(-100)
+#define	BLE_QIOT_PROPERTY_SIGNAL_STRENGTH_MAX   	(100)
+#define	BLE_QIOT_PROPERTY_SIGNAL_STRENGTH_START 	(0)
+#define	BLE_QIOT_PROPERTY_SIGNAL_STRENGTH_STEP  	(1)
 
 // define property set handle return 0 if success, other is error
 // sdk call the function that inform the server data to the device
@@ -78,6 +91,82 @@ typedef struct {
     uint8_t authority;	//property authority
     uint8_t type;	//data type
 } ble_property_t;
+#define	BLE_QIOT_INCLUDE_EVENT
+
+// define event id
+enum {
+    BLE_QIOT_EVENT_ID_LOSS_NOTICE = 0,
+    BLE_QIOT_EVENT_ID_BUTT,
+};
+
+// define param id for event loss_notice
+enum {
+    BLE_QIOT_EVENT_LOSS_NOTICE_PARAM_ID_RECORD_TIME = 0,
+    BLE_QIOT_EVENT_LOSS_NOTICE_PARAM_ID_BUTT,
+};
+
+// define event get handle. return the data length obtained, -1 is error, 0 is no data
+// sdk call the function fetch user data and send to the server, the data should wrapped by user adn skd just transmit
+typedef int (*event_get_cb)(char *buf, uint16_t buf_len);
+
+// each param have a struct ble_event_param, make up a array for the event
+typedef struct {
+    event_get_cb get_cb;	//get param data callback
+    uint8_t type;	//param type
+} ble_event_param;
+
+// a array named sg_ble_event_array is composed by all the event array
+typedef struct {
+    ble_event_param *event_array;	//array of params data
+    uint8_t array_size;	//array size
+} ble_event_t;
+#define	BLE_QIOT_INCLUDE_ACTION
+
+// define action id
+enum {
+    BLE_QIOT_ACTION_ID_SOUND_CONTROL = 0,
+    BLE_QIOT_ACTION_ID_BUTT,
+};
+
+// define input id for action sound_control
+enum {
+    BLE_QIOT_ACTION_SOUND_CONTROL_INPUT_ID_DURATION = 0,
+    BLE_QIOT_ACTION_SOUND_CONTROL_INPUT_ID_BUTT,
+};
+
+// define output id for action sound_control
+enum {
+    BLE_QIOT_ACTION_SOUND_CONTROL_OUTPUT_ID_RESULT = 0,
+    BLE_QIOT_ACTION_SOUND_CONTROL_OUTPUT_ID_BUTT,
+};
+#define	BLE_QIOT_ACTION_INPUT_SOUND_CONTROL_DURATION_MIN	(0)
+#define	BLE_QIOT_ACTION_INPUT_SOUND_CONTROL_DURATION_MAX	(60)
+#define	BLE_QIOT_ACTION_INPUT_SOUND_CONTROL_DURATION_START	(0)
+#define	BLE_QIOT_ACTION_INPUT_SOUND_CONTROL_DURATION_STEP	(1)
+
+// define max input id and output id in all of input id and output id above
+#define	BLE_QIOT_ACTION_INPUT_ID_BUTT           	1
+#define	BLE_QIOT_ACTION_OUTPUT_ID_BUTT          	1
+
+// define action input handle, return 0 is success, other is error.
+// input_param_array carry the data from server, include input id, data length ,data val
+// input_array_size means how many input id
+// output_id_array filling with output id numbers that need obtained, sdk will traverse it and call the action_output_handle to obtained data
+typedef int (*action_input_handle)(e_ble_tlv *input_param_array, uint8_t input_array_size, uint8_t *output_id_array);
+
+// define action output handle, return length of the data, 0 is no data, -1 is error
+// output_id means which id data should be obtained
+typedef int (*action_output_handle)(uint8_t output_id, char *buf, uint16_t buf_len);
+
+// each action have a struct ble_action_t, make up a array named sg_ble_action_array
+typedef struct {
+    action_input_handle input_cb;	//handle input data
+    action_output_handle output_cb;	// get output data in the callback
+    uint8_t *input_type_array;	//type array for input id
+    uint8_t *output_type_array;	//type array for output id
+    uint8_t input_id_size;	//numbers of input id
+    uint8_t output_id_size;	//numbers of output id
+} ble_action_t;
 // property module
 #ifdef BLE_QIOT_INCLUDE_PROPERTY
 uint8_t ble_get_property_type_by_id(uint8_t id);
@@ -88,9 +177,6 @@ int ble_user_property_report_reply_handle(uint8_t result);
 int ble_lldata_parse_tlv(const char *buf, int buf_len, e_ble_tlv *tlv);
 int ble_user_property_struct_handle(const char *in_buf, uint16_t buf_len, ble_property_t *struct_arr, uint8_t arr_size);
 int ble_user_property_struct_get_data(char *in_buf, uint16_t buf_len, ble_property_t *struct_arr, uint8_t arr_size);
-void ll_sync_led_switch(void);
-void ll_sync_unbind(void);
-void llsync_device_state_sync(void);
 #endif
 
 // event module
@@ -117,3 +203,4 @@ int     ble_action_user_handle_output_param(uint8_t action_id, uint8_t output_id
 }
 #endif
 #endif //BLE_QIOT_TEMPLATE_H_
+

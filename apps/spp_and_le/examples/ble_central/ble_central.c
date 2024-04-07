@@ -57,7 +57,7 @@
 
 //连接周期
 #define BASE_INTERVAL_MIN   (6)//最小的interval
-#define SET_CONN_INTERVAL   (BASE_INTERVAL_MIN*8) //(unit:1.25ms)
+#define SET_CONN_INTERVAL   (BASE_INTERVAL_MIN*4) //(unit:1.25ms)
 //连接latency
 #define SET_CONN_LATENCY    0  //(unit:conn_interval)
 //连接超时
@@ -380,6 +380,7 @@ static int cetl_client_event_packet_handler(int event, u8 *packet, u16 size, u8 
         put_buf(&packet[1], 6);
         if (packet[8] == 2) {
             log_info("is TEST_BOX\n");
+            break;
         }
         client_match_cfg_t *match_cfg = ext_param;
         if (match_cfg) {

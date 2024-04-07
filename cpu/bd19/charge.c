@@ -450,6 +450,7 @@ int charge_init(const struct dev_node *node, void *arg)
         }
     } else {
         charge_flag = BIT_LDO5V_OFF;
+        power_exit_charge_mode();
     }
 
     __this->init_ok = 1;

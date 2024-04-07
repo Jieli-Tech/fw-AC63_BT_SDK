@@ -23,6 +23,12 @@
 
 // #define APP_PRIVATE_PROFILE_CFG
 
+//V5.0 扩展广播/扫描使能
+#define CONFIG_BT_EXT_ADV_MODE            0
+#if CONFIG_BT_EXT_ADV_MODE
+#define APP_TO_ALLOW_EXT_ADV
+#endif
+
 #if (CONFIG_BT_MODE == BT_NORMAL)
 //enable dut mode,need disable sleep(TCFG_LOWPOWER_LOWPOWER_SEL = 0)
 #define TCFG_NORMAL_SET_DUT_MODE                  0

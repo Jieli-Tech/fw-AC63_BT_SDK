@@ -207,6 +207,7 @@ void cfg_file_parse(u8 idx)
         bt_cfg.edr_name[LOCAL_NAME_LEN - 1] = 0;
     } else {
         memset(bt_cfg.edr_name, 0x00, LOCAL_NAME_LEN);
+        memcpy(bt_cfg.edr_name, tmp, ret);
     }
     /* g_printf("bt name config:%s\n", bt_cfg.edr_name); */
     log_info("bt name config:%s\n", bt_cfg.edr_name);
@@ -218,9 +219,15 @@ void cfg_file_parse(u8 idx)
         log_debug("read rf err\n");
         app_var.rf_power = 10;
     }
+
+#if TCFG_NORMAL_SET_DUT_MODE
+    log_info("===rf dut level");
+    bt_max_pwr_set(10, 5, 8, 10);//set max level
+#else
     bt_max_pwr_set(app_var.rf_power, 5, 8, SET_BLE_TX_POWER_LEVEL);
+#endif
     /* g_printf("rf config:%d\n", app_var.rf_power); */
-    log_info("rf config:%d\n", app_var.rf_power);
+    log_info("rf config:%d,%d\n", app_var.rf_power, SET_BLE_TX_POWER_LEVEL);
 
     app_var.music_volume = 14;
     app_var.wtone_volume = 14;

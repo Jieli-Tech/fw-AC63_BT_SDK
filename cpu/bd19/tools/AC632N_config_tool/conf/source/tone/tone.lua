@@ -78,7 +78,7 @@ cfg:addToneNameMapLang("en", {
 local tone_file_list = cfg:tones("提示音", tone_defaults);
 
 --tone_file_list:setBinInfer(false);
-local tv = cfg:tonesView(tone_file_list, {"aac", "mp3", "wav", "wtg", "wts", "msbc", "sbc", "mty", "*"});
+local tv = cfg:tonesView(tone_file_list, {"wts", "aac", "mp3", "wav", "wtg", "msbc", "sbc", "mty", "*"});
 if open_by_program == "fw_edit" then
 	-- 如果在 fw 编辑中打开，则不要添加提示音等功能
 	tv:setFlags{"no-load", "no-add", "no-edit-name", "no-delete"};
@@ -86,9 +86,10 @@ end
 -- tv:setMainFormat("wtg");
 tv:setMainFormatSelector({
 	-- {"aac",          "aac"},
-	-- {"wtg (低音质)", "wtg"},
+	{"wtg (低音质)", "wtg"},
+	-- {"保留原来格式", "*"},
 	{"wts (低音质)", "wts"},
-	-- {"msbc(中音质)", "msbc"},
+	{"msbc(中音质)", "msbc"},
 	-- {"sbc (高音质)", "sbc"},
 	-- {"sin (正弦波)", "sin"},
 	-- {"mty (全音质) 请设置输出采样率和码率", "mty"},
@@ -189,10 +190,10 @@ end;
 local to_wts_format = function(frompath, topath)
 	local pcmtmp = os.tmpname();
 	local pcmtmp2 = os.tmpname();
-	
+    print('save bitrate mode' .. tv:getFormatSaveBitRateMode());
 	cfg:runProg{cfg.rootDir .. '/3rd/ffmpeg', '-i', frompath, '-ar', math.floor(tv:getFormatSampleRate() * 2), '-ac', '1', '-f', 's16le', '-acodec', 'pcm_s16le', pcmtmp};
 	cfg:runProg{srcdir .. '/tone/wtgv2_resample.exe', pcmtmp, pcmtmp2};
-	cfg:runProg{srcdir .. '/tone/wtgv2_encode.exe', pcmtmp2, topath, "o.raw", math.floor(tv:getFormatSampleRate()), math.floor(tv:getFormatBitRate()), '20', '0.35'};
+	cfg:runProg{srcdir .. '/tone/wtgv2_encode.exe', pcmtmp2, topath, "o.raw", math.floor(tv:getFormatBitRate()), math.floor(tv:getFormatSampleRate()), '20', tv:getFormatVad(), tv:getFormatSaveBitRateMode()};
 	os.remove(pcmtmp);
 	os.remove(pcmtmp2);
 	return true;
@@ -272,16 +273,21 @@ tv:setFormatSampleRateList("mty", {
     {48000, {48, 56, 64, 80, 96, 112, 128}},
 });
 
+--                           def  min   max   step digits
+tv:setFormatDisplayVad("wts", {0, 0.00, 0.50, 0.01, 2}); -- 当选择 wts 的时候，显示 vad
+tv:setFormatSaveBitRateMode("wts", 1);
+
 tv:setFormatSampleRateRange("wts", {
--- {sr_out, {val, min, max}},
-    { 8000, { 8000, 5000, 60000}},
+ -- {sr_out, {val, min, max}},
+	{16000, {16000, 5000, 60000}},
+	{ 8000, { 8000, 5000, 60000}},
     {11025, {11000, 5000, 60000}},
     {12000, {12000, 5000, 60000}},
 
-    {16000, {16000, 5000, 60000}},
     {22050, {20000, 5000, 60000}},
     {24000, {22000, 5000, 60000}},
 });
+
 
 ---------------------- mty - >wav, 播放
 local mty_to_wav_format = function(frompath, topath)

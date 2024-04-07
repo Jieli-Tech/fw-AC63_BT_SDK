@@ -6,6 +6,7 @@
 #include "app_config.h"
 #include "le_client_demo.h"
 #include "btcontroller_config.h"
+#include "ble_config.h"
 //注释编译宏，关闭蓝牙功能可以编译通过
 #if 1//TCFG_USER_BLE_ENABLE && CONFIG_BT_GATT_COMMON_ENABLE
 //----------------------------------------------------------------------------------------
@@ -20,17 +21,31 @@
 
 #define CPU_RUN_TRACE()         //log_info("%s: %d\n", __FUNCTION__,__LINE__)
 
-#define EXT_ADV_MODE_EN         0
+/*for ext and periodic_adv test*/
+//二级广播 adv + scan + connect流程   config_btctler_le_hw_nums 需要在原来基础上加2, BLE_HW_RX_SIZE需要相应加大
+//config_btctler_le_features 需要或上LE_EXTENDED_ADVERTISING 或  LE_PERIODIC_ADVERTISING
+
+#ifdef APP_TO_ALLOW_EXT_ADV
+#define EXT_ADV_MODE_EN             1
+#else
+#define EXT_ADV_MODE_EN             0
+#endif
+#define PERIODIC_ADV_MODE_EN        0             //周期广播+sync流程
+
+#define CUR_ADVERTISING_SID         0
+#define CUR_ADV_HANDLE              0
 
 extern const int config_le_hci_connection_num;//支持同时连接个数
 extern const int config_le_sm_support_enable; //是否支持加密配对
 extern const int config_le_gatt_server_num;   //支持server角色个数
 extern const int config_le_gatt_client_num;   //支持client角色个数
+extern const int config_le_sm_sub_sc_enable;   //支持SC加密方式
 
 #define STACK_IS_SUPPORT_GATT_SERVER()  (config_le_gatt_server_num)
 #define STACK_IS_SUPPORT_GATT_CLIENT()  (config_le_gatt_client_num)
 #define STACK_IS_SUPPORT_GATT_CONNECT() (config_le_hci_connection_num)
 #define STACK_IS_SUPPORT_SM_PAIR()      (config_le_sm_support_enable)
+#define STACK_IS_SUPPORT_SM_SUB_SC()    (config_le_sm_sub_sc_enable)
 
 typedef enum {
     /*======master + slave,ble common*/
@@ -253,6 +268,6 @@ void ble_gatt_client_module_enable(u8 en);
 void ble_gatt_client_disconnect_all(void);
 void ble_gatt_just_search_profile_start(u16 conn_handle);
 void ble_gatt_just_search_profile_stop(u16 conn_handle);
-
+u8 ble_comm_dev_get_connected_nums(u8 role);
 #endif
 #endif

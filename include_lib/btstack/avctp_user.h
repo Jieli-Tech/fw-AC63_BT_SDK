@@ -295,6 +295,25 @@ typedef enum {
     USER_CTRL_CMD_RESUME_STACK,
     //获取当前音乐的一些信息
     USER_CTRL_AVCTP_OPID_GET_MUSIC_INFO,
+
+    //MAP功能发送命令
+    USER_CTRL_MAP_CMD_BEGIN,
+    //MAP读取时间
+    USER_CTRL_MAP_READ_TIME,
+    //MAP读取未读短信
+    USER_CTRL_MAP_READ_INBOX,
+    //MAP读取已读短信
+    USER_CTRL_MAP_READ_OUTBOX,
+    //MAP读取已发读短信
+    USER_CTRL_MAP_READ_SENT,
+    //MAP读取删除短信
+    USER_CTRL_MAP_READ_DELETED,
+    //MAP读取草稿箱短信
+    USER_CTRL_MAP_READ_DRAFT,
+    //MAP停止读取
+    USER_CTRL_MAP_STOP_READING,
+    USER_CTRL_MAP_CMD_END,
+
     USER_CTRL_LAST
 } USER_CMD_TYPE;
 
@@ -362,6 +381,8 @@ typedef enum {
     BT_STATUS_BROADCAST_STATE,/*braoadcaset中*/
 
     BT_STATUS_TRIM_OVER,        /*测试盒TRIM完成*/
+    BT_STATUS_CONN_HCRP_CH,    //HCRP连接成功
+    BT_STATUS_DISCONN_HCRP_CH, //HCRP通道断开
 } STATUS_FOR_USER;
 
 typedef enum {
@@ -400,6 +421,7 @@ typedef enum {
 #define    PBAP_CH      0x40
 #define    HFP_AG_CH    0x80
 #define    A2DP_SRC_CH  0x2000
+#define    HCRP_CH       0x10000
 struct sniff_ctrl_config_t {
     u16 sniff_max_interval;
     u16 sniff_mix_interval;
@@ -565,6 +587,7 @@ extern u8 delete_last_device_from_vm();
 
 #define BD_CLASS_TRANSFER_HEALTH    0x10091C
 
+#define BD_CLASS_PRINTING           0x140680
 /*修改什么的类型，会影响到手机显示的图标*/
 extern void __change_hci_class_type(u32 class);
 /*配置通话使用16k的msbc还是8k的cvsd*/

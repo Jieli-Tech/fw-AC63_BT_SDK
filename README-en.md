@@ -1,4 +1,8 @@
-# fw-AC63_BT_SDK
+
+[tag download]:https://github.com/Jieli-Tech/fw-AC63_BT_SDK/tags
+[tag_badgen]:https://img.shields.io/github/v/tag/Jieli-Tech/fw-AC63_BT_SDK?style=plastic&logo=bluetooth&labelColor=ffffff&color=informational&label=Tag&logoColor=blue
+
+# fw-AC63_BT_SDK   [![tag][tag_badgen]][tag download]
 
 [中文](./README.md) | EN
 
@@ -42,11 +46,13 @@ Build
 -------------
 Select a project to build. The following folders contains buildable projects:
 
-* APP_Bluetooth : [SPP_LE](./apps/spp_and_le), usage: data transfer, centeral devices, boardcast devices, beacon, multi-link, Dongle(usb / bt). [document](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/spple/index.html)
+* APP_Bluetooth : [SPP_LE](./apps/spp_and_le), usage: data transfer, centeral devices, boardcast devices, beacon, FindMy, multi-link, Dongle(usb / bt). [document](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/spple/index.html)
 
 * APP_Bluetooth : [HID](./apps/hid), usage: remote control, keyboard, mouse, game box, Voice remote control. [document](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/hid/index.html)
 
 * APP_Bluetooth : [Mesh](./apps/mesh), usage: Mesh nodes. [document](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/mesh/index.html)
+
+See Tags for the released versions.
 
 Comming Soon：
 
@@ -67,11 +73,13 @@ SDK support Codeblock & Make to build to project,make sure you already setup the
 Certification
 -------------
 
-Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.0/5.1 specification
+Bluetooth Classic LMP /LE Link Layer protocol stack implementing Bluetooth 5.0/5.1/5.4 specification
 
 * Core v5.0 [QDID 134104](https://launchstudio.bluetooth.com/ListingDetails/88799)
 
 * Core v5.1 [QDID 136145](https://launchstudio.bluetooth.com/ListingDetails/91371)
+
+* Core v5.4 [QDID 222830](https://launchstudio.bluetooth.com/ListingDetails/193923)
 
 
 Hardware

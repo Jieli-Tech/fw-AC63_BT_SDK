@@ -352,15 +352,23 @@ ANCIF1_LEN = CONFIG_ANCIF1_LEN;
 ANCIF1_OPT = CONFIG_ANCIF1_OPT;
 #endif
 
+[BURNER_PASSTHROUGH_CFG]
+FLASH_WRITE_PROTECT = NO
+
+//烧写配置选项
+                      [BURNER_OPTIONS]
+                      GUI_DISABLED = TRUE;
+//LVD电压值要跟烧录器可选的显示值，一模一样，否则会报错不匹配
+LVD = 1.85v;
 
 
 [BURNER_CONFIG]
 SIZE = CONFIG_BURNER_INFO_SIZE;
 
 [TOOL_CONFIG]
-1TO2_MIN_VER = 2.26.1;//一拖二烧写器最低版本
+1TO2_MIN_VER = 2.27.8;//一拖二烧写器最低版本
 
-1TO8_MIN_VER = 3.1.8;//一拖八烧写器最低版本
+1TO8_MIN_VER = 3.1.22;//一拖八烧写器最低版本
 
 
 

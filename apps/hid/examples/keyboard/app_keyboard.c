@@ -102,7 +102,7 @@ static bt_mode_e bt_hid_mode;
 static volatile u8 is_hidkey_active = 0;//1-临界点,系统不允许进入低功耗，0-系统可以进入低功耗
 static u16 g_auto_shutdown_timer = 0;
 static void hidkey_app_select_btmode(u8 mode);
-
+void hidkey_power_event_to_user(u8 event);
 //----------------------------------
 static const u8 hidkey_report_map[] = {
     0x05, 0x0C,        // Usage Page (Consumer)
@@ -403,7 +403,7 @@ static void hidkey_app_key_deal_test(u8 key_type, u8 key_value)
 
     if (key_type == KEY_EVENT_TRIPLE_CLICK
         && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {
-        hidkey_set_soft_poweroff();
+        hidkey_power_event_to_user(POWER_EVENT_POWER_SOFTOFF);
         return;
     }
 
@@ -493,6 +493,27 @@ static void hidkey_vm_deal(u8 rw_flag)
 
 /*************************************************************************************************/
 /*!
+ *  \brief      软关机消息处理
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+void hidkey_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
+
+/*************************************************************************************************/
+/*!
  *  \brief      进入软关机
  *
  *  \param      [in]
@@ -526,6 +547,7 @@ static void hidkey_set_soft_poweroff(void)
 static void hidkey_timer_handle_test(void)
 {
     log_info("not_bt");
+    //mem_stats();//see memory
 }
 
 /*************************************************************************************************/
@@ -573,10 +595,13 @@ static void hidkey_app_start()
 
     /* 按键消息使能 */
     sys_key_event_enable();
+#if TCFG_SOFTOFF_WAKEUP_KEY_DRIVER_ENABLE
+    set_key_wakeup_send_flag(1);
+#endif
 
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //无操作定时软关机
-    g_auto_shutdown_timer = sys_timeout_add(NULL, hidkey_set_soft_poweroff, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    g_auto_shutdown_timer = sys_timeout_add((void *)POWER_EVENT_POWER_SOFTOFF, hidkey_power_event_to_user, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
 #endif
 }
 
@@ -670,6 +695,17 @@ static int hidkey_bt_connction_status_event_handler(struct bt_event *bt)
          * 蓝牙初始化完成
          */
         log_info("BT_STATUS_INIT_OK\n");
+
+#if TCFG_NORMAL_SET_DUT_MODE
+#if TCFG_USER_EDR_ENABLE
+        log_info("set edr dut mode\n");
+        bredr_set_dut_enble(1, 1);
+#else
+        log_info("set ble dut mode\n");
+        ble_standard_dut_test_init();
+#endif
+        break;
+#endif
 
         hidkey_vm_deal(0);//bt_hid_mode read for VM
 

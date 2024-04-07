@@ -1321,7 +1321,7 @@ void demo_frame_test(void)
     // 模拟定时关闭
     /* sys_timeout_add(NULL, demo_frame_test_close, 10 * 1000); */
     // 启动解码
-    demo_frame_dec_open(DEC_DATA_SAMPRATE, AUDIO_CODING_LC3, NULL); //创建一个解码
+    demo_frame_dec_open(DEC_DATA_SAMPRATE, AUDIO_CODING_MSBC, NULL); //创建一个解码
 }
 
 

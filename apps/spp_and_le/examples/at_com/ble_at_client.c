@@ -42,8 +42,6 @@
 
 #if CONFIG_APP_AT_COM && TRANS_AT_CLIENT
 
-#define SUPPORT_TEST_BOX_BLE_MASTER_TEST_EN	   1
-
 #if LE_DEBUG_PRINT_EN
 /* #define log_info            printf */
 #define log_info(x, ...)    printf("[LE_AT_CLI]" x " ", ## __VA_ARGS__)

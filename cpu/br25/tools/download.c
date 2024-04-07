@@ -66,7 +66,7 @@ cat text.bin data.bin data_code.bin \
 
 /opt/utils/strip-ini -i isd_config.ini -o isd_config.ini
 
-files="app.bin ${CPU}loader.* uboot* ota*.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
+files="app.bin ${CPU}loader.* uboot* ota*.bin isd_config.ini"
 
 host-client -project ${NICKNAME}$2 -f ${files} $1.elf
 

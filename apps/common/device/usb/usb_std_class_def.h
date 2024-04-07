@@ -147,10 +147,10 @@
 
 ////////////CDC Class
 #ifndef CDC_DATA_EP_IN
-#define CDC_DATA_EP_IN              2
+#define CDC_DATA_EP_IN              4
 #endif
 #ifndef CDC_DATA_EP_OUT
-#define CDC_DATA_EP_OUT             2
+#define CDC_DATA_EP_OUT             4
 #endif
 #ifndef CDC_INTR_EP_IN
 #define CDC_INTR_EP_IN              3

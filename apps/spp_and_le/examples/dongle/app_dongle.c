@@ -16,6 +16,7 @@
 #include "app_power_manage.h"
 #include "le_client_demo.h"
 #include "usb/device/hid.h"
+#include "usb/device/cdc.h"
 #include "app_comm_bt.h"
 
 #define LOG_TAG_CONST       DONGLE
@@ -40,8 +41,8 @@
 #endif
 
 //2.4G模式: 0---ble, 非0---2.4G配对码
-#define CFG_RF_24G_CODE_ID       (0) //<=24bits
-/* #define CFG_RF_24G_CODE_ID       (0x23) //<=24bits */
+#define CFG_RF_24G_CODE_ID       (0) //32bits
+/* #define CFG_RF_24G_CODE_ID  (0x5555AAAA) */
 
 static u8  is_app_dongle_active = 0;
 
@@ -333,7 +334,17 @@ static void dongle_edr_hid_input_handler(u8 *packet, u16 size, u16 channel);
 extern void dongle_custom_hid_rx_handler(void *priv, u8 *buf, u32 len);
 extern int ble_hid_data_send_ext(u8 report_type, u8 report_id, u8 *data, u16 len);
 //---------------------------------------------------------------------
-void dongle_set_soft_poweroff(void)
+void dongle_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
+
+static void dongle_set_soft_poweroff(void)
 {
     log_info("set_soft_poweroff\n");
     is_app_dongle_active = 1;
@@ -367,6 +378,18 @@ static const char *edr_bd_name_filt[] = {
 static void dongle_timer_handle_test(void)
 {
     log_info("not_bt");
+}
+
+// cdc send test
+static void usb_cdc_send_test()
+{
+#if TCFG_USB_SLAVE_CDC_ENABLE
+    log_info("-send test cdc data-");
+    u8 cdc_test_buf[3] = {0x11, 0x22, 0x33};
+    cdc_write_data(USB0, cdc_test_buf, 3);
+    /* char test_char[] = "cdc test"; */
+    /* cdc_write_data(USB0, test_char, sizeof(test_char)-1); */
+#endif
 }
 
 static const u8 fix_target_address[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
@@ -579,8 +602,15 @@ static void dongle_key_event_handler(struct sys_event *event)
 
         if (event_type == KEY_EVENT_TRIPLE_CLICK
             && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {
-            dongle_set_soft_poweroff();
+            dongle_power_event_to_user(POWER_EVENT_POWER_SOFTOFF);
             return;
+        }
+
+        if (event_type == KEY_EVENT_DOUBLE_CLICK && key_value == TCFG_ADKEY_VALUE0) {
+#if TCFG_USB_SLAVE_CDC_ENABLE
+            log_info(">>>test to cdc send\n");
+            usb_cdc_send_test();
+#endif
         }
 
 #if (USER_SUPPORT_PROFILE_HID ==1)

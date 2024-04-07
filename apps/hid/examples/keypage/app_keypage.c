@@ -1050,6 +1050,16 @@ void keypage_coordinate_vm_deal(u8 flag)
     }
 }
 
+void keypage_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
+
 static void keypage_set_soft_poweroff(void)
 {
     log_info("keypage_set_soft_poweroff\n");
@@ -1107,7 +1117,7 @@ static void keypage_app_start()
 
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //无操作定时软关机
-    g_auto_shutdown_timer = sys_timeout_add(NULL, keypage_set_soft_poweroff, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    g_auto_shutdown_timer = sys_timeout_add((void *)POWER_EVENT_POWER_SOFTOFF, keypage_power_event_to_user, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
 #endif
 }
 

@@ -92,6 +92,7 @@ bool rcsp_msg_post(RCSP_MSG msg, int argc, ...);
 #define 	SDK_TYPE_AC693X		0x2
 #define 	SDK_TYPE_AC695X 	0x3
 #define		SDK_TYPE_AC697X 	0x4
+#define		SDK_TYPE_AC632X 	0x10
 
 #if   (defined CONFIG_CPU_BR21)
 #define		RCSP_SDK_TYPE		SDK_TYPE_AC692X
@@ -101,6 +102,8 @@ bool rcsp_msg_post(RCSP_MSG msg, int argc, ...);
 #define		RCSP_SDK_TYPE		SDK_TYPE_AC695X
 #elif (defined CONFIG_CPU_BR30)
 #define		RCSP_SDK_TYPE		SDK_TYPE_AC697X
+#elif (defined CONFIG_CPU_BD19)
+#define		RCSP_SDK_TYPE		SDK_TYPE_AC632X
 #else
 #define		RCSP_SDK_TYPE		SDK_TYPE_AC693X
 #endif

@@ -47,7 +47,7 @@ cat text.bin data.bin aec.bin wav.bin ape.bin flac.bin m4a.bin amr.bin dts.bin f
 
 /opt/utils/strip-ini -i isd_config.ini -o isd_config.ini
 
-files="app.bin ${CPU}loader.* uboot*  ota*.bin isd_config.ini isd_download.exe fw_add.exe ufw_maker.exe"
+files="app.bin ${CPU}loader.* uboot*  ota*.bin isd_config.ini"
 
 NICKNAME="${CPU}_sdk"
 

@@ -43,11 +43,13 @@ AC63 系列通用蓝牙SDK 固件程序
 -------------
 请选择以下一个工程进行编译，下列目录包含了便于开发的工程文件：
 
-* 蓝牙应用 : [SPP_LE](./apps/spp_and_le), 适用领域：透传, 数传, 扫描设备, 广播设备, 信标, 多机连接. Dongle(usb / bt). [文档链接](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/spple/index.html)
+* 蓝牙应用 : [SPP_LE](./apps/spp_and_le), 适用领域：透传, 数传, 扫描设备, 广播设备, 信标, FindMy应用, 多机连接. Dongle(usb / bt). [文档链接](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/spple/index.html)
 
 * 蓝牙应用 : [HID](./apps/hid), 适用领域：遥控器, 自拍器, 键盘, 鼠标, 吃鸡王座, 语音遥控器. [文档链接](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/hid/index.html)
 
 * 蓝牙应用 : [Mesh](./apps/mesh), 适用领域：物联网节点, 天猫精灵接入, 自组网应用. [文档链接](https://doc.zh-jieli.com/AC63/zh-cn/master/module_demo/mesh/index.html)
+
+已发布版本详见 标签(Tags)。
 
 即将发布：
 
@@ -68,11 +70,13 @@ SDK 同时支持Codeblock 和 Make 编译环境，请确保编译前已经搭建
 蓝牙官方认证
 -------------
 
-经典蓝牙LMP / 低功耗蓝牙Link Layer 层和Host 协议栈均支持蓝牙5.0 和 5.1版本实现
+经典蓝牙LMP / 低功耗蓝牙Link Layer 层和Host 协议栈均支持蓝牙5.0 、5.1和5.4版本实现
 
 * Core v5.0 [QDID 134104](https://launchstudio.bluetooth.com/ListingDetails/88799)
 
 * Core v5.1 [QDID 136145](https://launchstudio.bluetooth.com/ListingDetails/91371)
+
+* Core v5.4 [QDID 222830](https://launchstudio.bluetooth.com/ListingDetails/193923)
 
 
 硬件环境

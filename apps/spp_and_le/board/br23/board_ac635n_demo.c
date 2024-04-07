@@ -134,19 +134,19 @@ const struct iokey_port iokey_list[] = {
 	{
 		.connect_way = TCFG_IOKEY_POWER_CONNECT_WAY,          //IO按键的连接方式
 		.key_type.one_io.port = TCFG_IOKEY_POWER_ONE_PORT,    //IO按键对应的引脚
-		.key_value = 0,                                       //按键值
+		.key_value = TCFG_IOKEY_POWER_ONE_PORT_VALUE,         //按键值
 	},
 
 	/* { */
 		/* .connect_way = TCFG_IOKEY_PREV_CONNECT_WAY, */
 		/* .key_type.one_io.port = TCFG_IOKEY_PREV_ONE_PORT, */
-		/* .key_value = 1, */
+		/* .key_value = TCFG_IOKEY_PREV_ONE_PORT_VALUE, */
 	/* }, */
 
 	/* { */
 		/* .connect_way = TCFG_IOKEY_NEXT_CONNECT_WAY, */
 		/* .key_type.one_io.port = TCFG_IOKEY_NEXT_ONE_PORT, */
-		/* .key_value = 2, */
+		/* .key_value = TCFG_IOKEY_NEXT_ONE_PORT_VALUE, */
 	/* }, */
 };
 const struct iokey_platform_data iokey_data = {

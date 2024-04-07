@@ -34,7 +34,11 @@ inside_nor_fs_vfs_ops
 
 
 sbc_decoder
+
+#if TCFG_DEC_MSBC_ENABLE
 msbc_decoder
+#endif
+
 sbc_hwaccel
 cvsd_decoder
 pcm_decoder

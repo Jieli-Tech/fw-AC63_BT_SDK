@@ -19,6 +19,14 @@ SECTIONS
         *(.ble_mesh_tinycrypt_data)
         BTSTACK_LE_HOST_MESH_DATA_SIZE = ABSOLUTE(. - BTSTACK_LE_HOST_MESH_DATA_START);
 
+        _fmna_data_begin = .;
+        *(.fmna_stack_data)
+        *(.fmna_plaform_data)
+        *(.fmna_crypto_data)
+        _fmna_data_end = .;
+        btstack_fmna_data_size  = _fmna_data_end - _fmna_data_begin;
+        . = ALIGN(4);
+
         btstack_data_end = .;
 
         . = ALIGN(4);
@@ -39,6 +47,16 @@ SECTIONS
         *(.ble_mesh_bss)
         *(.ble_mesh_tinycrypt_bss)
         BTSTACK_LE_HOST_MESH_BSS_SIZE = ABSOLUTE(. - BTSTACK_LE_HOST_MESH_BSS_START);
+
+        . = ALIGN(4);
+        _fmna_bss_begin = .;
+        *(.fmna_stack_bss)
+        *(.fmna_plaform_bss)
+        *(.fmna_crypto_bss)
+        _fmna_bss_end = .;
+        btstack_fmna_bss_size   = _fmna_bss_end - _fmna_bss_begin;
+        . = ALIGN(4);
+
 
         btstack_bss_end = .;
 
@@ -93,6 +111,22 @@ SECTIONS
         *(.ble_mesh_const)
         *(.ble_mesh_tinycrypt_const)
         BTSTACK_LE_HOST_MESH_CODE_SIZE = ABSOLUTE(. - BTSTACK_LE_HOST_MESH_CODE_START);
+
+        _fmna_const_begin = .;
+        *(.fmna_stack_const)
+        *(.fmna_plaform_const)
+        *(.fmna_crypto_const)
+        _fmna_const_end = .;
+        . = ALIGN(4);
+        _fmna_code_begin = .;
+        *(.fmna_stack_code)
+        *(.fmna_plaform_code)
+        *(.fmna_crypto_code)
+        _fmna_code_end = .;
+        btstack_fmna_const_size = _fmna_const_end - _fmna_const_begin;
+        btstack_fmna_code_size  = _fmna_code_end - _fmna_code_begin;
+        . = ALIGN(4);
+
 
         btstack_code_end = .;
 		. = ALIGN(4);

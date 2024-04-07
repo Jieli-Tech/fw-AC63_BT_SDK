@@ -1,18 +1,20 @@
 #include "rtc_alarm.h"
 #include "system/timer.h"
 #include "app_config.h"
+#include "asm/rtc.h"
 
 #if TCFG_RTC_ALARM_ENABLE
 
-/* #define ALARM_DEBUG_EN */
-#ifdef ALARM_DEBUG_EN
-#define alarm_printf        printf
-#define alarm_putchar       putchar
-#define alarm_printf_buf    put_buf
+#define ALARM_DEBUG_EN   0
+
+#if ALARM_DEBUG_EN
+#define alarm_printf(x, ...)  printf("[RTC_ALARM]" x " ", ## __VA_ARGS__)
+#define alarm_printf_buf      put_buf
+#define alarm_putchar         putchar
 #else
 #define alarm_printf(...)
-#define alarm_putchar(...)
 #define alarm_printf_buf(...)
+#define alarm_putchar(...)
 #endif
 
 #define RTC_MASK (0xaa55)
@@ -22,6 +24,18 @@ static u8 alarm_pnd_flag = 0;
 static void (*_user_isr_cbfun)(u8) = NULL;
 
 void alarm_send_event(u8 index);
+#if TCFG_RTC_ALARM_ENABLE
+struct sys_time rtc_read_test;
+struct sys_time alm_read_test;
+struct sys_time alm_write_test = {
+    .year = 2024,
+    .month  =  1,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 20,
+};
+#endif
 
 
 static u8 alarm_vm_write_mask(u8 alarm_active_index)
@@ -195,6 +209,24 @@ void alarm_init(const struct rtc_dev_platform_data *arg)
         }
     }
     alarm_pnd_flag = 1;
+
+    rtc_ioctl(IOCTL_GET_SYS_TIME,  &rtc_read_test); //读时钟
+    alarm_printf("rtc_read_sys_time: %d-%d-%d %d:%d:%d\n",
+                 rtc_read_test.year,
+                 rtc_read_test.month,
+                 rtc_read_test.day,
+                 rtc_read_test.hour,
+                 rtc_read_test.min,
+                 rtc_read_test.sec);
+
+    rtc_ioctl(IOCTL_GET_ALARM, &alm_read_test);        //读闹钟
+    alarm_printf("rtc_read_alarm: %d-%d-%d %d:%d:%d\n",
+                 alm_read_test.year,                        
+                 alm_read_test.month,
+                 alm_read_test.day,
+                 alm_read_test.hour,
+                 alm_read_test.min,
+                 alm_read_test.sec);
 }
 
 void alarm_rtc_stop(void)
@@ -344,6 +376,57 @@ void user_alarm_test(void)
 #endif
 
 }
+
+#if TCFG_RTC_ALARM_ENABLE
+//24小时内定时起来
+void rtc_alarm_set_timer(u32 seconds)
+{
+    alarm_printf("rtc_alarm_set_timer");
+
+    u8 add_hour = seconds / 3600;
+    u8 add_min = (seconds % 3600) / 60;
+    u8 add_sec = seconds % 60;
+
+    rtc_ioctl(IOCTL_GET_SYS_TIME,  &rtc_read_test); //读时钟
+    alarm_printf("rtc_read_sys_time: %d-%d-%d %d:%d:%d\n",
+                 rtc_read_test.year,
+                 rtc_read_test.month,
+                 rtc_read_test.day,
+                 rtc_read_test.hour,
+                 rtc_read_test.min,
+                 rtc_read_test.sec);
+    rtc_ioctl(IOCTL_GET_ALARM, &alm_read_test);        //读闹钟
+
+    u16 tmp = rtc_read_test.sec + add_sec;
+    rtc_read_test.sec = tmp % 60;
+
+    tmp = rtc_read_test.min + add_min + tmp / 60;
+    rtc_read_test.min = tmp % 60;
+
+    tmp = rtc_read_test.hour + add_hour + tmp / 60;
+    rtc_read_test.hour = tmp % 24;
+
+    rtc_read_test.day += (tmp / 24);
+
+    T_ALARM tmp_alarm = {0};
+    tmp_alarm.en = 1;                           //初始化默认打开
+    tmp_alarm.mode = E_ALARM_MODE_ONCE;         //此闹钟只起作用一次
+
+    memcpy(&tmp_alarm.time, &rtc_read_test, sizeof(struct sys_time));
+    alarm_add(&tmp_alarm, 0);
+    memset(&rtc_read_test, 0, sizeof(struct sys_time));
+    rtc_ioctl(IOCTL_GET_ALARM,  &alm_read_test);    //读闹钟,校验是否写成功
+    alarm_printf("rtc_read_alarm: %d-%d-%d %d:%d:%d\n",
+                 alm_read_test.year,                        
+                 alm_read_test.month,
+                 alm_read_test.day,
+                 alm_read_test.hour,
+                 alm_read_test.min,
+                 alm_read_test.sec);
+}
+
+
+#endif
 
 #endif
 

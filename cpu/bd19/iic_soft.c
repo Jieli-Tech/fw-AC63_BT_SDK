@@ -15,7 +15,7 @@
     gpio_set_die(scl, on)
 
 #define IIC_SCL_H(scl)    \
-    gpio_direction_output(scl, 1)
+    gpio_set_direction(scl, 1)
 
 #define IIC_SCL_L(scl)    \
     gpio_direction_output(scl, 0)
@@ -33,7 +33,7 @@
     gpio_set_die(sda, on)
 
 #define IIC_SDA_H(sda)    \
-    gpio_direction_output(sda, 1)
+    gpio_set_direction(sda, 1)
 
 #define IIC_SDA_L(sda)    \
     gpio_direction_output(sda, 0)
@@ -75,14 +75,6 @@ int soft_iic_init(soft_iic_dev iic)
     scl = iic_get_scl(iic);
     sda = iic_get_sda(iic);
 
-    IIC_SCL_DIR(scl, 0);
-    IIC_SCL_SET_PD(scl, 0);
-    IIC_SCL_SET_DIE(scl, 1);
-    IIC_SCL_H(scl);
-    IIC_SDA_DIR(sda, 0);
-    IIC_SDA_SET_PD(sda, 0);
-    IIC_SDA_SET_DIE(sda, 1);
-    IIC_SDA_H(sda);
     if (iic_get_io_pu(iic)) {
         IIC_SCL_SET_PU(scl, 1);
         IIC_SDA_SET_PU(sda, 1);
@@ -90,6 +82,17 @@ int soft_iic_init(soft_iic_dev iic)
         IIC_SCL_SET_PU(scl, 0);
         IIC_SDA_SET_PU(sda, 0);
     }
+
+    gpio_set_hd(scl, 0);
+    gpio_set_hd0(scl, 1);
+    gpio_set_hd(sda, 0);
+    gpio_set_hd0(sda, 1);
+    IIC_SDA_H(sda);
+    IIC_SCL_H(scl);
+    IIC_SCL_SET_PD(scl, 0);
+    IIC_SCL_SET_DIE(scl, 1);
+    IIC_SDA_SET_PD(sda, 0);
+    IIC_SDA_SET_DIE(sda, 1);
     return 0;
 }
 
@@ -104,10 +107,15 @@ void soft_iic_uninit(soft_iic_dev iic)
     IIC_SCL_SET_PU(scl, 0);
     IIC_SCL_SET_PD(scl, 0);
     IIC_SCL_SET_DIE(scl, 0);
+    gpio_set_hd(scl, 0);
+    gpio_set_hd0(scl, 0);
+
     IIC_SDA_DIR(sda, 1);
     IIC_SDA_SET_PU(sda, 0);
     IIC_SDA_SET_PD(sda, 0);
     IIC_SDA_SET_DIE(sda, 0);
+    gpio_set_hd(sda, 0);
+    gpio_set_hd0(sda, 0);
 }
 
 void soft_iic_suspend(soft_iic_dev iic)

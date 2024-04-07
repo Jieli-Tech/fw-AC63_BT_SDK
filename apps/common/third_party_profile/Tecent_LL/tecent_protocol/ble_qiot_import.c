@@ -30,17 +30,17 @@ static u8 adv_data[ADV_RSP_PACKET_MAX];//max is 31
 static u8 scan_rsp_data_len;
 static u8 scan_rsp_data[ADV_RSP_PACKET_MAX];//max is 31
 
-#define LL_SYNC_INFO    0
+#define LL_SYNC_INFO    1
 
 #if LL_SYNC_INFO
 #define LLSYNC_DEVICE_NAME 6
-uint8_t ll_sync_product_id[10] = "YSUM4IEDOH";
-uint8_t ll_sync_device_name[LLSYNC_DEVICE_NAME] = "dev001";   //注意此处的dev name使用设备的mac地址来命名
-uint8_t ll_sync_device_secret[24] = "6WNLgmVK4fThhVIgdOBmKQ=="
+uint8_t ll_sync_product_id[10] = "0QA0PL5DIV";
+uint8_t ll_sync_device_name[LLSYNC_DEVICE_NAME] = "dev001";
+uint8_t ll_sync_device_secret[24] = "0A2hmQBKnaImsZKSYctR/Q==";
 #else
 #define LLSYNC_DEVICE_NAME 6
 static uint8_t ll_sync_product_id[10] = "0";
-static uint8_t ll_sync_device_name[LLSYNC_DEVICE_NAME] = "0";   //注意此处的dev name使用设备的mac地址来命名
+static uint8_t ll_sync_device_name[LLSYNC_DEVICE_NAME] = "0";
 static uint8_t ll_sync_device_secret[24] = "0";
 #endif /* LL_SYNC_INFO */
 

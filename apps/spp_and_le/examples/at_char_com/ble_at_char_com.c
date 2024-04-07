@@ -47,7 +47,7 @@
 
 #if  CONFIG_APP_AT_CHAR_COM
 
-#if 1
+#if LE_DEBUG_PRINT_EN
 extern void printf_buf(u8 *buf, u32 len);
 //#define log_info          printf
 #define log_info(x, ...)    printf("\n[LE_AT_CHAR_COM]" x " ", ## __VA_ARGS__)

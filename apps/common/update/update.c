@@ -300,6 +300,10 @@ static void update_before_jump_common_handle(UPDATA_TYPE up_type)
 #endif
 
     hwi_all_close();
+#if defined(CONFIG_CPU_BD29)
+    void breakpoint_uninit(void);
+    breakpoint_uninit();
+#endif
 
 #ifdef CONFIG_SUPPORT_WIFI_DETECT
     wifi_det_close();

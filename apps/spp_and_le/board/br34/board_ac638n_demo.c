@@ -149,7 +149,7 @@ const struct iokey_port iokey_list[] = {
     {
         .connect_way = TCFG_IOKEY_POWER_CONNECT_WAY,          //IO按键的连接方式
         .key_type.one_io.port = TCFG_IOKEY_POWER_ONE_PORT,    //IO按键对应的引脚
-        .key_value = 0,                                       //按键值
+		.key_value = TCFG_IOKEY_POWER_ONE_PORT_VALUE,         //按键值
     },
 };
 
@@ -319,9 +319,7 @@ void board_init()
     devices_init();
 
 	board_devices_init();
-    //温度trim调用接口
-    extern void temp_pll_trim_init(void);
-    temp_pll_trim_init();
+
 
 #if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
     if(get_charge_online_flag()){

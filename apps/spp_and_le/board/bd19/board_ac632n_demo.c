@@ -37,6 +37,9 @@ const struct low_power_param power_param = {
     .osc_type       = TCFG_LOWPOWER_OSC_TYPE,
     .lpctmu_en 		= TCFG_LP_TOUCH_KEY_ENABLE,
     .vd13_cap_en    = TCFG_VD13_CAP_EN,
+#if TCFG_RTC_ALARM_ENABLE
+    .rtc_clk        = 1,
+#endif
 };
 
 /************************** KEY MSG****************************/
@@ -130,19 +133,19 @@ const struct iokey_port iokey_list[] = {
 	{
 		.connect_way = TCFG_IOKEY_POWER_CONNECT_WAY,          //IO按键的连接方式
 		.key_type.one_io.port = TCFG_IOKEY_POWER_ONE_PORT,    //IO按键对应的引脚
-		.key_value = 0,                                       //按键值
+		.key_value = TCFG_IOKEY_POWER_ONE_PORT_VALUE,         //按键值
 	},
 
 	{
 		.connect_way = TCFG_IOKEY_PREV_CONNECT_WAY,
 		.key_type.one_io.port = TCFG_IOKEY_PREV_ONE_PORT,
-		.key_value = 1,
+		.key_value = TCFG_IOKEY_PREV_ONE_PORT_VALUE,
 	},
 
 	{
 		.connect_way = TCFG_IOKEY_NEXT_CONNECT_WAY,
 		.key_type.one_io.port = TCFG_IOKEY_NEXT_ONE_PORT,
-		.key_value = 2,
+		.key_value = TCFG_IOKEY_NEXT_ONE_PORT_VALUE,
 	},
 };
 const struct iokey_platform_data iokey_data = {
@@ -194,7 +197,7 @@ const struct key_remap_data iokey_remap_data = {
 
 #if TCFG_RTC_ALARM_ENABLE
 const struct sys_time def_sys_time = {  //初始一下当前时间
-    .year = 2020,
+    .year = 2024,
     .month = 1,
     .day = 1,
     .hour = 0,
@@ -214,8 +217,10 @@ extern void alarm_isr_user_cbfun(u8 index);
 RTC_DEV_PLATFORM_DATA_BEGIN(rtc_data)
     .default_sys_time = &def_sys_time,
     .default_alarm = &def_alarm,
-    /* .cbfun = NULL,                      //闹钟中断的回调函数,用户自行定义 */
-    .cbfun = alarm_isr_user_cbfun,
+    .cbfun = NULL,                      //闹钟中断的回调函数,用户自行定义
+    /* .cbfun = alarm_isr_user_cbfun, */
+    .clk_sel = CLK_SEL_LRC,
+    .trim_t = 1,                        //软关机情况下，1min唤醒一次trim lrc
 RTC_DEV_PLATFORM_DATA_END()
 #endif
 
@@ -359,10 +364,7 @@ void board_init()
 
 	board_devices_init();
 
-    extern void temp_pll_trim_init(void);
-    temp_pll_trim_init();  //温度trim调用接口
-
-#if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
+    #if TCFG_CHARGE_ENABLE && TCFG_HANDSHAKE_ENABLE
     if(get_charge_online_flag()){
         handshake_app_start(0, NULL);
     }

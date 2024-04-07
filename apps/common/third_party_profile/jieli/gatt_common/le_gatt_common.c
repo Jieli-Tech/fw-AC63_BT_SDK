@@ -213,6 +213,38 @@ bool ble_comm_dev_is_connected(u8 role)
     return false;
 }
 
+/*************************************************************************************************/
+/*!
+ *  \brief      获取gatt 角色 已有链路个数
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+u8 ble_comm_dev_get_connected_nums(u8 role)
+{
+    s8 i, nums = 0;
+    u16 *group_handle;
+    u8 count;
+
+    if (GATT_ROLE_SERVER == role) {
+        group_handle = gatt_server_conn_handle;
+        count = SUPPORT_MAX_GATT_SERVER;
+    } else {
+        group_handle = gatt_client_conn_handle;
+        count = SUPPORT_MAX_GATT_CLIENT;
+    }
+
+    for (i = 0; i < count; i++) {
+        if (group_handle[i]) {
+            nums++;
+        }
+    }
+    return nums;
+}
 
 /*************************************************************************************************/
 /*!
@@ -542,6 +574,7 @@ static void __ble_comm_cbk_packet_handler(uint8_t packet_type, uint16_t channel,
                         ble_op_disconnect_ext(tmp_handle, 0x13);
                         CLR_HANDLER_ROLE();
                     } else {
+                        s8 cur_cid =  ble_comm_dev_get_idle_index(role);
                         __comm_set_dev_handle_value(tmp_handle, role, cur_cid);
                         ble_op_multi_att_send_conn_handle(tmp_handle, cur_cid, role);
                     }
@@ -556,6 +589,11 @@ static void __ble_comm_cbk_packet_handler(uint8_t packet_type, uint16_t channel,
                 }
             }
             break;
+#endif
+#if EXT_ADV_MODE_EN || PERIODIC_ADV_MODE_EN
+            case HCI_SUBEVENT_LE_EXTENDED_ADVERTISING_REPORT:
+                ADD_HANDLER_ROLE(GATT_ROLE_CLIENT);
+                break;
 #endif
 
             case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -732,8 +770,12 @@ void ble_profile_init(void)
                     sm_set_master_io_capabilities(IO_CAPABILITY_KEYBOARD_ONLY);
                 }
             }
-
-            sm_set_authentication_requirements(gatt_control_block->sm_config->authentication_req_flags);
+            if (STACK_IS_SUPPORT_SM_SUB_SC()) {
+                log_info("enable SC_CONNECT");
+                sm_set_authentication_requirements(gatt_control_block->sm_config->authentication_req_flags | SM_AUTHREQ_SECURE_CONNECTION);
+            } else {
+                sm_set_authentication_requirements(gatt_control_block->sm_config->authentication_req_flags);
+            }
             sm_set_encryption_key_size_range(gatt_control_block->sm_config->min_key_size, gatt_control_block->sm_config->max_key_size);
             sm_set_master_request_pair(gatt_control_block->sm_config->master_security_auto_req);
             sm_set_request_security(gatt_control_block->sm_config->slave_security_auto_req);

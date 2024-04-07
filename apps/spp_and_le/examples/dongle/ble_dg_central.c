@@ -706,32 +706,36 @@ static int dg_central_event_packet_handler(int event, u8 *packet, u16 size, u8 *
         case GATT_EVENT_NOTIFICATION: { //notify
             if (report_data->value_handle != ota_notify_handle[0]) {
                 /*预设知道连接hid设备 nofify发送的handle,通过handle分发数据上报到usb端*/
-                u8 packet[16];
+                //u8 packet[16];
+                if (report_data->blob_length >= sizeof(usb_send_packet)) {
+                    log_info("err:usb ep over");
+                    return 0;
+                }
                 u8 second_devices = 0;
                 if (report_data->value_handle == mouse_notify_handle[0]) {
-                    packet[0] = 1; //report_id
+                    usb_send_packet[0] = 1; //report_id
                 } else if (report_data->value_handle == mouse_notify_handle[1]) {
-                    packet[0] = 2;//report_id
+                    usb_send_packet[0] = 2;//report_id
                 } else if (report_data->value_handle == standard_keyboard_notify_handle[0]) {
-                    packet[0] = 4;//report_id
+                    usb_send_packet[0] = 4;//report_id
                     second_devices = 1;
                 } else if (report_data->value_handle == standard_keyboard_notify_handle[1]) {
-                    packet[0] = 5;//report_id
+                    usb_send_packet[0] = 5;//report_id
                     second_devices = 1;
                 } else {
                     log_info("err notify");
                     break;
-                    /* packet[0] = 1;//report_id */
+                    /* usb_send_packet[0] = 1;//report_id */
                 }
 
                 u8 usb_status_ret = usb_get_suspend_resume_status(0);
                 if (usb_status_ret == USB_READY) {
                     wdt_clear();
                     if (wait_usb_wakeup) {
-                        memcpy(&packet[1], report_data->blob, report_data->blob_length);
+                        memcpy(&usb_send_packet[1], report_data->blob, report_data->blob_length);
                     } else {
                         printf("clear length: %d", report_data->blob_length);
-                        memset(&packet[1], 0, report_data->blob_length); //发空包
+                        memset(&usb_send_packet[1], 0, report_data->blob_length); //发空包
                     }
                 } else if (usb_status_ret == USB_SUSPEND) {
                     wait_usb_wakeup = 0;
@@ -755,17 +759,17 @@ static int dg_central_event_packet_handler(int event, u8 *packet, u16 size, u8 *
 
                 int (*dongle_input_handler)(u8 * packet, u16 size);
                 if (second_devices == 0) {
-                    /* dongle_ble_hid_input_handler(packet, report_data->blob_length + 1); */
+                    /* dongle_ble_hid_input_handler(usb_send_packet, report_data->blob_length + 1); */
                     /* putchar('&'); */
                     dongle_input_handler = dongle_ble_hid_input_handler;
                 } else {
-                    /* dongle_second_ble_hid_input_handler(packet, report_data->blob_length + 1); */
+                    /* dongle_second_ble_hid_input_handler(usb_send_packet, report_data->blob_length + 1); */
                     /* putchar('&'); */
                     dongle_input_handler = dongle_second_ble_hid_input_handler;
                 }
 
-                /* put_buf(packet, report_data->blob_length + 1); */
-                int ret = dongle_input_handler(packet, report_data->blob_length + 1);
+                /* put_buf(usb_send_packet, report_data->blob_length + 1); */
+                int ret = dongle_input_handler(usb_send_packet, report_data->blob_length + 1);
                 if (ret && wait_usb_wakeup == 0) {
                     wait_usb_wakeup = 1;
                     log_info("send 0packet success!\n");
@@ -965,6 +969,7 @@ static int dg_central_event_packet_handler(int event, u8 *packet, u16 size, u8 *
         put_buf(&packet[1], 6);
         if (packet[8] == 2) {
             log_info("is TEST_BOX\n");
+            break;
         }
         client_match_cfg_t *match_cfg = ext_param;
         if (match_cfg) {

@@ -150,12 +150,24 @@ SDP_RECORD_HANDLER_REGISTER(hid_sdp_record_item) = {
 };
 #endif
 
+#if (USER_SUPPORT_PROFILE_MAP==1)
+extern const u8 sdp_map_mce_service_data[];
+u8 map_profile_support = 1;
+SDP_RECORD_HANDLER_REGISTER(map_sdp_record_item) = {
+    .service_record = (u8 *)sdp_map_mce_service_data,
+    .service_record_handle = 0x00010009,
+};
+#endif
+
 #if (USER_SUPPORT_PROFILE_HFP==1)
 u8 hfp_profile_support = 1;
+const u8 more_hfp_cmd_support = 1;
 SDP_RECORD_HANDLER_REGISTER(hfp_sdp_record_item) = {
     .service_record = (u8 *)sdp_hfp_service_data,
     .service_record_handle = 0x00010003,
 };
+#else
+const u8 more_hfp_cmd_support = 0;
 #endif
 
 void hid_sdp_init(const u8 *hid_descriptor, u16 size)
@@ -271,9 +283,9 @@ u8 *get_profile_pool_addr(void)
     return NULL;
 }
 
+
 const u8 a2dp_mutual_support = 0;
 const u8 more_addr_reconnect_support = 0;
-const u8 more_hfp_cmd_support = 0;
 const u8 more_avctp_cmd_support = 0;
 const u8 hci_inquiry_support = 0;
 const u8 btstack_emitter_support  = 0;  /*定义用于优化代码编译*/

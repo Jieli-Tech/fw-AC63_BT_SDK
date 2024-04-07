@@ -44,7 +44,7 @@
 #define spi_w_reg_dma_cnt(reg, cnt)         ((reg)->CNT = (cnt))
 
 
-#define SPI0_ENABLE   1   //是否使能SPI0，使能后需定义spi0_p_data
+#define SPI0_ENABLE   1   //是否使能SPI0，使能后需定义spi0_p_data TODO 蓝牙 spi需关闭
 #define SPI1_ENABLE   1   //是否使能SPI1，使能后需定义spi1_p_data
 #define SPI2_ENABLE   1   //是否使能SPI2，使能后需定义spi2_p_data
 

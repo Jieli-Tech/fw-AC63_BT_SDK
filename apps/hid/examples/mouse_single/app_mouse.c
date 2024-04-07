@@ -46,8 +46,7 @@
 #define trace_run_debug_val(x)   //log_info("\n## %s: %d,  0x%04x ##\n",__FUNCTION__,__LINE__,x)
 
 //2.4G模式: 0---ble, 非0---2.4G配对码
-#define CFG_RF_24G_CODE_ID         (0x239a) //<=24bits
-/* #define CFG_RF_24G_CODE_ID       (0x23) //<=24bits */
+#define CFG_RF_24G_CODE_ID         (0x239a239a) //32bits
 
 //模式(edr,ble,24g)切换控制,可自己修改按键方式
 #define MIDDLE_KEY_SWITCH          1   //左按键+中键,长按数秒切换 edr & ble , or 2.4g & ble, or ble & 2.4g & edr
@@ -586,8 +585,17 @@ static void mouse_vm_deal(u8 rw_flag)
     }
 }
 
+void mouse_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
 
-void mouse_set_soft_poweroff(void)
+static void mouse_set_soft_poweroff(void)
 {
     log_info("mouse_set_soft_poweroff\n");
     is_hid_active = 1;
@@ -652,7 +660,7 @@ static void mouse_app_start()
 
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //无操作定时软关机
-    g_auto_shutdown_timer = sys_timeout_add(NULL, mouse_set_soft_poweroff, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    g_auto_shutdown_timer = sys_timeout_add((void *)POWER_EVENT_POWER_SOFTOFF, mouse_power_event_to_user, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
 #endif
     /* sys_auto_shut_down_enable(); */
     /* sys_auto_sniff_controle(1, NULL); */

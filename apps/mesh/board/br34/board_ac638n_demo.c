@@ -257,9 +257,6 @@ void board_init()
     devices_init();
 
 	board_devices_init();
-    extern void temp_pll_trim_init(void);
-    temp_pll_trim_init();  //温度trim调用接口
-
 
 	if(get_charge_online_flag()){
         power_set_mode(PWR_LDO15);
@@ -334,7 +331,7 @@ static void port_protect(u16 *port_group, u32 port_num)
 }
 
 /*进软关机之前默认将IO口都设置成高阻状态，需要保留原来状态的请修改该函数*/
-static void close_gpio(void)
+static void close_gpio(u8 is_softoff)
 {
     u16 port_group[] = {
         [PORTA_GROUP] = 0xffff,
@@ -458,7 +455,7 @@ void board_set_soft_poweroff(void)
     gpio_set_die(IO_PORT_DM, 0);
     gpio_set_dieh(IO_PORT_DM, 0);
     gpio_set_direction(IO_PORT_DM, 1);
-close_gpio();
+close_gpio(1);
     /* dac_power_off(); */
 
 }
@@ -480,7 +477,7 @@ void sleep_enter_callback(u8  step)
         //dac_power_off();
     } else {
 
-		close_gpio();
+		close_gpio(0);
 
 		/* gpio_set_pull_up(IO_PORTA_03, 0); */
         /* gpio_set_pull_down(IO_PORTA_03, 0); */

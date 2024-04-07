@@ -222,7 +222,7 @@ void cfg_file_parse(u8 idx)
     }
     bt_max_pwr_set(app_var.rf_power, 5, 8, SET_BLE_TX_POWER_LEVEL);
     /* g_printf("rf config:%d\n", app_var.rf_power); */
-    log_info("rf config:%d\n", app_var.rf_power);
+    log_info("rf config:%d,%d\n", app_var.rf_power, SET_BLE_TX_POWER_LEVEL);
 
     app_var.music_volume = 30;
     app_var.wtone_volume = 14;

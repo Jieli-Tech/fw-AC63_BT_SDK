@@ -54,12 +54,14 @@
 <Add option="-DCONFIG_EVENT_KEY_MAP_ENABLE=0" />
 <Add option="-DTIMER_POOL_NUM_CONFIG=10" />
 <Add option="-DAPP_ASYNC_POOL_NUM_CONFIG=0" />
+<Add option="-DSDK_VERSION_CFG_DEFINE=0x230003" />
+<Add option="-DSDK_VERSION_DATE_DEFINE=20240331" />
 <Add option="-DVFS_ENABLE=1" />
 <Add option="-DUSE_SDFILE_NEW=1" />
 <Add option="-DVFS_FILE_POOL_NUM_CONFIG=0" />
 <Add option="-DSDFILE_VERSION=0x020000" />
 <Add option="-DVM_MAX_SIZE_CONFIG=16*1024" />
-<Add option="-DVM_ITEM_MAX_NUM=128" />
+<Add option="-DVM_ITEM_MAX_NUM=256" />
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_SPP_AND_LE_CASE_ENABLE" />
 <Add option="-DCONFIG_TRANSFER_ENABLE" />
@@ -74,7 +76,6 @@
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
 <Add option="-DTCFG_APP_BT_EN=1" />
 <Add option="-DUSB_PC_NO_APP_MODE" />
-<Add option="-D__LD__" />
 <Add directory="../../../../include_lib" />
 <Add directory="../../../../include_lib/driver" />
 <Add directory="../../../../include_lib/driver/device" />
@@ -84,6 +85,7 @@
 <Add directory="../../../../include_lib/system/device" />
 <Add directory="../../../../include_lib/system/fs" />
 <Add directory="../../../../include_lib/system/ui" />
+<Add directory="../../../../include_lib/system/math/cpu/br30" />
 <Add directory="../../../../include_lib/btctrler" />
 <Add directory="../../../../include_lib/btctrler/port/br30" />
 <Add directory="../../../../include_lib/update" />
@@ -174,6 +176,9 @@
 <Add option="../../../../cpu/br30/liba/crossover_coff.a" />
 <Add option="../../../../cpu/br30/liba/limiter.a" />
 <Add option="../../../../apps/common/third_party_profile/tuya_protocol/sdk/lib/libtuya_lib.a" />
+<Add option="../../../../cpu/br30/liba/fmna_stack.a" />
+<Add option="../../../../cpu/br30/liba/fmna_auth.a" />
+<Add option="../../../../cpu/br30/liba/MotionDetection.a" />
 <Add option="../../../../cpu/br30/liba/update.a" />
 <Add option="../../../../cpu/br30/liba/media.a" />
 <Add option="../../../../cpu/br30/liba/media_app.a" />
@@ -188,11 +193,11 @@
 <Add library="C:\JL\pi32\pi32v2-lib\r3\libm.a" />
 </Linker>
 <ExtraCommands>
-<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\sdk_used_list.c -o ..\..\..\..\cpu\br30\sdk_used_list.used" />
-<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\sdk_ld.c -o ..\..\..\..\cpu\br30\sdk.ld" />
-<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\tools\download.c -o ..\..\..\..\cpu\br30\tools\download.bat" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_used_list.c -o ..\..\..\..\cpu\br30\sdk_used_list.used" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_ld.c -o ..\..\..\..\cpu\br30\sdk.ld" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\download.c -o ..\..\..\..\cpu\br30\tools\download.bat" />
 <Add before="..\..\..\..\tools\utils\fixbat.exe ..\..\..\..\cpu\br30\tools\download.bat" />
-<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\tools\isd_config_rule.c -o ..\..\..\..\cpu\br30\tools\isd_config.ini" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\isd_config_rule.c -o ..\..\..\..\cpu\br30\tools\isd_config.ini" />
 <Mode before="always" />
 <Add after="..\..\..\..\cpu\br30\tools\download.bat sdk" />
 <Mode after="always" />
@@ -210,6 +215,18 @@
 <Unit filename="../../../../apps/common/cJSON/cJSON.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/cJSON/cJSON.h" />
 <Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/gSensor/fmy/Motion_api.h" />
+<Unit filename="../../../../apps/common/device/gSensor/fmy/SC7A20_E.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/gSensor/fmy/SC7A20_TR.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/gSensor/fmy/SC7A20_TR.h" />
+<Unit filename="../../../../apps/common/device/gSensor/fmy/gSensor_manage.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/gSensor/fmy/gSensor_manage.h" />
+<Unit filename="../../../../apps/common/device/gSensor/fmy/gsensor_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/gSensor/fmy/gsensor_api.h" />
+<Unit filename="../../../../apps/common/device/gSensor/fmy/msa310.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/gSensor/fmy/msa310.h" />
+<Unit filename="../../../../apps/common/device/gSensor/fmy/msa310_function.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/common/device/gSensor/fmy/msa310_function.h" />
 <Unit filename="../../../../apps/common/device/key/adkey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/key/iokey.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/device/key/irkey.c"><Option compilerVer="CC"/></Unit>
@@ -263,8 +280,6 @@
 <Unit filename="../../../../apps/common/music/music_decrypt.h" />
 <Unit filename="../../../../apps/common/music/music_id3.h" />
 <Unit filename="../../../../apps/common/phone_message/phone_message.h" />
-<Unit filename="../../../../apps/common/temp_trim/adc_dtemp_alog.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/temp_trim/adc_dtemp_alog.h" />
 <Unit filename="../../../../apps/common/temp_trim/dtemp_pll_trim.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_common.h" />
 <Unit filename="../../../../apps/common/third_party_profile/Tecent_LL/include/ble_qiot_config.h" />
@@ -318,43 +333,12 @@
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/cipher_wrap.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/des.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/gcm.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/aes.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/aesni.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/arc4.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/asn1.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/bignum.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/blowfish.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/bn_mul.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/ccm.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/chacha20.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/chachapoly.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/check_config.h" />
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/cipher.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/cipher_internal.h" />
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/common.h" />
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/config.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/des.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/ecp.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/error.h" />
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/gcm.h" />
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/md.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/md2.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/md4.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/md5.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/md_internal.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/oid.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/padlock.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/pk.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/pkcs5.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/platform.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/platform_time.h" />
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/platform_util.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/poly1305.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/ripemd160.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/rsa.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/sha1.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/sha256.h" />
-<Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls/sha512.h" />
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/mbedtls_main.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/md.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/hilink_protocol/mbedtls_protocol/md5.c"><Option compilerVer="CC"/></Unit>
@@ -463,6 +447,9 @@
 <Unit filename="../../../../apps/spp_and_le/board/br30/board_ac637n_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/board/br30/board_ac637n_demo_cfg.h" />
 <Unit filename="../../../../apps/spp_and_le/board/br30/board_ac637n_demo_global_build_cfg.h" />
+<Unit filename="../../../../apps/spp_and_le/board/br30/board_ac637n_fmy.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/board/br30/board_ac637n_fmy_cfg.h" />
+<Unit filename="../../../../apps/spp_and_le/board/br30/board_ac637n_fmy_global_build_cfg.h" />
 <Unit filename="../../../../apps/spp_and_le/board/br30/board_config.h" />
 <Unit filename="../../../../apps/spp_and_le/config/lib_btctrler_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/config/lib_btstack_config.c"><Option compilerVer="CC"/></Unit>
@@ -509,6 +496,17 @@
 <Unit filename="../../../../apps/spp_and_le/examples/dongle/ota_dg_central.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/dongle/usb_hid_devices.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/dongle/usb_second_hid_devices.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/app_fmy.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/ble_fmy.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/ble_fmy.h" />
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/ble_fmy_cfg.h" />
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/ble_fmy_fmna.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/ble_fmy_fmna.h" />
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/ble_fmy_ota.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/ble_fmy_ota.h" />
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/ble_fmy_profile.h" />
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/ble_fmy_sensor_uart.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="../../../../apps/spp_and_le/examples/findmy/ble_fmy_sensor_uart.h" />
 <Unit filename="../../../../apps/spp_and_le/examples/hilink/app_hilink.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/hilink/hilink_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/spp_and_le/examples/hilink/hilink_demo.h" />
@@ -639,6 +637,7 @@
 <Unit filename="../../../../include_lib/btstack/third_party/common/btstack_3th_protocol_user.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/common/spp_config.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/common/spp_user.h" />
+<Unit filename="../../../../include_lib/btstack/third_party/fmna/fmna_api.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/rcsp/JL_rcsp_api.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/rcsp/JL_rcsp_packet.h" />
 <Unit filename="../../../../include_lib/btstack/third_party/rcsp/JL_rcsp_protocol.h" />
@@ -673,6 +672,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/power_interface.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/pwm_led.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/rdec.h" />
+<Unit filename="../../../../include_lib/driver/cpu/br30/asm/rtc.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/sdmmc.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/spi.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/spiflash.h" />

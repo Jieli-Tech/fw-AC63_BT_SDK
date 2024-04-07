@@ -81,6 +81,20 @@ extern void bredr_set_dut_enble(u8 en, u8 phone);
 
 /* ***************************************************************************/
 /**
+ * \Brief :       库调用:进入sniff成功后，协商的通信间隔值(unit:slot,625us)
+ *
+ * \Param :       addr---remote's addr
+ * \Param :       t_sniff---通信间隔，slots
+ * \Param :        negotiation
+ */
+/* ***************************************************************************/
+void bt_sniff_param_hook(u8 *addr, u16 t_sniff)
+{
+    log_info("t_sniff= %d us", (u32)t_sniff * 625);
+}
+
+/* ***************************************************************************/
+/**
  * \Brief :       库调用进行sniff请求参数更新
  *
  * \Param :
@@ -189,11 +203,15 @@ void btstack_edr_start_before_init(const edr_init_cfg_t *cfg, int param)
 
     __set_user_ctrl_conn_num(1);
 
-#if (TCFG_USER_EDR_ENABLE && TCFG_SYS_LVD_EN && USER_SUPPORT_PROFILE_HFP)
-    //edr通过hfp显示电量
-    __set_disable_sco_flag(1);
+#if USER_SUPPORT_PROFILE_HFP
+    __set_disable_sco_flag(1);////禁止发起esco 通话从手机出声音
+#if TCFG_SYS_LVD_EN
+//edr通过hfp显示电量
     __bt_set_update_battery_time(60);
     get_battery_value_register(bt_get_battery_value);   /*电量显示获取电量的接口*/
+#else
+    __bt_set_update_battery_time(0);
+#endif
 #else
     __bt_set_update_battery_time(0);
 #endif
@@ -251,7 +269,8 @@ void btstack_edr_start_after_init(int param)
     /* bt_wait_phone_connect_control_ext(1, 1); */
     sys_auto_sniff_controle(1, NULL);
 #else
-    /* lmp_set_sniff_disable();[>set disable<] */
+    //lmp_set_sniff_disable();
+    //lmp_set_sniff_establish_by_remote(1);
 #endif
 }
 
@@ -378,8 +397,14 @@ static int bt_comm_edr_status_event_handler(struct bt_event *bt)
         log_info("BT STATUS TRIM OVER\n");
         break;
 
+    case BT_STATUS_RECONN_OR_CONN:
+        log_info("BT_STATUS_RECONN_OR_CONN \n");
+#if USER_SUPPORT_PROFILE_MAP
+        log_info("USER_CTRL_MAP_READ_TIME");
+        user_send_cmd_prepare(USER_CTRL_MAP_READ_TIME, 0, NULL);
+#endif
     default:
-        log_info(" BT STATUS DEFAULT\n");
+        log_info("BT STATUS DEFAULT\n");
         break;
     }
     return 0;
@@ -820,6 +845,31 @@ void bt_comm_edr_mode_enable(u8 enable)
     log_info("%s end", __FUNCTION__);
 }
 
+#if USER_SUPPORT_PROFILE_MAP
+#define PROFILE_CMD_TRY_AGAIN_LATER 	    -1004
+void bt_get_time_date()
+{
+    log_info("hfp_get_time_date");
+    int error = user_send_cmd_prepare(USER_CTRL_HFP_GET_PHONE_DATE_TIME, 0, NULL);
+    log_info(">>>>>error = %d\n", error);
+    if (error == PROFILE_CMD_TRY_AGAIN_LATER) {
+        sys_timeout_add(NULL, bt_get_time_date, 100);
+    }
+}
+void phone_date_and_time_feedback(u8 *data,  u16 len)
+{
+    log_info("hfp_get_time: %s", data);
+}  
+void map_get_time_data(char *time, int status)
+{
+    if (status  ==  0) {
+        log_info("map_get_time: %s", time);
+    } else  {
+            log_info(">>>map get fail\n");
+            sys_timeout_add(NULL, bt_get_time_date, 100);
+        }  
+    }
+#endif
 
 #endif
 

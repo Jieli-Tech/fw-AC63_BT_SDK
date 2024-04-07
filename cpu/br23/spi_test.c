@@ -203,4 +203,75 @@ __out_dma:
     spi_close(spi1_hdl);
     spi_close(spi2_hdl);
 }
+
+#else
+
+//蓝牙SPI debug时打开
+#if 0
+/* 配置要使用的 CS 脚 */
+/* 为了省IO其实可以不用CS脚也能被ellisys分辨出来，或者在ellisys端将CS脚接地 */
+#define SPI1_PORT       JL_PORTA
+#define SPI1_PORT_BIT   1
+#define SPI1_CS_OUT() \
+    do { \
+        SPI1_PORT->DIR &= ~BIT(SPI1_PORT_BIT); \
+        SPI1_PORT->DIE |=  BIT(SPI1_PORT_BIT); \
+        SPI1_PORT->PU  &= ~BIT(SPI1_PORT_BIT); \
+        SPI1_PORT->PD  &= ~BIT(SPI1_PORT_BIT); \
+    } while(0)
+#define SPI1_CS_L()     (SPI1_PORT->DIR &= ~BIT(SPI1_PORT_BIT),SPI1_PORT->OUT &= ~BIT(SPI1_PORT_BIT))
+#define SPI1_CS_H()     (SPI1_PORT->DIR &= ~BIT(SPI1_PORT_BIT),SPI1_PORT->OUT |=  BIT(SPI1_PORT_BIT))
+
+typedef const int spi_dev;
+
+extern int spi_open(spi_dev spi);
+extern int spi_dma_send(spi_dev spi, const void *buf, u32 len);
+
+const struct spi_platform_data spi2_p_data = {
+    .port = {
+        IO_PORTA_02,    //CLK
+        IO_PORTA_03,    //DO
+        IO_PORTA_01,    //DI
+    },
+    .mode = SPI_MODE_BIDIR_1BIT,
+    .clk = 5000000,
+    .role = SPI_ROLE_MASTER,
+};
+
+const struct spi_platform_data spi1_p_data = {
+    .port = 'B',
+    /* .port = { */
+    /*     #<{(| IO_PORTC_00,    // CLK |)}># */
+    /*     #<{(| IO_PORTC_01,    // DO，对应ellisys的DI |)}># */
+    /*     #<{(| IO_PORTC_02,    // DI，对应ellisys的DO |)}># */
+    /*  */
+    /*     IO_PORTA_05,    // */
+    /*     IO_PORTA_06,    // */
+    /*     IO_PORTA_07,    // */
+    /* }, */
+    .mode = SPI_MODE_BIDIR_1BIT,
+    .clk = 5000000,                /* 经测试 ellisys 能分辨到这个速度 */
+    .role = SPI_ROLE_MASTER,
+};
+
+static spi_dev spi1_hdl = 1;
+static u8 spi1_send_buf[512] ALIGNED(4);
+
+void bb_spi_init(void)
+{
+    r_printf("spi_open:%08x\n", spi_open);
+    spi_open(spi1_hdl);
+    /* SPI1_CS_OUT(); */
+    /* SPI1_CS_H(); */
+}
+
+void bb_spi_send(const void const *buf, size_t len)
+{
+    memcpy(spi1_send_buf, buf, len);
+    /* SPI1_CS_L(); */
+    spi_dma_send(spi1_hdl, spi1_send_buf, len);
+    /* SPI1_CS_H(); */
+}
+
+#endif
 #endif

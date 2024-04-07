@@ -173,7 +173,6 @@ static const struct audio_dec_input demo_frame_input = {
 // 解码预处理
 static int demo_frame_dec_probe_handler(struct audio_decoder *decoder)
 {
-#if 0
     struct demo_frame_decoder *dec = container_of(decoder, struct demo_frame_decoder, decoder);
 
     if (demo_frame_media_get_packet_num() < 1) {
@@ -186,7 +185,6 @@ static int demo_frame_dec_probe_handler(struct audio_decoder *decoder)
         dec->wait_resume = 1;
         return -EINVAL;
     }
-#endif
     return 0;
 }
 

@@ -2,7 +2,7 @@
 #include "asm/clock.h"
 #include "asm/gpio.h"
 
-#define MCPWM_DEBUG_ENABLE  	1
+#define MCPWM_DEBUG_ENABLE  	0
 #if MCPWM_DEBUG_ENABLE
 #define mcpwm_debug(fmt, ...) printf("[MCPWM] "fmt, ##__VA_ARGS__)
 #else

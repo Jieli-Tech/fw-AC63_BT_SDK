@@ -49,8 +49,8 @@
 #define trace_run_debug_val(x)   //log_info("\n## %s: %d,  0x%04x ##\n",__FUNCTION__,__LINE__,x)
 
 //2.4G模式: 0---ble, 非0---2.4G配对码
-/* #define CFG_RF_24G_CODE_ID       (0) //<=24bits */
-#define CFG_RF_24G_CODE_ID       (0x23) //<=24bits
+/* #define CFG_RF_24G_CODE_ID       (0) // */
+#define CFG_RF_24G_CODE_ID       (0x5555AAAA) //32bits
 
 //切换控制,可自己修改按键方式
 #define MIDDLE_KEY_SWITCH          1   //中键长按数秒切换 edr & ble , or 2.4g & ble, or ble & 2.4g & edr
@@ -717,7 +717,7 @@ static void bt_ble_mode_enable(u8 enable)
 #endif
 }
 
-static void bt_24g_mode_set(u8 code_id)
+static void bt_24g_mode_set(u32 code_id)
 {
 #if TCFG_USER_BLE_ENABLE
     log_info("%s:%02x", __FUNCTION__, code_id);
@@ -1039,8 +1039,18 @@ static void mouse_dual_vm_deal(u8 rw_flag)
 }
 
 
+void hid_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
+
 void soft_poweroff_wakeup_reset(void);
-void hid_set_soft_poweroff(void)
+static void hid_set_soft_poweroff(void)
 {
     log_info("hid_set_soft_poweroff\n");
     is_hid_active = 1;
@@ -1231,7 +1241,7 @@ static void mouse_dual_app_start()
 
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //无操作定时软关机
-    g_auto_shutdown_timer = sys_timeout_add(NULL, hid_set_soft_poweroff, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    g_auto_shutdown_timer = sys_timeout_add((void *)POWER_EVENT_POWER_SOFTOFF, hid_power_event_to_user, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
 #endif
 }
 
@@ -1708,7 +1718,7 @@ static int mouse_dual_event_handler(struct application *app, struct sys_event *e
                 }
 
             }
-            return app_power_event_handler(&event->u.dev, power_set_soft_poweroff);
+            return app_power_event_handler(&event->u.dev, hid_set_soft_poweroff);
         }
 #if TCFG_CHARGE_ENABLE
         else if ((u32)event->arg == DEVICE_EVENT_FROM_CHARGE) {

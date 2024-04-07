@@ -23,6 +23,9 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+#include "app_config.h"
+
+#if (CONFIG_APP_HILINK)
 
 #ifndef MBEDTLS_CONFIG_H
 #define MBEDTLS_CONFIG_H
@@ -3963,3 +3966,4 @@
 
 #endif /* MBEDTLS_CONFIG_H */
 
+#endif /**/

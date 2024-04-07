@@ -235,5 +235,11 @@ const char log_tag_const_d_HILINK AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_w_HILINK AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_e_HILINK AT(.LOG_TAG_CONST) = 1;
 
+const char log_tag_const_v_FINDMY AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_i_FINDMY AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_d_FINDMY AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_w_FINDMY AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_e_FINDMY AT(.LOG_TAG_CONST) = 1;
+
 
 

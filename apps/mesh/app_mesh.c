@@ -77,7 +77,7 @@ static void app_start()
 
     is_app_active = 1;
 
-    clk_set("sys", 24 * 1000000);
+    clk_set("sys", BT_NORMAL_HZ);
     u32 sys_clk =  clk_get("sys");
     bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
 

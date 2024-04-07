@@ -30,6 +30,21 @@ extern void put_buf(const u8 *buf, int len);
 
 #define TEST_USER_HID_EN               0
 
+/*message type*/   /*hex*/  /*sent by*/
+#define HID_HANDSHAKE       0x00     /*Device*/
+#define HID_CONTROL         0x10     /*Device&host*/
+/**0x20,0x30 Reserved*/
+#define HID_GET_REPORT      0x40     /*host*/
+#define HID_SET_REPORT      0x50     /*host*/
+#define HID_GET_PROTOCOL    0x60     /*host*/
+#define HID_SET_PROTOCOL    0x70     /*host*/
+#define HID_GET_IDLE        0x80     /*host DEPRECATED*/
+#define HID_SET_IDLE        0x90     /*host DEPRECATED*/
+#define HID_DATA            0xA0     /*Device&host*/
+#define HID_DATC            0xB0     /*Device&host  DEPRECATED*/
+/*C-F  Reserved*/
+
+
 #define HID_DATA            0xA0     /*Device&host*/
 #define HID_DATC            0xB0     /*Device&host  DEPRECATED*/
 
@@ -460,7 +475,8 @@ static void user_hid_msg_handler(u32 msg, u8 *packet, u32 packet_size)
         break;
 
     case 3:
-        if (hid_channel == little_endian_read_16(packet, 0)) {
+        if (hid_channel == little_endian_read_16(packet, 0) ||
+            hid_ctrl_channel == little_endian_read_16(packet, 0)) {
             user_hid_send_ok_callback();
         }
         break;
@@ -683,5 +699,42 @@ int edr_hid_tx_buff_is_ok(void)
     }
     return 1;
 }
+
+/*************************************************************************************************/
+/*!
+ *  \brief     hook，处理ctrl通道命令，返回0则由库来处理。非0执行回复命令发送
+ *  \param      [in]channel l2cap连接通道
+ *  \param      [in]packet  接收命令buffer
+ *  \param      [in]size    命令长度
+ *  \param      [out] respond_buf_ptr 回复的buf指针
+ *  \return     回复命令的长度
+ *  \note
+ */
+/*************************************************************************************************/
+int hid_ctrl_data_parse_hook(u16 channel, const u8 *packet, int size, int *respond_buf_ptr)
+{
+    int respone_len = 0;
+    static u8 hid_respone_buffer[8];
+    switch (packet[0] & 0xf0) {
+    case HID_GET_REPORT:
+        if (packet[1] == 0x01) {//report id,应答是对应app_keyboard.c的描述符
+            hid_respone_buffer[0] = HID_DATA | DATA_INPUT;
+            //report id  + payload;根据描述符来回复长度
+            hid_respone_buffer[1] = packet[1];
+            hid_respone_buffer[2] = 0;
+            hid_respone_buffer[3] = 0;
+            respone_len = 4;
+        }
+        break;
+    default:
+        break;
+    }
+    if (respone_len) {
+        *respond_buf_ptr = hid_respone_buffer;
+    }
+    return respone_len;
+}
+
+
 
 #endif

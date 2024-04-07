@@ -244,6 +244,18 @@ CONFIG_CUSTOM_CFG3_TYPE = CONFIG_CUSTOM_CFG3_VALUE;
 #define CONFIG_BURNER_INFO_SIZE		32
 #endif
 
+#ifndef CONFIG_FINDMY_INFO_ADDR
+#define CONFIG_FINDMY_INFO_ADDR	0x7d000
+#endif
+
+#ifndef CONFIG_FINDMY_INFO_LEN
+#define CONFIG_FINDMY_INFO_LEN	0x2000
+#endif
+
+#ifndef CONFIG_FINDMY_INFO_OPT
+#define CONFIG_FINDMY_INFO_OPT	1
+#endif
+
 
 // ########flash空间使用配置区域###############################################
 // #PDCTNAME:    产品名，对应此代码，用于标识产品，升级时可以选择匹配产品名
@@ -375,14 +387,31 @@ ANCIF1_OPT = CONFIG_ANCIF1_OPT;
 /*******************非用户配置区**********************/
 #endif/*CONFIG_ANC_ENABLE*/
 
+[RESERVED_EXPAND_CONFIG]
+#if CONFIG_FINDMY_INFO_ENABLE && CONFIG_ONLY_GRENERATE_ALIGN_4K_CODE
+FINDMY_ADR = CONFIG_FINDMY_INFO_ADDR;
+FINDMY_LEN = CONFIG_FINDMY_INFO_LEN;
+FINDMY_OPT = CONFIG_FINDMY_INFO_OPT;
+#endif
+
+[BURNER_PASSTHROUGH_CFG]
+FLASH_WRITE_PROTECT = NO
+
+//烧写配置选项
+                      [BURNER_OPTIONS]
+                      GUI_DISABLED = TRUE;
+//LVD电压值要跟烧录器可选的显示值，一模一样，否则会报错不匹配
+LVD = 1.8v;
 
 [BURNER_CONFIG]
 SIZE = CONFIG_BURNER_INFO_SIZE;
 
 [TOOL_CONFIG]
-1TO2_MIN_VER = 2.26.1;//一拖二烧写器最低版本
+1TO2_MIN_VER = 2.27.8;//一拖二烧写器最低版本
 
-1TO8_MIN_VER = 3.1.8;//一拖八烧写器最低版本
+1TO8_MIN_VER = 3.1.22;//一拖八烧写器最低版本
 
-
-
+#if CONFIG_FINDMY_INFO_ENABLE
+[FW_ADDITIONAL]
+FILE_LIST = (file = file_authrunFindmyAC637N.tkn: type = 0xec)
+#endif

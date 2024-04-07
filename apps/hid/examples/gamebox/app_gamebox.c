@@ -152,7 +152,17 @@ static void gamebox_ble_mouse_timer_handler(void)
     }
 }
 
-void gamebox_set_soft_poweroff(void)
+void gamebox_power_event_to_user(u8 event)
+{
+    struct sys_event e;
+    e.type = SYS_DEVICE_EVENT;
+    e.arg  = (void *)DEVICE_EVENT_FROM_POWER;
+    e.u.dev.event = event;
+    e.u.dev.value = 0;
+    sys_event_notify(&e);
+}
+
+static void gamebox_set_soft_poweroff(void)
 {
     log_info("gamebox_set_soft_poweroff\n");
     is_gamebox_active = 1;
@@ -192,7 +202,7 @@ static void gamebox_app_start()
 
 #if (TCFG_HID_AUTO_SHUTDOWN_TIME)
     //无操作定时软关机
-    g_auto_shutdown_timer = sys_timeout_add(NULL, game_set_soft_poweroff, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
+    g_auto_shutdown_timer = sys_timeout_add(POWER_EVENT_POWER_SOFTOFF, gamebox_power_event_to_user, TCFG_HID_AUTO_SHUTDOWN_TIME * 1000);
 #endif
 }
 

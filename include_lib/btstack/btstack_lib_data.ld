@@ -16,6 +16,14 @@
         *(.ble_mesh_tinycrypt_data)
         BTSTACK_LE_HOST_MESH_DATA_SIZE = ABSOLUTE(. - BTSTACK_LE_HOST_MESH_DATA_START);
 
+        _fmna_data_begin = .;
+        *(.fmna_stack_data)
+        *(.fmna_plaform_data)
+        *(.fmna_crypto_data)
+        _fmna_data_end = .;
+        btstack_fmna_data_size  = _fmna_data_end - _fmna_data_begin;
+        . = ALIGN(4);
+
 
         btstack_data_end = .;
 

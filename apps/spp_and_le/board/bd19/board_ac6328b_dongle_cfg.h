@@ -49,7 +49,7 @@
 #if CONFIG_APP_OTA_ENABLE
 #define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS | CUSTOM_HID_CLASS)
 #else
-#define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS)
+#define USB_DEVICE_CLASS_CONFIG 									(HID_CLASS) // 可配置(CDC_CLASS | HID_CLASS)增加cdc虚拟串口功能
 #endif
 
 /*定义支持wakeup*/

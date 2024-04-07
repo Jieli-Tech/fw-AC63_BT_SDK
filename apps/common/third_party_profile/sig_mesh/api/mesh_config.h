@@ -11,13 +11,6 @@
 #define CONFIG_BT_DEBUG                         1
 #define MESH_ADAPTATION_OPTIMIZE                1
 
-/* Net buffer config */
-#define NET_BUF_USE_MALLOC                      1
-#define CONFIG_NET_BUF_USER_DATA_SIZE 		    4
-#ifndef NET_BUF_USE_MALLOC
-#define CONFIG_BT_MESH_ADV_BUF_COUNT 		    4
-#endif /* NET_BUF_USE_MALLOC */
-
 /* Buf Replace Config */
 #define CONFIG_BUF_REPLACE_EN					0
 

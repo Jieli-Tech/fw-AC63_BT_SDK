@@ -52,8 +52,8 @@
 #define SYS_AI_EVENT 		    0x0100
 #define SYS_MATRIX_KEY_EVENT    0x0200
 #define SYS_TOUCHPAD_EVENT      0x0400
-#define SYS_ADT_EVENT      0x0800
-
+#define SYS_ADT_EVENT           0x0800
+#define SYS_FMNA_EVENT          0x1000
 
 
 
@@ -285,6 +285,15 @@ struct touchpad_event {
     s8 y;
 };
 
+/*最大的长度16bytes*/
+struct fmna_event {
+    u8 event;
+    u8 args[3];
+    u32 value;
+    void *event_data;
+    void *handler;
+};
+
 struct sys_event {
     u16 type;
     u8 consumed;
@@ -319,6 +328,7 @@ struct sys_event {
         struct matrix_key_event  matrix_key;
         struct touchpad_event touchpad;
         struct adt_event    adt;
+        struct fmna_event   fmna;
     } u;
 };
 

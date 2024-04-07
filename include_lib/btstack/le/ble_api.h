@@ -264,6 +264,22 @@ int le_controller_set_random_mac(void *addr);
 
 /*************************************************************************************************/
 /*!
+ *  \brief      提供自动生成 ble对应的random类型的地址
+   *
+ *  \param      [in] random_type
+   1--STATIC_DEVICE_ADDR
+   2--NON_RESOLVABLE_PRIVATE_ADDR
+   3--RESOLVABLE_PRIVATE_ADDR
+ *
+ *  \return     true or false
+ *
+ *  \note       设置后可用le_controller_set_random_mac改变指定地址
+ */
+/*************************************************************************************************/
+bool ble_set_make_random_address(uint8_t random_type);
+
+/*************************************************************************************************/
+/*!
  *  \brief      获取ble蓝牙的random地址.
  *
  *  \param      [out] addr       random地址.
@@ -1261,12 +1277,24 @@ bool ble_list_bonding_remote(u8 *conn_addr, u8 conn_addr_type);
 
 /*************************************************************************************************/
 /*!
- *  \brief      ble 清空配对表.
+ *  \brief      ble 清空配对表(包括主从机).
  *
  *  \return     true or false.
+ *  \note       执行效率快.
  */
 /*************************************************************************************************/
 bool ble_list_clear_all(void);
+
+/*************************************************************************************************/
+/*!
+ *  \brief      ble 清除对应角色的配对列表
+ *
+ *  \param      [in] role, 本地设备的角色: 1--slave, 0--master
+ *  \return     true or false.
+ *  \note       查找方式逐个删除,不区分主从删除建议使用接口 ble_list_clear_all
+ */
+/*************************************************************************************************/
+bool ble_list_role_clear_all(u8 role);
 
 /*************************************************************************************************/
 /*!
@@ -1382,6 +1410,19 @@ void att_server_flow_hold(hci_con_handle_t con_handle, u8 hold_flag);
 
 /*************************************************************************************************/
 /*!
+ *  \brief      ble master: client 控制收数流控.
+ *
+ *  \param      [in] handle     range：>0.
+ *  \param      [in] hold_flag  1--停止收发数据，0--开始正常收发数.
+ *
+ *  \note       对方serverd要使用indication的方式发送数据才能有流控生效
+ *  \return     0->success ,非0->fail.
+ */
+/*************************************************************************************************/
+int ble_att_client_set_flow(hci_con_handle_t con_handle, u8 hold_flag);
+
+/*************************************************************************************************/
+/*!
  *  \brief      ble slave: server 配对连接时，检查对方操作系统.
  *
  *  \param      [in] handle     range：>0.
@@ -1420,13 +1461,31 @@ int att_send_check_multi_dev(u8 server_max, u8 client_max);
 int att_server_change_profile(u8 const *profile_data);
 
 
+/*************************************************************************************************/
+/*!
+ *  \brief      获取server的mtu大小.
+ *
+ *  \param      [in] con_handle     range :>0.
+ *
+ *  \return     mtu size
+ *
+ *  \note       蓝牙未连接状态下,可调用修改.
+ */
+/*************************************************************************************************/
+u16 ble_att_server_get_link_mtu(u16 con_handle);
 
-
-
-
-
-
-
+/*************************************************************************************************/
+/*!
+ *  \brief      获取client的mtu大小.
+ *
+ *  \param      [in] con_handle     range :>0.
+ *
+ *  \return     mtu size
+ *
+ *  \note       蓝牙未连接状态下,可调用修改.
+ */
+/*************************************************************************************************/
+u16 ble_att_client_get_link_mtu(u16 con_handle);
 
 
 

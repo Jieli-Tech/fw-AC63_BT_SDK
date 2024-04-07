@@ -54,12 +54,14 @@
 <Add option="-DCONFIG_EVENT_KEY_MAP_ENABLE=0" />
 <Add option="-DTIMER_POOL_NUM_CONFIG=10" />
 <Add option="-DAPP_ASYNC_POOL_NUM_CONFIG=0" />
+<Add option="-DSDK_VERSION_CFG_DEFINE=0x230003" />
+<Add option="-DSDK_VERSION_DATE_DEFINE=20240331" />
 <Add option="-DVFS_ENABLE=1" />
 <Add option="-DUSE_SDFILE_NEW=1" />
 <Add option="-DVFS_FILE_POOL_NUM_CONFIG=0" />
 <Add option="-DSDFILE_VERSION=0x020000" />
 <Add option="-DVM_MAX_SIZE_CONFIG=16*1024" />
-<Add option="-DVM_ITEM_MAX_NUM=128" />
+<Add option="-DVM_ITEM_MAX_NUM=256" />
 <Add option="-DCONFIG_TWS_ENABLE" />
 <Add option="-DCONFIG_HID_CASE_ENABLE" />
 <Add option="-DCONFIG_TRANSFER_ENABLE" />
@@ -74,7 +76,6 @@
 <Add option="-DCONFIG_ITEM_FORMAT_VM" />
 <Add option="-DTCFG_APP_BT_EN=1" />
 <Add option="-DUSB_PC_NO_APP_MODE" />
-<Add option="-D__LD__" />
 <Add directory="../../../../include_lib" />
 <Add directory="../../../../include_lib/driver" />
 <Add directory="../../../../include_lib/driver/device" />
@@ -84,6 +85,7 @@
 <Add directory="../../../../include_lib/system/device" />
 <Add directory="../../../../include_lib/system/fs" />
 <Add directory="../../../../include_lib/system/ui" />
+<Add directory="../../../../include_lib/system/math/cpu/br30" />
 <Add directory="../../../../include_lib/btctrler" />
 <Add directory="../../../../include_lib/btctrler/port/br30" />
 <Add directory="../../../../include_lib/update" />
@@ -102,6 +104,7 @@
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp/rcsp_updata" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/JL_rcsp/bt_trans_data" />
+<Add directory="../../../../apps/common/third_party_profile/jieli/gatt_common" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/online_db" />
 <Add directory="../../../../apps/common/third_party_profile/jieli/trans_data_demo" />
 <Add directory="../../../../apps/common/third_party_profile/common" />
@@ -182,11 +185,11 @@
 <Add library="C:\JL\pi32\pi32v2-lib\r3\libm.a" />
 </Linker>
 <ExtraCommands>
-<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\sdk_used_list.c -o ..\..\..\..\cpu\br30\sdk_used_list.used" />
-<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\sdk_ld.c -o ..\..\..\..\cpu\br30\sdk.ld" />
-<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\tools\download.c -o ..\..\..\..\cpu\br30\tools\download.bat" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_used_list.c -o ..\..\..\..\cpu\br30\sdk_used_list.used" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\sdk_ld.c -o ..\..\..\..\cpu\br30\sdk.ld" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\download.c -o ..\..\..\..\cpu\br30\tools\download.bat" />
 <Add before="..\..\..\..\tools\utils\fixbat.exe ..\..\..\..\cpu\br30\tools\download.bat" />
-<Add before="$compiler $options $includes -E -P ..\..\..\..\cpu\br30\tools\isd_config_rule.c -o ..\..\..\..\cpu\br30\tools\isd_config.ini" />
+<Add before="$compiler $options $includes -D__LD__ -E -P ..\..\..\..\cpu\br30\tools\isd_config_rule.c -o ..\..\..\..\cpu\br30\tools\isd_config.ini" />
 <Mode before="always" />
 <Add after="..\..\..\..\cpu\br30\tools\download.bat sdk" />
 <Mode after="always" />
@@ -200,6 +203,7 @@
 <Unit filename="../../../../apps/common/audio/decode/decode.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/audio/sine_make.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/audio/sine_make.h" />
+<Unit filename="../../../../apps/common/bt_common/bt_test_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/code_switch/code_switch.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/code_switch/include/code_switch.h" />
 <Unit filename="../../../../apps/common/debug/debug.c"><Option compilerVer="CC"/></Unit>
@@ -270,8 +274,6 @@
 <Unit filename="../../../../apps/common/music/music_decrypt.h" />
 <Unit filename="../../../../apps/common/music/music_id3.h" />
 <Unit filename="../../../../apps/common/phone_message/phone_message.h" />
-<Unit filename="../../../../apps/common/temp_trim/adc_dtemp_alog.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="../../../../apps/common/temp_trim/adc_dtemp_alog.h" />
 <Unit filename="../../../../apps/common/temp_trim/dtemp_pll_trim.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="../../../../apps/common/third_party_profile/common/3th_profile_api.h" />
 <Unit filename="../../../../apps/common/third_party_profile/common/custom_cfg.c"><Option compilerVer="CC"/></Unit>
@@ -476,6 +478,7 @@
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/power_interface.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/pwm_led.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/rdec.h" />
+<Unit filename="../../../../include_lib/driver/cpu/br30/asm/rtc.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/sdmmc.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/spi.h" />
 <Unit filename="../../../../include_lib/driver/cpu/br30/asm/spiflash.h" />

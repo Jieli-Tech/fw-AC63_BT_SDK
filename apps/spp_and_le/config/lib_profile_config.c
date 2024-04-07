@@ -65,6 +65,35 @@ SDP_RECORD_HANDLER_REGISTER(spp_sdp_record_item) = {
 };
 #endif
 
+#if (USER_SUPPORT_PROFILE_HCRP==1)
+extern u8 sdp_hcrp_service_data[];
+u8 hcrp_profile_support = 1;
+SDP_RECORD_HANDLER_REGISTER(hcrp_sdp_record_item) = {
+    .service_record = (u8 *)sdp_hcrp_service_data,
+    .service_record_handle = 0x0001000C,
+};
+#endif
+
+#if (USER_SUPPORT_PROFILE_MAP==1)
+extern const u8 sdp_map_mce_service_data[];
+u8 map_profile_support = 1;
+SDP_RECORD_HANDLER_REGISTER(map_sdp_record_item) = {
+    .service_record = (u8 *)sdp_map_mce_service_data,
+    .service_record_handle = 0x00010009,
+};
+#endif
+#if (USER_SUPPORT_PROFILE_HFP==1)
+extern const u8 sdp_hfp_service_data[];
+u8 hfp_profile_support = 1;
+const u8 more_hfp_cmd_support = 1;
+SDP_RECORD_HANDLER_REGISTER(hfp_sdp_record_item) = {
+    .service_record = (u8 *)sdp_hfp_service_data,
+    .service_record_handle = 0x00010003,
+};
+#else
+const u8 more_hfp_cmd_support = 0;
+#endif
+
 const u8 hid_conn_depend_on_dev_company = 0;
 const u8 sdp_get_remote_pnp_info = 0;
 
@@ -169,7 +198,6 @@ const u8 btstack_emitter_support  = 0;  /*定义用于优化代码编译*/
 
 const u8 a2dp_mutual_support = 0;
 const u8 more_addr_reconnect_support = 0;
-const u8 more_hfp_cmd_support = 0;
 const u8 more_avctp_cmd_support = 0;
 const u8 adt_profile_support = 0;
 const u8 pbg_support_enable = 0;

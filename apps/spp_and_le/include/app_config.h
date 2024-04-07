@@ -19,6 +19,7 @@
 #define TCFG_MEDIA_LIB_USE_MALLOC		    1
 //apps example 选择,只能选1个,要配置对应的board_config.h
 #define CONFIG_APP_SPP_LE                 1 //SPP + LE or LE's client
+#define CONFIG_APP_FINDMY                 0 //FINDMY
 #define CONFIG_APP_MULTI                  0 //蓝牙LE多连 + spp
 #define CONFIG_APP_DONGLE                 0 //usb + 蓝牙(ble 主机),PC hid设备
 #define CONFIG_APP_CENTRAL                0 //ble client,中心设备
@@ -37,8 +38,17 @@
 
 //edr sniff config
 #define SNIFF_MODE_RESET_ANCHOR           0
+//V5.0 扩展广播/扫描使能
+#define CONFIG_BT_EXT_ADV_MODE            0
 
+#define CONFIG_SET_1M_PHY                 1 //for iot
+#define CONFIG_SET_2M_PHY                 2
+#define CONFIG_SET_CODED_S2_PHY           3
+#define CONFIG_SET_CODED_S8_PHY           4
+#define CONFIG_BLE_PHY_SET                CONFIG_SET_1M_PHY //default
 
+//BLE做主机，使能是否支持搜索连接JL的测试盒
+#define SUPPORT_TEST_BOX_BLE_MASTER_TEST_EN	   0
 
 #if CONFIG_APP_SPP_LE
 //配置双模同名字，同地址
@@ -50,7 +60,7 @@
 //蓝牙BLE配置
 #define CONFIG_BT_GATT_COMMON_ENABLE       1 //配置使用gatt公共模块
 #define CONFIG_BT_SM_SUPPORT_ENABLE        0 //配置是否支持加密
-#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数 (app not support,应用不支持使能)
+#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数 (支持使能1,search profile)
 #define CONFIG_BT_GATT_SERVER_NUM          1 //配置从机server个数
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //配置连接个数
 
@@ -93,7 +103,7 @@
 #define CONFIG_BT_GATT_COMMON_ENABLE       1
 #define CONFIG_BT_SM_SUPPORT_ENABLE        0
 #define CONFIG_BT_GATT_CLIENT_NUM          1 //range(0~7)
-#define CONFIG_BT_GATT_SERVER_NUM          1 //range(0~1)
+#define CONFIG_BT_GATT_SERVER_NUM          0 //range(0~1)
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //range(0~8)
 #define CONFIG_BLE_HIGH_SPEED              0 //BLE提速模式: 使能DLE+2M, payload要匹配pdu的包长
 
@@ -141,9 +151,20 @@
 
 #define CONFIG_BT_GATT_COMMON_ENABLE       1 //配置使用gatt公共模块
 #define CONFIG_BT_SM_SUPPORT_ENABLE        0 //(apps not support,应用不支持使能)
-#define CONFIG_BT_GATT_CLIENT_NUM          1 //配置主机client使能,max is 1
-#define CONFIG_BT_GATT_SERVER_NUM          0 //配置从机server使能,max is 1
+#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client使能,max is 1
+#define CONFIG_BT_GATT_SERVER_NUM          1 //配置从机server使能,max is 1
+//2.4G模式: 0---ble, 非0---2.4G配对码; !!!主从欲连接,需保持配对码一致
+//!!!初始化之后任意非连接时刻修改配对码API:rf_set_conn_24g_coded
+#define CFG_RF_24G_CODE_ID_SCAN            (0x5555AAAA) //<=24bits 主机扫描2.4G配对码
+#define CFG_RF_24G_CODE_ID_ADV             (0x5555AAAA) //<=24bits 从机广播2.4G配对码
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM)
+#define CONFIG_BLE_HIGH_SPEED              0 //BLE提速模式: 使能DLE+2M, payload要匹配pdu的包长
+#undef  CONFIG_BLE_PHY_SET
+#define CONFIG_BLE_PHY_SET                 4 //PHY SEL 1--1M, 2--2M, 3--CODED_S2, 4--CODED_S8
+#if CONFIG_BLE_HIGH_SPEED
+#undef CONFIG_BLE_PHY_SET
+#define CONFIG_BLE_PHY_SET                 2 //SET 2M_PHY for protect
+#endif
 
 #elif CONFIG_APP_HILINK
 //配置双模同名字，同地址
@@ -156,6 +177,25 @@
 #define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数(app not support,应用不支持使能)
 #define CONFIG_BT_GATT_SERVER_NUM          1 //配置从机server个数,max is 1
 #define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM)
+
+#elif CONFIG_APP_FINDMY
+#define CONFIG_BLE_HIGH_SPEED              1 //BLE提速模式: 使能DLE+2M, payload要匹配pdu的包长
+
+//蓝牙BLE配置
+#define CONFIG_BT_GATT_COMMON_ENABLE       1 //配置使用gatt公共模块
+#define CONFIG_BT_SM_SUPPORT_ENABLE        1 //配置是否支持加密
+#define CONFIG_BT_GATT_CLIENT_NUM          0 //配置主机client个数 (app not support,应用不支持使能)
+#define CONFIG_BT_GATT_SERVER_NUM          2 //配置从机server个数
+#define CONFIG_BT_GATT_CONNECTION_NUM      (CONFIG_BT_GATT_SERVER_NUM + CONFIG_BT_GATT_CLIENT_NUM) //配置连接个数
+
+//debug for sensor's data to uart
+#define FMY_DEBUG_SENSOR_TO_UART_ENBALE    0
+//debug for test sensor is moving
+#define FMY_DEBUG_TEST_MOTION_DETETION     0
+//认证测试模式
+#define FMY_FMCA_TEST_MODE                 0
+//支持pair状态,按键进入或退出测试盒连接模式
+#define FMY_SUPPORT_TEST_BOX_MODE          0
 
 #else
 #define CONFIG_BT_GATT_COMMON_ENABLE       0
@@ -205,13 +245,27 @@
 
 #define APP_PRIVATE_PROFILE_CFG
 
+#if CONFIG_BT_EXT_ADV_MODE
+#define APP_TO_ALLOW_EXT_ADV
+//unsupport sleep
+#undef  TCFG_LOWPOWER_LOWPOWER_SEL
+#define TCFG_LOWPOWER_LOWPOWER_SEL                0
+#endif
+
 #if (CONFIG_BT_MODE == BT_NORMAL)
 //enable dut mode,need disable sleep(TCFG_LOWPOWER_LOWPOWER_SEL = 0)
 #define TCFG_NORMAL_SET_DUT_MODE                  0
 #if TCFG_NORMAL_SET_DUT_MODE
+//unsupport sleep
 #undef  TCFG_LOWPOWER_LOWPOWER_SEL
 #define TCFG_LOWPOWER_LOWPOWER_SEL                0
+
+#if TCFG_USER_EDR_ENABLE && TCFG_USER_BLE_ENABLE
+//不支持同时打开
+#error "dut need disable one bt!!!"
 #endif
+
+#endif //#if TCFG_NORMAL_SET_DUT_MODE
 
 #else
 

@@ -177,6 +177,7 @@ extern const int config_btctler_le_slave_conn_update_winden;
 /*
  *-------------------LE Multi-link CONTROL
  */
+extern const int config_btctler_le_slave_multilink;
 extern const int config_btctler_le_master_multilink;
 /*-----------------------------------------------------------*/
 
@@ -196,7 +197,7 @@ extern const int config_btctler_le_master_multilink;
 #define VENDOR_BB_RX_PAYLOAD_LEN(x)     ((x) << 18) /* 7bit */
 #define VENDOR_BB_PIS_TX_PAYLOAD_LEN(x) ((x) << 25) /* 7bit*/
 
-extern const u32 config_vendor_le_bb;
+extern u32 config_vendor_le_bb;
 extern const int config_rf_oob;
 /*-----------------------------------------------------------*/
 

@@ -703,7 +703,7 @@ display_data:
 /*************************************************************************************************/
 int dongle_pc_event_handler(struct dg_ota_event *dg_ota)
 {
-    static u8 buf_total[HID_USB_SEND_MAX+2]; //add head
+    static u8 buf_total[HID_USB_SEND_MAX + 2];
 
     u8 i = user_data_read_sub(buf_total, HID_USB_SEND_MAX + 2);
 

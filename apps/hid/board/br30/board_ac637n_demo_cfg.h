@@ -363,7 +363,12 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 //                                  时钟配置                                       //
 //*********************************************************************************//
-#define TCFG_CLOCK_SYS_SRC					SYS_CLOCK_INPUT_PLL_BT_OSC   //系统时钟源选择
+#if CONFIG_PLL_SOURCE_USING_LRC
+#define TCFG_CLOCK_SYS_SRC     SYS_CLOCK_INPUT_PLL_RCL   //系统时钟源选择
+#else
+#define TCFG_CLOCK_SYS_SRC     SYS_CLOCK_INPUT_PLL_BT_OSC   //系统时钟源选择
+#endif
+
 #define TCFG_CLOCK_SYS_HZ					24000000                     //系统时钟设置
 
 #ifdef CONFIG_FPGA_ENABLE
