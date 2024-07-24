@@ -1,0 +1,17 @@
+name: 技术与研发经验分享
+description: 对本项目技术特点、研发经验等内容分享
+title: "[分享内容]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢分享！
+  - type: textarea
+    id: related-problem
+    attributes:
+      label: 你的分享内容标题？
+      description: 清晰并详细地描述分享内容。
+    validations:
+      required: true
+
