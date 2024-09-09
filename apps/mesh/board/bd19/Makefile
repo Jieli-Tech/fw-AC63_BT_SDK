@@ -281,6 +281,11 @@ c_SRC_FILES := \
 	../../../../apps/mesh/examples/tencent_mesh.c \
 	../../../../apps/mesh/examples/vendor_client.c \
 	../../../../apps/mesh/examples/vendor_server.c \
+	../../../../apps/mesh/examples/elet_at_cmd.c \
+	../../../../apps/mesh/examples/elet_nv_cfg.c \
+	../../../../apps/mesh/examples/elet_uart.c \
+	../../../../apps/mesh/examples/buf_io_uart_tx.c \
+	../../../../apps/mesh/examples/ring_buf.c \
 	../../../../apps/mesh/lib_config/lib_btctrler_config.c \
 	../../../../apps/mesh/lib_config/lib_btstack_config.c \
 	../../../../apps/mesh/lib_config/lib_driver_config.c \

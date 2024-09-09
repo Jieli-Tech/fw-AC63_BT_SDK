@@ -10,11 +10,12 @@ copy ..\..\p11_code.bin .
 copy ..\..\script.ver .
 
 ..\..\isd_download.exe ..\..\isd_config.ini -tonorflash -dev bd19 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -res ..\..\p11_code.bin -uboot_compress
+@REM ..\..\isd_download.exe ..\..\isd_config.ini -tonorflash -dev bd19 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -res ..\..\p11_code.bin -uboot_compress -key szyd-hua.key -format all
 :: -format all
 ::-reboot 2500
 
 @rem É¾³ýÁÙÊ±ÎÄ¼þ-format all
-if exist *.mp3 del *.mp3 
+if exist *.mp3 del *.mp3
 if exist *.PIX del *.PIX
 if exist *.TAB del *.TAB
 if exist *.res del *.res

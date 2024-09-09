@@ -125,6 +125,34 @@ u8 *syscfg_ptr_read(u16 item_id, u16 *len);
 //                             用户自定义配置项[1 ~ 49]                            //
 //=================================================================================//
 #define 	CFG_USER_DEFINE_BEGIN		1
+
+#define     AT_CHAR_CFG_INIT            2
+#define     AT_CHAR_CFG_LEN             3
+#define     AT_CHAR_CFG_FW              4
+#if 0
+#define     AT_CHAR_SPP_ADDR            13
+#define     AT_CHAR_SPP_NAME            14
+#define     AT_CHAR_SPP_ADV             15
+#define     AT_CHAR_SPP_COD             16
+#define     AT_CHAR_SPP_PIN_ENABLE      17
+#define     AT_CHAR_SPP_PIN_CODE        18
+
+#define     AT_CHAR_BLE_ADDR            20
+#define     AT_CHAR_BLE_NAME            21
+#define     AT_CHAR_BLE_ADV             22
+#define     AT_CHAR_BLE_UUID_LEN        23
+#define     AT_CHAR_BLE_SERV            24
+#define     AT_CHAR_BLE_NOTIFY          25
+#define     AT_CHAR_BLE_WRITE           26
+#endif
+#define     AT_CHAR_MESH_NAME           13
+#define     AT_CHAR_MESH_MCID           14
+#define     AT_CHAR_MESH_CCID           15
+#define     AT_CHAR_MESH_PID            16
+
+#define     AT_CHAR_UART_RATE           17
+#define     AT_CHAR_UART_FLOW_CONTROL   18
+
 #define 	CFG_USER_DEFINE_END			49
 
 //=================================================================================//

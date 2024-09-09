@@ -164,9 +164,11 @@ typedef struct {
     UT_Semaphore  sem_rx;
     UT_Semaphore  sem_tx;
     u32(*get_data_len)(void);
+    u32(*get_data_len_next)(void);
 } uart_bus_t;
 
-
+void uart_tr_flow_ctl_init(u8 rts_io, u8 cts_io);
+const uart_bus_t *uart_tr_dev_open(const struct uart_platform_data_t *arg);
 const uart_bus_t *uart_dev_open(const struct uart_platform_data_t *arg);
 u32 uart_dev_close(uart_bus_t *ut);
 

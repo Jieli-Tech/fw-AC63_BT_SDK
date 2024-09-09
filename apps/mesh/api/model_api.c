@@ -33,6 +33,7 @@ extern void pseudo_random_genrate(uint8_t *dest, unsigned size);
 extern uint32_t btctler_get_rand_from_assign_range(uint32_t rand, uint32_t min, uint32_t max);
 extern char *bd_addr_to_str(u8 addr[6]);
 extern const u8 led_use_port[2];
+extern uint8_t elet_prov_complete_flag;
 
 void prov_complete(u16_t net_idx, u16_t addr)
 {
@@ -40,10 +41,12 @@ void prov_complete(u16_t net_idx, u16_t addr)
              net_idx, addr);
     primary_addr = addr;
     primary_net_idx = net_idx;
+    elet_prov_complete_flag = 1;
 }
 
 void prov_reset(void)
 {
+    elet_prov_complete_flag = 0;
     bt_mesh_prov_enable(BT_MESH_PROV_ADV | BT_MESH_PROV_GATT);
 }
 

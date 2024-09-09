@@ -11,6 +11,9 @@
 #include "bt_common.h"
 #include "api/sig_mesh_api.h"
 #include "model_api.h"
+#include "board.h"
+#include "elet_at_cmd.h"
+#include "buf_io_uart_tx.h"
 
 #define LOG_TAG         "[Mesh-vendor_srv]"
 #define LOG_INFO_ENABLE
@@ -28,18 +31,20 @@ extern void bt_mac_addr_set(u8 *bt_addr);
 extern void prov_complete(u16_t net_idx, u16_t addr);
 extern void prov_reset(void);
 static void vendor_set(struct bt_mesh_model *model,
-                       struct bt_mesh_msg_ctx *ctx,
-                       struct net_buf_simple *buf);
+					   struct bt_mesh_msg_ctx *ctx,
+					   struct net_buf_simple *buf);
 
-#define SERVER_PUBLISH_EN       0
+#define SERVER_PUBLISH_EN       1
 
 /**
  * @brief Config current node features(Relay/Proxy/Friend/Low Power)
  */
 /*-----------------------------------------------------------*/
 #define BT_MESH_FEAT_SUPPORTED_TEMP         ( \
-                                                0 \
-                                            )
+											  BT_MESH_FEAT_RELAY | \
+											  BT_MESH_FEAT_PROXY | \
+											  0 \
+											)
 #include "feature_correct.h"
 const int config_bt_mesh_features = BT_MESH_FEAT_SUPPORTED;
 
@@ -67,18 +72,23 @@ const u8 config_bt_mesh_adv_buf_count = MESH_ADV_BUFFER_COUNT;
  * @brief Conifg complete local name
  */
 /*-----------------------------------------------------------*/
+static u8 ble_mesh_adv_name[32 + 2];
+
 #define BLE_DEV_NAME        'V', 'd', '_','s', 'r', 'v'
 
-const uint8_t mesh_name[] = {
-    // Name
-    BYTE_LEN(BLE_DEV_NAME) + 1, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, BLE_DEV_NAME,
+const uint8_t mesh_default_name[] =
+{
+	// Name
+	BYTE_LEN(BLE_DEV_NAME) + 1, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, BLE_DEV_NAME,
 };
 
 void get_mesh_adv_name(u8 *len, u8 **data)
 {
-    *len = sizeof(mesh_name);
+	// *len = sizeof(ble_mesh_adv_name);
 
-    *data = mesh_name;
+	// *data = ble_mesh_adv_name;
+	*len = ble_mesh_adv_name[0] + 1;
+	*data = ble_mesh_adv_name;
 }
 
 /**
@@ -87,9 +97,10 @@ void get_mesh_adv_name(u8 *len, u8 **data)
 /*-----------------------------------------------------------*/
 #define CUR_DEVICE_MAC_ADDR         0x442233445566
 
-struct _switch {
-    u8_t sw_num;
-    u8_t onoff_state;
+struct _switch
+{
+	u8_t sw_num;
+	u8_t onoff_state;
 };
 
 /* Company Identifiers (see Bluetooth Assigned Numbers) */
@@ -105,8 +116,8 @@ struct _switch {
  * Vendor Model Operation Codes
  * detail on Mesh_v1.0 <3.7.3.1 Operation codes>
  */
-#define BT_MESH_VENDOR_MODEL_OP_SET			    BT_MESH_MODEL_OP_3(0x01, BT_COMP_ID_LF)
-#define BT_MESH_VENDOR_MODEL_OP_STATUS			BT_MESH_MODEL_OP_3(0x02, BT_COMP_ID_LF)
+#define BT_MESH_VENDOR_MODEL_OP_SET             BT_MESH_MODEL_OP_3(0x01, BT_COMP_ID_LF)
+#define BT_MESH_VENDOR_MODEL_OP_STATUS          BT_MESH_MODEL_OP_3(0x04, BT_COMP_ID_LF)
 
 /*
  * Access payload fields
@@ -125,19 +136,20 @@ struct _switch {
 /* LED NUMBER */
 #define LED0_GPIO_PIN       0
 
-struct onoff_state {
-    u8_t onoff;
-    u8_t led_gpio_pin;
+struct onoff_state
+{
+	u8_t onoff;
+	u8_t led_gpio_pin;
 };
 
-static struct onoff_state onoff_state[] = {
-    { .led_gpio_pin = LED0_GPIO_PIN },
+static struct onoff_state onoff_state[] =
+{
+	{ .led_gpio_pin = LED0_GPIO_PIN },
 };
 
-const u8 led_use_port[1] = {
-
-    IO_PORTA_01,
-
+const u8 led_use_port[1] =
+{
+	IO_PORTA_01,
 };
 
 /*
@@ -158,6 +170,10 @@ const u8 led_use_port[1] = {
  */
 BT_MESH_MODEL_PUB_DEFINE(vendor_pub_srv, NULL, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
 
+// static  u8_t net_buf_data_bt_mesh_pub_msg_vendor_pub_srv[11];
+// static struct net_buf_simple bt_mesh_pub_msg_vendor_pub_srv = { .data = net_buf_data_bt_mesh_pub_msg_vendor_pub_srv, .len = 0, .size = 11, .__buf = net_buf_data_bt_mesh_pub_msg_vendor_pub_srv, };
+// static struct bt_mesh_model_pub vendor_pub_srv = { .update = ((void*)0), .msg = &bt_mesh_pub_msg_vendor_pub_srv, }
+
 /*
  * Models in an element must have unique op codes.
  *
@@ -169,20 +185,22 @@ BT_MESH_MODEL_PUB_DEFINE(vendor_pub_srv, NULL, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
 /*
  * Vendor Model Server Op Dispatch Table
  */
-static const struct bt_mesh_model_op vendor_srv_op[] = {
-    { BT_MESH_VENDOR_MODEL_OP_SET, ACCESS_OP_SIZE, vendor_set },
-    BT_MESH_MODEL_OP_END,
+static const struct bt_mesh_model_op vendor_srv_op[] =
+{
+	{ BT_MESH_VENDOR_MODEL_OP_SET, ACCESS_OP_SIZE, vendor_set },
+	BT_MESH_MODEL_OP_END,
 };
 
 /*
  * Server Configuration Declaration
  */
-static struct bt_mesh_cfg_srv cfg_srv = {
-    .relay          = BT_MESH_FEATURES_GET(BT_MESH_FEAT_RELAY),
-    .frnd           = BT_MESH_FEATURES_GET(BT_MESH_FEAT_FRIEND),
-    .gatt_proxy     = BT_MESH_FEATURES_GET(BT_MESH_FEAT_PROXY),
-    .beacon         = BT_MESH_BEACON_DISABLED,
-    .default_ttl    = 7,
+static struct bt_mesh_cfg_srv cfg_srv =
+{
+	.relay          = BT_MESH_FEATURES_GET(BT_MESH_FEAT_RELAY),
+	.frnd           = BT_MESH_FEATURES_GET(BT_MESH_FEAT_FRIEND),
+	.gatt_proxy     = BT_MESH_FEATURES_GET(BT_MESH_FEAT_PROXY),
+	.beacon         = BT_MESH_BEACON_DISABLED,
+	.default_ttl    = 7,
 };
 
 /*
@@ -196,102 +214,193 @@ static struct bt_mesh_cfg_cli cfg_cli;
  *
  * Element 0 Root Models
  */
-static struct bt_mesh_model root_models[] = {
-    BT_MESH_MODEL_CFG_SRV(&cfg_srv), // default for root model
-    BT_MESH_MODEL_CFG_CLI(&cfg_cli), // default for self-configuration network
+static struct bt_mesh_model root_models[] =
+{
+	BT_MESH_MODEL_CFG_SRV(&cfg_srv), // default for root model
+	// BT_MESH_MODEL_CFG_CLI(&cfg_cli), // default for self-configuration network
 };
 
-static struct bt_mesh_model vendor_server_models[] = {
-    BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_SRV,
-    vendor_srv_op, &vendor_pub_srv, &onoff_state[0]),
+static struct bt_mesh_model vendor_server_models[] =
+{
+	BT_MESH_MODEL_VND(BT_COMP_ID_LF, BT_MESH_VENDOR_MODEL_ID_SRV,
+					  vendor_srv_op, &vendor_pub_srv, &onoff_state[0]),
 };
 
 /*
  * LED to Server Model Assigmnents
  */
-static struct bt_mesh_model *mod_srv_sw[] = {
-    &vendor_server_models[0],
+static struct bt_mesh_model *mod_srv_sw[] =
+{
+	&vendor_server_models[0],
 };
 
 /*
  * Root and Secondary Element Declarations
  */
-static struct bt_mesh_elem elements[] = {
-    BT_MESH_ELEM(0, root_models, vendor_server_models),
-};
-
-static const struct bt_mesh_comp composition = {
-    .cid = BT_COMP_ID_LF,
-    .elem = elements,
-    .elem_count = ARRAY_SIZE(elements),
-};
-
-static u8_t dev_uuid[16] = { 0xdd, 0xdd };
-
-static const struct bt_mesh_prov prov = {
-    .uuid = dev_uuid,
-    .output_size = 0,
-    .output_actions = 0,
-    .output_number = 0,
-    .complete = prov_complete,
-    .reset = prov_reset,
-};
-
-static void vendor_set(struct bt_mesh_model *model,
-                       struct bt_mesh_msg_ctx *ctx,
-                       struct net_buf_simple *buf)
+static struct bt_mesh_elem elements[] =
 {
-    log_info("receive message len except opcode =0x%x", buf->len);
-    log_info_hexdump(buf->data, buf->len);
+	BT_MESH_ELEM(0, root_models, vendor_server_models),
+};
 
-    struct net_buf_simple *msg = model->pub->msg;
-    struct onoff_state *onoff_state = model->user_data;
+static const struct bt_mesh_comp composition =
+{
+	.cid = BT_COMP_ID_LF,
+	.pid = 0x001A,
+	.vid = 0x0001,
+	.elem = elements,
+	.elem_count = ARRAY_SIZE(elements),
+};
 
-    //< set led onoff
-    onoff_state->onoff = buffer_pull_u8_from_head(buf);
-    log_info("Local Node 0x%02x shoult set led to 0x%02x\n",
-             bt_mesh_model_elem(model)->addr, onoff_state->onoff);
-    gpio_pin_write(onoff_state->led_gpio_pin, onoff_state->onoff);
+typedef struct dev_uuid_filed
+{
+	uint16_t mid;
+	uint16_t cid;
+	uint8_t pid[3];
+	uint8_t addr[6];
+	uint8_t feature_flag;
+	uint16_t rfu;
+} dev_uuid_filed_t;
+static u8_t dev_uuid[16] = {MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR)};
+uint8_t elet_prov_complete_flag = 0;
 
-    //< Ack to client with the same receive data
-    NET_BUF_SIMPLE_DEFINE(ack_msg, MAX_USEFUL_ACCESS_PAYLOAD_SIZE + TRANSMIC_SIZE);
-    bt_mesh_model_msg_init(&ack_msg, BT_MESH_VENDOR_MODEL_OP_STATUS); // Opcode: 3 octets
-    buffer_add_u8_at_tail(&ack_msg, onoff_state->onoff); // onoff state: 1 octets
-    buffer_memset(&ack_msg, buffer_pull_u8_from_head(buf) + 1, REMAIN_DATA_LEN);
+static const struct bt_mesh_prov prov =
+{
+	.uuid = dev_uuid,
+	.output_size = 0,
+	.output_actions = 0,
+	.output_number = 0,
+	.complete = prov_complete,
+	.reset = prov_reset,
+};
 
-    log_info_hexdump(ack_msg.data, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
-    if (bt_mesh_model_send(model, ctx, &ack_msg, NULL, NULL)) {
-        log_info("Unable to send Status response\n");
-    }
+static uint8_t uart_tx_data[30 + 2]; // 1 byte 0x5A + 30 bytes data + 1 bytes 0xAA
+static void vendor_set(struct bt_mesh_model *model,
+					   struct bt_mesh_msg_ctx *ctx,
+					   struct net_buf_simple *buf)
+{
+	log_info("receive message len except opcode =0x%x", buf->len);
+	log_info_hexdump(buf->data, buf->len);
+
+	struct net_buf_simple *msg = model->pub->msg;
+	struct onoff_state *onoff_state = model->user_data;
+
+	if (buf->len > 30)
+	{
+		return;
+	}
+
+	uart_tx_data[0] = 0x5A;
+	memcpy(&uart_tx_data[1], buf->data, buf->len);
+	uart_tx_data[buf->len + 1] = 0xAA;
+	buf_io_uart_tx_send_data(uart_tx_data, buf->len + 2, 1);
+
+	// //< set led onoff
+	// onoff_state->onoff = buffer_pull_u8_from_head(buf);
+	// log_info("Local Node 0x%02x shoult set led to 0x%02x\n",
+	//       bt_mesh_model_elem(model)->addr, onoff_state->onoff);
+	// gpio_pin_write(onoff_state->led_gpio_pin, onoff_state->onoff);
+
+	// //< Ack to client with the same receive data
+	// NET_BUF_SIMPLE_DEFINE(ack_msg, MAX_USEFUL_ACCESS_PAYLOAD_SIZE + TRANSMIC_SIZE);
+	// bt_mesh_model_msg_init(&ack_msg, BT_MESH_VENDOR_MODEL_OP_STATUS); // Opcode: 3 octets
+	// buffer_add_u8_at_tail(&ack_msg, onoff_state->onoff); // onoff state: 1 octets
+	// buffer_memset(&ack_msg, buffer_pull_u8_from_head(buf) + 1, REMAIN_DATA_LEN);
+	// log_info_hexdump(ctx, sizeof(struct bt_mesh_msg_ctx));
+	// log_info("net_idx %d app_idx %d addr %d recv_dst %d recv_rssi %d recv_ttl %d send_rel %d send_ttl %d",
+	//       ctx->net_idx, ctx->app_idx, ctx->addr, ctx->recv_dst, ctx->recv_rssi, ctx->recv_ttl, ctx->send_rel, ctx->send_ttl);
+
+	// log_info_hexdump(ack_msg.data, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
+
+	// if (bt_mesh_model_send(model, ctx, &ack_msg, NULL, NULL))
+	// {
+	//  log_info("Unable to send Status response\n");
+	// }
+}
+
+static uint8_t mesh_tx_data[30]; // 1 byte 0x5A + 30 bytes data + 1 bytes 0xAA
+void vendor_server_send(uint8_t *p_data, uint32_t len)
+{
+	struct bt_mesh_model *mod_srv = mod_srv_sw[0];
+	struct bt_mesh_msg_ctx ctx =
+	{
+		.addr = 1,
+		.recv_dst = 2,
+        .send_rel = 0,
+		.send_ttl = BT_MESH_TTL_DEFAULT,
+	};
+
+	if (len > sizeof(mesh_tx_data))
+	{
+		log_info("len > %d", sizeof(mesh_tx_data));
+		return;
+	}
+
+	memcpy(&mesh_tx_data, p_data, len);
+
+	NET_BUF_SIMPLE_DEFINE(ack_msg, 3 + len + TRANSMIC_SIZE);
+	bt_mesh_model_msg_init(&ack_msg, BT_MESH_VENDOR_MODEL_OP_STATUS); // Opcode: 3 octets
+	buffer_memcpy(&ack_msg, mesh_tx_data, len);
+	log_info_hexdump(ack_msg.data, len + 3);
+
+	if (bt_mesh_model_send(mod_srv, &ctx, &ack_msg, NULL, NULL))
+	{
+		log_info("Unable to send Status response\n");
+	}
 }
 
 #if SERVER_PUBLISH_EN
 static void server_publish(struct _switch *sw)
 {
-    int err;
-    struct bt_mesh_model *mod_srv;
-    struct bt_mesh_model_pub *pub_srv;
+#if 1
+	struct bt_mesh_model *mod_srv = mod_srv_sw[sw->sw_num];;
+	struct bt_mesh_msg_ctx ctx =
+	{
+		.addr = 1,
+		.recv_dst = 2,
+		.send_ttl = BT_MESH_TTL_DEFAULT,
+	};
+	uint8_t temp_data[REMAIN_DATA_LEN] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77};
+	NET_BUF_SIMPLE_DEFINE(ack_msg, MAX_USEFUL_ACCESS_PAYLOAD_SIZE + TRANSMIC_SIZE);
+	bt_mesh_model_msg_init(&ack_msg, BT_MESH_VENDOR_MODEL_OP_STATUS); // Opcode: 3 octets
+	// buffer_add_u8_at_tail(&ack_msg, 0x11); // onoff state: 1 octets
+	buffer_memcpy(&ack_msg, temp_data, REMAIN_DATA_LEN);
+	log_info_hexdump(ack_msg.data, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
 
-    mod_srv = mod_srv_sw[sw->sw_num];
-    pub_srv = mod_srv->pub;
+	if (bt_mesh_model_send(mod_srv, &ctx, &ack_msg, NULL, NULL))
+	{
+		log_info("Unable to send Status response\n");
+	}
 
-    if (pub_srv->addr == BT_MESH_ADDR_UNASSIGNED) {
-        log_info("pub_srv->addr == BT_MESH_ADDR_UNASSIGNED");
-        return;
-    }
+#else
+	int err;
+	struct bt_mesh_model *mod_srv;
+	struct bt_mesh_model_pub *pub_srv;
 
-    log_info("publish to Remote 0x%04x onoff 0x%04x sw_num 0x%04x\n",
-             pub_srv->addr, sw->onoff_state, sw->sw_num);
+	mod_srv = mod_srv_sw[sw->sw_num];
+	pub_srv = mod_srv->pub;
 
-    bt_mesh_model_msg_init(pub_srv->msg, BT_MESH_VENDOR_MODEL_OP_SET);
-    buffer_add_u8_at_tail(pub_srv->msg, sw->onoff_state);
-    buffer_memset(pub_srv->msg, REMAIN_DATA_VALUE, REMAIN_DATA_LEN);
+	if (pub_srv->addr == BT_MESH_ADDR_UNASSIGNED)
+	{
+		log_info("pub_srv->addr == BT_MESH_ADDR_UNASSIGNED");
+		return;
+	}
 
-    err = bt_mesh_model_publish(mod_srv);
-    if (err) {
-        log_info("bt_mesh_model_publish err %d\n", err);
-    }
-    log_info_hexdump(pub_srv->msg->data, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
+	log_info("publish to Remote 0x%04x onoff 0x%04x sw_num 0x%04x\n",
+			 pub_srv->addr, sw->onoff_state, sw->sw_num);
+
+	bt_mesh_model_msg_init(pub_srv->msg, BT_MESH_VENDOR_MODEL_OP_SET);
+	buffer_add_u8_at_tail(pub_srv->msg, sw->onoff_state);
+	buffer_memset(pub_srv->msg, REMAIN_DATA_VALUE, REMAIN_DATA_LEN);
+
+	err = bt_mesh_model_publish(mod_srv);
+
+	if (err)
+	{
+		log_info("bt_mesh_model_publish err %d\n", err);
+	}
+
+	log_info_hexdump(pub_srv->msg->data, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
+#endif
 }
 
 /*
@@ -299,12 +408,13 @@ static void server_publish(struct _switch *sw)
  */
 static void button_pressed_worker(struct _switch *sw)
 {
-    if (sw->sw_num >= composition.elem_count) {
-        log_info("sw_num over elem_count");
-        return;
-    }
+	if (sw->sw_num >= composition.elem_count)
+	{
+		log_info("sw_num over elem_count");
+		return;
+	}
 
-    server_publish(sw);
+	server_publish(sw);
 }
 #endif /* SERVER_PUBLISH_EN */
 
@@ -314,200 +424,99 @@ static void button_pressed_worker(struct _switch *sw)
 
 #define OP_VENDOR_BUTTON BT_MESH_MODEL_OP_3(0x00, BT_COMP_ID_LF)
 
-static const u8_t net_key[16] = {
-    0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
-    0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
-};
-
-static const u8_t dev_key[16] = {
-    0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
-    0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
-};
-
-static const u8_t app_key[16] = {
-    0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
-    0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
-};
-
-static const u16_t net_idx;
-static const u16_t app_idx;
-static const u32_t iv_index;
-static u8_t flags;
-static u16_t node_addr = NODE_ADDR;
-
-static void configure(void)
-{
-    log_info("Configuring...");
-
-    u16_t elem_addr = node_addr;
-    log_info("node_addr=0x%x, net_idx=0x%x, app_idx=0x%x", node_addr, net_idx, app_idx);
-
-    /* Add Application Key */
-    log_info("bt_mesh_cfg_app_key_add");
-    bt_mesh_cfg_app_key_add(net_idx, node_addr, net_idx, app_idx, app_key, NULL);
-
-    u16 dst_addr = GROUP_ADDR;
-
-    /* Bind to vendor server model */
-    log_info("bt_mesh_cfg_mod_app_bind_vnd server");
-    bt_mesh_cfg_mod_app_bind_vnd(net_idx, node_addr, elem_addr, app_idx,
-                                 BT_MESH_VENDOR_MODEL_ID_SRV,
-                                 BT_COMP_ID_LF,
-                                 NULL);
-
-    /* Add model subscription */
-    log_info("bt_mesh_cfg_mod_sub_add_vnd server");
-    bt_mesh_cfg_mod_sub_add_vnd(net_idx, node_addr, elem_addr, dst_addr,
-                                BT_MESH_VENDOR_MODEL_ID_SRV,
-                                BT_COMP_ID_LF,
-                                NULL);
-
-#if SERVER_PUBLISH_EN
-    /* Add model publish */
-    struct bt_mesh_cfg_mod_pub pub;
-    pub.addr = dst_addr;
-    pub.app_idx = app_idx;
-    pub.cred_flag = 0;
-    pub.ttl = 7;
-    pub.period = 0;
-    /* pub.transmit = 0b00100001; */
-    pub.transmit = 0;
-    log_info("bt_mesh_cfg_mod_pub_set_vnd server");
-    bt_mesh_cfg_mod_pub_set_vnd(net_idx, node_addr, elem_addr,
-                                BT_MESH_VENDOR_MODEL_ID_SRV,
-                                BT_COMP_ID_LF,
-                                &pub, NULL);
-#endif /* SERVER_PUBLISH_EN */
-
-    log_info("Configuration complete");
-}
-
 void input_key_handler(u8 key_status, u8 key_number)
 {
-    struct _switch press_switch;
+	struct _switch press_switch;
 
-    log_info("key_number=0x%x", key_number);
+	log_info("key_number=0x%x", key_number);
 
-    if ((key_number == 2) && (key_status == KEY_EVENT_LONG)) {
-        log_info("\n  <bt_mesh_reset> \n");
-        bt_mesh_reset();
-        return;
-    }
+	if ((key_number == 2) && (key_status == KEY_EVENT_LONG))
+	{
+		log_info("\n  <bt_mesh_reset> \n");
+		bt_mesh_reset();
+		return;
+	}
 
-    switch (key_status) {
-    case KEY_EVENT_CLICK:
-        log_info("  [KEY_EVENT_CLICK]  ");
+	switch (key_status)
+	{
+		case KEY_EVENT_CLICK:
+			log_info("  [KEY_EVENT_CLICK]  ");
 #if SERVER_PUBLISH_EN
-        press_switch.sw_num = key_number;
-        press_switch.onoff_state = 1;
-        button_pressed_worker(&press_switch);
+			press_switch.sw_num = key_number;
+			press_switch.onoff_state = 1;
+			button_pressed_worker(&press_switch);
 #endif /* SERVER_PUBLISH_EN */
-        break;
-    case KEY_EVENT_LONG:
-        log_info("  [KEY_EVENT_LONG]  ");
-        break;
-    case KEY_EVENT_HOLD:
-        log_info("  [KEY_EVENT_HOLD]  ");
-        break;
-    default :
-        return;
-    }
+			break;
+
+		case KEY_EVENT_LONG:
+			log_info("  [KEY_EVENT_LONG]  ");
+			break;
+
+		case KEY_EVENT_HOLD:
+			log_info("  [KEY_EVENT_HOLD]  ");
+			break;
+
+		default :
+			return;
+	}
 }
 
 static void mesh_init(void)
 {
-    int err = bt_mesh_init(&prov, &composition);
-    if (err) {
-        log_error("Initializing mesh failed (err %d)\n", err);
-        return;
-    }
+	u8 bt_addr[6];
 
-    settings_load();
+	dev_uuid_filed_t *p_dev_uuid_filed = (dev_uuid_filed_t *)dev_uuid;
+	p_dev_uuid_filed->mid = elet_nv_cfg_mesh_mcid_get();
+	p_dev_uuid_filed->cid = elet_nv_cfg_mesh_ccid_get();
+	memcpy(p_dev_uuid_filed->pid, elet_nv_cfg_mesh_pid_get(), 3);
+	le_controller_get_mac(bt_addr);
+	memcpy(p_dev_uuid_filed->addr, bt_addr, 6);
+	p_dev_uuid_filed->feature_flag = 0x03;
+	p_dev_uuid_filed->rfu = 0x0000;
 
-    err = bt_mesh_provision(net_key, net_idx, flags, iv_index, node_addr, dev_key);
-    if (err) {
-        log_info("Using stored settings\n");
-    } else {
-        log_info("Provisioning completed\n");
+	int err = bt_mesh_init(&prov, &composition);
 
-        configure();
-    }
+	if (err)
+	{
+		log_error("Initializing mesh failed (err %d)\n", err);
+		return;
+	}
+
+	settings_load();
+
+	bt_mesh_prov_enable(BT_MESH_PROV_GATT | BT_MESH_PROV_ADV);
+
+	buf_io_uart_tx_init_buffer();
+	elet_at_cmd_init();
 }
 
-
+extern u32 hex_2_str(u8 *hex, u32 hex_len, u8 *str);
+extern void mesh_set_gap_name(const u8 *name);
 void bt_ble_init(void)
 {
-    u8 bt_addr[6] = {MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR)};
+	u8 bt_addr[6] = {MAC_TO_LITTLE_ENDIAN(CUR_DEVICE_MAC_ADDR)};
 
-    bt_mac_addr_set(bt_addr);
+	bt_mac_addr_set(NULL);
+	le_controller_get_mac(bt_addr);
+	reverse_bd_addr(bt_addr, bt_addr);
 
-    mesh_setup(mesh_init);
-}
+	u8 *name_p = &ble_mesh_adv_name[2];
+	memcpy(name_p, "ET23_MESH", 9);
+	hex_2_str(&bt_addr[3], 3, name_p + 9);
+	ble_mesh_adv_name[0] = strlen(name_p) + 1;
+	ble_mesh_adv_name[1] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
 
-/********************************************************************************/
-/*
- *                  Mesh API Example
- */
+	mesh_set_gap_name(name_p);
+	log_info("mesh_name:%s\n", name_p);
 
-/*
- * note:    Each model only support one publish address.
- *          But support more subscribe address list, base on CONFIG_BT_MESH_MODEL_GROUP_COUNT.
- */
-void example_node_subscribe_address_overwrite(void)
-{
-    //< overwrite root element subscribe address to 0xc001 (group address)
-
-    u16_t elem_addr = node_addr;
-    u16 dst_addr = 0xc001; // new dst address
-
-    bt_mesh_cfg_mod_sub_overwrite_vnd(net_idx, node_addr, elem_addr, dst_addr,
-                                      BT_MESH_VENDOR_MODEL_ID_SRV,
-                                      BT_COMP_ID_LF,
-                                      NULL);
-}
-
-void example_node_subscribe_address_delete(void)
-{
-    //< delete initial subscribe address
-
-    u16_t elem_addr = node_addr;
-    u16 initial_addr = GROUP_ADDR; // initial address
-
-    bt_mesh_cfg_mod_sub_del_vnd(net_idx, node_addr, elem_addr, initial_addr,
-                                BT_MESH_VENDOR_MODEL_ID_SRV,
-                                BT_COMP_ID_LF,
-                                NULL);
-}
-
-void example_node_subscribe_address_add(void)
-{
-    //< add new subscribe address
-
-    u16_t elem_addr = node_addr;
-    u16 new_addr = 0xc002; // new add address
-
-    bt_mesh_cfg_mod_sub_add_vnd(net_idx, node_addr, elem_addr, new_addr,
-                                BT_MESH_VENDOR_MODEL_ID_SRV,
-                                BT_COMP_ID_LF,
-                                NULL);
-}
-
-void example_node_relay_character_set(void)
-{
-    //< BT_MESH_RELAY_DISABLED / BT_MESH_RELAY_ENABLED
-
-    u8 relay_attr = BT_MESH_RELAY_DISABLED;
-    u8 relay_retransmit = BT_MESH_TRANSMIT(2, 20);
-
-    bt_mesh_cfg_relay_set(net_idx, node_addr, relay_attr,
-                          relay_retransmit, NULL, NULL);
+	mesh_setup(mesh_init);
 }
 
 void example_node_reset(void)
 {
-    //< reset the node to an unprovisioned device
+	//< reset the node to an unprovisioned device
 
-    bt_mesh_reset();
+	bt_mesh_reset();
 }
 
 #endif /* (CONFIG_MESH_MODEL == SIG_MESH_VENDOR_SERVER) */

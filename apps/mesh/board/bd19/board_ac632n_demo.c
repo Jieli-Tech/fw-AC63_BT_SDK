@@ -305,6 +305,10 @@ static void board_devices_init(void)
     alarm_init(&rtc_data);
 #endif
 
+    extern void elet_nv_cfg_init(uint32_t operation);
+    elet_nv_cfg_init(0);
+    extern void elet_uart_init(void);
+    elet_uart_init();
 }
 
 //maskrom 使用到的io
