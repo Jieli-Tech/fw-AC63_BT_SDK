@@ -190,7 +190,7 @@ static void app_key_event_handler(struct sys_event *event)
         input_key_handler(event_type, key_value);
 
         if (event_type == KEY_EVENT_LONG && key_value == TCFG_ADKEY_VALUE6) {
-            app_set_soft_poweroff();
+            // app_set_soft_poweroff();
         }
     }
 }

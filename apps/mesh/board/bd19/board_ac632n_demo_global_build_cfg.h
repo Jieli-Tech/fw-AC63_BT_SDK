@@ -72,8 +72,8 @@
 #define CONFIG_RESET_TIME                       04   //unit:second
 #define CONFIG_RESET_LEVEL                      1	 //tigger level(0/1)
 #else
-#define CONFIG_RESET_PIN                        PB01 //io pin
-#define CONFIG_RESET_TIME                       08   //unit:second
+#define CONFIG_RESET_PIN                        PA07 //io pin
+#define CONFIG_RESET_TIME                       01   //unit:second
 #define CONFIG_RESET_LEVEL                      0	 //tigger level(0/1)
 #endif
 
