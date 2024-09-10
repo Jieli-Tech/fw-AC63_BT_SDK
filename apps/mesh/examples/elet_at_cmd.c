@@ -60,6 +60,7 @@ enum
 	STR_ID_REBOOT,
 	STR_ID_NWK,
 	STR_ID_UART,
+	STR_ID_VER,
 };
 
 static const char at_head_at_cmd[]      = "AT+";
@@ -74,6 +75,7 @@ static const char at_str_pid[]          = "PID";
 static const char at_str_reboot[]       = "REBOOT";
 static const char at_str_nwk[]          = "NWK";
 static const char at_str_uart[]         = "UART";
+static const char at_str_ver[]          = "VER";
 
 static const char special_char[]        = {'+', '>', '=', '?', '\r', ','};
 
@@ -100,6 +102,7 @@ static const str_info_t at_cmd_str_table[] =
 	INPUT_STR_INFO(STR_ID_REBOOT, at_str_reboot),
 	INPUT_STR_INFO(STR_ID_NWK, at_str_nwk),
 	INPUT_STR_INFO(STR_ID_UART, at_str_uart),
+	INPUT_STR_INFO(STR_ID_VER, at_str_ver),
 };
 
 #define AT_STRING_SEND(a) at_cmd_send(a,strlen(a))
@@ -533,6 +536,23 @@ at_cmd_parse_start:
 				{
 					AT_STRING_SEND("ERROR");
 				}
+			}
+			else
+			{
+				AT_STRING_SEND("ERROR");
+			}
+
+			break;
+
+		case STR_ID_VER:
+			log_info("STR_ID_VER\n");
+
+			if (operator_type == AT_CMD_OPT_GET)
+			{
+				u8 len = 0;
+				sprintf(buf, "+VER:%s", Bluetooth_Complete_Version);
+				len = strlen(buf);
+				at_cmd_send(buf, len);
 			}
 			else
 			{
