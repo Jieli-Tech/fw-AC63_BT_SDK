@@ -622,7 +622,7 @@ at_cmd_parse_start:
 
 				pid = strtol(par->data, NULL, 16);
 
-				elet_nv_cfg_mesh_pid_set(pid);
+				elet_nv_cfg_mesh_pid_set(pid & 0x00FFFFFF);
 				AT_STRING_SEND("OK");
 			}
 			else
