@@ -9,7 +9,7 @@
 #include "ble_user.h"
 
 #if CONFIG_APP_OTA_ENABLE
-#include "rcsp_hid_inter.h"
+#include "bt_trans_data/rcsp_hid_inter.h"
 #endif
 
 #if RCSP_BTMATE_EN
