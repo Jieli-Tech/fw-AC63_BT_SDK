@@ -325,7 +325,7 @@ void vendor_server_send(uint8_t *p_data, uint32_t len)
 	{
 		.addr = 1,
 		.recv_dst = 2,
-        .send_rel = 0,
+		.send_rel = 0,
 		.send_ttl = BT_MESH_TTL_DEFAULT,
 	};
 
@@ -427,13 +427,19 @@ static void button_pressed_worker(struct _switch *sw)
 void input_key_handler(u8 key_status, u8 key_number)
 {
 	struct _switch press_switch;
+	static uint8_t long_hold_6s_cnts = 0;
 
 	log_info("key_number=0x%x", key_number);
 
-	if ((key_number == 2) && (key_status == KEY_EVENT_LONG))
+	// if ((key_number == 2) && (key_status == KEY_EVENT_LONG))
+	// {
+	//  log_info("\n  <bt_mesh_reset> \n");
+	//  bt_mesh_reset();
+	//  return;
+	// }
+
+	if (key_number != 0)
 	{
-		log_info("\n  <bt_mesh_reset> \n");
-		bt_mesh_reset();
 		return;
 	}
 
@@ -441,11 +447,12 @@ void input_key_handler(u8 key_status, u8 key_number)
 	{
 		case KEY_EVENT_CLICK:
 			log_info("  [KEY_EVENT_CLICK]  ");
-#if SERVER_PUBLISH_EN
-			press_switch.sw_num = key_number;
-			press_switch.onoff_state = 1;
-			button_pressed_worker(&press_switch);
-#endif /* SERVER_PUBLISH_EN */
+			// #if SERVER_PUBLISH_EN
+			//          press_switch.sw_num = key_number;
+			//          press_switch.onoff_state = 1;
+			//          button_pressed_worker(&press_switch);
+			// #endif /* SERVER_PUBLISH_EN */
+			long_hold_6s_cnts = 0;
 			break;
 
 		case KEY_EVENT_LONG:
@@ -453,10 +460,19 @@ void input_key_handler(u8 key_status, u8 key_number)
 			break;
 
 		case KEY_EVENT_HOLD:
-			log_info("  [KEY_EVENT_HOLD]  ");
+			log_info("  [KEY_EVENT_HOLD]  %d", long_hold_6s_cnts);
+			long_hold_6s_cnts++;
+
+			if (long_hold_6s_cnts == 42)
+			{
+				long_hold_6s_cnts = 0;
+				bt_mesh_reset();
+			}
+
 			break;
 
 		default :
+			long_hold_6s_cnts = 0;
 			return;
 	}
 }
