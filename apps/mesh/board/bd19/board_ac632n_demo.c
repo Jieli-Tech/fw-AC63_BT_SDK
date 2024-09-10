@@ -305,6 +305,7 @@ static void board_devices_init(void)
     alarm_init(&rtc_data);
 #endif
 
+    gpio_direction_output(IO_PORTA_00, 1);
     extern void elet_nv_cfg_init(uint32_t operation);
     elet_nv_cfg_init(0);
     extern void elet_uart_init(void);

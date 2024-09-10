@@ -42,11 +42,13 @@ void prov_complete(u16_t net_idx, u16_t addr)
     primary_addr = addr;
     primary_net_idx = net_idx;
     elet_prov_complete_flag = 1;
+    gpio_direction_output(IO_PORTA_00, 0);
 }
 
 void prov_reset(void)
 {
     elet_prov_complete_flag = 0;
+    gpio_direction_output(IO_PORTA_00, 1);
     bt_mesh_prov_enable(BT_MESH_PROV_ADV | BT_MESH_PROV_GATT);
 }
 
