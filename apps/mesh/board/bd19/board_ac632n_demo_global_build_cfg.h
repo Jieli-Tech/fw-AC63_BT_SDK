@@ -33,7 +33,7 @@
 /* Following Macros Only For Post Bulid Configuaration */
 
 #define CONFIG_DB_UPDATE_DATA_GENERATE_EN       0       //是否生成db_data.bin(用于第三方协议接入使用)
-#define CONFIG_ONLY_GRENERATE_ALIGN_4K_CODE     0    	//ufw只生成1份4K对齐的代码
+#define CONFIG_ONLY_GRENERATE_ALIGN_4K_CODE     1    	//ufw只生成1份4K对齐的代码
 
 //config for supported chip version
 #ifdef CONFIG_BR30_C_VERSION
@@ -45,7 +45,7 @@
 //DON'T MODIFY THIS CONFIG EXCEPT SDK PUBLISHER
 #define CONFIG_CHIP_NAME                        AC632N              //除了SDK发布者,请不要修改
 //it can be modified before first programming,but keep the same as the original version
-#define CONFIG_PID                              AC632N              //烧写或强制升级之前可以修改,之后升级要保持一致
+#define CONFIG_PID                              ELET              //烧写或强制升级之前可以修改,之后升级要保持一致
 //it can be modified before first programming,but keep the same as the original version
 #define CONFIG_VID                              0.01				//烧写或强制升级之前可以修改,之后升级要保持一致
 
