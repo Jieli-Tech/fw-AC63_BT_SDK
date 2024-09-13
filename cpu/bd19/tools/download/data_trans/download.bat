@@ -9,12 +9,12 @@ copy ..\..\bd19loader.bin .
 copy ..\..\p11_code.bin .
 copy ..\..\script.ver .
 
-..\..\isd_download.exe ..\..\isd_config.ini -tonorflash -dev bd19 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -res ..\..\p11_code.bin -uboot_compress
-@REM ..\..\isd_download.exe ..\..\isd_config.ini -tonorflash -dev bd19 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -res ..\..\p11_code.bin -uboot_compress -key szyd-hua.key -format all
+@REM ..\..\isd_download.exe ..\..\isd_config.ini -tonorflash -dev bd19 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -res ..\..\p11_code.bin -uboot_compress
+..\..\isd_download.exe ..\..\isd_config.ini -tonorflash -dev bd19 -boot 0x2000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -res ..\..\p11_code.bin -uboot_compress -key szyd-hua.key -format all
 :: -format all
 ::-reboot 2500
 
-@rem É¾³ýÁÙÊ±ÎÄ¼þ-format all
+@rem åˆ é™¤ä¸´æ—¶æ–‡ä»¶-format all
 if exist *.mp3 del *.mp3
 if exist *.PIX del *.PIX
 if exist *.TAB del *.TAB
@@ -30,10 +30,10 @@ if exist *.sty del *.sty
 copy jl_isd.ufw update.ufw
 del jl_isd.ufw
 
-@rem ³£ÓÃÃüÁîËµÃ÷
-@rem -format vm        //²Á³ýVM ÇøÓò
-@rem -format cfg       //²Á³ýBT CFG ÇøÓò
-@rem -format 0x3f0-2   //±íÊ¾´ÓµÚ 0x3f0 ¸ö sector ¿ªÊ¼Á¬Ðø²Á³ý 2 ¸ö sector(µÚÒ»¸ö²ÎÊýÎª16½øÖÆ»ò10½øÖÆ¶¼¿É£¬µÚ¶þ¸ö²ÎÊý±ØÐëÊÇ10½øÖÆ)
+@rem å¸¸ç”¨å‘½ä»¤è¯´æ˜Ž
+@rem -format vm        //æ“¦é™¤VM åŒºåŸŸ
+@rem -format cfg       //æ“¦é™¤BT CFG åŒºåŸŸ
+@rem -format 0x3f0-2   //è¡¨ç¤ºä»Žç¬¬ 0x3f0 ä¸ª sector å¼€å§‹è¿žç»­æ“¦é™¤ 2 ä¸ª sector(ç¬¬ä¸€ä¸ªå‚æ•°ä¸º16è¿›åˆ¶æˆ–10è¿›åˆ¶éƒ½å¯ï¼Œç¬¬äºŒä¸ªå‚æ•°å¿…é¡»æ˜¯10è¿›åˆ¶)
 
 ping /n 2 127.1>null
 IF EXIST null del null
