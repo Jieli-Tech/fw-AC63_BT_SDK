@@ -484,7 +484,7 @@ static void mesh_init(void)
 	dev_uuid_filed_t *p_dev_uuid_filed = (dev_uuid_filed_t *)dev_uuid;
 	p_dev_uuid_filed->mid = elet_nv_cfg_mesh_mcid_get();
 	p_dev_uuid_filed->cid = elet_nv_cfg_mesh_ccid_get();
-    *(uint32_t *)p_dev_uuid_filed->pid = elet_nv_cfg_mesh_pid_get();
+	*(uint32_t *)p_dev_uuid_filed->pid = elet_nv_cfg_mesh_pid_get();
 	le_controller_get_mac(bt_addr);
 	memcpy(p_dev_uuid_filed->addr, bt_addr, 6);
 	p_dev_uuid_filed->feature_flag = 0x03;

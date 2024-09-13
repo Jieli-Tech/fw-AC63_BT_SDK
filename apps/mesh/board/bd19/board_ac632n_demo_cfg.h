@@ -47,7 +47,7 @@
 //*********************************************************************************//
 //                                 硬件SPI 配置                                        //
 //*********************************************************************************//
-#define	TCFG_HW_SPI1_ENABLE		ENABLE_THIS_MOUDLE
+#define	TCFG_HW_SPI1_ENABLE		DISABLE_THIS_MOUDLE
 //A组IO:    DI: PB2     DO: PB1     CLK: PB0
 //B组IO:    DI: PC3     DO: PC5     CLK: PC4
 #define TCFG_HW_SPI1_PORT		'A'
@@ -55,7 +55,7 @@
 #define TCFG_HW_SPI1_MODE		SPI_MODE_BIDIR_1BIT
 #define TCFG_HW_SPI1_ROLE		SPI_ROLE_MASTER
 
-#define	TCFG_HW_SPI2_ENABLE		ENABLE_THIS_MOUDLE
+#define	TCFG_HW_SPI2_ENABLE		DISABLE_THIS_MOUDLE
 //A组IO:    DI: PB8     DO: PB10    CLK: PB9
 //B组IO:    DI: PA13    DO: DM      CLK: DP
 #define TCFG_HW_SPI2_PORT		'A'
