@@ -108,6 +108,9 @@ SPECIAL_OPT = 0;		// only generate one flash.bin
 #endif
 #else
 NEW_FLASH_FS = YES;	//enable single bank flash framework
+FLASH_SIZE = CONFIG_FLASH_SIZE;		//flash_size cfg
+FORCE_4K_ALIGN = YES; // force aligin with 4k bytes
+SPECIAL_OPT = 0;		// only generate one flash.bin
 #endif 				//CONFIG_DOUBLE_BANK_ENABLE
 
 #if ALIGN_UNIT_256B
