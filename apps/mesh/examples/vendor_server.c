@@ -104,13 +104,13 @@ struct _switch
 };
 
 /* Company Identifiers (see Bluetooth Assigned Numbers) */
-#define BT_COMP_ID_LF           0x05D6 // Zhuhai Jieli technology Co.,Ltd
+#define BT_COMP_ID_LF           0x0917//0x05D6 // Zhuhai Jieli technology Co.,Ltd
 
 /*
  * Vendor Model ID
  * detail on Mesh_v1.0 <3.7.2 Model identifier>
  */
-#define BT_MESH_VENDOR_MODEL_ID_SRV             0x0001
+#define BT_MESH_VENDOR_MODEL_ID_SRV             0x0002
 
 /*
  * Vendor Model Operation Codes
