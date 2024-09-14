@@ -641,7 +641,7 @@ at_cmd_parse_start:
 				if (1 == type)
 				{
 					bt_mesh_reset();
-					AT_STRING_SEND("OK");
+					cpu_reset();
 				}
 				else
 				{
