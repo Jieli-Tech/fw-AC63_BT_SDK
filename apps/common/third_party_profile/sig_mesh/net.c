@@ -1394,7 +1394,7 @@ int bt_mesh_net_decode(struct net_buf_simple *data, enum bt_mesh_net_if net_if,
 void bt_mesh_net_recv(struct net_buf_simple *data, s8_t rssi,
                       enum bt_mesh_net_if net_if)
 {
-    NET_BUF_SIMPLE_DEFINE(buf, 29);
+    NET_BUF_SIMPLE_DEFINE(buf, 244);
     struct bt_mesh_net_rx rx = { .ctx.recv_rssi = rssi };
     struct net_buf_simple_state state;
 
