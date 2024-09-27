@@ -117,6 +117,7 @@ struct _switch
  * detail on Mesh_v1.0 <3.7.3.1 Operation codes>
  */
 #define BT_MESH_VENDOR_MODEL_OP_SET             BT_MESH_MODEL_OP_3(0x01, BT_COMP_ID_LF)
+#define BT_MESH_VENDOR_MODEL_OP_SET_ALL      	BT_MESH_MODEL_OP_3(0x02, BT_COMP_ID_LF)
 #define BT_MESH_VENDOR_MODEL_OP_STATUS          BT_MESH_MODEL_OP_3(0x04, BT_COMP_ID_LF)
 
 /*
@@ -188,6 +189,7 @@ BT_MESH_MODEL_PUB_DEFINE(vendor_pub_srv, NULL, MAX_USEFUL_ACCESS_PAYLOAD_SIZE);
 static const struct bt_mesh_model_op vendor_srv_op[] =
 {
 	{ BT_MESH_VENDOR_MODEL_OP_SET, ACCESS_OP_SIZE, vendor_set },
+	{ BT_MESH_VENDOR_MODEL_OP_SET_ALL, ACCESS_OP_SIZE, vendor_set },
 	BT_MESH_MODEL_OP_END,
 };
 
