@@ -27,7 +27,7 @@ static const nv_cfg_t nv_cfg_default =
 
 	.mesh_name          = "ET23_MESH",
 	.mesh_mcid          = 0x0917,
-	.mesh_ccid          = 0x1865,
+	.mesh_ccid          = 0x0302,
 	.mesh_pid           = 0x000001,
 
 	.uart_rate          = 115200,
