@@ -10,7 +10,7 @@ extern "C" {
 #define STRINGIZER(arg)                         #arg
 #define STR_VALUE(arg)                          STRINGIZER(arg)
 
-#define USER_VERSION                            10002
+#define USER_VERSION                            10003
 #define Bluetooth_Complete_Version              "ET23_MESH_V"STR_VALUE(USER_VERSION)
 #define FW_VERSION_OTA                          ET23_MESH_V
 #define Bluetooth_Complete_Version_OTA          STR_VALUE(FW_VERSION_OTA)STR_VALUE(USER_VERSION)
