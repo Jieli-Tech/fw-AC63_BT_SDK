@@ -27,7 +27,7 @@
 #elif (defined CONFIG_CPU_BR34)
 #define  SET_BLE_TX_POWER_LEVEL        (7)
 #else
-#define  SET_BLE_TX_POWER_LEVEL        (9)
+#define  SET_BLE_TX_POWER_LEVEL        (10)
 #endif
 
 void lp_winsize_init(struct lp_ws_t *lp);
