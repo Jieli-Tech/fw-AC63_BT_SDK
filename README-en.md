@@ -95,7 +95,12 @@ Hardware
 Community
 --------------
 
-* [Dingtalk Group] ID: `3375034077`
+* [Dingtalk Group] 
+  ID1: `31691148`(full)
+
+  ID2: `3375034077`(full)
+
+  ID3: `107855006323`
 
 * [Q&A](./doc/FAQ)
 
